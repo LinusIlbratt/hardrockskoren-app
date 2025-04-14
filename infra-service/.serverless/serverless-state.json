@@ -1,0 +1,344 @@
+{
+  "service": {
+    "service": "infra-service",
+    "serviceObject": {
+      "name": "infra-service"
+    },
+    "provider": {
+      "name": "aws",
+      "region": "eu-north-1",
+      "stage": "dev",
+      "versionFunctions": true,
+      "compiledCloudFormationTemplate": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Description": "The AWS CloudFormation template for this Serverless application",
+        "Resources": {
+          "HrkDataTable": {
+            "Type": "AWS::DynamoDB::Table",
+            "Properties": {
+              "TableName": "HrkMainTable-dev",
+              "BillingMode": "PAY_PER_REQUEST",
+              "AttributeDefinitions": [
+                {
+                  "AttributeName": "PK",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "SK",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "GSI1PK",
+                  "AttributeType": "S"
+                },
+                {
+                  "AttributeName": "GSI1SK",
+                  "AttributeType": "S"
+                }
+              ],
+              "KeySchema": [
+                {
+                  "AttributeName": "PK",
+                  "KeyType": "HASH"
+                },
+                {
+                  "AttributeName": "SK",
+                  "KeyType": "RANGE"
+                }
+              ],
+              "GlobalSecondaryIndexes": [
+                {
+                  "IndexName": "GSI1",
+                  "KeySchema": [
+                    {
+                      "AttributeName": "GSI1PK",
+                      "KeyType": "HASH"
+                    },
+                    {
+                      "AttributeName": "GSI1SK",
+                      "KeyType": "RANGE"
+                    }
+                  ],
+                  "Projection": {
+                    "ProjectionType": "ALL"
+                  }
+                }
+              ]
+            }
+          },
+          "CognitoUserPool": {
+            "Type": "AWS::Cognito::UserPool",
+            "Properties": {
+              "UserPoolName": "HrkUserPool-dev",
+              "UsernameAttributes": [
+                "email"
+              ],
+              "AutoVerifiedAttributes": [
+                "email"
+              ],
+              "MfaConfiguration": "OFF",
+              "Policies": {
+                "PasswordPolicy": {
+                  "MinimumLength": 8,
+                  "RequireLowercase": true,
+                  "RequireUppercase": true,
+                  "RequireNumbers": true,
+                  "RequireSymbols": false
+                }
+              },
+              "AccountRecoverySetting": {
+                "RecoveryMechanisms": [
+                  {
+                    "Name": "verified_email",
+                    "Priority": 1
+                  }
+                ]
+              }
+            }
+          },
+          "CognitoUserPoolClient": {
+            "Type": "AWS::Cognito::UserPoolClient",
+            "Properties": {
+              "ClientName": "hrk-client-dev",
+              "UserPoolId": {
+                "Ref": "CognitoUserPool"
+              },
+              "GenerateSecret": false,
+              "ExplicitAuthFlows": [
+                "ALLOW_USER_PASSWORD_AUTH",
+                "ALLOW_REFRESH_TOKEN_AUTH",
+                "ALLOW_USER_SRP_AUTH"
+              ],
+              "SupportedIdentityProviders": [
+                "COGNITO"
+              ],
+              "PreventUserExistenceErrors": "ENABLED"
+            }
+          },
+          "CognitoUserPoolDomain": {
+            "Type": "AWS::Cognito::UserPoolDomain",
+            "Properties": {
+              "Domain": "hrk-auth-dev",
+              "UserPoolId": {
+                "Ref": "CognitoUserPool"
+              }
+            }
+          },
+          "CognitoAdminGroup": {
+            "Type": "AWS::Cognito::UserPoolGroup",
+            "Properties": {
+              "GroupName": "admin",
+              "UserPoolId": {
+                "Ref": "CognitoUserPool"
+              },
+              "Description": "Full åtkomst till adminfunktioner",
+              "Precedence": 100
+            }
+          },
+          "HrkMediaBucket": {
+            "Type": "AWS::S3::Bucket",
+            "Properties": {
+              "BucketName": "hrk-media-dev",
+              "CorsConfiguration": {
+                "CorsRules": [
+                  {
+                    "AllowedHeaders": [
+                      "*"
+                    ],
+                    "AllowedMethods": [
+                      "GET",
+                      "PUT"
+                    ],
+                    "AllowedOrigins": [
+                      "*"
+                    ],
+                    "MaxAge": 3000
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "Outputs": {
+          "ServerlessDeploymentBucketName": {
+            "Value": "serverless-framework-deployments-eu-north-1-0a9682bd-8ddc",
+            "Export": {
+              "Name": "sls-infra-service-dev-ServerlessDeploymentBucketName"
+            }
+          }
+        }
+      }
+    },
+    "pluginsData": {},
+    "functions": {},
+    "resources": {
+      "Resources": {
+        "HrkDataTable": {
+          "Type": "AWS::DynamoDB::Table",
+          "Properties": {
+            "TableName": "HrkMainTable-dev",
+            "BillingMode": "PAY_PER_REQUEST",
+            "AttributeDefinitions": [
+              {
+                "AttributeName": "PK",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "SK",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "GSI1PK",
+                "AttributeType": "S"
+              },
+              {
+                "AttributeName": "GSI1SK",
+                "AttributeType": "S"
+              }
+            ],
+            "KeySchema": [
+              {
+                "AttributeName": "PK",
+                "KeyType": "HASH"
+              },
+              {
+                "AttributeName": "SK",
+                "KeyType": "RANGE"
+              }
+            ],
+            "GlobalSecondaryIndexes": [
+              {
+                "IndexName": "GSI1",
+                "KeySchema": [
+                  {
+                    "AttributeName": "GSI1PK",
+                    "KeyType": "HASH"
+                  },
+                  {
+                    "AttributeName": "GSI1SK",
+                    "KeyType": "RANGE"
+                  }
+                ],
+                "Projection": {
+                  "ProjectionType": "ALL"
+                }
+              }
+            ]
+          }
+        },
+        "CognitoUserPool": {
+          "Type": "AWS::Cognito::UserPool",
+          "Properties": {
+            "UserPoolName": "HrkUserPool-dev",
+            "UsernameAttributes": [
+              "email"
+            ],
+            "AutoVerifiedAttributes": [
+              "email"
+            ],
+            "MfaConfiguration": "OFF",
+            "Policies": {
+              "PasswordPolicy": {
+                "MinimumLength": 8,
+                "RequireLowercase": true,
+                "RequireUppercase": true,
+                "RequireNumbers": true,
+                "RequireSymbols": false
+              }
+            },
+            "AccountRecoverySetting": {
+              "RecoveryMechanisms": [
+                {
+                  "Name": "verified_email",
+                  "Priority": 1
+                }
+              ]
+            }
+          }
+        },
+        "CognitoUserPoolClient": {
+          "Type": "AWS::Cognito::UserPoolClient",
+          "Properties": {
+            "ClientName": "hrk-client-dev",
+            "UserPoolId": {
+              "Ref": "CognitoUserPool"
+            },
+            "GenerateSecret": false,
+            "ExplicitAuthFlows": [
+              "ALLOW_USER_PASSWORD_AUTH",
+              "ALLOW_REFRESH_TOKEN_AUTH",
+              "ALLOW_USER_SRP_AUTH"
+            ],
+            "SupportedIdentityProviders": [
+              "COGNITO"
+            ],
+            "PreventUserExistenceErrors": "ENABLED"
+          }
+        },
+        "CognitoUserPoolDomain": {
+          "Type": "AWS::Cognito::UserPoolDomain",
+          "Properties": {
+            "Domain": "hrk-auth-dev",
+            "UserPoolId": {
+              "Ref": "CognitoUserPool"
+            }
+          }
+        },
+        "CognitoAdminGroup": {
+          "Type": "AWS::Cognito::UserPoolGroup",
+          "Properties": {
+            "GroupName": "admin",
+            "UserPoolId": {
+              "Ref": "CognitoUserPool"
+            },
+            "Description": "Full åtkomst till adminfunktioner",
+            "Precedence": 100
+          }
+        },
+        "HrkMediaBucket": {
+          "Type": "AWS::S3::Bucket",
+          "Properties": {
+            "BucketName": "hrk-media-dev",
+            "CorsConfiguration": {
+              "CorsRules": [
+                {
+                  "AllowedHeaders": [
+                    "*"
+                  ],
+                  "AllowedMethods": [
+                    "GET",
+                    "PUT"
+                  ],
+                  "AllowedOrigins": [
+                    "*"
+                  ],
+                  "MaxAge": 3000
+                }
+              ]
+            }
+          }
+        }
+      },
+      "Outputs": {}
+    },
+    "configValidationMode": "warn",
+    "serviceFilename": "serverless",
+    "initialServerlessConfig": {
+      "service": "infra-service",
+      "frameworkVersion": "4",
+      "provider": {
+        "$ref": "$[\"service\"][\"provider\"]"
+      },
+      "resources": {
+        "$ref": "$[\"service\"][\"resources\"]"
+      }
+    },
+    "appId": null,
+    "orgId": null,
+    "layers": {}
+  },
+  "package": {
+    "artifactDirectoryName": "serverless/infra-service/dev/1744653326375-2025-04-14T17:55:26.375Z",
+    "artifact": ""
+  }
+}
