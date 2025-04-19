@@ -1,0 +1,27 @@
+login:
+  handler: ./functions/auth.loginHandler
+  name: hrk-login-${sls:stage}
+  description: Auth @ for stage ${sls:stage}.
+  layers:
+    - arn:aws:lambda:eu-north-1:094274105915:layer:AWSLambdaPowertoolsTypeScript:27
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        path: /login
+  environment:
+    MAIN_TABLE: HrkMainTable-${opt:stage}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - cognito-idp:adminInitiateAuth
+        - cognito-idp:getUser
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/*"
+    - Effect: "Allow"
+      Action:
+        - dynamodb:GetItem
+      Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/HrkMainTable-${opt:stage}"
+    - Effect: "Allow"
+      Action:
+        - logs:*
+      Resource: "arn:aws:logs:${self:provider.region}:${aws:accountId}:log-group:*"
