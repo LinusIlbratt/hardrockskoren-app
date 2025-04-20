@@ -62,3 +62,37 @@ getMe:
         - cognito-idp:adminListGroupsForUser
       Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/*"
 
+changePassword:
+  handler: ./functions/password.changeAdminPassword
+  name: hrk-admin-change-password-${sls:stage}
+  description: Admin sets a new password for user.
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        path: /admin/change-password
+  environment:
+    USER_POOL_ID: ${env:USER_POOL_ID}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - cognito-idp:adminSetUserPassword
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/*"
+
+changeMyPassword:
+  handler: ./functions/password.changeUserPassword
+  name: hrk-change-user-password-${sls:stage}
+  description: User changes their own password
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        path: /change-password
+        authorizer: authorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - cognito-idp:ChangePassword
+      Resource: "*"
+
+
