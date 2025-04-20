@@ -9,6 +9,17 @@ provider:
   architecture: arm64
   region: eu-north-1
   stage: ${opt:stage, 'dev'}
+  httpApi:
+    cors: true
+    authorizers:
+      authorizer:
+        type: request
+        functionName: authorizer
+        payloadVersion: "2.0"
+        enableSimpleResponses: true
+        resultTtlInSeconds: 300
+        identitySource:
+          - $request.header.Authorization
 
 plugins:
   - serverless-iam-roles-per-function   
