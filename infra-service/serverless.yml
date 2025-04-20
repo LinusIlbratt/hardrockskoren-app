@@ -1,0 +1,13 @@
+service: infra-service
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  region: eu-north-1
+  stage: ${opt:stage, 'dev'}
+
+resources:
+  - ${file(./database/dynamoDb.yml)}
+  - ${file(./iam/cognito.yml)}
+  - ${file(./storage/s3.yml)}
+
