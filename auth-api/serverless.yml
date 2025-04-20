@@ -3,6 +3,8 @@ configValidationMode: error
 
 frameworkVersion: "4"
 
+useDotenv: true
+
 provider:
   name: aws
   runtime: nodejs20.x
