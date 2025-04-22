@@ -62,7 +62,7 @@ getMe:
         - cognito-idp:adminListGroupsForUser
       Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/*"
 
-changePassword:
+changeAdminPassword:
   handler: ./functions/password.changeAdminPassword
   name: hrk-admin-change-password-${sls:stage}
   description: Admin sets a new password for user.
@@ -71,6 +71,7 @@ changePassword:
     - httpApi:
         method: POST
         path: /admin/change-password
+        authorizer: authorizer
   environment:
     USER_POOL_ID: ${env:USER_POOL_ID}
   iamRoleStatements:
@@ -94,5 +95,30 @@ changeMyPassword:
       Action:
         - cognito-idp:ChangePassword
       Resource: "*"
+
+forgotPassword:
+  handler: ./functions/password.forgotPassword
+  name: hrk-forgot-password-${sls:stage}
+  description: User forgot their password
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        path: /forgot-password
+  environment:
+    CLIENT_ID: ${env:CLIENT_ID}
+
+resetPassword:
+  handler: ./functions/password.resetPassword
+  name: hrk-reset-password-${sls:stage}
+  description: User resets their password
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        path: /reset-password
+  environment:
+    CLIENT_ID: ${env:CLIENT_ID}
+
 
 

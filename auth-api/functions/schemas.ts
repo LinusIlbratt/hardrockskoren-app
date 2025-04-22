@@ -20,4 +20,19 @@ export const changePasswordSchema = Joi.object({
       "any.required": "New password is required",
     }),
   });
+
+  export const forgotPasswordSchema = Joi.object({
+    email: Joi.string().email().required(),
+  });  
+
+  export const resetPasswordSchema = Joi.object({
+    email: Joi.string().email().required(),
+    code: Joi.string().length(6).required().messages({
+      "string.length": "Code must be exactly 6 characters",
+    }),
+    newPassword: Joi.string().min(8).required(),
+    confirmPassword: Joi.string().valid(Joi.ref("newPassword")).required().messages({
+      "any.only": "Passwords do not match",
+    }),
+  });
   

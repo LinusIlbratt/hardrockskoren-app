@@ -4,6 +4,9 @@ import {
     AdminListGroupsForUserCommand,
     AdminSetUserPasswordCommand,
     ChangePasswordCommand,
+    AdminResetUserPasswordCommand,
+    ForgotPasswordCommand,
+    ConfirmForgotPasswordCommand,
   } from "@aws-sdk/client-cognito-identity-provider";
   
   const client = new CognitoIdentityProviderClient({});
@@ -36,6 +39,24 @@ import {
     }) => {
       const command = new ChangePasswordCommand(params);
       return client.send(command);
-    }
+    },
+
+    forgotPassword: async (params: {
+      ClientId: string;
+      Username: string;
+    }) => {
+      const command = new ForgotPasswordCommand(params);
+      return client.send(command);
+    },
+
+    confirmForgotPassword: async (params: {
+      ClientId: string;
+      Username: string;
+      ConfirmationCode: string;
+      Password: string;
+    }) => {
+      const command = new ConfirmForgotPasswordCommand(params);
+      return client.send(command);
+    },
   };
   
