@@ -13,6 +13,7 @@ dist-ssr
 *.local
 .serverless
 .env*
+env.*.yaml
 
 # Editor directories and files
 .vscode/*

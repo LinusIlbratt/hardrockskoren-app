@@ -1,0 +1,86 @@
+authorizer:
+  handler: ./functions/authorizer/authorizer.handler
+  name: hrk-apigateway-admin-authorizer-${sls:stage}
+  description: Authorizer for Hrk Admin API stage ${sls:stage}.
+  memorySize: 256
+  layers:
+    - arn:aws:lambda:eu-north-1:094274105915:layer:AWSLambdaPowertoolsTypeScript:27
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - cognito-idp:AdminGetUser
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/*"
+
+createGroup:
+  handler: functions/group/create.handler
+  name: hrk-admin-create-group-${sls:stage}
+  description: Admin creates a new group for user.
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        path: /groups
+        authorizer: authorizer
+  environment:
+    COGNITO_USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: Allow
+      Action:
+        - cognito-idp:AdminGetUser
+      Resource:
+        - arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}
+
+deleteGroup:
+  handler: functions/group/delete.handler
+  name: hrk-admin-delete-group-${sls:stage}
+  description: Admin deletes a group.
+  memorySize: 256
+  events:
+    - httpApi:
+        method: DELETE
+        path: /groups/{name}
+        authorizer: authorizer
+  environment:
+    COGNITO_USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - dynamodb:Query
+        - dynamodb:DeleteItem
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: Allow
+      Action:
+        - cognito-idp:AdminGetUser
+      Resource:
+        - arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}
+
+getGroup:
+  handler: functions/group/get.handler
+  name: hrk-get-group-${sls:stage}
+  description: Get a group for user.
+  memorySize: 256
+  events:
+    - httpApi:
+        method: GET
+        path: /groups/{name}
+        authorizer: authorizer
+  environment:
+    COGNITO_USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - dynamodb:GetItem
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    
