@@ -83,4 +83,44 @@ getGroup:
         - dynamodb:GetItem
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+listGroups:
+    handler: functions/group/list.handler
+    name: hrk-list-groups-${sls:stage}
+    description: List all groups.
+    memorySize: 256
+    events:
+      - httpApi:
+          method: GET
+          path: /groups
+          authorizer: authorizer
+    environment:
+      COGNITO_USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+      MAIN_TABLE: ${self:custom.mainTableName}
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - dynamodb:Scan
+        Resource:
+          - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+updateGroup:
+    handler: functions/group/update.handler
+    name: hrk-update-group-${sls:stage}
+    description: Update a group's name or description.
+    memorySize: 256
+    events:
+      - httpApi:
+          method: PATCH
+          path: /groups/{name}
+          authorizer: authorizer
+    environment:
+      COGNITO_USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+      MAIN_TABLE: ${self:custom.mainTableName}
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - dynamodb:UpdateItem
+        Resource:
+          - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
     
