@@ -11,5 +11,5 @@ Resources:
               - GET
               - PUT
             AllowedOrigins:
-              - "*"
+              - ${self:custom.frontendUrls.${self:custom.stage}}
             MaxAge: 3000
