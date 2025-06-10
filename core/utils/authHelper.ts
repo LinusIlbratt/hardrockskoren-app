@@ -46,11 +46,11 @@ export const createVerifierFromUnverifiedToken = (
   };
 };
 
-// Extracts role from Cognito user attributes (e.g. custom:role)
-export const getRoleFromUserAttributes = (
+export const getUserDetailsFromAttributes = (
   userAttributes?: AttributeType[]
 ): {
   role?: string;
+  group?: string; 
 } => {
   if (!userAttributes) {
     return {};
@@ -61,6 +61,7 @@ export const getRoleFromUserAttributes = (
 
   return {
     role: find("custom:role"),
+    group: find("custom:group"),
   };
 };
 
