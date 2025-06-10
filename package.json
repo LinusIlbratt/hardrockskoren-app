@@ -1,28 +1,16 @@
 {
-  "name": "hrk-backend",
-  "version": "1.0.0",
+  "name": "hrk-app",
   "private": true,
-  "description": "Backend för hrk-appen (Hårdrockskören)",
+  "description": "Monorepo för Hårdrockskören-appen",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "build": "tsc"
+    "build": "echo \"Use workspace-specific build scripts\""
   },
   "license": "ISC",
-  "type": "commonjs",
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.149",
-    "@types/node": "^22.14.1",
-    "dotenv": "^16.5.0",
     "serverless": "^4.12.0",
-    "serverless-iam-roles-per-function": "^3.2.0",
     "typescript": "^5.8.3"
-  },
-  "dependencies": {
-    "@aws-sdk/client-cognito-identity-provider": "^3.787.0",
-    "@aws-sdk/client-dynamodb": "^3.788.0",
-    "@aws-sdk/lib-dynamodb": "^3.788.0",
-    "@middy/core": "^6.1.6",
-    "@middy/validator": "^6.1.6",
-    "aws-jwt-verify": "^5.0.0",
-    "joi": "^17.13.3"
   }
 }
