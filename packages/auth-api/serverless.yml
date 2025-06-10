@@ -1,0 +1,43 @@
+service: hrk-auth-service
+configValidationMode: error
+
+frameworkVersion: "4"
+
+useDotenv: true
+
+build:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude: ['aws-sdk']
+    target: 'node18'
+    define: { 'require.resolve': undefined }
+    platform: 'node'
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  architecture: arm64
+  region: eu-north-1
+  stage: ${opt:stage, 'dev'}
+  httpApi:
+    cors: true
+    authorizers:
+      authorizer:
+        type: request
+        functionName: authorizer
+        payloadVersion: "2.0"
+        enableSimpleResponses: true
+        resultTtlInSeconds: 300
+        identitySource:
+          - $request.header.Authorization
+
+plugins:
+  - serverless-iam-roles-per-function   
+
+package:
+  individually: true
+
+functions:
+  - ${file(./yaml/auth-functions.yml)}

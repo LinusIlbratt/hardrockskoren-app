@@ -1,0 +1,124 @@
+authorizer:
+  handler: ./functions/authorizer/authorizer.handler
+  name: hrk-apigateway-auth-authorizer-${sls:stage}
+  description: Authorizer for Hrk Auth API stage ${sls:stage}.
+  memorySize: 256
+  layers:
+    - arn:aws:lambda:eu-north-1:094274105915:layer:AWSLambdaPowertoolsTypeScript:27
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - cognito-idp:adminGetUser
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/*"
+    - Effect: "Allow"
+      Action:
+        - execute-api:Invoke
+      Resource: "arn:aws:execute-api:${self:provider.region}:${aws:accountId}:*"
+
+login:
+  handler: ./functions/auth.loginHandler
+  name: hrk-login-${sls:stage}
+  description: Auth @ for stage ${sls:stage}.
+  layers:
+    - arn:aws:lambda:eu-north-1:094274105915:layer:AWSLambdaPowertoolsTypeScript:27
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        path: /login
+  environment:
+    MAIN_TABLE: HrkMainTable-${opt:stage}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - cognito-idp:adminInitiateAuth
+        - cognito-idp:getUser
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/*"
+    - Effect: "Allow"
+      Action:
+        - dynamodb:GetItem
+      Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/HrkMainTable-${opt:stage}"
+    - Effect: "Allow"
+      Action:
+        - logs:*
+      Resource: "arn:aws:logs:${self:provider.region}:${aws:accountId}:log-group:*"
+
+getMe:
+  handler: ./functions/me.handler
+  name: hrk-getMe-${sls:stage}
+  description: Get my user details.
+  layers:
+    - arn:aws:lambda:eu-north-1:094274105915:layer:AWSLambdaPowertoolsTypeScript:27
+  memorySize: 256
+  events:
+    - httpApi:
+        path: /me
+        method: GET
+        authorizer: authorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - cognito-idp:adminGetUser
+        - cognito-idp:adminListGroupsForUser
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/*"
+
+changeAdminPassword:
+  handler: ./functions/password.changeAdminPassword
+  name: hrk-admin-change-password-${sls:stage}
+  description: Admin sets a new password for user.
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        path: /admin/change-password
+        authorizer: authorizer
+  environment:
+    USER_POOL_ID: ${env:USER_POOL_ID}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - cognito-idp:adminSetUserPassword
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/*"
+
+changeMyPassword:
+  handler: ./functions/password.changeUserPassword
+  name: hrk-change-user-password-${sls:stage}
+  description: User changes their own password
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        path: /change-password
+        authorizer: authorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - cognito-idp:ChangePassword
+      Resource: "*"
+
+forgotPassword:
+  handler: ./functions/password.forgotPassword
+  name: hrk-forgot-password-${sls:stage}
+  description: User forgot their password
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        path: /forgot-password
+  environment:
+    CLIENT_ID: ${env:CLIENT_ID}
+
+resetPassword:
+  handler: ./functions/password.resetPassword
+  name: hrk-reset-password-${sls:stage}
+  description: User resets their password
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        path: /reset-password
+  environment:
+    CLIENT_ID: ${env:CLIENT_ID}
+
+
+

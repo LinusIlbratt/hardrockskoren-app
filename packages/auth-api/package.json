@@ -1,0 +1,21 @@
+{
+  "name": "auth-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@aws-sdk/client-cognito-identity-provider": "^3.826.0",
+    "@middy/core": "^6.3.1",
+    "aws-jwt-verify": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.149"
+  }
+}

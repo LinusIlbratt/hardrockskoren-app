@@ -1,0 +1,15 @@
+Resources:  
+  HrkMediaBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: hrk-media-${opt:stage}
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - PUT
+            AllowedOrigins:
+              - ${self:custom.frontendUrls.${self:custom.stage}}
+            MaxAge: 3000
