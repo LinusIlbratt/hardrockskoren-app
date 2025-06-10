@@ -1,0 +1,53 @@
+# yaml/material-functions.yml
+
+getUploadUrl:
+  handler: functions/getUploadUrl.handler
+  name: hrk-get-upload-url-${sls:stage}
+  description: Generates a presigned URL to upload a file to S3.
+  events:
+    - httpApi:
+        method: POST
+        path: /materials/upload-url
+  environment:
+    MEDIA_BUCKET_NAME: ${self:custom.mediaBucketName} 
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:PutObject"
+      Resource:
+        - "arn:aws:s3:::${self:custom.mediaBucketName}/*"
+
+createMaterial:
+  handler: functions/createMaterial.handler
+  name: hrk-create-material-${sls:stage}
+  description: Creates a material record in DynamoDB and links it to a group.
+  events:
+    - httpApi:
+        method: POST
+        path: /groups/{groupName}/materials
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:PutItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+listMyMaterials:
+  handler: functions/listMyMaterials.handler
+  name: hrk-list-my-materials-${sls:stage}
+  description: Fetches all materials for the currently logged-in user's group.
+  events:
+    - httpApi:
+        method: GET
+        path: /my-materials
+        # authorizer: authorizer 
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query" # Vi behöver Query-rättigheter
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"

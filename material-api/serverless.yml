@@ -1,0 +1,33 @@
+service: hrk-material-api
+configValidationMode: error
+
+frameworkVersion: "4"
+
+build:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude: ['aws-sdk']
+    target: 'node18'
+    define: { 'require.resolve': undefined }
+    platform: 'node'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: eu-north-1
+  stage: ${opt:stage, 'dev'}
+
+package:
+  individually: true
+
+plugins:
+  - serverless-iam-roles-per-function
+
+custom:
+  mainTableName: HrkMainTable-${self:provider.stage}
+  mediaBucketName: hrk-media-${self:provider.stage}
+  
+functions:
+  - ${file(./yaml/material-functions.yml)}
