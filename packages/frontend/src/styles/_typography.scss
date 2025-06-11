@@ -1,0 +1,12 @@
+@use 'variables' as *;
+
+body {
+    margin: 0;
+    font-family: $font-body;
+    color: $color-text;
+    background-color: $color-background;
+  }
+  
+  h1, h2, h3 {
+    font-family: $font-heading;
+  }

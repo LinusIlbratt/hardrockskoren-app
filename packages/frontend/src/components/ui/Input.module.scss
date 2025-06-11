@@ -1,0 +1,15 @@
+@use '@/styles/variables' as *;
+
+.input {
+  width: 100%;
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  color: $color-text;
+  font-size: 1rem;
+  outline: none;
+
+  &::placeholder {
+    color: #6b7280; // En grå färg
+  }
+}

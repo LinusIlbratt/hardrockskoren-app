@@ -1,0 +1,61 @@
+@use '@/styles/variables' as *;
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.container {
+  width: 100%;
+  max-width: 420px;
+}
+
+.logo {
+  text-align: center;
+  h1 {
+    font-size: 3rem;
+    color: $color-accent;
+  }
+  h2 {
+    font-size: 3rem;
+    color: $color-primary;
+  }
+}
+
+.form-card {
+  background-color: $color-dark-gray;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  margin-top: 2.5rem;
+}
+
+.form-group {
+  padding: 1rem;
+  border-bottom: 1px solid #4b5563; // Grå linje
+  label {
+    font-size: 0.875rem;
+    color: $color-text;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+  &:last-of-type {
+    border-bottom: none;
+  }
+}
+
+.forgot-password {
+  text-align: center;
+  margin-top: 1.5rem;
+  a {
+    font-size: 0.875rem;
+    color: #9ca3af;
+    text-decoration: none;
+    &:hover {
+      text-decoration: underline;
+      color: $color-accent;
+    }
+  }
+}

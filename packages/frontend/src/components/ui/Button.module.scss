@@ -1,0 +1,85 @@
+// src/components/ui/Button.module.scss
+
+// Importera dina globala variabler så vi kan använda dem
+@use '@/styles/variables' as *;
+
+// Grundläggande stilar för alla knappar
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem; // motsvarar rounded-lg
+  font-weight: 600;     // motsvarar font-semibold
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out; // Mjuk övergång för effekter
+
+  &:active {
+    transform: scale(0.97); // Klick-effekt
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// ---- Varianter (motsvarar din ButtonType) ----
+.variantPrimary {
+  background-color: $color-primary;
+  color: #000000;
+  &:hover:not(:disabled) {
+    background-color: adjust($color-primary, -5%);
+  }
+}
+
+.variantDestructive {
+  background-color: $color-accent;
+  color: #ffffff;
+   &:hover:not(:disabled) {
+    background-color: adjust($color-accent, -5%);
+  }
+}
+
+.variantGhost {
+  background-color: transparent;
+  color: $color-text;
+  &:hover:not(:disabled) {
+    background-color: $color-dark-gray;
+  }
+}
+
+// ---- Storlekar (motsvarar din ButtonSize) ----
+.sizeDefault {
+  height: 2.5rem; // 40px
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.sizeSm {
+  height: 2.25rem; // 36px
+  padding: 0.25rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.sizeLg {
+  height: 2.75rem; // 44px
+  padding: 0.5rem 2rem;
+  font-size: 1rem;
+}
+
+// --- Laddningsikon ---
+.loader {
+    animation: spin 1s linear infinite;
+    height: 1.25rem; // 20px
+    width: 1.25rem;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
