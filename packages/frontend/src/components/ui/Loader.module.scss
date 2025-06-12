@@ -1,0 +1,80 @@
+// Denna mixin definierar grundstrukturen för laddningsikonen.
+// Den tar emot en faktor för storlek och en bredd för ramen.
+@mixin base($factor, $borderWidth) {
+    position: relative;
+    border-radius: 50%;
+    // Storleken baseras på din globala --base variabel.
+    width: calc(var(--base) * $factor);
+    height: calc(var(--base) * $factor);
+    animation: rotate 1s linear infinite;
+  
+    // Pseudo-elementet är den synliga, animerade ringen.
+    &::before {
+      content: "";
+      box-sizing: border-box;
+      position: absolute;
+      inset: 0px;
+      border-radius: 50%;
+      border-style: solid;
+      border-width: $borderWidth;
+      // Färgen hämtas från din --color-primary variabel.
+      border-color: var(--color-background); 
+      animation: prixClipFix 2s linear infinite;
+    }
+  }
+  
+  // Klasser för de olika storlekarna. Varje klass anropar mixin med olika värden.
+  .loader {
+    &__small {
+      @include base(1, 2px); // 16px
+    }
+    &__regular {
+      @include base(2, 3px); // 32px
+    }
+    &__medium {
+      @include base(3, 4px); // 48px
+    }
+    &__large {
+      @include base(4, 5px); // 64px
+    }
+  }
+  
+  // Klassen för helsides-containern.
+  .pageLoader {
+    width: 100vw;
+    height: 100vh;
+    
+    // Använder flexbox för att centrera laddningsikonen perfekt.
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  
+    // Bakgrundsfärg för att täcka sidan.
+    background-color: var(--color-background);
+  }
+  
+  // Animation som roterar hela elementet.
+  @keyframes rotate {
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+  
+  // Animation som använder clip-path för att "rita upp" ringen.
+  @keyframes prixClipFix {
+    0% {
+      clip-path: polygon(50% 50%, 0 0, 0 0, 0 0, 0 0, 0 0);
+    }
+    25% {
+      clip-path: polygon(50% 50%, 0 0, 100% 0, 100% 0, 100% 0, 100% 0);
+    }
+    50% {
+      clip-path: polygon(50% 50%, 0 0, 100% 0, 100% 100%, 100% 100%, 100% 100%);
+    }
+    75% {
+      clip-path: polygon(50% 50%, 0 0, 100% 0, 100% 100%, 0 100%, 0 100%);
+    }
+    100% {
+      clip-path: polygon(50% 50%, 0 0, 100% 0, 100% 100%, 0 100%, 0 0);
+    }
+  }
