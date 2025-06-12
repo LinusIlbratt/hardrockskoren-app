@@ -1,21 +1,17 @@
-// Importera dina globala variabler
+// Importera dina globala variabler så att denna fil kan använda dem
 @use '@/styles/variables' as *;
 
 .formGroup {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem; // motsvarar gap-1.5
-}
+  // Lägger till luft inuti varje grupp
+  padding: 1rem;
+  
+  // Skapar den tunna linjen under varje grupp
 
-.label {
-  font-size: 0.875rem; // motsvarar text-sm
-  font-weight: 500;   // motsvarar font-medium
-  color: $color-text;
-}
-
-.errorText {
-  font-size: 0.875rem;
-  color: $color-accent;
-  margin-top: 0.25rem; // motsvarar mt-1
+  // Stil för etiketten (t.ex. "Användarnamn")
+  label {
+    display: block; // Gör så att den tar upp hela raden
+    margin-bottom: 0.25rem; // Lite luft mellan label och input
+    font-size: 0.875rem;
+    // Lägg till fler label-stilar här om du vill
+  }
 }

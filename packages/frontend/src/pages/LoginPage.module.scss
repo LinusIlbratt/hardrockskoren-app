@@ -1,61 +1,46 @@
-@use '@/styles/variables' as *;
-
 .page {
-  min-height: 100vh;
+  margin: 0;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
+  flex-direction: row;
+  gap: var(--base);
+  gap: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .container {
-  width: 100%;
-  max-width: 420px;
+  flex: 1;
+  padding: var(--padding-sml);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .logo {
   text-align: center;
+  margin-bottom: 2.5rem;
   h1 {
     font-size: 3rem;
-    color: $color-accent;
+    color: var(--color-accent);
   }
   h2 {
     font-size: 3rem;
-    color: $color-primary;
+    color: var(--color-primary);
   }
 }
 
-.form-card {
-  background-color: $color-dark-gray;
+.formWrapper {
   border-radius: 0.75rem;
-  overflow: hidden;
   margin-top: 2.5rem;
 }
 
-.form-group {
-  padding: 1rem;
-  border-bottom: 1px solid #4b5563; // Grå linje
-  label {
-    font-size: 0.875rem;
-    color: $color-text;
-    display: block;
-    margin-bottom: 0.25rem;
-  }
-  &:last-of-type {
-    border-bottom: none;
-  }
+.formField {
+  background-color: var(--color-dark-gray);
+  padding: var(--base);
+  border-bottom: 1px solid var(--color-border);
+  border-radius: var(--radius-tier-3);
 }
 
-.forgot-password {
-  text-align: center;
-  margin-top: 1.5rem;
-  a {
-    font-size: 0.875rem;
-    color: #9ca3af;
-    text-decoration: none;
-    &:hover {
-      text-decoration: underline;
-      color: $color-accent;
-    }
-  }
+.lastFormField {
+  border-bottom: none;
 }

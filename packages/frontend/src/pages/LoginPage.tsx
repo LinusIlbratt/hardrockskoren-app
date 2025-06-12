@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { FormGroup } from '@/components/ui/FormGroup';
+import { LoginPoster } from '@/components/layout/LoginPoster';
 import styles from './LoginPage.module.scss';
 
 // Ersätt detta med din riktiga API-URL från en .env-fil
@@ -22,23 +24,18 @@ export const LoginPage = () => {
 
     try {
       const response = await axios.post(`${API_BASE_URL}/login`, {
-        username: email, // Ditt backend förväntar sig troligtvis 'username'
+        email: email,
         password: password,
       });
 
-      // Spara token i webbläsarens localStorage
       const token = response.data.idToken;
       localStorage.setItem('authToken', token);
 
-      // Omdirigera till huvudsidan
       navigate('/');
-
     } catch (err) {
-      // Hantera fel från API:et
       setError('Felaktigt användarnamn eller lösenord.');
       console.error('Login failed:', err);
     } finally {
-      // Se till att laddnings-state alltid stängs av
       setIsLoading(false);
     }
   };
@@ -46,15 +43,20 @@ export const LoginPage = () => {
   return (
     <main className={styles.page}>
       <div className={styles.container}>
+        <div className={styles.formWrapper}>
         <div className={styles.logo}>
           <h1>HÅRDROCKS</h1>
           <h2>KÖREN</h2>
         </div>
-
-        <div className={styles.formCard}>
           <form onSubmit={handleSubmit}>
-            <div className={styles.formGroup}>
-              <label htmlFor="email">E-post</label>
+            {/* Här använder vi FormGroup som en återanvändbar komponent */}
+            {/* och skickar in en extra klass för layouten. */}
+            <FormGroup 
+              label="E-post" 
+              htmlFor="email" 
+              error={error} 
+              className={styles.formField}
+            >
               <Input
                 id="email"
                 type="email"
@@ -63,9 +65,13 @@ export const LoginPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
-            </div>
-            <div className={styles.formGroup}>
-              <label htmlFor="password">Lösenord</label>
+            </FormGroup>
+            
+            <FormGroup 
+              label="Lösenord" 
+              htmlFor="password"
+              className={`${styles.formField} ${styles.lastFormField}`}
+            >
               <Input
                 id="password"
                 type="password"
@@ -74,21 +80,17 @@ export const LoginPage = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-            </div>
-            {/* Knappen är nu kopplad till isLoading-state */}
-            <Button type="submit" isLoading={isLoading}>
-              Rock'n Roll
-            </Button>
+            </FormGroup>
+
+            <Button type="submit" isLoading={isLoading}fullWidth>Rock'n Roll</Button>
           </form>
         </div>
+        
+        {/* ... resten av sidan ... */}
 
-        {/* Visa ett felmeddelande om det finns ett */}
-        {error && <p className="text-red-500 text-center mt-4">{error}</p>}
-
-        <div className={styles.forgotPassword}>
-          <a href="#">glömt lösenord</a>
-        </div>
       </div>
+      <LoginPoster />
     </main>
   );
 };
+

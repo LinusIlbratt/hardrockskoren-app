@@ -1,2 +1,7 @@
-@forward 'variables';
-@forward 'typography';
+// src/styles/main.scss
+
+// Importera variablerna FÖRST, så att de definieras.
+@import 'variables';
+
+// Importera sedan de grundläggande stilarna som använder variablerna.
+@import 'typography';

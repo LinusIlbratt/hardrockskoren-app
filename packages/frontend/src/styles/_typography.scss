@@ -1,12 +1,32 @@
-@use 'variables' as *;
+// src/styles/_typography.scss
 
+// Denna fil behöver inga importer! Den använder de globala variablerna från :root.
 body {
-    margin: 0;
-    font-family: $font-body;
-    color: $color-text;
-    background-color: $color-background;
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--color-text);
+  background-color: var(--color-background);
+  font-size: var(--fs-base);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+h1 { font-size: var(--fs-xxl); }
+h2 { font-size: var(--fs-xl); }
+h3 { font-size: var(--fs-lg); }
+
+p {
+  line-height: 1.6;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
   }
-  
-  h1, h2, h3 {
-    font-family: $font-heading;
-  }
+}

@@ -1,18 +1,6 @@
 import React from 'react';
 import styles from './Button.module.scss'; // Importera vår nya SCSS-fil
-
-// --- LADDNINGSIKON ---
-const Loader = () => (
-  <svg
-    className={styles.loader} // Använd klassen från vår SCSS-fil
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-  >
-    <circle opacity="0.25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-    <path opacity="0.75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-  </svg>
-);
+import { Loader, LoaderSize } from './Loader';
 
 // Definiera props, nu med enklare enums
 export enum ButtonVariant {
@@ -31,6 +19,7 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   variant?: ButtonVariant;
   size?: ButtonSize;
   isLoading?: boolean;
+  fullWidth?: boolean;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -39,6 +28,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     variant = ButtonVariant.Primary, 
     size = ButtonSize.Default, 
     isLoading = false, 
+    fullWidth = false,
     children, 
     ...props 
   }, ref) => {
@@ -48,8 +38,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       styles.button, // Grundklassen
       styles[`variant${variant.charAt(0).toUpperCase() + variant.slice(1)}`], // t.ex. styles.variantPrimary
       styles[`size${size.charAt(0).toUpperCase() + size.slice(1)}`],       // t.ex. styles.sizeDefault
+      fullWidth && styles.fullWidth,
       className // Eventuella extra klasser från föräldern
-    ].join(' '); // Sätt ihop dem till en sträng
+    ].filter(Boolean).join(' ');
 
     return (
       <button
@@ -58,7 +49,18 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={isLoading || props.disabled}
         {...props}
       >
-        {isLoading ? <Loader /> : children}
+        {/* --- ÄNDRING HÄR --- */}
+        {/* Visa alltid loadern om isLoading, men positionera den med CSS */}
+        {isLoading && (
+          <div className={styles.loaderWrapper}>
+            <Loader size={LoaderSize.SMALL} />
+          </div>
+        )}
+        
+        {/* Linda in children i en span så vi kan dölja den med CSS */}
+        <span className={isLoading ? styles.contentHidden : ''}>
+          {children}
+        </span>
       </button>
     );
   }

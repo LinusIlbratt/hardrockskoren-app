@@ -1,85 +1,41 @@
 // src/components/ui/Button.module.scss
 
-// Importera dina globala variabler så vi kan använda dem
-@use '@/styles/variables' as *;
-
-// Grundläggande stilar för alla knappar
 .button {
+  // Använder CSS-variabeln direkt.
+  position: relative;
+  background-color: var(--color-primary); 
+  font-size: var(--fs-sm);
+  border-radius: var(--radius-tier-2);
+  white-space: nowrap;
+  height: calc(var(--base) * 3);
+  align-self: flex-start;
+  font-weight: 500;
+  padding: var(--base);
+  transition: all ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 0.5rem; // motsvarar rounded-lg
-  font-weight: 600;     // motsvarar font-semibold
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out; // Mjuk övergång för effekter
-
-  &:active {
-    transform: scale(0.97); // Klick-effekt
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
+  // ... andra stilar
 }
 
-// ---- Varianter (motsvarar din ButtonType) ----
-.variantPrimary {
-  background-color: $color-primary;
-  color: #000000;
-  &:hover:not(:disabled) {
-    background-color: adjust($color-primary, -5%);
-  }
+.fullWidth {
+  width: 100%;
 }
 
-.variantDestructive {
-  background-color: $color-accent;
-  color: #ffffff;
-   &:hover:not(:disabled) {
-    background-color: adjust($color-accent, -5%);
-  }
+.contentHidden {
+  visibility: hidden;
 }
 
-.variantGhost {
-  background-color: transparent;
-  color: $color-text;
-  &:hover:not(:disabled) {
-    background-color: $color-dark-gray;
-  }
-}
+.loaderWrapper {
+  // Tar bort wrapper-diven från layoutflödet och låter den sväva fritt
+  position: absolute;
+  
+  // Tricket för perfekt centrering
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 
-// ---- Storlekar (motsvarar din ButtonSize) ----
-.sizeDefault {
-  height: 2.5rem; // 40px
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-}
-
-.sizeSm {
-  height: 2.25rem; // 36px
-  padding: 0.25rem 0.75rem;
-  font-size: 0.875rem;
-}
-
-.sizeLg {
-  height: 2.75rem; // 44px
-  padding: 0.5rem 2rem;
-  font-size: 1rem;
-}
-
-// --- Laddningsikon ---
-.loader {
-    animation: spin 1s linear infinite;
-    height: 1.25rem; // 20px
-    width: 1.25rem;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  // En extra säkerhetsåtgärd för att säkerställa att
+  // wrappern inte påverkar höjden eller layouten.
+  line-height: 0;
 }

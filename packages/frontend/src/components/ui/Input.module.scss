@@ -1,15 +1,18 @@
-@use '@/styles/variables' as *;
+// src/components/ui/Input.module.scss
+
+// Ingen @use eller @import behövs här.
 
 .input {
   width: 100%;
   background-color: transparent;
   border: none;
   padding: 0;
-  color: $color-text;
+  // Använd CSS-variabeln direkt.
+  color: var(--color-text);
   font-size: 1rem;
   outline: none;
 
   &::placeholder {
-    color: #6b7280; // En grå färg
+    color: #6b7280;
   }
 }
