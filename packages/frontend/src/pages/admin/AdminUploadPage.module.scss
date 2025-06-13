@@ -1,0 +1,42 @@
+@use '@/styles/variables' as *;
+
+.page {
+  padding: 2rem;
+  max-width: $maxWidth;
+  margin: 2rem auto;
+}
+
+.title {
+  color: var(--color-primary);
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.select,
+.fileInput {
+  // Här kan du lägga till specifika stilar för dina select- och fil-input-fält
+  // om du inte vill skapa separata komponenter för dem just nu.
+}
+
+.statusMessage {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.success {
+  background-color: rgba(39, 144, 89, 0.2);
+  color: #a7f3d0;
+}
+
+.error {
+  background-color: rgba(178, 34, 34, 0.2);
+  color: #fca5a5;
+}
