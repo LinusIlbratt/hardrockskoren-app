@@ -11,7 +11,7 @@ export interface Group {
 
 interface GroupCardProps {
   group: Group;
-  onDelete: (groupId: string, groupName: string) => void; // Funktion för att hantera radering
+  onDelete: (group: Group) => void; // Funktion för att hantera radering
 };
 
 // En enkel papperskorgs-ikon
@@ -33,7 +33,7 @@ export const GroupCard = ({ group, onDelete }: GroupCardProps) => {
         <img src={group.imageUrl || placeholderImage} alt={`Poster för ${group.name}`} />
         <button 
           className={styles.deleteButton} 
-          onClick={() => onDelete(group.id, group.name)}
+          onClick={() => onDelete(group)}
           aria-label={`Radera gruppen ${group.name}`}
         >
           <TrashIcon />

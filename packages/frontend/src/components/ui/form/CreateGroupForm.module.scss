@@ -1,0 +1,26 @@
+@use '@/styles/variables' as *;
+// Denna fil stylar vårt formulär.
+
+.form {
+    @include column;
+  }
+  
+  // Stilar för att förbättra Input-komponenten när den används här
+  .input {
+    // Gör så att input-fältet får en tydlig bakgrund och ram
+    background-color: rgba(0,0,0,0.2);
+    border: 1px solid var(--color-border);
+    padding: var(--padding-sml);
+    transition: border-color 0.2s ease;
+  
+    &:focus {
+      border-color: var(--color-primary);
+    }
+  }
+  
+  .error {
+    color: var(--color-accent);
+    font-size: 0.875rem;
+    text-align: center;
+    margin-top: -0.5rem; // Minska avståndet till fältet ovanför
+  }
