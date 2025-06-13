@@ -1,0 +1,62 @@
+@use '@/styles/variables' as *;
+
+.page {
+    max-width: $maxWidth;
+    width: 100%;
+    min-height: calc(100vh - 48px);
+    margin: 0 auto;
+    padding: var(--padding-sml);
+    @include column;
+  }
+  
+  .title {
+    margin-bottom: 2rem;
+    color: var(--color-primary);
+  }
+
+  .topBar {
+    display: flex;
+    justify-content: space-between; // Placerar filter och knapp på varsin sida
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .filterSection {
+    display: flex;
+    flex-grow: 1;
+    border-radius: var(--radius-tier-2);
+    @include row;
+    background-color: var(--color-dark-gray);
+    padding: var(--padding-sml);
+    svg {
+      color: var(--color-primary);
+    }
+  
+    input {
+      width: 100%;
+      appearance: none;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--color-text);
+      font-size: var(--fs-lg);
+      line-height: 100%;
+    }
+  }
+  
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--base);
+
+    > * {
+      @media screen and (max-width: $tabletBreakpoint) {
+        grid-column: auto / span 6;
+      }
+
+      @media screen and (max-width: $mobileBreakpoint) {
+        grid-column: auto / span 12;
+      }
+    }
+  }

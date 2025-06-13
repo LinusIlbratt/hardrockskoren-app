@@ -1,0 +1,82 @@
+// src/styles/_variables.scss
+
+// SASS-variabler används BARA för saker som SCSS-logik behöver, som breakpoints.
+$mobileBreakpoint: 480px;
+$tabletBreakpoint: 768px;
+$desktopBreakpoint: 1024px;
+
+/* LAYOUT */
+
+$maxWidth: 900px;
+
+// Alla design-tokens definieras som CSS Custom Properties inuti :root.
+// Detta gör dem globalt tillgängliga i hela din app.
+:root {
+    // Färger
+    --color-background: #121212;
+    --color-text: #E0E0E0;
+    --color-primary: #D2B48C; // Beige
+    --color-accent: #B22222; // Röd
+    --color-dark-gray: #282828;
+    --color-border: #4b5563;
+
+    // Typsnittsfamiljer
+    --font-heading: 'Trajan Pro', serif; // Byt ut mot ditt typsnitt
+    --font-body: 'Lato', sans-serif;
+
+    // Typsnittsstorlekar
+    --fs-base: 16px; // Grundstorlek
+    --fs-sm: 14px;
+    --fs-lg: 18px;
+    --fs-xl: 24px;
+    --fs-xxl: 36px;
+
+    // Effekter
+    --radius-tier-1: 8px;
+    --radius-tier-2: 4px;
+    --radius-tier-3: 2px;
+    --radius-round: 99rem;
+
+    // Padding, Margin, Gap
+
+    --base: 16px;
+
+    --padding-huge: calc(var(--base) * 2);
+    --pading-large: calc(var(--base) * 1.5);
+    --padding: (var(--base));
+    --padding-sml: calc(var(--base) / 2);
+    --padding-nano: calc(var(--base) / 4);
+
+    --margin-huge: calc(var(--base) * 2);
+    --margin-large: calc(var(--base) * 1.5);
+    --margin: (var(--base));
+    --margin-sml: calc(var(--base) / 2);
+    --margin-nano: calc(var(--base) / 4);
+
+    --gap-huge: calc(var(--base) * 2);
+    --gap-large: calc(var(--base) * 1.5);
+    --gap: (var(--base));
+    --gap-sml: calc(var(--base) / 2);
+    --gap-nano: calc(var(--base) / 4);
+}
+
+
+ /*  HELPERS */
+
+ @mixin center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@mixin column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-sml);
+  }
+
+  @mixin row {
+    display: flex;
+    flex-direction: row;
+    gap: (var(--base));
+  }

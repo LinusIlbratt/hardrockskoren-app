@@ -1,0 +1,28 @@
+@use '@/styles/variables' as login;
+
+.page {
+ flex: 1;
+ background-color: #121212;
+ background: linear-gradient(-45deg, #282828, #E0E0E0, #D2B48C, #B22222);
+ background-size: 400% 400%;
+  animation: gradient 50s ease infinite;
+ display: flex;
+  justify-content: center;
+  align-items: center;
+
+  @media screen and (max-width: login.$mobileBreakpoint) {
+    display: none;
+  }
+}
+
+    @keyframes gradient {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }    
+  }
