@@ -5,6 +5,10 @@ $mobileBreakpoint: 480px;
 $tabletBreakpoint: 768px;
 $desktopBreakpoint: 1024px;
 
+/* LAYOUT */
+
+$maxWidth: 900px;
+
 // Alla design-tokens definieras som CSS Custom Properties inuti :root.
 // Detta gör dem globalt tillgängliga i hela din app.
 :root {
@@ -55,3 +59,24 @@ $desktopBreakpoint: 1024px;
     --gap-sml: calc(var(--base) / 2);
     --gap-nano: calc(var(--base) / 4);
 }
+
+
+ /*  HELPERS */
+
+ @mixin center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+@mixin column {
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap-sml);
+  }
+
+  @mixin row {
+    display: flex;
+    flex-direction: row;
+    gap: (var(--base));
+  }

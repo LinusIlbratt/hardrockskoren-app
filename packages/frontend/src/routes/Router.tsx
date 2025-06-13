@@ -1,24 +1,31 @@
-// src/routes/Router.tsx
-
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
-
-// Importera dina sidkomponenter. De kommer ge ett fel tills vi skapar dem i nästa steg.
 import { LoginPage } from "@/pages/LoginPage";
-import { MaterialsPage } from "@/pages/MaterialsPage";
+import { DashboardPage } from "@/pages/DashboardPage"; // Importera den nya sidan
+import { AdminUploadPage } from "@/pages/admin/AdminUploadPage";
+import { AdminGroupListPage } from '@/pages/admin/AdminGroupListPage';
 
-// Definiera applikationens "karta" över sidor
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <MaterialsPage />, // Huvudsidan efter inloggning
+    element: <DashboardPage />,
   },
   {
     path: "/login",
-    element: <LoginPage />, // Sidan för inloggning
+    element: <LoginPage />,
+  },
+  {
+    // NY ROUTE: Sidan som listar alla grupper
+    path: "/admin/groups",
+    element: <AdminGroupListPage />,
+  },
+  {
+    // NY DYNAMISK ROUTE: Uppladdningssidan för en specifik grupp
+    // ':groupName' är en parameter som vi kan läsa av i vår komponent.
+    path: "/admin/groups/:groupName/upload",
+    element: <AdminUploadPage />,
   },
 ]);
 
-// Skapa en komponent som vi kan använda i main.tsx
 export const AppRouter = () => {
   return <RouterProvider router={router} />;
 };

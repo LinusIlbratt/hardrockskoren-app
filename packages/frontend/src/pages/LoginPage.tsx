@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { FormGroup } from '@/components/ui/FormGroup';
+import { Button } from '@/components/ui/button/Button';
+import { Input } from '@/components/ui/input/Input';
+import { FormGroup } from '@/components/ui/form/FormGroup';
 import { LoginPoster } from '@/components/layout/LoginPoster';
 import styles from './LoginPage.module.scss';
 
@@ -28,7 +28,9 @@ export const LoginPage = () => {
         password: password,
       });
 
-      const token = response.data.idToken;
+      console.log('Fullständigt svar från backend:', response);
+
+      const token = response.data.accessToken;
       localStorage.setItem('authToken', token);
 
       navigate('/');

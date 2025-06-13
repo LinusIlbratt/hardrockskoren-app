@@ -1,6 +1,6 @@
 import React from 'react';
 import styles from './Button.module.scss'; // Importera vår nya SCSS-fil
-import { Loader, LoaderSize } from './Loader';
+import { Loader, LoaderSize } from '../loader/Loader';
 
 // Definiera props, nu med enklare enums
 export enum ButtonVariant {
