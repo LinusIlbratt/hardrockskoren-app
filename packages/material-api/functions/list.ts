@@ -15,7 +15,7 @@ export const handler = async (
   }
 
   try {
-    // Försök först hämta gruppnamnet från URL-parametern (för admin)
+    
     let groupName = event.pathParameters?.groupName;
 
     // Om inget gruppnamn finns i URL:en, fall tillbaka på att hämta det
