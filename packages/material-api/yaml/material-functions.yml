@@ -8,6 +8,8 @@ getUploadUrl:
     - httpApi:
         method: POST
         path: /materials/upload-url
+        authorizer:
+          name: centralJwtAuthorizer
   environment:
     MEDIA_BUCKET_NAME: ${self:custom.mediaBucketName} 
   iamRoleStatements:
@@ -25,6 +27,8 @@ createMaterial:
     - httpApi:
         method: POST
         path: /groups/{groupName}/materials
+        authorizer:
+          name: centralJwtAuthorizer
   environment:
     MAIN_TABLE: ${self:custom.mainTableName}
   iamRoleStatements:
@@ -45,11 +49,32 @@ listMaterials:
     - httpApi:
         method: GET
         path: /my-materials
+        authorizer:
+          name: centralJwtAuthorizer
   environment:
     MAIN_TABLE: ${self:custom.mainTableName}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
         - "dynamodb:Query"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+deleteMaterial:
+  handler: functions/delete.handler
+  name: hrk-delete-material-${sls:stage}
+  description: Deletes a specific material item for a group.
+  events:
+    - httpApi:
+        method: DELETE
+        path: /groups/{groupName}/materials/{materialId}
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:DeleteItem"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
