@@ -1,0 +1,12 @@
+@use '@/styles/variables' as *;
+
+.container {
+    // Sätter maxbredden för allt innehåll
+    max-width: $maxWidth;
+    
+    // Centrerar behållaren horisontellt på sidan och lägger till marginal uppe/nere
+    margin: 2rem auto;
+    
+    // Lägger till luft på sidorna på mindre skärmar
+    padding: 0 2rem;
+  }

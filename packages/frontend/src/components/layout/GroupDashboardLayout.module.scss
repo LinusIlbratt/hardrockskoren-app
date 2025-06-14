@@ -1,0 +1,37 @@
+.dashboardLayout {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem; // Justerat gap
+  }
+  
+  // NY STIL FÖR "TILLBAKA"-LÄNKEN
+  .breadcrumb {
+    margin-bottom: 1.5rem;
+  
+    a {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--color-text);
+      text-decoration: none;
+      font-size: 0.875rem;
+      opacity: 0.8;
+      transition: all 0.2s ease;
+  
+      &:hover {
+        opacity: 1;
+        color: var(--color-primary);
+        text-decoration: underline;
+      }
+    }
+  }
+  
+  .header {
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 1.5rem;
+  }
+  
+  .title {
+    margin-bottom: 1.5rem;
+    color: var(--color-primary);
+  }
