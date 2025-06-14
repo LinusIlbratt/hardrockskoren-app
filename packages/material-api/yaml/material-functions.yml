@@ -34,20 +34,22 @@ createMaterial:
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
 
-listMyMaterials:
-  handler: functions/listMyMaterials.handler
-  name: hrk-list-my-materials-${sls:stage}
-  description: Fetches all materials for the currently logged-in user's group.
+listMaterials:
+  handler: functions/list.handler # Båda endpoints använder samma handler
+  name: hrk-list-materials-${sls:stage}
+  description: Fetches materials for a group, either from URL param or auth context.
   events:
     - httpApi:
         method: GET
+        path: /groups/{groupName}/materials
+    - httpApi:
+        method: GET
         path: /my-materials
-        # authorizer: authorizer 
   environment:
     MAIN_TABLE: ${self:custom.mainTableName}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - "dynamodb:Query" # Vi behöver Query-rättigheter
+        - "dynamodb:Query"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
