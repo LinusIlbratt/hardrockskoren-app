@@ -3,10 +3,11 @@
 // Ingen @use eller @import behövs här.
 
 .input {
+  background-color: var(--color-dark-gray);
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--color-border);
   width: 100%;
-  background-color: transparent;
-  border: none;
-  padding: 0;
   // Använd CSS-variabeln direkt.
   color: var(--color-text);
   font-size: 1rem;
