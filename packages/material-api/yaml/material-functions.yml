@@ -67,7 +67,7 @@ deleteMaterial:
   events:
     - httpApi:
         method: DELETE
-        path: /groups/{groupName}/materials/{materialId}
+        path: /groups/{groupName}/repertoires/{repertoireId}/materials/{materialId}
         authorizer:
           name: centralJwtAuthorizer
   environment:
@@ -134,5 +134,25 @@ listMaterialsInRepertoire:
     - Effect: "Allow"
       Action:
         - "dynamodb:Query"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+deleteRepertoire:
+  handler: functions/deleteRepertoire.handler
+  name: hrk-delete-repertoire-${sls:stage}
+  description: Deletes a repertoire item and all its associated materials.
+  events:
+    - httpApi:
+        method: DELETE
+        path: /groups/{groupName}/repertoires/{repertoireId}
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query" # För att hitta alla objekt
+        - "dynamodb:BatchWriteItem" # För att radera dem
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"

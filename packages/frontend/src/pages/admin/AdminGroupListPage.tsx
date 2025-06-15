@@ -125,12 +125,6 @@ export const AdminGroupListPage = () => {
           />
         ))}
       </div>
-      <div className={styles.divider}>
-        <p>linje som agerar som en divider</p>
-      </div>
-      <div className={styles.materialList}>
-        lista på gruppens innehåll
-      </div>
 
       {/* Modal för att SKAPA grupp */}
       <Modal 
