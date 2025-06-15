@@ -1,10 +1,12 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+
 import { LoginPage } from "@/pages/LoginPage";
 import { DashboardPage } from "@/pages/DashboardPage"; // Importera den nya sidan
 import { AdminUploadPage } from "@/pages/admin/AdminUploadPage";
 import { AdminGroupListPage } from '@/pages/admin/AdminGroupListPage';
 import { GroupDashboardLayout } from "@/components/layout/GroupDashboardLayout";
 import { AdminLayout } from "@/components/layout/AdminLayout";
+import { AdminRepertoireListPage } from "@/pages/admin/AdminRepertoireListPage";
 
 const router = createBrowserRouter([
   {
@@ -33,16 +35,14 @@ const router = createBrowserRouter([
         element: <GroupDashboardLayout />,
         children: [
           {
-            // Sidan för innehåll/uppladdning
-            // Fullständig sökväg: /admin/groups/:groupName/content
-            path: "content",
-            element: <AdminUploadPage />,
+            // Sidan som listar alla "låtar"
+            path: "repertoires",
+            element: <AdminRepertoireListPage />,
           },
           {
-            // Sidan för översikt
-            // Fullständig sökväg: /admin/groups/:groupName/overview
-            path: "repetoar",
-            element: <div>Körens repetoarer</div>,
+            // Sidan för att hantera filer för en specifik "låt"
+            path: "repertoires/:repertoireId/materials",
+            element: <AdminUploadPage />,
           },
           {
             // Sidan för översikt

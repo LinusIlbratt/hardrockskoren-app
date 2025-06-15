@@ -14,17 +14,18 @@ export const handler = async (
   }
 
   try {
-    const { groupName, materialId } = event.pathParameters || {};
-    if (!groupName || !materialId) {
-      return sendError(400, "Group name and Material ID are required in the path.");
+    // Vi hämtar nu ALLA tre parametrarna från URL:en
+    const { groupName, repertoireId, materialId } = event.pathParameters || {};
+    if (!groupName || !repertoireId || !materialId) {
+      return sendError(400, "Group name, Repertoire ID, and Material ID are required.");
     }
 
     const command = new DeleteItemCommand({
       TableName: MAIN_TABLE,
-      // Specificera den exakta nyckeln för det objekt som ska raderas
+      // Bygg den korrekta, fullständiga nyckeln
       Key: {
         PK: { S: `GROUP#${groupName}` },
-        SK: { S: `MATERIAL#${materialId}` },
+        SK: { S: `REPERTOIRE#${repertoireId}#MATERIAL#${materialId}` },
       },
     });
 
