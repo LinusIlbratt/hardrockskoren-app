@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { Button } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
@@ -17,54 +17,40 @@ interface Material {
 const API_BASE_URL = 'https://xnlaf0pi16.execute-api.eu-north-1.amazonaws.com';
 
 export const AdminUploadPage = () => {
-  const { groupName } = useParams<{ groupName: string }>();
-
-  // State för formuläret
+  // Hämta BÅDA parametrarna från URL:en
+  const { groupName, repertoireId } = useParams<{ groupName: string; repertoireId: string }>();
+  const location = useLocation();
+  const repertoireTitle = location.state?.repertoireTitle || "Okänd Låt";
   const [title, setTitle] = useState('');
   const [file, setFile] = useState<File | null>(null);
-  
-  // State för materiallistan
   const [materials, setMaterials] = useState<Material[]>([]);
-  const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  // State för feedback och laddning
-  const [isUploading, setIsUploading] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-  // Funktion för att hämta material
+  // Funktion för att hämta material för DENNA SPECIFIKA LÅT
   const fetchMaterials = useCallback(async () => {
-    if (!groupName) return;
-    
-    setIsLoadingMaterials(true);
+    if (!groupName || !repertoireId) return;
     const token = localStorage.getItem('authToken');
     try {
-      const response = await axios.get(`${API_BASE_URL}/groups/${groupName}/materials`, {
+      const response = await axios.get(`${API_BASE_URL}/groups/${groupName}/repertoires/${repertoireId}/materials`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setMaterials(response.data);
     } catch (error) {
       console.error("Failed to fetch materials:", error);
-    } finally {
-      setIsLoadingMaterials(false);
     }
-  }, [groupName]);
+  }, [groupName, repertoireId]);
 
-  // Hämta material när sidan laddas
   useEffect(() => {
     fetchMaterials();
   }, [fetchMaterials]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFile(e.target.files[0]);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file || !title || !groupName) return;
+    if (!file || !title || !groupName || !repertoireId) return;
 
-    setIsUploading(true);
+    setIsLoading(true);
     setStatusMessage(null);
     const token = localStorage.getItem('authToken');
     
@@ -74,61 +60,49 @@ export const AdminUploadPage = () => {
       const { uploadUrl, key } = uploadUrlResponse.data;
       await axios.put(uploadUrl, file, { headers: { 'Content-Type': file.type } });
 
-      // Steg 3: Registrera materialet i databasen
-      await axios.post(`${API_BASE_URL}/groups/${groupName}/materials`, { title, fileKey: key }, { headers: { Authorization: `Bearer ${token}` } });
+      // Steg 3: Registrera materialet i databasen på RÄTT ställe
+      await axios.post(`${API_BASE_URL}/groups/${groupName}/repertoires/${repertoireId}/materials`, { title, fileKey: key }, { headers: { Authorization: `Bearer ${token}` } });
       
-      setStatusMessage({ type: 'success', message: 'Materialet har laddats upp!' });
-      // Nollställ formuläret och hämta listan på nytt
+      setStatusMessage('Materialet har laddats upp!');
       setTitle('');
       setFile(null);
       const fileInput = document.getElementById('file-upload') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
-      fetchMaterials(); // Hämta den uppdaterade listan
+      fetchMaterials();
 
     } catch (error) {
       console.error("Upload failed:", error);
-      setStatusMessage({ type: 'error', message: 'Något gick fel.' });
+      setStatusMessage('Något gick fel.');
     } finally {
-      setIsUploading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className={styles.page}>
-      <section>
-        <h1 className={styles.title}>
-          Ladda upp nytt material till: <span>{groupName}</span>
-        </h1>
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <FormGroup label="Titel på materialet">
-            <Input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
-          </FormGroup>
-          <FormGroup label="Välj fil">
-            <Input id="file-upload" type="file" onChange={handleFileChange} required />
-          </FormGroup>
-          <Button type="submit" isLoading={isUploading}>Ladda upp</Button>
-        </form>
-        {statusMessage && <p>{statusMessage.message}</p>}
-      </section>
+    <div>
+      {/* Uppdatera titeln för att visa vilken låt det gäller */}
+      <h1>Hantera material för: {repertoireTitle}</h1>
+      <p>Kör: {groupName}</p>
+      
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <FormGroup label="Titel på fil (t.ex. Noter, Stämma 1)">
+          <Input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
+        </FormGroup>
+        <FormGroup label="Välj fil">
+          <Input id="file-upload" type="file" onChange={(e) => setFile(e.target.files ? e.target.files[0] : null)} required />
+        </FormGroup>
+        <Button type="submit" isLoading={isLoading}>Ladda upp</Button>
+      </form>
+      {statusMessage && <p>{statusMessage}</p>}
+      
+      <hr />
 
-      <hr className={styles.divider} />
-
-      <section>
-        <h2 className={styles.title}>Befintligt material</h2>
-        {isLoadingMaterials ? (
-          <p>Laddar material...</p>
-        ) : (
-          <ul className={styles.materialList}>
-            {materials.length > 0 ? (
-              materials.map(material => (
-                <li key={material.materialId}>{material.title}</li>
-              ))
-            ) : (
-              <li>Inga material har laddats upp för denna grupp ännu.</li>
-            )}
-          </ul>
-        )}
-      </section>
+      <h2>Befintligt material</h2>
+      <ul>
+        {materials.map(material => (
+          <li key={material.materialId}>{material.title}</li>
+        ))}
+      </ul>
     </div>
   );
 };
