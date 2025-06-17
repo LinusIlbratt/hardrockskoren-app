@@ -23,7 +23,7 @@ provider:
     authorizers:
       centralJwtAuthorizer:
         type: request
-        functionArn: "arn:aws:lambda:eu-north-1:586794465159:function:hrk-apigateway-admin-authorizer-${sls:stage}"
+        functionArn: "arn:aws:lambda:eu-north-1:${aws:accountId}:function:hrk-apigateway-admin-authorizer-${sls:stage}"
         enableSimpleResponses: true
         identitySource:
           - $request.header.Authorization

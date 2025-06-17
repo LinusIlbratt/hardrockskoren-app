@@ -1,15 +1,16 @@
 Resources:  
-  HrkMediaBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: hrk-media-${opt:stage}
-      CorsConfiguration:
-        CorsRules:
-          - AllowedHeaders:
-              - "*"
-            AllowedMethods:
-              - GET
-              - PUT
-            AllowedOrigins:
-              - ${self:custom.frontendUrls.${self:custom.stage}}
-            MaxAge: 3000
+    HrkMediaBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: hrk-media-${sls:stage}-${aws:accountId} # Använd ${sls:stage} direkt här
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders:
+                - "*"
+              AllowedMethods:
+                - GET
+                - PUT
+              AllowedOrigins:
+                # Nu fungerar denna rad, eftersom vi har definierat variablerna i custom-blocket
+                - ${self:custom.frontendUrls.${self:custom.stage}}
+              MaxAge: 3000

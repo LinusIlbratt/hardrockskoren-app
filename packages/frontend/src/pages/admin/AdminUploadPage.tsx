@@ -15,7 +15,7 @@ interface Material {
   createdAt: string;
 }
 
-const API_BASE_URL = 'https://xnlaf0pi16.execute-api.eu-north-1.amazonaws.com';
+const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
 
 export const AdminUploadPage = () => {
   const { groupName, repertoireId } = useParams<{ groupName: string; repertoireId: string }>();

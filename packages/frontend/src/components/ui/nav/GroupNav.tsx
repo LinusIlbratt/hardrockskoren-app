@@ -8,7 +8,7 @@ export const GroupNav = () => {
           eftersom den är relativ till sin förälder-route */}      
       <NavLink to="repertoires" end className={styles.navLink}>Repertoar</NavLink>
       <NavLink to="users" className={styles.navLink}>Användare</NavLink>
-      <NavLink to="overview" className={styles.navLink}>Översikt</NavLink>
+      <NavLink to="concerts" className={styles.navLink}>Konserter & repdatum</NavLink>
     </nav>
   );
 };

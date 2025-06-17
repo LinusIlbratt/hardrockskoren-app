@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
 import { Button } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
@@ -8,14 +9,25 @@ import { LoginPoster } from '@/components/layout/LoginPoster';
 import styles from './LoginPage.module.scss';
 
 // Ersätt detta med din riktiga API-URL från en .env-fil
-const API_BASE_URL = 'https://ved08b2lvb.execute-api.eu-north-1.amazonaws.com';
+const API_BASE_URL = import.meta.env.VITE_AUTH_API_URL;
 
 export const LoginPage = () => {
   const navigate = useNavigate();
+  const { login, user } = useAuth(); // Hämta login-funktionen och user-objektet
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Denna useEffect lyssnar efter att 'user'-objektet har uppdaterats.
+  // När det inte längre är null, vet vi att inloggningen lyckades.
+  useEffect(() => {
+    if (user) {
+      navigate('/'); // Omdirigera till dashboard
+    }
+  }, [user, navigate]);
+
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -23,20 +35,23 @@ export const LoginPage = () => {
     setError(null);
 
     try {
+      // KORRIGERING: Skicka ett enkelt objekt med 'email' och 'password'
+      // precis som din backend förväntar sig.
       const response = await axios.post(`${API_BASE_URL}/login`, {
         email: email,
         password: password,
       });
 
-      console.log('Fullständigt svar från backend:', response);
-
       const token = response.data.accessToken;
-      localStorage.setItem('authToken', token);
+      if (token) {
+        // Anropa den centrala login-funktionen istället för att hantera det själv
+        await login(token);
+      } else {
+        setError('Inloggningen misslyckades.');
+      }
 
-      navigate('/');
     } catch (err) {
       setError('Felaktigt användarnamn eller lösenord.');
-      console.error('Login failed:', err);
     } finally {
       setIsLoading(false);
     }
