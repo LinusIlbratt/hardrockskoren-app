@@ -3,15 +3,16 @@
 // Ingen @use eller @import behövs här.
 
 .input {
-  width: 100%;
-  background-color: transparent;
-  border: none;
-  padding: 0;
-  // Använd CSS-variabeln direkt.
+  background-color: var(--color-dark-gray);
+  padding: var(--padding-nano);
+  border-radius: 0.25rem;
+  border: 1px solid var(--color-border);
+  margin-left: var(--margin-nano);
+  margin-bottom: var(--margin-sml);
   color: var(--color-text);
   font-size: 1rem;
   outline: none;
-
+  width: 90%;
   &::placeholder {
     color: #6b7280;
   }

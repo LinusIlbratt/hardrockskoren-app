@@ -1,63 +1,57 @@
-// material-api/functions/createMaterial.ts
+import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
+import { marshall } from "@aws-sdk/util-dynamodb";
+import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
+import { sendResponse, sendError } from "../../core/utils/http";
+import { nanoid } from "nanoid";
 
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-import { randomUUID } from "crypto";
-
-const client = new DynamoDBClient({ region: "eu-north-1" });
-const ddbDocClient = DynamoDBDocumentClient.from(client);
-
+const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
 
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
+export const handler = async (
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResultV2> => {
   if (!MAIN_TABLE) {
-    return { statusCode: 500, body: JSON.stringify({ message: "Server configuration error: Table name not set." }) };
+    return sendError(500, "Server configuration error.");
   }
 
   try {
-    const { groupName } = event.pathParameters || {};
-    if (!groupName) {
-      return { statusCode: 400, body: JSON.stringify({ message: "Group name is required in path." }) };
+    const { groupName, repertoireId } = event.pathParameters || {};
+    if (!groupName || !repertoireId) {
+      return sendError(400, "Group name and Repertoire ID are required.");
     }
 
-    const body = event.body ? JSON.parse(event.body) : {};
-    const { title, fileKey } = body;
-
+    if (!event.body) {
+      return sendError(400, "Request body is required.");
+    }
+    const { title, fileKey } = JSON.parse(event.body);
     if (!title || !fileKey) {
-      return { statusCode: 400, body: JSON.stringify({ message: "title and fileKey are required in the request body." }) };
+        return sendError(400, "Title and fileKey are required.");
     }
 
-    const materialId = randomUUID();
-    const createdAt = new Date().toISOString();
-
+    const materialId = nanoid();
     const item = {
-      PK: `GROUP#${groupName}`, // T.ex. "GROUP#Sopran"
-      SK: `MATERIAL#${materialId}`, // T.ex. "MATERIAL#123e4567-e89b-12d3-a456-426614174000"
+      PK: `GROUP#${groupName}`,
+      // Den nya, hierarkiska sorteringsnyckeln!
+      SK: `REPERTOIRE#${repertoireId}#MATERIAL#${materialId}`,
       materialId,
+      repertoireId, // Bra att spara för framtida sökningar
       title,
       fileKey,
-      createdAt,
-      type: "Material", 
+      createdAt: new Date().toISOString(),
+      type: "Material",
     };
 
-    const command = new PutCommand({
+    const command = new PutItemCommand({
       TableName: MAIN_TABLE,
-      Item: item,
+      Item: marshall(item),
     });
 
-    await ddbDocClient.send(command);
+    await dbClient.send(command);
 
-    return {
-      statusCode: 201, // 201 Created
-      body: JSON.stringify(item),
-    };
-  } catch (error) {
-    console.error(error);
-    const message = error instanceof Error ? error.message : "An unknown error occurred.";
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ message: "Error creating material.", error: message }),
-    };
+    return sendResponse({ message: "Material created and linked to repertoire.", item }, 201);
+
+  } catch (error: any) {
+    console.error("Error creating material:", error);
+    return sendError(500, error.message);
   }
 };

@@ -6,6 +6,12 @@ provider:
   region: eu-north-1
   stage: ${opt:stage, 'dev'}
 
+custom:
+  stage: ${sls:stage}
+  frontendUrls:
+    dev: 'http://localhost:5173'
+    prod: 'https://www.dinsida.se' # Byt ut mot din riktiga domän senare
+
 resources:
   - ${file(./database/dynamoDb.yml)}
   - ${file(./iam/cognito.yml)}

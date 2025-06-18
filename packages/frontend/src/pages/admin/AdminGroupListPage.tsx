@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { GroupCard } from '@/components/ui/card/GroupCard';
 import { IoFilterOutline } from "react-icons/io5";
-import { Button } from '@/components/ui/button/Button';
+import { Button, ButtonVariant } from '@/components/ui/button/Button';
+import { Modal } from '@/components/ui/modal/Modal';
+import { CreateGroupForm } from '@/components/ui/form/CreateGroupForm';
 import axios from 'axios';
 import styles from './AdminGroupListPage.module.scss'
 
@@ -15,79 +17,142 @@ interface Group {
 }
 
 // Ersätt med din API-URL
-const API_BASE_URL = 'https://tdjzli0x0m.execute-api.eu-north-1.amazonaws.com';
+const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
 export const AdminGroupListPage = () => {
-  const [groups, setGroups] = useState<Group[]>([]);
+  // State för den kompletta listan från API:et
+  const [allGroups, setAllGroups] = useState<Group[]>([]);
+  // State för den listan som faktiskt visas (kan filtreras)
   const [filteredGroups, setFilteredGroups] = useState<Group[]>([]);
   // State för söksträngen
   const [searchQuery, setSearchQuery] = useState('');
   
-  useEffect(() => {
-    const fetchGroups = async () => {
-      const token = localStorage.getItem('authToken');
-      if (!token) return;
+  // State för modaler och laddning
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-      try {
-        const response = await axios.get(`${API_BASE_URL}/groups`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setGroups(response.data);
-      } catch (error) {
-        console.error("Failed to fetch groups", error);
-      }
-    };
-    fetchGroups();
+  // Funktion för att hämta alla grupper från backend
+  const fetchGroups = useCallback(async () => {
+    const token = localStorage.getItem('authToken');
+    if (!token) return;
+
+    try {
+      const response = await axios.get(`${API_BASE_URL}/groups`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAllGroups(response.data);
+      setFilteredGroups(response.data);
+    } catch (error) {
+      console.error("Failed to fetch groups", error);
+    }
   }, []);
 
-  const handleDeleteGroup = (groupId: string, groupName: string) => {
-    // Använd window.confirm för enkelhetens skull, men en Modal-komponent är bättre.
-    if (window.confirm(`Är du säker på att du vill radera gruppen "${groupName}"?`)) {
-      console.log("Raderar grupp med ID:", groupId);
-      // Här skulle du göra ditt API-anrop till DELETE /groups/{groupName}
+  // Hämta grupper en gång när sidan laddas
+  useEffect(() => {
+    fetchGroups();
+  }, [fetchGroups]);
+
+  // Filtrera den visade listan varje gång söksträngen eller den fullständiga listan ändras
+  useEffect(() => {
+    const filtered = allGroups.filter((group) =>
+      group.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    setFilteredGroups(filtered);
+  }, [searchQuery, allGroups]);
+
+  // Funktion som körs när den slutgiltiga "Radera"-knappen i modalen klickas
+  const handleConfirmDelete = async () => {
+    if (!groupToDelete) return;
+
+    setIsDeleting(true);
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      alert("Autentiseringstoken saknas.");
+      setIsDeleting(false);
+      return;
+    }
+
+    try {
+      await axios.delete(`${API_BASE_URL}/groups/${groupToDelete.name}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setGroupToDelete(null); // Stäng modalen
+      fetchGroups(); // Hämta den nya, uppdaterade listan
+
+    } catch (error) {
+      console.error(`Failed to delete group ${groupToDelete.name}:`, error);
+      alert(`Kunde inte radera gruppen.`);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
-  const handleCreateGroup = () => {
-    // Logik för att öppna en modal eller navigera till en "skapa grupp"-sida
-    console.log("Öppnar skapa grupp-formulär...");
+  // Funktion som körs när en ny grupp har skapats
+  const onGroupCreated = () => {
+    setIsCreateModalOpen(false);
+    fetchGroups(); // Hämta den uppdaterade listan
   };
-
-// Effekt som körs varje gång söksträngen ändras
-useEffect(() => {
-  const filtered = groups.filter((group) =>
-    group.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-  setFilteredGroups(filtered);
-}, [searchQuery, groups]);
 
   return (
     <div className={styles.page}>
-      <h1 className={styles.title}>Körer</h1>
+      <h1 className={styles.title}>Hantera Körer</h1>
+
       <div className={styles.topBar}>
         <div className={styles.filterSection}>
           <IoFilterOutline size={20} />
           <input
             type="text"
-            placeholder="Filtrera på gruppnamn..."
+            placeholder="Filtrera på körnamn..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        <Button onClick={handleCreateGroup}>
+        <Button onClick={() => setIsCreateModalOpen(true)}>
           Skapa Kör
         </Button>
       </div>
-      {/* Här applicerar vi nu klassen från vår SCSS-fil */}
+
       <div className={styles.grid}>
         {filteredGroups.map((group) => (
           <GroupCard 
             key={group.id} 
             group={group} 
-            onDelete={handleDeleteGroup} 
+            // När papperskorgen klickas, spara gruppen som ska raderas
+            // Detta triggar modalen att öppnas.
+            onDelete={() => setGroupToDelete(group)} 
           />
         ))}
       </div>
+
+      {/* Modal för att SKAPA grupp */}
+      <Modal 
+        isOpen={isCreateModalOpen} 
+        onClose={() => setIsCreateModalOpen(false)} 
+        title="Skapa ny kör"
+      >
+        <CreateGroupForm onSuccess={onGroupCreated} />
+      </Modal>
+
+      {/* Modal för att BEKRÄFTA RADERING */}
+      <Modal 
+        isOpen={!!groupToDelete} 
+        onClose={() => setGroupToDelete(null)}
+        title="Bekräfta radering"
+      >
+        <div>
+          <p>Är du säker på att du vill radera kören "{groupToDelete?.name}"? Denna åtgärd kan inte ångras.</p>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+          <Button variant={ButtonVariant.Ghost} onClick={() => setGroupToDelete(null)}>
+              Avbryt
+            </Button>
+            <Button variant={ButtonVariant.Destructive} isLoading={isDeleting} onClick={handleConfirmDelete}>
+              Ja, radera
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

@@ -8,6 +8,8 @@ getUploadUrl:
     - httpApi:
         method: POST
         path: /materials/upload-url
+        authorizer:
+          name: centralJwtAuthorizer
   environment:
     MEDIA_BUCKET_NAME: ${self:custom.mediaBucketName} 
   iamRoleStatements:
@@ -20,11 +22,13 @@ getUploadUrl:
 createMaterial:
   handler: functions/createMaterial.handler
   name: hrk-create-material-${sls:stage}
-  description: Creates a material record in DynamoDB and links it to a group.
+  description: Creates a material record and links it to a repertoire item.
   events:
     - httpApi:
         method: POST
-        path: /groups/{groupName}/materials
+        path: /groups/{groupName}/repertoires/{repertoireId}/materials
+        authorizer:
+          name: centralJwtAuthorizer
   environment:
     MAIN_TABLE: ${self:custom.mainTableName}
   iamRoleStatements:
@@ -34,20 +38,121 @@ createMaterial:
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
 
-listMyMaterials:
-  handler: functions/listMyMaterials.handler
-  name: hrk-list-my-materials-${sls:stage}
-  description: Fetches all materials for the currently logged-in user's group.
+listMaterials:
+  handler: functions/list.handler # Båda endpoints använder samma handler
+  name: hrk-list-materials-${sls:stage}
+  description: Fetches materials for a group, either from URL param or auth context.
   events:
     - httpApi:
         method: GET
+        path: /groups/{groupName}/materials
+    - httpApi:
+        method: GET
         path: /my-materials
-        # authorizer: authorizer 
+        authorizer:
+          name: centralJwtAuthorizer
   environment:
     MAIN_TABLE: ${self:custom.mainTableName}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - "dynamodb:Query" # Vi behöver Query-rättigheter
+        - "dynamodb:Query"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+deleteMaterial:
+  handler: functions/delete.handler
+  name: hrk-delete-material-${sls:stage}
+  description: Deletes a specific material item for a group.
+  events:
+    - httpApi:
+        method: DELETE
+        path: /groups/{groupName}/repertoires/{repertoireId}/materials/{materialId}
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:DeleteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+createRepertoire:
+  handler: functions/createRepertoire.handler
+  name: hrk-create-repertoire-${sls:stage}
+  description: Creates a new repertoire item (a song) for a group.
+  events:
+    - httpApi:
+        method: POST
+        path: /groups/{groupName}/repertoires
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:PutItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+
+listRepertoires:
+  handler: functions/listRepertoires.handler
+  name: hrk-list-repertoires-${sls:stage}
+  description: Fetches all repertoire items (songs) for a group.
+  events:
+    - httpApi:
+        method: GET
+        path: /groups/{groupName}/repertoires
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+listMaterialsInRepertoire:
+  handler: functions/listMaterialsInRepertoire.handler
+  name: hrk-list-materials-in-repertoire-${sls:stage}
+  description: Fetches all material files for a specific repertoire item.
+  events:
+    - httpApi:
+        method: GET
+        path: /groups/{groupName}/repertoires/{repertoireId}/materials
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+deleteRepertoire:
+  handler: functions/deleteRepertoire.handler
+  name: hrk-delete-repertoire-${sls:stage}
+  description: Deletes a repertoire item and all its associated materials.
+  events:
+    - httpApi:
+        method: DELETE
+        path: /groups/{groupName}/repertoires/{repertoireId}
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query" # För att hitta alla objekt
+        - "dynamodb:BatchWriteItem" # För att radera dem
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"

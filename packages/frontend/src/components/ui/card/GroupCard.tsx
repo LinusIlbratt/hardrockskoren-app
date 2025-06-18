@@ -11,7 +11,7 @@ export interface Group {
 
 interface GroupCardProps {
   group: Group;
-  onDelete: (groupId: string, groupName: string) => void; // Funktion för att hantera radering
+  onDelete: (group: Group) => void; // Funktion för att hantera radering
 };
 
 // En enkel papperskorgs-ikon
@@ -33,7 +33,7 @@ export const GroupCard = ({ group, onDelete }: GroupCardProps) => {
         <img src={group.imageUrl || placeholderImage} alt={`Poster för ${group.name}`} />
         <button 
           className={styles.deleteButton} 
-          onClick={() => onDelete(group.id, group.name)}
+          onClick={() => onDelete(group)}
           aria-label={`Radera gruppen ${group.name}`}
         >
           <TrashIcon />
@@ -42,10 +42,10 @@ export const GroupCard = ({ group, onDelete }: GroupCardProps) => {
       <div className={styles.content}>
         <h2 className={styles.title}>{group.name}</h2>
         <nav className={styles.nav}>
-          {/* Notera hur 'to'-sökvägen byggs dynamiskt med gruppens namn */}
-          <NavLink to={`/admin/groups/${group.name}/content`} className={styles.navLink}>Innehåll</NavLink>
+          {/* Notera hur 'to'-sökvägen byggs dynamiskt med gruppens namn */}          
+          <NavLink to={`/admin/groups/${group.name}/repertoires`} className={styles.navLink}>Repetoar</NavLink>
+          <NavLink to={`/admin/groups/${group.name}/concerts`} className={styles.navLink}>Konserter & repdatum</NavLink>
           <NavLink to={`/admin/groups/${group.name}/users`} className={styles.navLink}>Användare</NavLink>
-          <NavLink to={`/admin/groups/${group.name}/overview`} className={styles.navLink}>Översikt</NavLink>
         </nav>
       </div>
     </article>

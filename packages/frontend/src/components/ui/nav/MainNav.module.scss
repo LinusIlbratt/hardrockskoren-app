@@ -1,0 +1,32 @@
+@use '@/styles/variables' as *;
+
+.mainNav {
+  background-color: var(--color-dark-gray);
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.75rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.userInfo {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.userDetails {
+  text-align: right;
+  p {
+    margin: 0;
+    line-height: 1.2;
+  }
+  .email {
+    font-size: 0.875rem;
+  }
+  .role {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: var(--color-primary);
+  }
+}

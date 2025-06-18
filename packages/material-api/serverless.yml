@@ -18,6 +18,15 @@ provider:
   runtime: nodejs18.x
   region: eu-north-1
   stage: ${opt:stage, 'dev'}
+  httpApi:
+    cors: true
+    authorizers:
+      centralJwtAuthorizer:
+        type: request
+        functionArn: "arn:aws:lambda:eu-north-1:${aws:accountId}:function:hrk-apigateway-admin-authorizer-${sls:stage}"
+        enableSimpleResponses: true
+        identitySource:
+          - $request.header.Authorization
 
 package:
   individually: true

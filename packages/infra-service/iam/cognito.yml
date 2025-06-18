@@ -37,7 +37,7 @@ Resources:
   CognitoUserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: hrk-auth-${opt:stage}
+      Domain: hrk-auth-${opt:stage}-${aws:accountId}
       UserPoolId: !Ref CognitoUserPool
 
   CognitoAdminGroup:

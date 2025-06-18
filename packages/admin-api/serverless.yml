@@ -35,6 +35,7 @@ provider:
           
 custom:
   mainTableName: HrkMainTable-${self:provider.stage}
+  inviteTableName: HrkInviteTable-${self:provider.stage}
   COGNITO_USER_POOL_ID: ${file(./env.${self:provider.stage}.yaml):COGNITO_USER_POOL_ID}
 
 
