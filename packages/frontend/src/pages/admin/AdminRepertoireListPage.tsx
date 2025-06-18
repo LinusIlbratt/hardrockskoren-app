@@ -14,7 +14,7 @@ interface Repertoire {
   artist: string;
 }
 
-const API_BASE_URL = 'https://xnlaf0pi16.execute-api.eu-north-1.amazonaws.com';
+const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
 
 export const AdminRepertoireListPage = () => {
   const { groupName } = useParams<{ groupName: string }>();

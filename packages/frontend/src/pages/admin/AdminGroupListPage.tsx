@@ -17,7 +17,7 @@ interface Group {
 }
 
 // Ersätt med din API-URL
-const API_BASE_URL = 'https://tdjzli0x0m.execute-api.eu-north-1.amazonaws.com';
+const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
 export const AdminGroupListPage = () => {
   // State för den kompletta listan från API:et

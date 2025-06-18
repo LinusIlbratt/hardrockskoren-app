@@ -9,7 +9,7 @@ interface CreateGroupFormProps {
   onSuccess: () => void; // En funktion som anropas när gruppen har skapats
 }
 
-const API_BASE_URL = 'https://tdjzli0x0m.execute-api.eu-north-1.amazonaws.com';
+const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
 export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
   const [name, setName] = useState('');

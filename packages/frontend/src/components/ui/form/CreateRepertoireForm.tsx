@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input/Input';
 import { FormGroup } from '@/components/ui/form/FormGroup';
 import styles from './CreateRepertoireForm.module.scss';
 
-const API_BASE_URL = 'https://xnlaf0pi16.execute-api.eu-north-1.amazonaws.com';
+const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
 
 interface CreateRepertoireFormProps {
   onSuccess: () => void;

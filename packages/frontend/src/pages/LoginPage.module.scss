@@ -32,13 +32,14 @@
 .formWrapper {
   border-radius: 0.75rem;
   margin-top: 2.5rem;
+  padding: var(--padding-sml);
 }
 
 .formField {
-  background-color: var(--color-dark-gray);
-  padding: var(--base);
+  background-color: var(--color-dark-gray);  
   border-bottom: 1px solid var(--color-border);
   border-radius: var(--radius-tier-3);
+  width: 100%;
 }
 
 .lastFormField {
