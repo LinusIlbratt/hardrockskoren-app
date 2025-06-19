@@ -5,12 +5,12 @@ createInvite:
     - httpApi:
         method: POST
         path: /invites
-        authorizer: # Skyddad för admin
-          name: centralJwtAuthorizer
+        authorizer: authorizer
   environment:
     INVITE_TABLE: ${self:custom.inviteTableName}
     # Du måste definiera denna i din .env-fil eller liknande
     FROM_EMAIL_ADDRESS: ${env:FROM_EMAIL_ADDRESS}
+    FRONTEND_URL: ${env:FRONTEND_URL}
   iamRoleStatements:
     - Effect: "Allow"
       Action: ["dynamodb:PutItem"]
