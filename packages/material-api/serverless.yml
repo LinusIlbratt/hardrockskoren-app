@@ -36,7 +36,7 @@ plugins:
 
 custom:
   mainTableName: HrkMainTable-${self:provider.stage}
-  mediaBucketName: hrk-media-${self:provider.stage}
+  mediaBucketName: hrk-media-${self:provider.stage}-${aws:accountId} 
   
 functions:
   - ${file(./yaml/material-functions.yml)}

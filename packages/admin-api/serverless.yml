@@ -47,3 +47,4 @@ package:
 
 functions:
   - ${file(./yaml/group-functions.yml)}
+  - ${file(./yaml/invite-functions.yml)}

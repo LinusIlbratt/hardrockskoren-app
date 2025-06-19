@@ -11,6 +11,18 @@ Resources:
                 - GET
                 - PUT
               AllowedOrigins:
-                # Nu fungerar denna rad, eftersom vi har definierat variablerna i custom-blocket
                 - ${self:custom.frontendUrls.${self:custom.stage}}
               MaxAge: 3000
+
+    HrkAppFrontendBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: hrk-app-frontend-${sls:stage}-${aws:accountId} # Garanterat unikt namn
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+        WebsiteConfiguration: # Konfigurerar den som en webbserver
+          IndexDocument: index.html
+          ErrorDocument: index.html # Viktigt för Single Page Applications som React
