@@ -11,10 +11,14 @@ createInvite:
     # Du måste definiera denna i din .env-fil eller liknande
     FROM_EMAIL_ADDRESS: ${env:FROM_EMAIL_ADDRESS}
     FRONTEND_URL: ${env:FRONTEND_URL}
+    MAIN_TABLE : ${self:custom.mainTableName}
   iamRoleStatements:
     - Effect: "Allow"
       Action: ["dynamodb:PutItem"]
       Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.inviteTableName}"
+    - Effect: "Allow"
+      Action: ["dynamodb:GetItem"]
+      Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
     - Effect: "Allow"
       Action: ["ses:SendEmail"] # Tillåt att skicka e-post
       Resource: "*" # Begränsa gärna detta till en specifik ARN i produktion
@@ -49,5 +53,5 @@ confirmInvite:
       Action: ["dynamodb:GetItem", "dynamodb:DeleteItem"]
       Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.inviteTableName}"
     - Effect: "Allow"
-      Action: ["cognito-idp:AdminCreateUser", "cognito-idp:AdminSetUserPassword"]
+      Action: ["cognito-idp:AdminCreateUser", "cognito-idp:AdminSetUserPassword", "cognito-idp:AdminAddUserToGroup"]
       Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"

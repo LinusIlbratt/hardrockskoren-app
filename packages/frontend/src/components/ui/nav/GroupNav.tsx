@@ -7,8 +7,8 @@ export const GroupNav = () => {
       {/* Notera att 'to'-sökvägen nu bara är den sista delen,
           eftersom den är relativ till sin förälder-route */}      
       <NavLink to="repertoires" end className={styles.navLink}>Repertoar</NavLink>
-      <NavLink to="users" className={styles.navLink}>Användare</NavLink>
       <NavLink to="concerts" className={styles.navLink}>Konserter & repdatum</NavLink>
+      <NavLink to="users" className={styles.navLink}>Användare</NavLink>
     </nav>
   );
 };

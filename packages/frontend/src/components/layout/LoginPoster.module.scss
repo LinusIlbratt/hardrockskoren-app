@@ -1,28 +1,45 @@
-@use '@/styles/variables' as login;
+@use '@/styles/variables' as *;
 
+// Denna klass täcker hela sektionen och har den animerade bakgrunden.
+// Den använder flexbox för att centrera sitt barn-element (<figure>).
 .page {
- flex: 1;
- background-color: #121212;
- background: linear-gradient(-45deg, #282828, #E0E0E0, #D2B48C, #B22222);
- background-size: 400% 400%;
-  animation: gradient 50s ease infinite;
- display: flex;
+  flex: 1;
+  background: linear-gradient(-45deg, #282828, #1a1a1a, #B22222, #121212);
+  background-size: 400% 400%;
+  animation: gradient 30s ease infinite alternate;
+  display: flex;
   justify-content: center;
   align-items: center;
+  padding: 2rem; // Lägg till lite luft runt kanterna
 
-  @media screen and (max-width: login.$mobileBreakpoint) {
+  // Göm hela sektionen på mobila enheter, enligt din kod
+  @media screen and (max-width: $tabletBreakpoint) {
     display: none;
   }
 }
 
-    @keyframes gradient {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }    
+// Denna klass styr själva bild-behållaren
+.poster {
+  width: 100%; // Ta upp 100% av tillgänglig bredd...
+  max-width: 400px; // ...men bli aldrig bredare än 400px.
+  opacity: 0.25;
+  
+  img {
+    width: 100%;
+    height: auto; // Behåll proportionerna
+    display: block; // Tar bort eventuellt extra utrymme under bilden
+    border-radius: 0.5rem;
   }
+}
+
+// Animationen för din bakgrund
+@keyframes gradient {
+  // UPPDATERING: Animationen går nu bara från start till slut.
+  // 'alternate'-inställningen ovan sköter om att den vänder tillbaka.
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}

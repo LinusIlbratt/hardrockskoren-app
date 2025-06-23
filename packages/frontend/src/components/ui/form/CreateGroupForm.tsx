@@ -13,6 +13,7 @@ const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
 export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
   const [name, setName] = useState('');
+  const [groupSlug, setGroupSlug] = useState('');
   const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +33,7 @@ export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
     try {
         await axios.post(
           `${API_BASE_URL}/groups`, 
-          { name, description }, 
+          { name, groupSlug, description }, 
           { 
             headers: { 
               Authorization: `Bearer ${token}` 
@@ -64,6 +65,16 @@ export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
           id="group-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          required
+          className={styles.input}
+        />
+      </FormGroup>
+      <FormGroup label="Kör slug" htmlFor="group-slug">
+        {/* Skicka med den nya klassen till Input för att styla den */}
+        <Input 
+          id="group-slug"
+          value={groupSlug}
+          onChange={(e) => setGroupSlug(e.target.value)}
           required
           className={styles.input}
         />

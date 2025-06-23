@@ -48,3 +48,4 @@ package:
 functions:
   - ${file(./yaml/group-functions.yml)}
   - ${file(./yaml/invite-functions.yml)}
+  - ${file(./yaml/user-functions.yml)}

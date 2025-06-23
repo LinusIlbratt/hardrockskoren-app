@@ -10,11 +10,18 @@ import { AdminGroupListPage } from '@/pages/admin/AdminGroupListPage';
 import { GroupDashboardLayout } from '@/components/layout/GroupDashboardLayout';
 import { AdminRepertoireListPage } from '@/pages/admin/AdminRepertoireListPage';
 import { AdminUploadPage } from '@/pages/admin/AdminUploadPage';
+import { AdminUserManagementPage } from "@/pages/admin/AdminUserManagementPage";
+import { RegistrationPage } from "@/pages/RegistrationPage";
 
 const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    // NY ROUTE FÖR REGISTRERING
+    path: "/register",
+    element: <RegistrationPage />,
   },
   {
     // En skyddad route som fungerar som förälder till ALLT
@@ -58,7 +65,7 @@ const router = createBrowserRouter([
                   },
                   {
                     path: "users",
-                    element: <div>Användarhantering för gruppen</div>,
+                    element: <AdminUserManagementPage />, // Använd den nya komponenten här
                   },
                 ],
               },

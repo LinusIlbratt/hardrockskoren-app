@@ -13,6 +13,7 @@ interface Group {
   SK: string; // t.ex. METADATA
   id: string;
   name: string;
+  slug: string;
   description: string;
 }
 
@@ -74,7 +75,7 @@ export const AdminGroupListPage = () => {
     }
 
     try {
-      await axios.delete(`${API_BASE_URL}/groups/${groupToDelete.name}`, {
+      await axios.delete(`${API_BASE_URL}/groups/${groupToDelete.slug}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -82,7 +83,7 @@ export const AdminGroupListPage = () => {
       fetchGroups(); // Hämta den nya, uppdaterade listan
 
     } catch (error) {
-      console.error(`Failed to delete group ${groupToDelete.name}:`, error);
+      console.error(`Failed to delete group ${groupToDelete.slug}:`, error);
       alert(`Kunde inte radera gruppen.`);
     } finally {
       setIsDeleting(false);

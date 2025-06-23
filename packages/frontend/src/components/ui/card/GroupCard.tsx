@@ -5,6 +5,7 @@ import styles from './GroupCard.module.scss';
 export interface Group {
   id: string;
   name: string;
+  slug: string;
   description: string;
   imageUrl?: string; // En valfri bild-URL
 }
@@ -43,9 +44,9 @@ export const GroupCard = ({ group, onDelete }: GroupCardProps) => {
         <h2 className={styles.title}>{group.name}</h2>
         <nav className={styles.nav}>
           {/* Notera hur 'to'-sökvägen byggs dynamiskt med gruppens namn */}          
-          <NavLink to={`/admin/groups/${group.name}/repertoires`} className={styles.navLink}>Repetoar</NavLink>
-          <NavLink to={`/admin/groups/${group.name}/concerts`} className={styles.navLink}>Konserter & repdatum</NavLink>
-          <NavLink to={`/admin/groups/${group.name}/users`} className={styles.navLink}>Användare</NavLink>
+          <NavLink to={`/admin/groups/${group.slug}/repertoires`} className={styles.navLink}>Repetoar</NavLink>
+          <NavLink to={`/admin/groups/${group.slug}/concerts`} className={styles.navLink}>Konserter & repdatum</NavLink>
+          <NavLink to={`/admin/groups/${group.slug}/users`} className={styles.navLink}>Användare</NavLink>
         </nav>
       </div>
     </article>

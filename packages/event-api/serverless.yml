@@ -1,0 +1,41 @@
+service: hrk-event-api
+configValidationMode: error
+
+frameworkVersion: "4"
+
+build:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude: ['aws-sdk']
+    target: 'node18'
+    define: { 'require.resolve': undefined }
+    platform: 'node'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: eu-north-1
+  stage: ${opt:stage, 'dev'}
+  httpApi:
+    cors: true
+    authorizers:
+      centralJwtAuthorizer:
+        type: request
+        functionArn: "arn:aws:lambda:eu-north-1:${aws:accountId}:function:hrk-apigateway-admin-authorizer-${sls:stage}"
+        enableSimpleResponses: true
+        identitySource:
+          - $request.header.Authorization
+
+package:
+  individually: true
+
+plugins:
+  - serverless-iam-roles-per-function
+
+custom:
+  mainTableName: HrkMainTable-${self:provider.stage} 
+  
+functions:
+  - ${file(./yaml/event-functions.yml)}
