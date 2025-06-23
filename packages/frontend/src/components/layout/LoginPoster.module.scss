@@ -4,7 +4,7 @@
 // Den använder flexbox för att centrera sitt barn-element (<figure>).
 .page {
   flex: 1;
-  background: linear-gradient(-45deg, #282828, #1a1a1a, #B22222, #121212);
+  background: linear-gradient(-45deg, #282828, #1a1a1a, #5f0a0a9b, #121212);
   background-size: 400% 400%;
   animation: gradient 30s ease infinite alternate;
   display: flex;
