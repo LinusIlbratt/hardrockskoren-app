@@ -1,0 +1,14 @@
+listUsersInGroup:
+  handler: functions/user/list.handler
+  name: hrk-list-users-in-group-${sls:stage}
+  events:
+    - httpApi:
+        method: GET
+        path: /groups/{groupName}/users
+        authorizer: authorizer
+  environment:
+    USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action: ["cognito-idp:ListUsersInGroup"]
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"

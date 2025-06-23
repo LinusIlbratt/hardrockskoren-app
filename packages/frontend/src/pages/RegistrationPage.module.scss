@@ -1,0 +1,56 @@
+// Denna fil kan återanvända många klasser från LoginPage.module.scss
+// för att få ett konsekvent utseende.
+@use '@/styles/variables' as *;
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.container {
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+}
+
+.title {
+  color: var(--color-primary);
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  color: var(--color-text);
+  margin-bottom: 2rem;
+}
+
+.formWrapper {
+  background-color: var(--color-dark-gray);
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+.formGroup {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--color-primary);
+    text-align: left;
+  }
+}
+
+.errorMessage {
+  color: var(--color-accent);
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: rgba(178, 34, 34, 0.1);
+  border: 1px solid var(--color-accent);
+  border-radius: 0.5rem;
+}

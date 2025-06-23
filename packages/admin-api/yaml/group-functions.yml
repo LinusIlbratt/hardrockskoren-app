@@ -35,6 +35,7 @@ createGroup:
     - Effect: Allow
       Action:
         - cognito-idp:AdminGetUser
+        - cognito-idp:CreateGroup
       Resource:
         - arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}
 
@@ -56,11 +57,13 @@ deleteGroup:
       Action:
         - dynamodb:Query
         - dynamodb:DeleteItem
+        - dynamodb:BatchWriteItem
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
     - Effect: Allow
       Action:
         - cognito-idp:AdminGetUser
+        - cognito-idp:DeleteGroup
       Resource:
         - arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}
 

@@ -27,8 +27,14 @@ export const handler = async (
     }
 
     const invite = unmarshall(Item);
-    // Skicka inte tillbaka all information, bara det som behövs
-    return sendResponse({ email: invite.email, groupName: invite.groupName });
+    
+    // SKICKA TILLBAKA ETT MER KOMPLETT OBJEKT TILL DIN FRONTEND
+    // Nu kan din frontend visa det snygga namnet direkt.
+    return sendResponse({ 
+        email: invite.email, 
+        groupDisplayName: invite.groupDisplayName, // Skicka det snygga namnet
+        groupSlug: invite.groupSlug              // Skicka även slug om du behöver den
+    });
 
   } catch (error: any) {
     console.error("Error getting invite:", error);
