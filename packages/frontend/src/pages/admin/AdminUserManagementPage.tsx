@@ -54,7 +54,7 @@ export const AdminUserManagementPage = () => {
     fetchMembers(); // Hämta den uppdaterade medlemslistan!
   };
 
-  return (
+return (
     <div className={styles.page}>
       <div className={styles.header}>
         <h2>Hantera medlemmar</h2>
@@ -64,28 +64,33 @@ export const AdminUserManagementPage = () => {
         </div>
       </div>
       
+      {/* Denna yttre div behåller vi precis som den är */}
       <div className={styles.userList}>
         {isLoading ? (
           <p>Laddar medlemmar...</p>
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>Namn</th>
-                <th>E-post</th>
-                <th>Roll</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map(member => (
-                <tr key={member.id}>
-                  <td>{member.given_name} {member.family_name}</td>
-                  <td>{member.email}</td>
-                  <td>{member.role}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          // Vi byter ut tabellen mot vår nya grid-container
+          <div className={styles.gridContainer}>
+            {/* --- Vår nya Header-rad --- */}
+            <div className={styles.gridHeader}>
+              <span className={styles.gridCell}>Namn</span>
+              <span className={styles.gridCell}>E-post</span>
+              <span className={styles.gridCell}>Roll</span>
+            </div>
+
+            {/* --- Mappa ut varje medlem som en Grid-rad --- */}
+            {members.map(member => (
+              <div key={member.id} className={styles.gridRow}>
+                <span className={styles.gridCell}>{member.given_name} {member.family_name}</span>
+                <span className={styles.gridCell}>{member.email}</span>
+                <span className={styles.gridCell}>{member.role}</span>
+              </div>
+            ))}
+            
+            {members.length === 0 && (
+                <p>Inga medlemmar har bjudits in till denna grupp ännu.</p>
+            )}
+          </div>
         )}
       </div>
 

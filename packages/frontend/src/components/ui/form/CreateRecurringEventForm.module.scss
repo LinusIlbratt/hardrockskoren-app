@@ -1,0 +1,60 @@
+// Importera dina globala variabler och mixins
+@import '@/styles/variables';
+
+// Grundläggande stil för hela formuläret
+.form {
+  @include column; // Använder din mixin för att stapla elementen
+  gap: var(--gap-large); // Lite större mellanrum mellan formgrupperna
+}
+
+// Stil för att lägga element sida-vid-sida (för start/slutdatum)
+.row {
+  display: flex;
+  gap: var(--gap);
+  
+  // Få varje FormGroup att ta upp lika mycket plats
+  > * {
+      flex: 1;
+  }
+}
+
+// Stil för att lägga checkboxarna horisontellt
+.checkboxGroup {
+  display: flex;
+  flex-wrap: wrap; // Tillåt dem att hoppa ner på ny rad
+  gap: var(--gap); 
+  align-items: center;
+}
+
+// Stil för varje enskild checkbox + dess text
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-sml);
+  cursor: pointer;
+  // Ta bort default-marginaler från input för snyggare linjering
+  input[type="checkbox"] {
+    margin: 0;
+  }
+}
+
+// Stil för felmeddelanden
+.error {
+    color: var(--color-accent); // Använder din globala accent-färg
+    margin-top: var(--margin);
+    font-weight: bold;
+}
+
+// Vi kan återanvända .select-stilen från AdminEventPage om vi vill,
+// men det är bättre att den är definierad här om komponenten ska vara helt fristående.
+// Om du inte har en global select-stil, lägg till denna:
+select {
+  width: 100%;
+  padding: var(--padding-sml) var(--padding);
+  background-color: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-tier-2);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+}
