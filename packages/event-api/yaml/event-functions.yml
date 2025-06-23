@@ -67,3 +67,22 @@ deleteEvent:
     - Effect: "Allow"
       Action: ["dynamodb:DeleteItem"]
       Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+batchCreateEvents:
+  handler: functions/event/batch.handler
+  name: hrk-batch-create-events-${sls:stage}
+  description: Creates multiple events based on a recurrence rule.
+  events:
+    - httpApi:
+        method: POST
+        # Notera att vi inkluderar {groupSlug} i sökvägen för att veta vilken grupp det gäller
+        path: /groups/{groupSlug}/events/batch 
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      # Denna funktion behöver den speciella BatchWriteItem-behörigheten
+      Action: ["dynamodb:BatchWriteItem"]
+      Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"

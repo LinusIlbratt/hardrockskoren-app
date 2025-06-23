@@ -12,6 +12,7 @@ import { AdminRepertoireListPage } from '@/pages/admin/AdminRepertoireListPage';
 import { AdminUploadPage } from '@/pages/admin/AdminUploadPage';
 import { AdminUserManagementPage } from "@/pages/admin/AdminUserManagementPage";
 import { RegistrationPage } from "@/pages/RegistrationPage";
+import { AdminEventPage } from "@/pages/admin/AdminEventPage";
 
 const router = createBrowserRouter([
   {
@@ -61,7 +62,7 @@ const router = createBrowserRouter([
                   },
                   {
                     path: "concerts",
-                    element: <div>Översikt för körens konserter & repdatum</div>,
+                    element: <AdminEventPage />,
                   },
                   {
                     path: "users",

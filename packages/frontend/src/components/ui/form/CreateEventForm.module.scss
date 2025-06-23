@@ -1,0 +1,57 @@
+// src/components/ui/form/CreateEventForm.module.scss
+
+// Importera dina globala variabler och mixins för att kunna använda dem
+@import '@/styles/variables';
+
+// Huvudklassen för hela formuläret.
+// Denna klass agerar nu som både layout-container OCH den visuella "kort"-behållaren.
+.form {
+  // Stilar för layout (från din @mixin)
+  @include column;
+  gap: var(--gap-large); // Ett lite större mellanrum mellan varje FormGroup
+
+  // Stilar för utseende ("kortet")
+  background-color: var(--color-dark-gray);
+  border-radius: var(--radius-tier-1);
+  padding: var(--pading-large);
+  border: 1px solid var(--color-border);
+}
+
+// Stilar för de specifika formulärfälten
+.select,
+.textarea {
+  width: 100%;
+  padding: var(--padding-sml) var(--padding);
+  background-color: var(--color-background);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-tier-2);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  transition: border-color 0.2s;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+}
+
+.textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+// Stil för att gruppera knappar
+.buttonGroup {
+  @include row; // Använder din mixin
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--gap);
+  margin-top: var(--margin-sml); // Lite extra utrymme ovanför knapparna
+}
+
+// Stil för felmeddelanden
+.error {
+    color: var(--color-accent); // Använder din globala accent-färg för fel
+    font-weight: bold;
+}
