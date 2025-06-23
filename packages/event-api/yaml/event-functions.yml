@@ -1,0 +1,69 @@
+createEvent:
+  handler: functions/event/create.handler
+  name: hrk-create-event-${sls:stage}
+  description: Creates a new event (rehearsal or concert) for a group.
+  events:
+    - httpApi:
+        method: POST
+        path: /groups/{groupSlug}/events
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action: ["dynamodb:PutItem"]
+      Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+listEvents:
+  handler: functions/event/list.handler
+  name: hrk-list-events-${sls:stage}
+  description: Fetches all events for a group.
+  events:
+    - httpApi:
+        method: GET
+        path: /groups/{groupSlug}/events
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action: ["dynamodb:Query"]
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI1"
+
+updateEvent:
+  handler: functions/event/update.handler
+  name: hrk-update-event-${sls:stage}
+  description: Updates an existing event.
+  events:
+    - httpApi:
+        method: PUT
+        path: /groups/{groupSlug}/events/{eventId}
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action: ["dynamodb:UpdateItem"]
+      Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+deleteEvent:
+  handler: functions/event/delete.handler
+  name: hrk-delete-event-${sls:stage}
+  description: Deletes an event.
+  events:
+    - httpApi:
+        method: DELETE
+        path: /groups/{groupSlug}/events/{eventId}
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action: ["dynamodb:DeleteItem"]
+      Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"

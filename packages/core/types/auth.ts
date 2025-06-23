@@ -1,4 +1,4 @@
-export type RoleTypes = "user" | "admin";
+export type RoleTypes = "user" | "admin" | "leader"; 
 
 export interface AuthContext {
   uuid: string;

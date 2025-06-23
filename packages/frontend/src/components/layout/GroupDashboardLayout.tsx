@@ -1,20 +1,59 @@
+import { useEffect, useState } from 'react';
 import { Outlet, useParams, Link } from 'react-router-dom';
 import { GroupNav } from '@/components/ui/nav/GroupNav';
+import axios from 'axios';
 import { IoArrowBack } from 'react-icons/io5'; 
 import styles from './GroupDashboardLayout.module.scss';
 
-export const GroupDashboardLayout = () => {
-  // Hämta gruppens namn från URL:en
-  const { groupName } = useParams<{ groupName: string }>();
+// Återanvänd Group-typen från din lista-sida
+interface Group {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+}
 
-  // Om inget gruppnamn finns, visa ett fel eller ladda...
-  if (!groupName) {
-    return <div>Gruppnamn saknas i URL.</div>;
+export const GroupDashboardLayout = () => {
+  const { groupName: groupSlug } = useParams<{ groupName: string }>(); // Byt namn för tydlighetens skull
+  const [currentGroup, setCurrentGroup] = useState<Group | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Om ingen slug finns, gör inget
+    if (!groupSlug) {
+        setIsLoading(false);
+        return;
+    };
+
+    const fetchGroupDetails = async () => {
+      const token = localStorage.getItem('authToken');
+      try {
+        // Antag att du har en endpoint för att hämta en specifik grupp via dess slug
+        const response = await axios.get(`${import.meta.env.VITE_ADMIN_API_URL}/groups/${groupSlug}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setCurrentGroup(response.data);
+      } catch (error) {
+        console.error("Failed to fetch group details", error);
+        // Hantera fel, kanske visa ett felmeddelande
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchGroupDetails();
+  }, [groupSlug]); // Kör denna effekt varje gång sluggen i URL:en ändras
+
+  if (isLoading) {
+    return <div>Laddar gruppinformation...</div>;
+  }
+
+  if (!currentGroup) {
+    return <div>Kunde inte hitta information för gruppen.</div>;
   }
 
   return (
     <div className={styles.dashboardLayout}>
-        {/* NY "TILLBAKA"-LÄNK */}
       <div className={styles.breadcrumb}>
         <Link to="/admin/groups">
           <IoArrowBack />
@@ -22,13 +61,11 @@ export const GroupDashboardLayout = () => {
         </Link>
       </div>
       <header className={styles.header}>
-        <h1 className={styles.title}>Grupp: {groupName}</h1>
-        {/* Här renderar vi vår delade navigeringsmeny */}
-        {/* KORRIGERING: Anropet behöver inte längre groupName som en prop */}
+        {/* Använd nu det hämtade namnet från state */}
+        <h1 className={styles.title}>{currentGroup.name}</h1>
         <GroupNav />
       </header>
       <main className={styles.content}>
-        {/* Här kommer undersidorna (Innehåll, Användare, etc.) att renderas */}
         <Outlet />
       </main>
     </div>

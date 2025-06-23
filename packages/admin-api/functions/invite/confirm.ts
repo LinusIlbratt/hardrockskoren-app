@@ -1,5 +1,5 @@
 import { DynamoDBClient, GetItemCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
-import { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminSetUserPasswordCommand } from "@aws-sdk/client-cognito-identity-provider";
+import { CognitoIdentityProviderClient, AdminCreateUserCommand, AdminSetUserPasswordCommand, AdminAddUserToGroupCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
@@ -45,9 +45,10 @@ export const handler = async (
         { Name: "family_name", Value: family_name },
         { Name: "email_verified", Value: "true" },
         { Name: "custom:role", Value: invite.role },
-        { Name: "custom:group", Value: invite.groupName },
+        // KORRIGERING 1: Använd det nya, korrekta fältet från invite-objektet
+        { Name: "custom:group", Value: invite.groupSlug },
       ],
-      MessageAction: "SUPPRESS", // Skicka inget välkomstmail från Cognito
+      MessageAction: "SUPPRESS",
     });
 
     const { User } = await cognitoClient.send(createUserCommand);
@@ -64,14 +65,23 @@ export const handler = async (
     });
     await cognitoClient.send(setPasswordCommand);
 
-    // 4. Radera den använda inbjudan
+    // 4. Lägg till användaren i rätt Cognito-grupp
+    const addUserToGroupCmd = new AdminAddUserToGroupCommand({
+        UserPoolId: USER_POOL_ID,
+        Username: User.Username,
+        // KORRIGERING 2: Använd sluggen även här för att hitta rätt grupp
+        GroupName: invite.groupSlug,
+    });
+    await cognitoClient.send(addUserToGroupCmd);
+
+    // 5. Radera den använda inbjudan
     const deleteInviteCommand = new DeleteItemCommand({
         TableName: INVITE_TABLE,
         Key: { inviteId: { S: inviteId } },
     });
     await dbClient.send(deleteInviteCommand);
 
-    return sendResponse({ message: "Account created successfully." }, 201);
+    return sendResponse({ message: "Account created and added to group." }, 201);
 
   } catch (error: any) {
     if (error.name === "UsernameExistsException") {
