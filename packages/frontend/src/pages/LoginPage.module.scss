@@ -4,8 +4,6 @@
   margin: 0;
   display: flex;
   flex-direction: row;
-  gap: var(--base);
-  gap: 0;
   height: 100vh;
   overflow: hidden;
 }
@@ -13,25 +11,33 @@
 .container {
   flex: 1;
   padding: var(--padding-sml);
-  @include center;
+  
+  // Uppdaterad: Använder nu flexbox för att stapla och centrera
+  display: flex;
+  flex-direction: column; // Staplar barnen (logga, form) vertikalt
+  justify-content: center;
+  align-items: center;
+  gap: var(--gap-large); // Lägger till ett mellanrum mellan loggan och formuläret
 }
 
 .logo {
-  text-align: center;
-  margin-bottom: 2.5rem;
-  h1 {
-    font-size: 3rem;
-    color: var(--color-accent);
-  }
-  h2 {
-    font-size: 3rem;
-    color: var(--color-primary);
+  // Nu kan du ändra storleken på loggan här utan att det påverkar något annat
+  width: 100%;
+  max-width: 500px;
+  margin: 0; // Nollställ default-marginaler
+
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
   }
 }
 
 .formWrapper {
+  // Formuläret får sin egen, oberoende bredd
+  width: 100%;
+  max-width: 400px; // Testa att ändra detta värde!
   border-radius: 0.75rem;
-  margin-top: 2.5rem;
   padding: var(--padding-sml);
 }
 
@@ -39,7 +45,7 @@
   background-color: var(--color-dark-gray);  
   border-bottom: 1px solid var(--color-border);
   border-radius: var(--radius-tier-3);
-  width: 100%;
+  width: 100%; // Tar upp hela bredden av sin förälder, .formWrapper
 }
 
 .lastFormField {

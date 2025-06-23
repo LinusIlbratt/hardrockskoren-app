@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input/Input';
 import { FormGroup } from '@/components/ui/form/FormGroup';
 import { LoginPoster } from '@/components/layout/LoginPoster';
 import styles from './LoginPage.module.scss';
+import logoImage from '@/assets/images/hrk-logo.webp';
 
 // Ersätt detta med din riktiga API-URL från en .env-fil
 const API_BASE_URL = import.meta.env.VITE_AUTH_API_URL;
@@ -60,18 +61,19 @@ export const LoginPage = () => {
   return (
     <main className={styles.page}>
       <div className={styles.container}>
+
+        {/* STEG 1: Loggan ligger nu här, direkt i containern. */}
+        <figure className={styles.logo}>
+          <img src={logoImage} alt="Logo för Hårdrockskören" />
+        </figure>
+
+        {/* STEG 2: FormWrapper innehåller nu BARA formuläret. */}
         <div className={styles.formWrapper}>
-        <div className={styles.logo}>
-          <h1>HÅRDROCKS</h1>
-          <h2>KÖREN</h2>
-        </div>
           <form onSubmit={handleSubmit}>
-            {/* Här använder vi FormGroup som en återanvändbar komponent */}
-            {/* och skickar in en extra klass för layouten. */}
-            <FormGroup 
-              label="E-post" 
-              htmlFor="email" 
-              error={error} 
+            <FormGroup
+              label="E-post"
+              htmlFor="email"
+              error={error}
               className={styles.formField}
             >
               <Input
@@ -83,9 +85,9 @@ export const LoginPage = () => {
                 required
               />
             </FormGroup>
-            
-            <FormGroup 
-              label="Lösenord" 
+
+            <FormGroup
+              label="Lösenord"
               htmlFor="password"
               className={`${styles.formField} ${styles.lastFormField}`}
             >
@@ -99,11 +101,9 @@ export const LoginPage = () => {
               />
             </FormGroup>
 
-            <Button type="submit" isLoading={isLoading}fullWidth>Rock'n Roll</Button>
+            <Button type="submit" isLoading={isLoading} fullWidth>Rock'n Roll</Button>
           </form>
         </div>
-        
-        {/* ... resten av sidan ... */}
 
       </div>
       <LoginPoster />
