@@ -5,7 +5,7 @@ export interface AuthContext {
   role: RoleTypes;
   given_name: string;
   family_name: string;
-  group: string;
+  groups: string[];
   clientId?: string;
   userPoolId?: string;
 }
