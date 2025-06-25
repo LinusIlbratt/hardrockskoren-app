@@ -1,0 +1,89 @@
+// src/components/ui/modal/MediaModal.module.scss
+
+// Bakgrunden som täcker hela skärmen
+.backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.65); // Lite mörkare för bättre fokus
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000; // Ligger under mediaspelaren
+  padding: 20px;
+}
+
+// Själva modalfönstret
+.modal {
+  background-color: #fdfdfd; // En aning varmare vit
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 900px; // Ganska bred för att ge plats åt dokument
+  height: 95vh; // Tar upp nästan hela skärmens höjd
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column; // Staplar header och content vertikalt
+  position: relative;
+  z-index: 1001;
+  overflow: hidden; // Gömmer innehåll som skulle kunna hamna utanför rundade hörn
+}
+
+// Huvudet på modalen med titel och stäng-knapp
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0; // Ser till att headern inte krymper
+}
+
+.title {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #222;
+  // Förhindra att extremt långa titlar flödar ut
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 1rem;
+}
+
+.closeButton {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  line-height: 1;
+  color: #888;
+  transition: color 0.2s ease, transform 0.2s ease;
+
+  &:hover {
+    color: #000;
+    transform: rotate(90deg);
+  }
+}
+
+// Huvudområdet där innehållet (iframe, pre) visas
+.content {
+  padding: 1.5rem;
+  flex-grow: 1; // Tar upp all återstående plats i modalen
+  overflow-y: auto; // Gör BARA detta område scrollbart, inte hela modalen
+  background-color: #f4f4f4; // En lätt grå bakgrund för innehållet
+}
+
+// Specifik styling för textinnehåll inuti en <pre>-tagg
+.textContent {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Menlo', 'Consolas', 'Courier New', monospace;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #333;
+  margin: 0;
+  padding: 0;
+}

@@ -1,0 +1,38 @@
+// MemberRepertoireMaterialPage.module.scss
+
+.textContent {
+  // --- VIKTIGASTE REGLERNA ---
+  white-space: pre-wrap; // Behåll formatering men bryt långa rader
+  word-break: break-word; // Bryt även extremt långa ord utan mellanslag
+
+  // --- FÖR LÄSBARHET (valfritt men rekommenderat) ---
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #333;
+}
+
+.playerContainer {
+  // Grundläggande positionering
+  position: fixed;
+  bottom: 20px; // Lite avstånd från bottenkanten
+  left: 50%;
+  transform: translateX(-50%); // Centrerar elementet horisontellt
+  z-index: 1000; // Ser till att den ligger överst på allt annat innehåll
+
+  // Utseende (justera som du vill)
+  width: 90%; // Tar upp 90% av skärmens bredd...
+  max-width: 600px; // ...men blir aldrig bredare än 600px på stora skärmar
+  background-color: #282828; // En mörk bakgrundsfärg liknande Spotify
+  padding: 12px 20px;
+  border-radius: 12px;
+  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.25); // En snygg skugga
+  transition: bottom 0.3s ease-in-out; // Mjuk animering om du skulle vilja dölja/visa den
+
+  // Se till att audio-elementet fyller ut sin behållare
+  audio {
+    width: 100%;
+    // Här kan du även ändra utseendet på själva spelaren, 
+    // t.ex. med filter för att ändra färg.
+  }
+}
