@@ -4,3 +4,15 @@ export interface Material {
   fileKey: string;
   fileType?: string;
 }   
+
+export interface Event {
+  eventId: string;
+  title: string;
+  eventDate: string;
+  // Detta är det korrekta fältet från din databas
+  eventType: 'REHEARSAL' | 'CONCERT' | string; 
+  location?: string;
+  description?: string;
+  // Detta fält verkar alltid vara "Event", så vi kan göra det valfritt
+  type?: string; 
+}

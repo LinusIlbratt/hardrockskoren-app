@@ -15,6 +15,7 @@ import { AdminEventPage } from "@/pages/admin/AdminEventPage";
 import { MemberDashboard } from "@/pages/member/MemberDashboard";
 import { MemberListRepertoirePage } from "@/pages/member/MemberListRepertoirePage";
 import { MemberRepertoireMaterialPage } from "@/pages/member/MemberRepertoireMaterialPage";
+import { MemberEventPage } from "@/pages/member/MemberEventPage";
 import { Outlet } from 'react-router-dom';
 
 const router = createBrowserRouter([
@@ -48,6 +49,14 @@ const router = createBrowserRouter([
             element: <AdminLayout />,
             children: [
               {
+                path: "globalMaterial",
+                element: <AdminUploadPage />, // Placeholder för globalt material
+              },
+              {
+                path: "practice",
+                element: <p>Practice Page</p>, // Placeholder för sjungupp
+              },
+              {
                 path: "groups",
                 element: <AdminGroupListPage />,
               },
@@ -61,7 +70,7 @@ const router = createBrowserRouter([
                   },
                   {
                     path: "repertoires/:repertoireId/materials",
-                    element: <AdminUploadPage />,
+                    element: <p>Repertoire Materials Page</p>, // Placeholder för repertoarmaterial
                   },
                   {
                     path: "concerts",
@@ -106,7 +115,7 @@ const router = createBrowserRouter([
                   },
                   {
                     path: "userDates",
-                    element: <div>User Date Page</div>,
+                    element: <MemberEventPage />,
                   },
                 ]
               },

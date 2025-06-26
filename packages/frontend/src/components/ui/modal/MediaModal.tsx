@@ -57,7 +57,7 @@ export const MediaModal = ({ isOpen, onClose, material }: MediaModalProps) => {
     const normalizedFileKey = material.fileKey.toLowerCase();
 
     if (normalizedFileKey.endsWith('.pdf')) {
-      return <iframe src={fullUrl} width="100%" height="100%" title={displayName} frameBorder="0" />;
+      return <iframe src={fullUrl} className={styles.pdfViewer} title={displayName} frameBorder="0" />;
     }
     
     if (normalizedFileKey.endsWith('.txt')) {

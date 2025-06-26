@@ -20,13 +20,18 @@ export const handler = async (
   }
 
   try {
-    // Steg 1: Verifiera att användaren är admin
+    // --- HÄR ÄR DEN NYA "ALLOW LIST"-LOGIKEN ---
+    const allowedRoles = ['admin', 'leader']; // De roller som FÅR skapa en repertoar
     const userRole = event.requestContext.authorizer?.lambda?.role;
-    if (userRole !== 'admin') {
+
+    // Neka om rollen saknas ELLER om rollen inte finns i vår lista över tillåtna roller
+    if (!userRole || !allowedRoles.includes(userRole)) {
       return sendError(403, "Forbidden: You do not have permission to perform this action.");
     }
+    // --- SLUT PÅ NY LOGIK ---
     
-    // Steg 2: Hämta data från anropet
+
+    // Resten av din funktion är oförändrad
     const { groupName } = event.pathParameters || {};
     if (!groupName) {
       return sendError(400, "Group name is required in the path.");
@@ -40,7 +45,6 @@ export const handler = async (
         return sendError(400, "Title is required in the request body.");
     }
 
-    // Steg 3: Skapa det nya repertoar-objektet
     const repertoireId = nanoid();
     const item = {
       PK: `GROUP#${groupName}`,
@@ -51,7 +55,6 @@ export const handler = async (
       type: "Repertoire",
     };
 
-    // Steg 4: Spara objektet i DynamoDB
     const command = new PutItemCommand({
       TableName: MAIN_TABLE,
       Item: marshall(item),

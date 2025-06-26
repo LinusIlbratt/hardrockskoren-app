@@ -1,0 +1,122 @@
+/* Huvudbehållaren för hela spelaren */
+.playerContainer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 90px;
+  background-color: #181818;
+  color: white;
+  z-index: 2000;
+
+  display: grid; // Byt till grid för mer exakt kontroll
+  grid-template-columns: 1fr 2fr 1fr; // Tre kolumner: vänster, mitten, höger
+  align-items: center;
+  padding: 0 1.5rem;
+  box-sizing: border-box;
+  gap: 2rem;
+}
+
+/* Vänster sektion: Låtinformation */
+.trackInfo {
+  justify-self: start; // Vänsterjustera innehållet
+  .trackTitle {
+    margin: 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Mitten-sektionen: Huvudkontroller */
+.controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px; // Lite mellanrum mellan play-knapp och tidslinje
+}
+
+.playPauseButton {
+  background: white;
+  color: black;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+.timeControls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 500px;
+}
+
+.time {
+  font-size: 0.75rem;
+  color: #b3b3b3;
+  user-select: none; // Förhindra att texten markeras
+}
+
+/* Höger sektion: Volym */
+.volumeControl {
+  justify-self: end; // Högerjustera innehållet
+  display: flex;
+  align-items: center;
+}
+
+/* --- Detaljerad styling för alla sliders --- */
+.timelineSlider,
+.volumeSlider {
+  -webkit-appearance: none; /* Ta bort webbläsarens standardutseende */
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: #4d4d4d; /* Den gråa grundfärgen för spåret */
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+
+  /* Styling för "tummen" (cirkeln man drar i) */
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: white; /* Alltid vit */
+    border-radius: 50%;
+    /* Vi har tagit bort 'transform: scale(0)' så den är alltid synlig */
+  }
+
+  /* Styling för "spåret" i Firefox */
+  &::-moz-range-track {
+    background: #4d4d4d;
+    height: 4px;
+    border-radius: 2px;
+  }
+
+  /* Styling för "tummen" i Firefox */
+  &::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    border: none;
+  }
+}
+
+/* Denna klass behöver inga ändringar, men låt den vara kvar */
+.volumeSlider {
+  width: 100px;
+}

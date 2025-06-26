@@ -1,82 +1,81 @@
 // src/styles/_variables.scss
 
-// SASS-variabler används BARA för saker som SCSS-logik behöver, som breakpoints.
-$mobileBreakpoint: 480px;
+// =============================================================================
+// ! SASS-VARIABLER (för SCSS-logik)
+// =============================================================================
+// Används för saker som inte kan vara CSS Custom Properties, som media query breakpoints.
 $tabletBreakpoint: 768px;
 $desktopBreakpoint: 1024px;
+$maxWidth: 1100px; // Kan användas för att begränsa bredden på containers.
 
-/* LAYOUT */
 
-$maxWidth: 900px;
+// =============================================================================
+// ! CSS CUSTOM PROPERTIES (Design Tokens)
+// =============================================================================
+// Definieras på :root för att vara globalt tillgängliga i hela appen.
+// All styling i komponenter bör använda dessa variabler.
 
-// Alla design-tokens definieras som CSS Custom Properties inuti :root.
-// Detta gör dem globalt tillgängliga i hela din app.
 :root {
-    // Färger
-    --color-background: #121212;
-    --color-text: #E0E0E0;
-    --color-primary: #D2B48C; // Beige
-    --color-accent: #B22222; // Röd
-    --color-dark-gray: #282828;
-    --color-border: #4b5563;
+  // --- FÄRGER ---
+  --color-background: #121212;
+  --color-text: #E0E0E0;
+  --color-primary: #D2B48C; // Beige
+  --color-accent: #B22222; // Röd
+  --color-dark-gray: #282828;
+  --color-border: #4b5563;
 
-    // Typsnittsfamiljer
-    --font-heading: 'Trajan Pro', serif; // Byt ut mot ditt typsnitt
-    --font-body: 'Lato', sans-serif;
+  // --- TYPSNITT ---
+  --font-heading: 'Trajan Pro', serif;
+  --font-body: 'Lato', sans-serif;
 
-    // Typsnittsstorlekar
-    --fs-base: 16px; // Grundstorlek
-    --fs-sm: 14px;
-    --fs-lg: 18px;
-    --fs-xl: 24px;
-    --fs-xxl: 36px;
+  // --- TYPOGRAFISK SKALA (i rem) ---
+  // Baseras på att 1rem = 16px (eller webbläsarens standard).
+  --fs-sm: 0.875rem;    // 14px
+  --fs-base: 1rem;      // 16px
+  --fs-lg: 1.125rem;    // 18px
+  
+  --fs-h4: 1.125rem;    // 18px (mobil)
+  --fs-h3: 1.25rem;     // 20px (mobil)
+  --fs-h2: 1.5rem;      // 24px (mobil)
+  --fs-h1: 2rem;        // 32px (mobil)
 
-    // Effekter
-    --radius-tier-1: 8px;
-    --radius-tier-2: 4px;
-    --radius-tier-3: 2px;
-    --radius-round: 99rem;
+  --fs-display: 3rem;   // 48px (för stora rubriker på desktop)
 
-    // Padding, Margin, Gap
+  // --- MELLANRUM (SPACING i rem) ---
+  // Konsekvent skala för padding, margin och gap.
+  --spacing-xs: 0.25rem;  // 4px
+  --spacing-sm: 0.5rem;   // 8px
+  --spacing-md: 1rem;     // 16px
+  --spacing-lg: 1.5rem;   // 24px
+  --spacing-xl: 2rem;     // 32px
+  --spacing-xxl: 3rem;    // 48px
 
-    --base: 16px;
-
-    --padding-huge: calc(var(--base) * 2);
-    --pading-large: calc(var(--base) * 1.5);
-    --padding: (var(--base));
-    --padding-sml: calc(var(--base) / 2);
-    --padding-nano: calc(var(--base) / 4);
-
-    --margin-huge: calc(var(--base) * 2);
-    --margin-large: calc(var(--base) * 1.5);
-    --margin: (var(--base));
-    --margin-sml: calc(var(--base) / 2);
-    --margin-nano: calc(var(--base) / 4);
-
-    --gap-huge: calc(var(--base) * 2);
-    --gap-large: calc(var(--base) * 1.5);
-    --gap: (var(--base));
-    --gap-sml: calc(var(--base) / 2);
-    --gap-nano: calc(var(--base) / 4);
+  // --- RADIE ---
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-round: 99rem;
 }
 
 
- /*  HELPERS */
+// =============================================================================
+// ! HELPERS (Mixins)
+// =============================================================================
 
- @mixin center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+@mixin center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-@mixin column {
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap-sml);
-  }
+@mixin column($gap-size: var(--spacing-md)) {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-size;
+}
 
-  @mixin row {
-    display: flex;
-    flex-direction: row;
-    gap: (var(--base));
-  }
+@mixin row($gap-size: var(--spacing-md)) {
+  display: flex;
+  flex-direction: row;
+  gap: $gap-size;
+}

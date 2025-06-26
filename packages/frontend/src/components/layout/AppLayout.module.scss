@@ -1,0 +1,37 @@
+@use '@/styles/variables' as *;
+
+// Grundlayouten för hela applikationen
+.appLayout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh; // Se till att layouten alltid fyller minst hela skärmens höjd
+}
+
+// Huvudinnehållet (där Outlet renderas)
+.mainContent {
+  flex-grow: 1; // Se till att main-elementet växer och tar upp all ledig plats
+
+  // --- MOBIL-STILAR (standard) ---
+  // Viktigt! Skapa utrymme för den fasta navigationen så innehållet inte hamnar bakom.
+  // Justera detta värde så att det matchar höjden på din MainNav (t.ex. 70px).
+  padding-top: 70px; 
+  
+  // Lite luft på sidorna på mobilen
+  padding-left: var(--spacing-md);
+  padding-right: var(--spacing-md);
+  padding-bottom: var(--spacing-xl);
+
+
+  // --- DESKTOP-STILAR (skalar upp) ---
+  // När skärmen är bredare än vår tablet-brytpunkt...
+  @media (min-width: #{$tabletBreakpoint}) {
+    // ...centrera innehållet och ge det en max-bredd för bättre läsbarhet.
+    width: 100%;
+    max-width: $maxWidth; // Använder variabeln från _variables.scss
+    margin: 0 auto; // Centrerar blocket horisontellt
+
+    // Eventuellt större padding på större skärmar
+    padding-left: var(--spacing-xl);
+    padding-right: var(--spacing-xl);
+  }
+}
