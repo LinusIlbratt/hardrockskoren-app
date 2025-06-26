@@ -10,9 +10,9 @@ export enum ButtonVariant {
 }
 
 export enum ButtonSize {
-  Small = 'sm',
-  Default = 'default',
-  Large = 'lg',
+  Small = 'Small',
+  Default = 'Default',
+  Large = 'Large',
 }
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {

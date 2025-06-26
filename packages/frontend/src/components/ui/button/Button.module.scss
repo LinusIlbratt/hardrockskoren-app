@@ -1,42 +1,86 @@
-// src/components/ui/Button.module.scss
+// src/components/ui/button/Button.module.scss
+@use '@/styles/variables' as *;
 
 .button {
-  // Använder CSS-variabeln direkt.
+  /* GRUNDSTILAR - Dessa gäller för ALLA knappar */
   position: relative;
-  background-color: var(--color-primary); 
-  font-size: var(--fs-sm);
-  border-radius: var(--radius-tier-2);
-  white-space: nowrap;
-  height: calc(var(--base) * 3);
-  align-self: flex-start;
-  font-weight: 500;
-  padding: var(--base);
-  transition: all ease;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  
+  background-color: var(--color-primary); // Primärfärg som standard
+  border-radius: var(--radius-tier-2);
+  border: 1px solid transparent; // För en snygg övergång
+  font-weight: 500;
+  
+  white-space: nowrap;
   cursor: pointer;
-  // ... andra stilar
+  transition: background-color 0.2s, color 0.2s, opacity 0.2s;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
 }
 
 .fullWidth {
   width: 100%;
 }
 
+/* --- VARIANTER --- */
+// Här definieras bara det som ändras, t.ex. färger
+
+.variantPrimary {
+  background-color: var(--color-primary);
+  color: var(--color-background);
+}
+
+.variantDestructive {
+  background-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.variantGhost {
+  background-color: transparent;
+  color: var(--color-text);
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+
+/* --- STORLEKAR --- */
+// Här definieras allt som har med storlek att göra: padding, font-size, height etc.
+
+.sizeDefault {
+  font-size: var(--fs-base);
+  padding: 0 var(--spacing-md);
+  height: 44px; // En bra standardhöjd
+}
+
+.sizeSmall {
+  font-size: var(--fs-sm);
+  padding: 0 var(--spacing-sm);
+  height: 36px;
+}
+
+.sizeLarge {
+  font-size: var(--fs-lg);
+  padding: 0 var(--spacing-lg); // Mer padding på sidorna
+  height: 52px; // Högre höjd
+}
+
+
+/* --- LADDNINGS-LÄGE --- */
+
 .contentHidden {
   visibility: hidden;
 }
 
 .loaderWrapper {
-  // Tar bort wrapper-diven från layoutflödet och låter den sväva fritt
   position: absolute;
-  
-  // Tricket för perfekt centrering
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-
-  // En extra säkerhetsåtgärd för att säkerställa att
-  // wrappern inte påverkar höjden eller layouten.
   line-height: 0;
 }

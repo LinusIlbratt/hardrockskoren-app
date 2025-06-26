@@ -1,0 +1,59 @@
+.container {
+  padding: 1rem;
+  max-width: 900px;
+  margin: 0 auto; // Centrera hela containern
+}
+
+.eventsContainer {
+  background-color: var(--color-dark-gray, #282828);
+  border: 1px solid var(--color-border, #4b5563);
+  border-radius: var(--radius-tier-1, 8px);
+  padding: 2.5rem;
+  margin-top: 1rem;
+}
+
+.mainTitle {
+  font-family: var(--font-heading);
+  font-size: 1.8rem;
+  color: var(--color-primary, #D2B48C);
+  margin: 0 0 2rem 0;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-align: center;
+}
+
+.eventSection {
+  // Lite utrymme mellan varje sektion (Repetitioner, Konserter etc.)
+  &:not(:last-child) {
+    margin-bottom: 2.5rem;
+  }
+}
+
+.sectionTitle {
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  color: #ccc;
+  margin: 0 0 1rem 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid var(--color-border, #4b5563);
+  padding-bottom: 0.5rem;
+}
+
+.eventList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.eventItem {
+  display: grid;
+  grid-template-columns: 60px 1fr auto; // Kolumner för datum, titel och eventuell plats
+  gap: 1.5rem;
+  align-items: center;
+  font-size: 1rem;
+  padding: 0.25rem 0;
+}

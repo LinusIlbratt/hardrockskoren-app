@@ -6,9 +6,9 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.7);
+  background-color: rgba(0, 0, 0);
+  padding-top: 20px;
   display: flex;
-  align-items: center;
   justify-content: center;
   z-index: 1000;
   animation: fadeIn 0.3s ease-out;
@@ -18,25 +18,30 @@
   background-color: var(--color-dark-gray);
   border: 1px solid var(--color-border);
   border-radius: 0.75rem;
-  padding: 2rem;
-  width: 100%;
-  max-width: 500px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
   animation: slideIn 0.3s ease-out;
+
+  // --- HÄR ÄR ÄNDRINGARNA FÖR STORLEKEN ---
+  width: 90vw; // Ta upp 90% av webbläsarens bredd
+  max-width: 1200px; // Men bli aldrig bredare än 1100px
+  height: 85vh; // Ta upp 80% av webbläsarens höjd
+  display: flex;
+  flex-direction: column; // Stapla header och content vertikalt
+  overflow: hidden; // Förhindra att innehåll "blöder" utanför rundade hörn
 }
 
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  flex-shrink: 0;
 }
 
 .title {
   font-family: var(--font-heading);
   font-size: 1.5rem;
   color: var(--color-primary);
-  margin: 0;
+  margin-left: 20px;
 }
 
 .closeButton {
@@ -50,6 +55,40 @@
   &:hover {
     color: #fff;
   }
+}
+
+.content {
+  flex-grow: 1;
+  overflow: hidden; // Byt från 'auto' till 'hidden'
+  position: relative; // VIKTIGT: Gör denna till en positionerings-kontext
+  padding: 0; // Ta bort padding härifrån, annars får iframen fel storlek
+}
+
+
+// --- LÄGG TILL DENNA NYA KLASS ---
+.pdfViewer {
+  // Tvinga iframen att fylla sin förälder (.content) helt och hållet
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none; // Ta bort eventuell standard-ram
+}
+
+.textContent {
+  // Denna klass är för .txt-filer och kan behöva lite padding igen
+  padding: 1.5rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Menlo', 'Consolas', 'Courier New', monospace;
+  font-size: 0.95rem;
+  line-height: 1.7;
+  color: #333;
+  margin: 0;
+  // Eftersom .content inte längre har padding, lägger vi till scroll här
+  height: 100%;
+  overflow-y: auto;
 }
 
 // Animationer

@@ -47,16 +47,6 @@
   
   .grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-column: auto / span 12;
     gap: var(--base);
-
-    > * {
-      @media screen and (max-width: $tabletBreakpoint) {
-        grid-column: auto / span 6;
-      }
-
-      @media screen and (max-width: $mobileBreakpoint) {
-        grid-column: auto / span 12;
-      }
-    }
   }

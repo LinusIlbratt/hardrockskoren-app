@@ -1,38 +1,108 @@
-// MemberRepertoireMaterialPage.module.scss
+.playerContainer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 90px;
+  background-color: #181818;
+  color: white;
+  z-index: 2000;
 
-.textContent {
-  // --- VIKTIGASTE REGLERNA ---
-  white-space: pre-wrap; // Behåll formatering men bryt långa rader
-  word-break: break-word; // Bryt även extremt långa ord utan mellanslag
-
-  // --- FÖR LÄSBARHET (valfritt men rekommenderat) ---
-  font-family: 'Courier New', Courier, monospace;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: #333;
+  // --- ÄNDRING: Ny layout med space-between ---
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1.5rem;
+  box-sizing: border-box;
 }
 
-.playerContainer {
-  // Grundläggande positionering
-  position: fixed;
-  bottom: 20px; // Lite avstånd från bottenkanten
-  left: 50%;
-  transform: translateX(-50%); // Centrerar elementet horisontellt
-  z-index: 1000; // Ser till att den ligger överst på allt annat innehåll
+// Vänster sektion för låtinfo
+.trackInfo {
+  flex: 1; // Tar upp 1/3 av utrymmet
+  min-width: 180px;
+}
 
-  // Utseende (justera som du vill)
-  width: 90%; // Tar upp 90% av skärmens bredd...
-  max-width: 600px; // ...men blir aldrig bredare än 600px på stora skärmar
-  background-color: #282828; // En mörk bakgrundsfärg liknande Spotify
-  padding: 12px 20px;
-  border-radius: 12px;
-  box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.25); // En snygg skugga
-  transition: bottom 0.3s ease-in-out; // Mjuk animering om du skulle vilja dölja/visa den
+.trackTitle {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
-  // Se till att audio-elementet fyller ut sin behållare
-  audio {
-    width: 100%;
-    // Här kan du även ändra utseendet på själva spelaren, 
-    // t.ex. med filter för att ändra färg.
+// Mitten-sektionen för kontroller
+.controls {
+  flex: 1; // Tar upp 1/3 av utrymmet
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+
+  .playPauseButton {
+    background: white;
+    color: black;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+
+    &:hover {
+      transform: scale(1.05);
+    }
   }
+
+  .timeControls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 500px;
+  }
+}
+
+// Höger sektion för volym
+.volumeControl {
+  flex: 1; // Tar upp 1/3 av utrymmet
+  display: flex;
+  justify-content: flex-end;
+  min-width: 180px;
+}
+
+.time {
+  font-size: 0.75rem;
+  color: #b3b3b3;
+}
+
+// Styling för sliders (samma som innan, men repeteras för tydlighet)
+.timelineSlider, .volumeSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: #4d4d4d;
+  outline: none;
+  border-radius: 2px;
+  cursor: pointer;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+  }
+}
+
+.timelineSlider {
+  width: 100%;
+}
+
+.volumeSlider {
+  width: 100px;
 }

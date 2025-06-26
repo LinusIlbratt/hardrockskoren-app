@@ -1,26 +1,40 @@
 // src/styles/_typography.scss
 
-// Denna fil behöver inga importer! Den använder de globala variablerna från :root.
+// Grundinställningar för hela sidan
+html {
+  font-size: 100%; // Sätter 1rem = 16px (eller användarens val)
+  box-sizing: border-box;
+}
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
 body {
   margin: 0;
   font-family: var(--font-body);
   color: var(--color-text);
   background-color: var(--color-background);
   font-size: var(--fs-base);
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+// Grundstilar för rubriker (detta är nu mobil-stilarna)
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
+  color: var(--color-primary);
+  line-height: 1.2;
+  margin: var(--spacing-lg) 0 var(--spacing-md) 0;
 }
 
-h1 { font-size: var(--fs-xxl); }
-h2 { font-size: var(--fs-xl); }
-h3 { font-size: var(--fs-lg); }
+h1 { font-size: var(--fs-h1); } // 32px på mobil
+h2 { font-size: var(--fs-h2); } // 24px på mobil
+h3 { font-size: var(--fs-h3); } // 20px på mobil
+h4 { font-size: var(--fs-h4); } // 18px på mobil
 
 p {
-  line-height: 1.6;
+  margin: 0 0 var(--spacing-md) 0;
 }
 
 a {
@@ -29,4 +43,16 @@ a {
   &:hover {
     text-decoration: underline;
   }
+}
+
+
+// --- RESPONSIV TYPOGRAFI (Mobile-First) ---
+// Nu skalar vi UPP för större skärmar.
+@media (min-width: #{$tabletBreakpoint}) {
+  
+  // Gör rubrikerna större på surfplattor och uppåt
+  h1 { font-size: var(--fs-display); } // 48px på desktop
+  h2 { font-size: var(--fs-h1); }      // 32px på desktop
+  h3 { font-size: var(--fs-h2); }      // 24px på desktop
+  h4 { font-size: var(--fs-h3); }      // 20px på desktop
 }
