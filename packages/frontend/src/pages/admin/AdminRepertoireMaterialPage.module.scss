@@ -1,0 +1,111 @@
+@use '@/styles/variables' as *;
+
+.page {
+  padding: var(--spacing-md);
+
+  @media (min-width: #{$tabletBreakpoint}) {
+    padding: var(--spacing-xl);
+  }
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: var(--spacing-lg);
+  color: #a0a0a0;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+
+  @media (min-width: #{$tabletBreakpoint}) {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.repertoireTitle {
+  margin: 0;
+}
+
+.subHeader {
+  margin: 0;
+  color: #a0a0a0;
+  font-family: var(--font-body);
+}
+
+// Behållare för listan
+.materialList {
+  list-style: none;
+  padding: 0;
+  margin: 0;  
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+// Varje rad i listan
+.materialItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--color-dark-gray);
+
+  &:not(:first-child) {
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+.materialTitle {
+  font-weight: 500;
+  flex-grow: 1; // Se till att titeln tar upp allt ledigt utrymme
+  // Förhindra att långa titlar förstör layouten
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// NY: Behållare för alla ikon-knappar på en rad
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0; // Förhindra att knapp-gruppen kläms ihop
+}
+
+// NY: Generell stil för alla ikon-knappar
+.iconButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #a0a0a0;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-round);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background-color 0.2s;
+
+  &:hover {
+    background-color: var(--color-background-hover);
+    color: var(--color-text);
+  }
+}
+
+// Radera-knappen får en egen hover-färg
+.deleteButton {
+  &:hover {
+    color: var(--color-accent); // Använder din röda accent-färg
+  }
+}

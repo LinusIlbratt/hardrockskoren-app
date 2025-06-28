@@ -1,0 +1,11 @@
+@use '@/styles/variables' as *;
+
+.dashboardLayout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .header {
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: var(--spacing-sm);
+  }

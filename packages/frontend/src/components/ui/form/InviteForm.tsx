@@ -6,7 +6,7 @@ import styles from './InviteForm.module.scss';
 import type { RoleTypes } from '@hrk/core/types';
 
 // Denna URL bör flyttas till en central config-fil
-const API_BASE_URL = 'https://api.hardrockskoren.se';
+const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
 interface InviteFormProps {
   roleToInvite: RoleTypes; // Vilken roll bjuder vi in? 'user' eller 'leader'
@@ -35,7 +35,7 @@ export const InviteForm = ({ roleToInvite, onSuccess }: InviteFormProps) => {
 
     try {
       await axios.post(
-        `${API_BASE_URL}/admin/invites`,
+        `${API_BASE_URL}/invites`,
         { 
           emails: emailList, 
           groupSlug,

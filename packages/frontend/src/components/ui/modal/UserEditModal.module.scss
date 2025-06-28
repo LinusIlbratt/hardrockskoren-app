@@ -1,0 +1,122 @@
+@use '@/styles/variables' as *;
+
+// Huvudbehållare för vårt nya formulär
+.profileForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl); // Stort avstånd mellan sektionerna
+}
+
+// === 1. Header ===
+.profileHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background-color: var(--color-background-secondary);
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.headerText .fullName {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.headerText .emailAddress {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+// === 2. Formulärinnehåll ===
+.formContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg); // Avstånd mellan varje fältgrupp
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+
+  label {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--color-text);
+  }
+}
+
+.inputField {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  background-color: var(--color-background);
+  border-radius: var(--border-radius-md);
+  font-size: 1rem;
+  
+  // Stil för när fältet är skrivskyddat
+  &:read-only {
+    background-color: var(--color-background-secondary);
+    cursor: not-allowed;
+  }
+}
+
+.inputRow {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+// Segmented Control för roll-val
+.segmentedControl {
+  display: flex;
+  width: 100%;
+  padding: 4px;
+  background-color: var(--color-background-secondary);
+  border-radius: var(--border-radius-md);
+
+  button {
+    flex: 1; // Fyller tillgängligt utrymme
+    padding: 8px 12px;
+    border: none;
+    background-color: transparent;
+    border-radius: var(--border-radius-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+
+    &.active {
+      background-color: var(--color-background);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); // Subtil skugga som i exemplet
+      color: var(--color-text);
+    }
+  }
+}
+
+// === 3. Sidfot ===
+.modalFooter {
+  display: flex;
+  justify-content: space-between; // Knuffar isär elementen
+  align-items: center;
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.footerActions {
+  display: flex;
+  gap: var(--spacing-sm);
+}

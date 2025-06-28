@@ -96,10 +96,8 @@ export const MemberRepertoireMaterialPage = () => {
   };
 
   return (
-    <div className={styles.container}>
-      <Link to=".." className={styles.backLink}> &larr; Tillbaka till repertoaren </Link>
+    <div className={styles.container}>      
       <h1>Material</h1>
-
       {(() => {
         if (isLoading) return <p>Laddar material...</p>;
         if (error) return <p className={styles.error}>{error}</p>;

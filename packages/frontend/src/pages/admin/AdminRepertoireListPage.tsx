@@ -20,7 +20,7 @@ export const AdminRepertoireListPage = () => {
   const { groupName } = useParams<{ groupName: string }>();
   const [repertoires, setRepertoires] = useState<Repertoire[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // State för modaler
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [repertoireToDelete, setRepertoireToDelete] = useState<Repertoire | null>(null);
@@ -57,7 +57,7 @@ export const AdminRepertoireListPage = () => {
   // Funktion för att hantera bekräftelse av radering
   const handleConfirmDelete = async () => {
     if (!repertoireToDelete || !groupName) return;
-    
+
     setIsDeleting(true);
     const token = localStorage.getItem('authToken');
     try {
@@ -79,21 +79,22 @@ export const AdminRepertoireListPage = () => {
   }
 
   return (
-    <div>
+    <div className={styles.page}>
       <div className={styles.header}>
         <h2>Låtar i Repertoaren</h2>
         <Button onClick={() => setIsCreateModalOpen(true)}>Skapa ny låt</Button>
       </div>
-      
+
       <ul className={styles.repertoireList}>
         {repertoires.length > 0 ? (
           repertoires.map(item => (
             <li key={item.repertoireId} className={styles.repertoireItem}>
-              <Link to={`${item.repertoireId}/materials`} state={{ repertoireTitle: item.title }}>
-                {item.title} - {item.artist}
+              <Link to={`${item.repertoireId}/materials`} state={{ repertoireTitle: item.title }} className={styles.songLink}>
+                <span className={styles.songTitle}>{item.title}</span>
+                <span className={styles.songArtist}>{item.artist}</span>
               </Link>
-              <button 
-                onClick={() => setRepertoireToDelete(item)} 
+              <button
+                onClick={() => setRepertoireToDelete(item)}
                 className={styles.deleteButton}
                 aria-label={`Radera ${item.title}`}
               >
@@ -117,8 +118,8 @@ export const AdminRepertoireListPage = () => {
       </Modal>
 
       {/* Modal för att bekräfta radering */}
-      <Modal 
-        isOpen={!!repertoireToDelete} 
+      <Modal
+        isOpen={!!repertoireToDelete}
         onClose={() => setRepertoireToDelete(null)}
         title="Bekräfta radering"
       >

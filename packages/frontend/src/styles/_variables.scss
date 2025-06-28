@@ -1,23 +1,15 @@
 // src/styles/_variables.scss
 
-// =============================================================================
-// ! SASS-VARIABLER (för SCSS-logik)
-// =============================================================================
-// Används för saker som inte kan vara CSS Custom Properties, som media query breakpoints.
 $tabletBreakpoint: 768px;
 $desktopBreakpoint: 1024px;
 $maxWidth: 1100px; // Kan användas för att begränsa bredden på containers.
+$baseFontSize: 15px;
 
-
-// =============================================================================
-// ! CSS CUSTOM PROPERTIES (Design Tokens)
-// =============================================================================
-// Definieras på :root för att vara globalt tillgängliga i hela appen.
-// All styling i komponenter bör använda dessa variabler.
 
 :root {
   // --- FÄRGER ---
   --color-background: #121212;
+  --color-background-hover: #373737;
   --color-text: #E0E0E0;
   --color-primary: #D2B48C; // Beige
   --color-accent: #B22222; // Röd
@@ -30,6 +22,8 @@ $maxWidth: 1100px; // Kan användas för att begränsa bredden på containers.
 
   // --- TYPOGRAFISK SKALA (i rem) ---
   // Baseras på att 1rem = 16px (eller webbläsarens standard).
+  --fs-xxs: 0.625rem; // 10px
+  --fs-xs: 0.75rem;     // 12px
   --fs-sm: 0.875rem;    // 14px
   --fs-base: 1rem;      // 16px
   --fs-lg: 1.125rem;    // 18px

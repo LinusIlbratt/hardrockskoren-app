@@ -1,9 +1,10 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { LoginPage } from "@/pages/LoginPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AdminLayout } from '@/components/layout/AdminLayout';
+import { LeaderLayout } from "@/components/layout/LeaderLayout";
 import { UserLayout } from "@/components/layout/UserLayout";
 import { AdminGroupListPage } from '@/pages/admin/AdminGroupListPage';
 import { GroupDashboardLayout } from '@/components/layout/GroupDashboardLayout';
@@ -13,9 +14,11 @@ import { AdminUserManagementPage } from "@/pages/admin/AdminUserManagementPage";
 import { RegistrationPage } from "@/pages/RegistrationPage";
 import { AdminEventPage } from "@/pages/admin/AdminEventPage";
 import { MemberDashboard } from "@/pages/member/MemberDashboard";
+import { LeaderDashboard } from "@/pages/leader/LeaderDashboard";
 import { MemberListRepertoirePage } from "@/pages/member/MemberListRepertoirePage";
 import { MemberRepertoireMaterialPage } from "@/pages/member/MemberRepertoireMaterialPage";
 import { MemberEventPage } from "@/pages/member/MemberEventPage";
+import { AdminRepertoireMaterialPage } from "@/pages/admin/AdminRepertoireMaterialPage";
 import { Outlet } from 'react-router-dom';
 
 const router = createBrowserRouter([
@@ -70,7 +73,7 @@ const router = createBrowserRouter([
                   },
                   {
                     path: "repertoires/:repertoireId/materials",
-                    element: <p>Repertoire Materials Page</p>, // Placeholder för repertoarmaterial
+                    element: <AdminRepertoireMaterialPage />, // Placeholder för repertoarmaterial
                   },
                   {
                     path: "concerts",
@@ -78,10 +81,50 @@ const router = createBrowserRouter([
                   },
                   {
                     path: "users",
-                    element: <AdminUserManagementPage />, // Använd den nya komponenten här
+                    element: <AdminUserManagementPage viewerRole="admin" />, // Använd den nya komponenten här
                   },
                 ],
               },
+            ],
+          },
+          {
+            // Sektion för Körledare
+            path: "leader",
+            element: <LeaderLayout />,
+            children: [
+              // Denna route är för när en specifik kör har valts
+              // URL: /leader/choir/:groupName
+              {
+                path: "choir/:groupName",
+                element: <LeaderDashboard />, 
+                children: [
+                  {
+                    // Detta gör "repertoires" till default-sidan
+                    index: true,
+                    element: <Navigate to="repertoires" replace /> 
+                  },
+                  {
+                    path: "repertoires",
+                    element: <AdminRepertoireListPage />, 
+                  },
+                  {
+                    path: "repertoires/:repertoireId/materials",
+                    element: <AdminRepertoireMaterialPage />, // Placeholder för repertoarmaterial
+                  },
+                  {
+                    path: "concerts",
+                    element: <AdminEventPage />,
+                  },
+                  {
+                    path: "users",
+                    element: <AdminUserManagementPage viewerRole="leader" />
+                  },
+                  {
+                    path: "practice",
+                    element: <div>Sjungupp-sida för leader</div>,
+                  }
+                ]
+              }
             ],
           },
           {

@@ -1,55 +1,102 @@
 @use '@/styles/variables' as *;
 
+// .page och .header är samma som på AdminEventPage
+.page {
+  padding: var(--spacing-md);
+}
+
 .header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  
+  @include column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+
   h2 {
     margin: 0;
-    color: var(--color-primary);
   }
 }
 
+// Behållare för listan med låtar
 .repertoireList {
   list-style: none;
   padding: 0;
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
 }
 
+// Varje enskild rad/låt i listan
 .repertoireItem {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  background-color: var(--color-dark-gray);
-  border: 1px solid var(--color-border);
-  border-radius: 0.25rem;
-  transition: all 0.2s ease;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) 0; // Padding bara upp och ner
 
-  &:hover {
-    border-color: var(--color-primary);
-  }
-
-  a {
-    padding: 1rem 1.25rem;
-    color: var(--color-text);
-    text-decoration: none;
-    flex-grow: 1; // Länken tar upp allt tillgängligt utrymme
+  // Separera varje rad med en linje, förutom den sista
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--color-border);
   }
 }
 
+// Länken som omsluter titel och artist
+.songLink {
+  flex-grow: 1; // Tar upp allt ledigt utrymme
+  color: var(--color-text);
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  // Vi tar bort hover-effekten härifrån...
+}
+
+.songTitle {
+  font-weight: 600;
+  transition: color 0.2s ease;
+
+  // ...och lägger den här istället. Bara texten ändrar färg.
+  .songLink:hover & {
+    color: var(--color-primary);
+  }
+}
+
+.songArtist {
+  font-size: var(--fs-sm);
+  color: #a0a0a0;
+}
+
+// Radera-knappen (exakt samma stil som på AdminEventPage)
 .deleteButton {
   background: none;
   border: none;
-  color: #9ca3af;
   cursor: pointer;
-  padding: 1rem;
-  
+  color: #a0a0a0;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-round);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background-color 0.2s;
+
   &:hover {
     color: var(--color-accent);
+    background-color: rgba(178, 34, 34, 0.1);
+  }
+}
+
+/* --- RESPONSIVA STILAR FÖR STÖRRE SKÄRMAR --- */
+@media (min-width: #{$tabletBreakpoint}) {
+  .page {
+    padding: var(--spacing-xl);
+  }
+
+  // På desktop, lägg titel och artist på samma rad för en mer kompakt vy
+  .songLink {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--spacing-sm);
+  }
+
+  .songArtist::before {
+    content: '-';
+    margin-right: var(--spacing-sm);
+    color: #a0a0a0;
   }
 }

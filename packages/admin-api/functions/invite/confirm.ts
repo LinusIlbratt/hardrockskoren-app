@@ -45,8 +45,6 @@ export const handler = async (
         { Name: "family_name", Value: family_name },
         { Name: "email_verified", Value: "true" },
         { Name: "custom:role", Value: invite.role },
-        // KORRIGERING 1: Använd det nya, korrekta fältet från invite-objektet
-        { Name: "custom:group", Value: invite.groupSlug },
       ],
       MessageAction: "SUPPRESS",
     });
