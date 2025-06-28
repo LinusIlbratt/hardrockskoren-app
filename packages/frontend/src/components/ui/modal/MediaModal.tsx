@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
 import type { Material } from '@/types/index';
-import styles from './Modal.module.scss'; // Kan återanvända samma styling
+import styles from './MediaModal.module.scss'; // Kan återanvända samma styling
 import { IoClose } from 'react-icons/io5';
 
 interface MediaModalProps {

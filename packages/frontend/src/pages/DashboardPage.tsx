@@ -17,6 +17,20 @@ export const DashboardPage = () => {
   if (user.role === 'admin') {
     return <Navigate to="/admin/groups" replace />;
   } 
+
+  if (user.role === 'leader') {
+  const leaderGroupSlug = user.groups?.[0]; 
+
+  if (leaderGroupSlug) {
+    // Skicka dem direkt till den specifika körens dashboard-sida
+    return <Navigate to={`/leader/choir/${leaderGroupSlug}/repertoires`} replace />;
+  }
+  
+  // Fallback om de av någon anledning inte har en grupp
+  // Skicka dem till en tom leader-sida eller en fel-sida.
+  // För nu skickar vi dem till en generell /leader-sida.
+  return <Navigate to="/leader" replace />;
+}
   
   // Om det är en vanlig användare, skicka till deras personliga dashboard
   return <Navigate to="/user/me" replace />;

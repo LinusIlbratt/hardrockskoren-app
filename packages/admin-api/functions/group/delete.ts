@@ -1,26 +1,22 @@
 import middy from "@middy/core";
 import { sendResponse, sendError } from "../../../core/utils/http";
+// Importera din AuthContext-typ för att få typsäkerhet
+import { AuthContext } from "../../../core/types"; 
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { DynamoDBClient, QueryCommand, BatchWriteItemCommand, WriteRequest } from "@aws-sdk/client-dynamodb";
-import { CognitoIdentityProviderClient, DeleteGroupCommand, AdminGetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
+import { CognitoIdentityProviderClient, DeleteGroupCommand } from "@aws-sdk/client-cognito-identity-provider";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
 
 export const handler = middy().handler(
+  // Använd din AuthContext-typ för att få IntelliSense på event.requestContext.authorizer.lambda
   async (
-    event: APIGatewayProxyEventV2WithLambdaAuthorizer<any>
+    event: APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>
   ): Promise<APIGatewayProxyResultV2> => {
     try {
-      // --- Verifiera Admin-roll ---
+      
       const userPoolId = process.env.COGNITO_USER_POOL_ID as string;
-      const userId = event.requestContext.authorizer.lambda.uuid;
-      const userCommand = new AdminGetUserCommand({ UserPoolId: userPoolId, Username: userId });
-      const userResponse = await cognitoClient.send(userCommand);
-      const roleAttribute = userResponse.UserAttributes?.find(attr => attr.Name === "custom:role");
-      if (roleAttribute?.Value !== "admin") {
-        return sendError(403, "Forbidden: You do not have permission to delete groups.");
-      }
 
       // 'name' här är egentligen groupSlug från URL:en
       const groupSlug = event.pathParameters?.name;

@@ -1,57 +1,71 @@
-// src/components/ui/form/CreateEventForm.module.scss
+@use '@/styles/variables' as *;
 
-// Importera dina globala variabler och mixins för att kunna använda dem
-@import '@/styles/variables';
-
-// Huvudklassen för hela formuläret.
-// Denna klass agerar nu som både layout-container OCH den visuella "kort"-behållaren.
+// Behållaren för hela formuläret
 .form {
-  // Stilar för layout (från din @mixin)
-  @include column;
-  gap: var(--gap-large); // Ett lite större mellanrum mellan varje FormGroup
-
-  // Stilar för utseende ("kortet")
-  background-color: var(--color-dark-gray);
-  border-radius: var(--radius-tier-1);
-  padding: var(--pading-large);
-  border: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column; // Stapla alla formulär-element vertikalt
+  gap: var(--spacing-lg);  // Skapa ett konsekvent, luftigt avstånd mellan varje element
 }
 
-// Stilar för de specifika formulärfälten
-.select,
-.textarea {
+// En gemensam bas för alla våra fält för att hålla dem konsekventa
+// Detta är en SASS "placeholder" som vi återanvänder med @extend
+%form-field-base {
+  display: block;
   width: 100%;
-  padding: var(--padding-sml) var(--padding);
-  background-color: var(--color-background);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-tier-2);
+  padding: var(--spacing-md);
+  font-size: var(--fs-base); // Förhindrar auto-zoom på iOS
   font-family: var(--font-body);
-  font-size: var(--fs-base);
-  transition: border-color 0.2s;
+  color: var(--color-text);
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  -webkit-appearance: none; // Ta bort iOS-specifikt utseende
+  appearance: none;
 
   &:focus {
     outline: none;
     border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(210, 180, 140, 0.3);
   }
 }
 
+// Applicera bas-stilen på alla våra fält-typer
+.input, .select, .textarea {
+  @extend %form-field-base;
+}
+
+// Specifik styling för dropdown-menyn (<select>)
+.select {
+  cursor: pointer;
+  // Trick för att lägga till en egen pil-ikon
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.25em;
+  padding-right: 2.5rem; // Ge plats för pilen
+}
+
+// Specifik styling för textrutan (<textarea>)
 .textarea {
-  min-height: 100px;
-  resize: vertical;
+  min-height: 120px; // Ge den en bra starthöjd
+  resize: vertical; // Tillåt användaren att bara ändra höjden, inte bredden
+  padding-top: var(--spacing-sm); // Lite annorlunda padding för textrutor
+  padding-bottom: var(--spacing-sm);
 }
 
-// Stil för att gruppera knappar
+// Behållare för knapparna längst ner
 .buttonGroup {
-  @include row; // Använder din mixin
-  justify-content: flex-start;
-  align-items: center;
-  gap: var(--gap);
-  margin-top: var(--margin-sml); // Lite extra utrymme ovanför knapparna
+  display: flex;
+  justify-content: flex-end; // Placera knapparna till höger
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
 }
 
-// Stil för felmeddelanden
+// Styling för felmeddelanden
 .error {
-    color: var(--color-accent); // Använder din globala accent-färg för fel
-    font-weight: bold;
+  color: var(--color-accent);
+  font-size: var(--fs-sm);
+  text-align: center;
+  // Ingen extra marginal behövs tack vare gap i .form
 }

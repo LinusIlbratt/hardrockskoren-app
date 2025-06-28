@@ -52,7 +52,6 @@ createGlobalMaterial:
   events:
     - httpApi:
         method: POST
-        # Ny, enklare och global sökväg
         path: /materials 
         authorizer:
           name: centralJwtAuthorizer
@@ -98,7 +97,7 @@ listAllGlobalMaterials:
   events:
     - httpApi:
         method: GET
-        path: /materials # <-- Samma sökväg som create, men med GET-metoden
+        path: /materials 
         authorizer:
           name: centralJwtAuthorizer # Alla inloggade (admins/körledare) ska kunna se listan
   environment:
@@ -230,7 +229,7 @@ listRepertoires:
 listMaterialsInRepertoire:
   handler: functions/listMaterialsInRepertoire.handler
   name: hrk-list-materials-in-repertoire-${sls:stage}
-  description: Fetches all material files for a specific repertoire item.
+  description: Fetches all material files linked to a specific repertoire item.
   events:
     - httpApi:
         method: GET
@@ -242,7 +241,8 @@ listMaterialsInRepertoire:
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - "dynamodb:Query"
+        - "dynamodb:Query"        # För att hitta kopplingsobjekten
+        - "dynamodb:BatchGetItem" # FÖR ATT HÄMTA DETALJERNA FÖR MATERIALET
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
 
@@ -265,3 +265,26 @@ deleteRepertoire:
         - "dynamodb:BatchWriteItem" # För att radera dem
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+linkMaterialToRepertoire:
+  handler: functions/linkMaterialToRepertoire.handler
+  name: hrk-link-material-to-repertoire-${sls:stage}
+  description: Links one or more global materials to a specific repertoire.
+  events:
+    - httpApi:
+        method: POST
+        path: /groups/{groupName}/repertoires/{repertoireId}/link-materials
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+    COGNITO_USER_POOL_ID: ${self:custom.userPoolId}
+  iamRoleStatements:
+    - Effect: "Allow"
+      # BatchWriteItem är en effektivare version av PutItem för flera objekt
+      Action: ["dynamodb:BatchWriteItem"] 
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminGetUser"]
+      Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]

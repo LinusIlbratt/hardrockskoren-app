@@ -14,12 +14,7 @@
   // --- MOBIL-STILAR (standard) ---
   // Viktigt! Skapa utrymme för den fasta navigationen så innehållet inte hamnar bakom.
   // Justera detta värde så att det matchar höjden på din MainNav (t.ex. 70px).
-  padding-top: 70px; 
-  
-  // Lite luft på sidorna på mobilen
-  padding-left: var(--spacing-md);
-  padding-right: var(--spacing-md);
-  padding-bottom: var(--spacing-xl);
+  padding-top: 50px; 
 
 
   // --- DESKTOP-STILAR (skalar upp) ---
@@ -29,9 +24,5 @@
     width: 100%;
     max-width: $maxWidth; // Använder variabeln från _variables.scss
     margin: 0 auto; // Centrerar blocket horisontellt
-
-    // Eventuellt större padding på större skärmar
-    padding-left: var(--spacing-xl);
-    padding-right: var(--spacing-xl);
   }
 }

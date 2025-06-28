@@ -3,8 +3,9 @@ import axios from 'axios';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
 import { FormGroup } from '@/components/ui/form/FormGroup';
+import { FileInput } from '@/components/ui/input/FileInput';
 import styles from './AdminUploadPage.module.scss';
-import type { Material } from '@/types'; 
+import type { Material } from '@/types';
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
 
@@ -41,14 +42,6 @@ export const AdminUploadPage = () => {
   useEffect(() => {
     fetchMaterials();
   }, [fetchMaterials]);
-  
-  // Formulärhantering
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFile(e.target.files[0]);
-      setStatusMessage(null);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +81,7 @@ export const AdminUploadPage = () => {
     }
     setSelectedIds(newSelectedIds);
   };
-  
+
   // Hantering av batch-radering
   const handleBatchDelete = async () => {
     if (selectedIds.size === 0) return;
@@ -99,7 +92,7 @@ export const AdminUploadPage = () => {
     setIsDeleting(true);
     const token = localStorage.getItem('authToken');
     try {
-      await axios.post(`${API_BASE_URL}/materials/batch-delete`, 
+      await axios.post(`${API_BASE_URL}/materials/batch-delete`,
         { materialIds: Array.from(selectedIds) },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -117,7 +110,7 @@ export const AdminUploadPage = () => {
   const { mediaFiles, documentFiles, otherFiles } = useMemo(() => {
     const isMediaFile = (key = '') => key.toLowerCase().match(/\.(mp3|wav|m4a|mp4)$/);
     const isDocumentFile = (key = '') => key.toLowerCase().match(/\.(pdf|txt|doc|docx)$/);
-    
+
     return {
       mediaFiles: materials.filter(m => isMediaFile(m.fileKey)),
       documentFiles: materials.filter(m => isDocumentFile(m.fileKey)),
@@ -149,14 +142,14 @@ export const AdminUploadPage = () => {
       <section>
         <h1 className={styles.title}>Mediabibliotek</h1>
         <p>Här kan du som admin ladda upp och hantera allt material som ska finnas tillgängligt i applikationen.</p>
-        
+
         {/* --- HÄR ÄR DEN ÅTERSTÄLLDA FORMULÄR-KODEN --- */}
         <form onSubmit={handleSubmit} className={styles.form}>
           <FormGroup label="Titel på fil (t.ex. Noter, Stämma 1)">
             <Input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
           </FormGroup>
-          <FormGroup label="Välj fil">
-            <Input id="file-upload" type="file" onChange={handleFileChange} required />
+          <FormGroup>
+            <FileInput id="file-upload" onFileSelect={setFile} value={file} />
           </FormGroup>
           <Button type="submit" isLoading={isUploading}>Ladda upp till biblioteket</Button>
         </form>
@@ -177,31 +170,31 @@ export const AdminUploadPage = () => {
           )}
         </div>
 
-        {isLoadingMaterials ? ( <p>Laddar material...</p> ) 
-        : materials.length > 0 ? (
-          <>
-            {mediaFiles.length > 0 && (
-              <div className={styles.categorySection}>
-                <h3>Mediafiler (Ljud & Video)</h3>
-                {renderMaterialList(mediaFiles)}
-              </div>
-            )}
-            {documentFiles.length > 0 && (
-              <div className={styles.categorySection}>
-                <h3>Dokument (Noter, Texter etc.)</h3>
-                {renderMaterialList(documentFiles)}
-              </div>
-            )}
-            {otherFiles.length > 0 && (
-              <div className={styles.categorySection}>
-                <h3>Övrigt</h3>
-                {renderMaterialList(otherFiles)}
-              </div>
-            )}
-          </>
-        ) : (
-          <p>Inga material har laddats upp till biblioteket ännu.</p>
-        )}
+        {isLoadingMaterials ? (<p>Laddar material...</p>)
+          : materials.length > 0 ? (
+            <>
+              {mediaFiles.length > 0 && (
+                <div className={styles.categorySection}>
+                  <h3>Mediafiler (Ljud & Video)</h3>
+                  {renderMaterialList(mediaFiles)}
+                </div>
+              )}
+              {documentFiles.length > 0 && (
+                <div className={styles.categorySection}>
+                  <h3>Dokument (Noter, Texter etc.)</h3>
+                  {renderMaterialList(documentFiles)}
+                </div>
+              )}
+              {otherFiles.length > 0 && (
+                <div className={styles.categorySection}>
+                  <h3>Övrigt</h3>
+                  {renderMaterialList(otherFiles)}
+                </div>
+              )}
+            </>
+          ) : (
+            <p>Inga material har laddats upp till biblioteket ännu.</p>
+          )}
       </section>
     </div>
   );

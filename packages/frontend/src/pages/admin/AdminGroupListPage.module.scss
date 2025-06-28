@@ -1,52 +1,89 @@
 @use '@/styles/variables' as *;
 
+// Huvudbehållaren för hela sidan
 .page {
-    max-width: $maxWidth;
-    width: 100%;
-    min-height: calc(100vh - 48px);
-    margin: 0 auto;
-    padding: var(--padding-sml);
-    @include column;
-  }
-  
-  .title {
-    margin-bottom: 2rem;
-    color: var(--color-primary);
-  }
+  padding: var(--spacing-md);
+  padding-bottom: var(--spacing-xxl); // Extra utrymme i botten
+}
 
-  .topBar {
-    display: flex;
-    justify-content: space-between; // Placerar filter och knapp på varsin sida
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 2rem;
-  }
+.title {
+  // Grundstilar för h1 tas från den globala _typography.scss,
+  // men vi kan lägga till specifik marginal här.
+  margin-bottom: var(--spacing-lg);
+}
 
-  .filterSection {
-    display: flex;
-    flex-grow: 1;
-    border-radius: var(--radius-tier-2);
-    @include row;
-    background-color: var(--color-dark-gray);
-    padding: var(--padding-sml);
-    svg {
-      color: var(--color-primary);
-    }
-  
-    input {
-      width: 100%;
-      appearance: none;
-      background: none;
-      border: none;
-      outline: none;
-      color: var(--color-text);
-      font-size: var(--fs-lg);
-      line-height: 100%;
+// Behållaren för filter och "Skapa Kör"-knappen
+.topBar {
+  display: flex;
+  flex-direction: column; // Stapla vertikalt på mobil
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+// Sektionen med filter-ikon och text-input
+.filterSection {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background-color: var(--color-dark-gray);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+
+  // Styling för sökfältet
+  input {
+    flex-grow: 1; // Ta upp allt ledigt utrymme
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--color-text);
+    font-size: var(--fs-base);
+    &::placeholder {
+      color: #9ca3af;
     }
   }
-  
+}
+
+// Rutnätet som håller alla kör-kort
+.grid {
+  display: grid;
+  gap: var(--spacing-lg);
+
+  // MOBIL (standard): 1 kolumn
+  grid-template-columns: 1fr;
+}
+
+
+/* =============================================== */
+/* --- RESPONSIVA STILAR FÖR STÖRRE SKÄRMAR --- */
+/* =============================================== */
+
+// När skärmen blir bredare än vår tablet-brytpunkt...
+@media (min-width: #{$tabletBreakpoint}) {
   .grid {
-    display: grid;
-    grid-column: auto / span 12;
-    gap: var(--base);
+    // ...visa 2 kolumner
+    grid-template-columns: repeat(2, 1fr);
   }
+
+  // (De andra stilarna för .page, .topBar etc. är kvar som de var)
+  .page {
+    padding: var(--spacing-xl);
+  }
+  .topBar {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .filterSection {
+  flex-grow: 1; // Tillåt sök-sektionen att växa och ta upp ledigt utrymme
+  margin-right: var(--spacing-xl); // Lägg till lite luft mellan sökfält och knapp
+}
+}
+
+// När skärmen blir bredare än vår desktop-brytpunkt...
+@media (min-width: #{$desktopBreakpoint}) {
+  .grid {
+    // ...visa 3 kolumner
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

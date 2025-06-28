@@ -4,11 +4,31 @@ import styles from './GroupNav.module.scss';
 export const GroupNav = () => {
   return (
     <nav className={styles.nav}>
-      {/* Notera att 'to'-sökvägen nu bara är den sista delen,
-          eftersom den är relativ till sin förälder-route */}      
-      <NavLink to="repertoires" end className={styles.navLink}>Repertoar</NavLink>
-      <NavLink to="concerts" className={styles.navLink}>Konserter & repdatum</NavLink>
-      <NavLink to="users" className={styles.navLink}>Användare</NavLink>
+      <NavLink
+        to="repertoires"
+        end
+        className={({ isActive }) =>
+          [styles.navLink, isActive ? 'active' : ''].join(' ')
+        }
+      >
+        Repertoar
+      </NavLink>
+      <NavLink
+        to="concerts"
+        className={({ isActive }) =>
+          [styles.navLink, isActive ? 'active' : ''].join(' ')
+        }
+      >
+        Konserter & repdatum
+      </NavLink>
+      <NavLink
+        to="users"
+        className={({ isActive }) =>
+          [styles.navLink, isActive ? 'active' : ''].join(' ')
+        }
+      >
+        Användare
+      </NavLink>
     </nav>
   );
 };

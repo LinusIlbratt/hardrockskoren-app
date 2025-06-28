@@ -1,19 +1,44 @@
-// src/components/ui/Input.module.scss
-
-// Ingen @use eller @import behövs här.
+@use '@/styles/variables' as *;
 
 .input {
-  background-color: var(--color-dark-gray);
-  padding: var(--padding-nano);
-  border-radius: 0.25rem;
+  // --- Grundläggande layout och storlek ---
+  display: block;
+  width: 100%; // Ta upp hela tillgängliga bredden
+  height: 48px; // En bra, tryckvänlig höjd för mobilen
+  padding: 0 var(--spacing-md); // Luft på sidorna inuti fältet
+  
+  // --- Utseende ---
+  background-color: var(--color-background-hover); // Något ljusare än bakgrunden
   border: 1px solid var(--color-border);
-  margin-left: var(--margin-nano);
-  margin-bottom: var(--margin-sml);
+  border-radius: var(--radius-md);
   color: var(--color-text);
-  font-size: 1rem;
-  outline: none;
-  width: 90%;
+  
+  // --- Typografi ---
+  font-family: var(--font-body);
+  // Viktigt! 1rem (16px) förhindrar automatisk zoom på iOS
+  font-size: var(--fs-base); 
+
+  // Mjuk övergång för effekter
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  // Stil för placeholder-texten
   &::placeholder {
-    color: #6b7280;
+    color: #9ca3af;
+    opacity: 1;
+  }
+
+  // --- Interaktion ---
+  // Tydliggör vilket fält som är aktivt (har fokus)
+  &:focus {
+    outline: none; // Ta bort webbläsarens standard-ram
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(210, 180, 140, 0.3); // En snygg "glow"-effekt
+  }
+
+  // Stil för när fältet är inaktiverat
+  &:disabled {
+    background-color: var(--color-dark-gray);
+    cursor: not-allowed;
+    opacity: 0.7;
   }
 }

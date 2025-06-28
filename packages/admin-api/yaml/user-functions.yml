@@ -12,3 +12,34 @@ listUsersInGroup:
     - Effect: "Allow"
       Action: ["cognito-idp:ListUsersInGroup"]
       Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
+
+deleteUserFromGroup:
+  handler: functions/user/delete.handler
+  name: hrk-delete-user-from-group-${sls:stage}
+  events:
+    - httpApi:
+        method: DELETE
+        path: /groups/{groupSlug}/users
+        authorizer: authorizer
+  environment:
+    USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminRemoveUserFromGroup"]
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
+
+
+updateUserRole:
+  handler: functions/user/update.handler
+  name: hrk-update-user-role-${sls:stage}
+  events:
+    - httpApi:
+        method: PATCH
+        path: /groups/{groupSlug}/users
+        authorizer: authorizer
+  environment:
+    USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminUpdateUserAttributes"]
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"

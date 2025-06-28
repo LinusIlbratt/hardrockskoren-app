@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import styles from './MediaPlayer.module.scss';
-import { FaPlay, FaPause } from 'react-icons/fa';
+import { FaPlay, FaPause, FaVolumeUp, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 
 interface MediaPlayerProps {
   src: string;
@@ -8,13 +8,16 @@ interface MediaPlayerProps {
 }
 
 export const MediaPlayer = ({ src, title }: MediaPlayerProps) => {
-  // Ref för att direkt kunna styra audio-elementet
   const audioRef = useRef<HTMLAudioElement>(null);
-
-  // States för att hålla koll på spelarens status
   const [isPlaying, setIsPlaying] = useState(true);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
+  const [isPlayerVisible, setIsPlayerVisible] = useState(true);
+
+  // Effekt som ser till att spelaren alltid visas när en ny låt väljs
+  useEffect(() => {
+    setIsPlayerVisible(true);
+  }, [src]);
 
   // Hantera play/pause-klick
   const togglePlayPause = () => {
@@ -43,6 +46,7 @@ export const MediaPlayer = ({ src, title }: MediaPlayerProps) => {
 
   // Funktion för att formatera tid från sekunder till MM:SS
   const formatTime = (time: number) => {
+    if (isNaN(time)) return '0:00';
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
@@ -52,57 +56,54 @@ export const MediaPlayer = ({ src, title }: MediaPlayerProps) => {
     const audio = audioRef.current;
     if (!audio) return;
 
-    // Sätt initial state när ljudfilen har laddat metadata
     const setAudioData = () => {
       setDuration(audio.duration);
       setCurrentTime(audio.currentTime);
     }
-
-    // Uppdatera nuvarande tid när låten spelas
     const updateCurrentTime = () => setCurrentTime(audio.currentTime);
 
     audio.addEventListener('loadedmetadata', setAudioData);
     audio.addEventListener('timeupdate', updateCurrentTime);
 
-    // Städa upp event listeners när komponenten försvinner
     return () => {
       audio.removeEventListener('loadedmetadata', setAudioData);
       audio.removeEventListener('timeupdate', updateCurrentTime);
     }
   }, []);
 
+  // Bygg klassnamnen dynamiskt för att visa/dölja
+  const playerClasses = `${styles.playerContainer} ${!isPlayerVisible ? styles.hidden : ''}`;
+
   return (
-    <div className={styles.playerContainer}>
-      {/* Osynlig audio-tagg, oförändrad */}
+    <div className={playerClasses}>
       <audio ref={audioRef} src={src} autoPlay onPlay={() => setIsPlaying(true)} onPause={() => setIsPlaying(false)} />
       
-      {/* VÄNSTER: Låtinformation */}
-      <div className={styles.trackInfo}>
-        <p className={styles.trackTitle}>{title}</p>
-        {/* Här kan man i framtiden lägga till artistnamn etc. */}
+      <div className={styles.nowPlayingInfo}>
+        <span className={styles.nowPlayingLabel}>Nu spelas:</span>
+        <span className={styles.trackTitle}>{title}</span>
       </div>
 
-      {/* MITTEN: Huvudkontroller (knapp och tidslinje) */}
-      <div className={styles.controls}>
+      <div className={styles.mainControls}>
         <button onClick={togglePlayPause} className={styles.playPauseButton}>
-          {isPlaying ? <FaPause size={14} /> : <FaPlay size={14} />}
+          {isPlaying ? <FaPause size={16} /> : <FaPlay size={16} />}
         </button>
-        <div className={styles.timeControls}>
-          <span className={styles.time}>{formatTime(currentTime)}</span>
-          <input 
-            type="range"
-            min="0"
-            max={duration || 0}
-            value={currentTime}
-            onChange={handleTimeSliderChange}
-            className={styles.timelineSlider}
-          />
-          <span className={styles.time}>{formatTime(duration)}</span>
-        </div>
       </div>
 
-      {/* HÖGER: Volym */}
+      <div className={styles.seekBarContainer}>
+        <span className={styles.time}>{formatTime(currentTime)}</span>
+        <input 
+          type="range"
+          min="0"
+          max={duration || 0}
+          value={currentTime}
+          onChange={handleTimeSliderChange}
+          className={styles.timelineSlider}
+        />
+        <span className={styles.time}>{formatTime(duration)}</span>
+      </div>
+
       <div className={styles.volumeControl}>
+        <FaVolumeUp size={16} className={styles.volumeIcon}/>
         <input 
           type="range"
           min="0"
@@ -113,6 +114,14 @@ export const MediaPlayer = ({ src, title }: MediaPlayerProps) => {
           className={styles.volumeSlider}
         />
       </div>
+      
+      <button 
+        className={styles.toggleButton} 
+        onClick={() => setIsPlayerVisible(!isPlayerVisible)}
+        aria-label={isPlayerVisible ? "Dölj spelare" : "Visa spelare"}
+      >
+        {isPlayerVisible ? <FaChevronDown size={16} /> : <FaChevronUp size={16} />}
+      </button>
     </div>
   );
 };

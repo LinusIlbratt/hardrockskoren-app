@@ -7,7 +7,7 @@ import { FormGroup } from '@/components/ui/form/FormGroup';
 import styles from './RegistrationPage.module.scss';
 
 // Denna URL bör flyttas till en central config-fil
-const API_BASE_URL = 'https://api.hardrockskoren.se';
+const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
 // Definierar datan vi får tillbaka när vi validerar en inbjudan
 interface ValidInvite {
@@ -40,7 +40,7 @@ export const RegistrationPage = () => {
 
     const validateInvite = async () => {
       try {
-        const response = await axios.get(`${API_BASE_URL}/admin/invites/${inviteId}`);
+        const response = await axios.get(`${API_BASE_URL}/invites/${inviteId}`);
         setInviteDetails(response.data);
       } catch (err) {
         setError("Denna inbjudan är ogiltig eller har gått ut.");
@@ -59,7 +59,7 @@ export const RegistrationPage = () => {
     setError(null);
 
     try {
-      await axios.post(`${API_BASE_URL}/admin/invites/${inviteId}/confirm`, {
+      await axios.post(`${API_BASE_URL}/invites/${inviteId}/confirm`, {
         given_name: firstName,
         family_name: lastName,
         password: password,

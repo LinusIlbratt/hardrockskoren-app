@@ -62,12 +62,7 @@ export const MainNav = () => {
                     </>
                 )}
 
-                {(user?.role === 'user' || user?.role === 'leader') && (
-                    <>
-                        <NavLink to="/user/me" end className={styles.navLink} onClick={handleLinkClick}>Min Sida</NavLink>
-                        {/* Fler länkar för vanliga användare kan läggas till här */}
-                    </>
-                )}
+             
 
                 {/* Denna version av användarinfon visas bara i den öppna mobilmenyn */}
                 <div className={styles.mobileOnlyUserInfo}>

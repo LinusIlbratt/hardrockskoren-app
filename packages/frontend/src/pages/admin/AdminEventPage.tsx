@@ -5,16 +5,10 @@ import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal/Modal';
 import { CreateRecurringEventForm } from '@/components/ui/form/CreateRecurringEventForm';
 import { CreateEventForm } from '@/components/ui/form/CreateEventForm'; // Ny import
+import { FiEdit } from 'react-icons/fi';
+import { IoTrashOutline } from 'react-icons/io5';
+import type { Event } from '@/types';
 import styles from './AdminEventPage.module.scss';
-
-// --- Typer ---
-interface Event {
-  eventId: string;
-  title: string;
-  eventDate: string;
-  eventType: 'CONCERT' | 'REHEARSAL';
-  description: string | null;
-}
 
 export const AdminEventPage = () => {
   const { groupName } = useParams<{ groupName: string }>();
@@ -80,62 +74,84 @@ export const AdminEventPage = () => {
   };
 
   return (
-    <div className={styles.pageLayout}>
-      <div className={styles.header}>
-        <h2>Hantera Events</h2>
-        <div className={styles.buttonGroup}>
-          <Button onClick={handleOpenCreateModal}>
-            Skapa enstaka event
-          </Button>
-          <Button variant={ButtonVariant.Ghost} onClick={() => setIsRecurringModalOpen(true)}>
-            Skapa återkommande
-          </Button>
-        </div>
+  <div className={styles.page}>
+    <div className={styles.header}>
+      <h2>Hantera Events</h2>
+      <div className={styles.buttonGroup}>
+        <Button onClick={handleOpenCreateModal}>
+          Skapa enstaka event
+        </Button>
+        <Button onClick={() => setIsRecurringModalOpen(true)}>
+          Skapa återkommande
+        </Button>
       </div>
-      <section className={styles.listSection}>
-        <div className={styles.topBar} style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 className={styles.title}>Befintliga Events</h2>
-
-        </div>
-        {isLoading ? (
-          <p>Laddar events...</p>
-        ) : (
-          <div className={styles.eventListWrapper}>
-            {/* Samma list-logik som förut... */}
-            {(() => {
-              const rehearsals = events.filter(e => e.eventType === 'REHEARSAL');
-              const concerts = events.filter(e => e.eventType === 'CONCERT');
-              return (
-                <>
-                  {rehearsals.length > 0 && (
-                    <div className={styles.listGroup}>
-                      <h3 className={styles.listHeader}>REPETITIONER</h3>
+    </div>
+    
+    <section className={styles.listSection}>
+      {isLoading ? (
+        <p>Laddar events...</p>
+      ) : events.length > 0 ? (
+        <>
+          {(() => {
+            const rehearsals = events.filter(e => e.eventType === 'REHEARSAL');
+            const concerts = events.filter(e => e.eventType === 'CONCERT');
+            
+            return (
+              <>
+                {rehearsals.length > 0 && (
+                  <div className={styles.listGroup}>
+                    <h3 className={styles.listHeader}>REPETITIONER</h3>
+                    <ul className={styles.eventList}>
                       {rehearsals.map(event => (
-                        <div key={event.eventId} className={styles.eventItem}>
-                          <div className={styles.itemDetails}><span className={styles.itemTitle}>{event.title}</span><span className={styles.itemDate}>{new Date(event.eventDate).toLocaleString('sv-SE', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span></div>
-                          <div className={styles.buttonGroup}><Button variant={ButtonVariant.Ghost} onClick={() => handleOpenEditModal(event)}>Redigera</Button><Button variant={ButtonVariant.Destructive} onClick={() => setEventToDelete(event)}>Radera</Button></div>
-                        </div>
+                        <li key={event.eventId} className={styles.eventItem}>
+                          <div className={styles.itemDetails}>
+                            <span className={styles.itemTitle}>{event.title}</span>
+                            <span className={styles.itemDate}>{new Date(event.eventDate).toLocaleString('sv-SE', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <div className={styles.actions}>
+                            <button className={styles.iconButton} onClick={() => handleOpenEditModal(event)} aria-label="Redigera">
+                              <FiEdit size={18} />
+                            </button>
+                            <button className={`${styles.iconButton} ${styles.deleteIcon}`} onClick={() => setEventToDelete(event)} aria-label="Radera">
+                              <IoTrashOutline size={20} />
+                            </button>
+                          </div>
+                        </li>
                       ))}
-                    </div>
-                  )}
-                  {concerts.length > 0 && (
-                    <div className={styles.listGroup}>
-                      <h3 className={styles.listHeader}>KONSERTER</h3>
+                    </ul>
+                  </div>
+                )}
+                {concerts.length > 0 && (
+                  <div className={styles.listGroup}>
+                    <h3 className={styles.listHeader}>KONSERTER</h3>
+                    <ul className={styles.eventList}>
                       {concerts.map(event => (
-                        <div key={event.eventId} className={styles.eventItem}>
-                          <div className={styles.itemDetails}><span className={styles.itemTitle}>{event.title}</span><span className={styles.itemDate}>{new Date(event.eventDate).toLocaleString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span></div>
-                          <div className={styles.buttonGroup}><Button variant={ButtonVariant.Ghost} onClick={() => handleOpenEditModal(event)}>Redigera</Button><Button variant={ButtonVariant.Destructive} onClick={() => setEventToDelete(event)}>Radera</Button></div>
-                        </div>
+                        <li key={event.eventId} className={styles.eventItem}>
+                          <div className={styles.itemDetails}>
+                            <span className={styles.itemTitle}>{event.title}</span>
+                            <span className={styles.itemDate}>{new Date(event.eventDate).toLocaleString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <div className={styles.actions}>
+                            <button className={styles.iconButton} onClick={() => handleOpenEditModal(event)} aria-label="Redigera">
+                              <FiEdit size={18} />
+                            </button>
+                            <button className={`${styles.iconButton} ${styles.deleteIcon}`} onClick={() => setEventToDelete(event)} aria-label="Radera">
+                              <IoTrashOutline size={20} />
+                            </button>
+                          </div>
+                        </li>
                       ))}
-                    </div>
-                  )}
-                  {events.length === 0 && <p>Inga events har skapats för denna grupp ännu.</p>}
-                </>
-              );
-            })()}
-          </div>
-        )}
-      </section>
+                    </ul>
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </>
+      ) : (
+        <p>Inga events har skapats för denna grupp ännu.</p>
+      )}
+    </section>
 
       {/* --- Modaler --- */}
 
