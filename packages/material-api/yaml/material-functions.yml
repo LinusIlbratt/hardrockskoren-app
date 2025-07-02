@@ -68,6 +68,30 @@ createGlobalMaterial:
       Action: ["cognito-idp:AdminGetUser"]
       Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
 
+createPracticeMaterial:
+    # Peka på den nya handler-filen vi diskuterade
+  handler: functions/createPracticeMaterial.handler 
+  name: hrk-create-practice-material-${sls:stage}
+  description: Creates a new global material item. (Admin only)
+  events:
+    - httpApi:
+        method: POST
+        path: /practice/materials 
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+    COGNITO_USER_POOL_ID: ${self:custom.userPoolId} # Lägg till denna
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action: ["dynamodb:PutItem"]
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI1"
+    - Effect: "Allow" # Lägg till detta block för Cognito
+      Action: ["cognito-idp:AdminGetUser"]
+      Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
+
 listMaterials:
   handler: functions/list.handler # Båda endpoints använder samma handler
   name: hrk-list-materials-${sls:stage}
@@ -109,25 +133,21 @@ listAllGlobalMaterials:
         # Viktigt att ge behörighet att göra en Query på GSI1-indexet
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI1"
 
-
-deleteMaterial:
-  handler: functions/delete.handler
-  name: hrk-delete-material-${sls:stage}
-  description: Deletes a specific material item for a group.
+listPracticeMaterials:
+  handler: functions/listPracticeMaterial.handler
+  name: hrk-list-all-practice-materials-${sls:stage}
   events:
     - httpApi:
-        method: DELETE
-        path: /groups/{groupName}/repertoires/{repertoireId}/materials/{materialId}
+        method: GET 
+        path: /practice/materials
         authorizer:
-          name: centralJwtAuthorizer
+          name: centralJwtAuthorizer 
   environment:
     MAIN_TABLE: ${self:custom.mainTableName}
   iamRoleStatements:
     - Effect: "Allow"
-      Action:
-        - "dynamodb:DeleteItem"
-      Resource:
-        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+      Action: ["dynamodb:Query"] # <-- Den nya behörigheten som krävs
+      Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
 
 deleteGlobalMaterial:
     handler: functions/deleteGlobalMaterial.handler
@@ -288,3 +308,80 @@ linkMaterialToRepertoire:
     - Effect: "Allow"
       Action: ["cognito-idp:AdminGetUser"]
       Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
+
+unlinkMaterialFromRepertoire:
+  handler: functions/unlinkMaterialFromRepertoire.handler
+  name: hrk-unlink-material-from-repertoire-${sls:stage}
+  description: Unlinks a specific material from a repertoire.
+  events:
+    - httpApi:
+        # Metoden ändras till DELETE
+        method: DELETE
+        # Sökvägen matchar den som används i din frontend-kod
+        path: /groups/{groupName}/repertoires/{repertoireId}/materials/{materialId}
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+    COGNITO_USER_POOL_ID: ${self:custom.userPoolId}
+  iamRoleStatements:
+    - Effect: "Allow"
+      # Behörigheten ändras till DeleteItem för att kunna ta bort en enskild post
+      Action: ["dynamodb:DeleteItem"] 
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      # Samma Cognito-behörighet behövs för att verifiera användarens roll
+      Action: ["cognito-idp:AdminGetUser"]
+      Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
+
+getSjunguppUploadUrl:
+  handler: functions/getPracticeUploadUrl.handler
+  name: hrk-get-practice-upload-url-${sls:stage}
+  description: Generates a pre-signed S3 URL for uploading practice material.
+  events:
+    - httpApi:
+        method: POST
+        path: /practice/upload-url # Den nya, dedikerade endpointen
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    # Säkerställ att du har mediaBucketName definierad i 'custom'-sektionen
+    MEDIA_BUCKET_NAME: ${self:custom.mediaBucketName}
+  
+  # --- HÄR ÄR DEN VIKTIGA DELEN SOM SAKNADES ---
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:PutObject"
+      # Begränsa behörigheten till enbart er S3-bucket och den nya mappen.
+      # '*' på slutet tillåter alla filnamn inuti den mappen.
+      Resource: "arn:aws:s3:::${self:custom.mediaBucketName}/practice/*"
+
+batchDeletePracticeMaterials:
+    handler: functions/batchDeletePracticeMaterials.handler
+    name: hrk-batch-delete-practice-materials-${sls:stage}
+    description: Deletes multiple practice materials from DynamoDB and S3. (Admin only)
+    events:
+      - httpApi:
+          method: POST # Använder POST för att kunna skicka med en body
+          path: /practice/batch-delete
+          authorizer:
+            name: centralJwtAuthorizer
+    environment:
+      MAIN_TABLE: ${self:custom.mainTableName}
+      MEDIA_BUCKET_NAME: ${self:custom.mediaBucketName}
+      COGNITO_USER_POOL_ID: ${self:custom.userPoolId}
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - "dynamodb:BatchGetItem"     # Ny behörighet
+          - "dynamodb:BatchWriteItem"   # Ny behörighet
+        Resource: ["arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"]
+      - Effect: "Allow"
+        Action:
+          - "s3:DeleteObjects"        # Ny, effektivare behörighet
+        Resource: ["arn:aws:s3:::${self:custom.mediaBucketName}/*"]
+      - Effect: "Allow"
+        Action: ["cognito-idp:AdminGetUser"]
+        Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]

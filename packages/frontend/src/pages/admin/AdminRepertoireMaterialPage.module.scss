@@ -1,7 +1,7 @@
 @use '@/styles/variables' as *;
 
 .page {
-  padding: var(--spacing-md);
+  padding: var(--spacing-xs);
 
   @media (min-width: #{$tabletBreakpoint}) {
     padding: var(--spacing-xl);
@@ -41,7 +41,6 @@
 .subHeader {
   margin: 0;
   color: #a0a0a0;
-  font-family: var(--font-body);
 }
 
 // Behållare för listan
@@ -61,6 +60,7 @@
   gap: var(--spacing-md);
   padding: var(--spacing-md) var(--spacing-lg);
   background-color: var(--color-dark-gray);
+  color: var(--color-text-secondary);
 
   &:not(:first-child) {
     border-top: 1px solid var(--color-border);
@@ -85,23 +85,42 @@
 }
 
 // NY: Generell stil för alla ikon-knappar
-.iconButton {
+.iconPlay, .iconView, .iconDelete {
   background: none;
   border: none;
   cursor: pointer;
-  color: #a0a0a0;
   padding: var(--spacing-sm);
   border-radius: var(--radius-round);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: color 0.2s, background-color 0.2s;
+}
+
+.iconPlay {
+  color: var(--color-icon-play);
+  transition: color 0.2s, background-color 0.2s;
 
   &:hover {
-    background-color: var(--color-background-hover);
-    color: var(--color-text);
+    background-color: var(--color-icon-play-hover); 
+  } 
+}
+.iconView {
+  color: var(--color-icon-view);
+  transition: color 0.2s, background-color 0.2s;
+  
+  &:hover {
+    background-color: var(--color-icon-view-hover); 
   }
 }
+.iconDelete {
+  color: var(--color-accent); // Använder standard sekundär textfärg
+  transition: color 0.2s, background-color 0.2s;
+
+  &:hover {
+    background-color: var(--color-primary); 
+  }
+} 
 
 // Radera-knappen får en egen hover-färg
 .deleteButton {

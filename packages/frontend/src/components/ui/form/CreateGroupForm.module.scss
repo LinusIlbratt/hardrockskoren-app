@@ -26,13 +26,7 @@
   }
 }
 
-// Styling för felmeddelanden
-.error {
-  color: var(--color-accent); // Använd accent-färgen för att visa fara
-  font-size: var(--fs-sm);
-  margin-top: calc(var(--spacing-lg) * -1 + var(--spacing-sm)); // Justera positionen lite
-  text-align: center;
-}
+
 
 // Just nu behövs ingen specifik styling för knappen eftersom den ärver
 // från den globala Button-komponenten. Om vi vill justera den specifikt

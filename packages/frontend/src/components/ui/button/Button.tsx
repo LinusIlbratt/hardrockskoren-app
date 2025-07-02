@@ -13,33 +13,46 @@ export enum ButtonSize {
   Small = 'Small',
   Default = 'Default',
   Large = 'Large',
+  Login = 'Login',
+  Logout = 'Logout', // Ny variant för logga ut-knappen
+}
+
+export enum ButtonRadius {
+  None = 'none',
+  Small = 'small',     // Ingen rundning (fyrkantig)
+  Medium = 'medium', // Normal rundning
+  Pill = 'pill',     // Helt rundad (piller-form)
 }
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
+  radius?: ButtonRadius;
   isLoading?: boolean;
   fullWidth?: boolean;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ 
-    className, 
-    variant = ButtonVariant.Primary, 
-    size = ButtonSize.Default, 
-    isLoading = false, 
+  ({
+    className,
+    variant = ButtonVariant.Primary,
+    size = ButtonSize.Default,
+    radius = ButtonRadius.None,
+    isLoading = false,
     fullWidth = false,
-    children, 
-    ...props 
+    children,
+    ...props
   }, ref) => {
-    
+
     // Bygg upp strängen med klassnamn dynamiskt
     const buttonClasses = [
-      styles.button, // Grundklassen
-      styles[`variant${variant.charAt(0).toUpperCase() + variant.slice(1)}`], // t.ex. styles.variantPrimary
-      styles[`size${size.charAt(0).toUpperCase() + size.slice(1)}`],       // t.ex. styles.sizeDefault
+      styles.button,
+      styles[`variant${variant.charAt(0).toUpperCase() + variant.slice(1)}`],
+      styles[`size${size.charAt(0).toUpperCase() + size.slice(1)}`],
+      radius !== ButtonRadius.None && styles[`radius${radius.charAt(0).toUpperCase() + radius.slice(1)}`],
+      // -------------------------
       fullWidth && styles.fullWidth,
-      className // Eventuella extra klasser från föräldern
+      className
     ].filter(Boolean).join(' ');
 
     return (
@@ -49,14 +62,13 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         disabled={isLoading || props.disabled}
         {...props}
       >
-        {/* --- ÄNDRING HÄR --- */}
-        {/* Visa alltid loadern om isLoading, men positionera den med CSS */}
+
         {isLoading && (
           <div className={styles.loaderWrapper}>
-            <Loader size={LoaderSize.SMALL} />
+            <Loader size={LoaderSize.REGULAR} />
           </div>
         )}
-        
+
         {/* Linda in children i en span så vi kan dölja den med CSS */}
         <span className={isLoading ? styles.contentHidden : ''}>
           {children}

@@ -2,7 +2,7 @@
 
 // Grundläggande layout för hela sidan
 .page {
-  padding: var(--spacing-md);
+  padding: var(--spacing-xs);
 }
 
 // Sidhuvudet med titel och knappar
@@ -36,7 +36,6 @@
 }
 
 .listHeader {
-  font-family: var(--font-heading);
   text-transform: uppercase;
   letter-spacing: 1px;
   font-size: var(--fs-base);

@@ -2,13 +2,12 @@
 
 // Huvudbehållaren för hela sidan
 .page {
-  padding: var(--spacing-md);
+  padding: var(--spacing-xs);
   padding-bottom: var(--spacing-xxl); // Extra utrymme i botten
 }
 
 .title {
-  // Grundstilar för h1 tas från den globala _typography.scss,
-  // men vi kan lägga till specifik marginal här.
+  color: var(--color-text);
   margin-bottom: var(--spacing-lg);
 }
 

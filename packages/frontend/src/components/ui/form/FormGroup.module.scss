@@ -9,15 +9,15 @@
 // Styling för etiketten (label)
 .label {
   margin-bottom: var(--spacing-sm); // Skapa avstånd ner till input-fältet
-  font-size: var(--fs-sm);
+  font-size: var(--fs-md);
   font-weight: 500;
-  color: #d1d5db; // En lite ljusare grå för att särskilja från vanlig text
+  color: var(--color-text); // En lite ljusare grå för att särskilja från vanlig text
   cursor: pointer;
 }
 
 // Styling för ett eventuellt felmeddelande kopplat till fältet
 .errorText {
-  color: var(--color-accent);
+  color: var(--color-primary); // Använd primärfärgen för felmeddelanden
   font-size: var(--fs-sm);
   margin-top: var(--spacing-sm); // Avstånd från input-fältet ner till felet
 }

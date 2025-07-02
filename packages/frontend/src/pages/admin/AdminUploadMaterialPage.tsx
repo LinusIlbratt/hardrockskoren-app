@@ -2,25 +2,43 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import axios from 'axios';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
+import { Modal } from '@/components/ui/modal/Modal';
 import { FormGroup } from '@/components/ui/form/FormGroup';
 import { FileInput } from '@/components/ui/input/FileInput';
-import styles from './AdminUploadPage.module.scss';
+import styles from './AdminUploadMaterialPage.module.scss';
 import type { Material } from '@/types';
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
 
-export const AdminUploadPage = () => {
+export const AdminUploadMaterialPage = () => {
   // States för uppladdning
   const [title, setTitle] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error' | 'destructive'; message: string } | null>(null);
 
   // States för listan och radering
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoadingMaterials, setIsLoadingMaterials] = useState(true);
   const [selectedIds, setSelectedIds] = useState(new Set<string>());
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+    useEffect(() => {
+    // Om det finns ett meddelande att visa...
+    if (statusMessage) {
+      // ...starta en timer.
+      // Tiden ska vara samma som animationens längd (4s = 4000ms).
+      const timer = setTimeout(() => {
+        // När timern är slut, nollställ meddelandet så att elementet försvinner.
+        setStatusMessage(null);
+      }, 4000); 
+
+      // Viktigt: Detta är en "cleanup"-funktion. Om komponenten skulle avmonteras
+      // innan timern är klar, ser vi till att avbryta timern för att undvika buggar.
+      return () => clearTimeout(timer);
+    }
+  }, [statusMessage]); 
 
   // Datahämtning
   const fetchMaterials = useCallback(async () => {
@@ -82,25 +100,30 @@ export const AdminUploadPage = () => {
     setSelectedIds(newSelectedIds);
   };
 
-  // Hantering av batch-radering
-  const handleBatchDelete = async () => {
-    if (selectedIds.size === 0) return;
-    if (!window.confirm(`Är du säker på att du vill radera ${selectedIds.size} valda material permanent?`)) {
-      return;
+
+  const handleOpenDeleteModal = () => {
+    if (selectedIds.size > 0) {
+      setIsDeleteModalOpen(true);
     }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (selectedIds.size === 0) return;
 
     setIsDeleting(true);
     const token = localStorage.getItem('authToken');
     try {
-      await axios.post(`${API_BASE_URL}/materials/batch-delete`,
-        { materialIds: Array.from(selectedIds) },
+      await axios.post(`${API_BASE_URL}/materials/batch-delete`, 
+        { materialIds: Array.from(selectedIds) }, 
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      setStatusMessage({ type: 'destructive', message: 'Materialet har blivit borttaget!' });
       setSelectedIds(new Set());
+      setIsDeleteModalOpen(false);
       fetchMaterials();
     } catch (error) {
       console.error("Failed to batch delete materials:", error);
-      alert("Kunde inte radera valda material.");
+      setStatusMessage({ type: 'success', message: 'Valda material har raderats.' });
     } finally {
       setIsDeleting(false);
     }
@@ -145,7 +168,17 @@ export const AdminUploadPage = () => {
 
         {/* --- HÄR ÄR DEN ÅTERSTÄLLDA FORMULÄR-KODEN --- */}
         <form onSubmit={handleSubmit} className={styles.form}>
-          <FormGroup label="Titel på fil (t.ex. Noter, Stämma 1)">
+          <FormGroup
+            htmlFor="file-title" // Glöm inte htmlFor för tillgänglighet!
+            label={
+              <>
+                Titel på fil{' '}
+                <span className={styles.labelHint}>
+                  (detta är det som medlemmarna ser)
+                </span>
+              </>
+            }
+          >
             <Input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
           </FormGroup>
           <FormGroup>
@@ -164,7 +197,7 @@ export const AdminUploadPage = () => {
         <div className={styles.listHeader}>
           <h2 className={styles.title}>Befintligt material i biblioteket</h2>
           {selectedIds.size > 0 && (
-            <Button variant={ButtonVariant.Destructive} onClick={handleBatchDelete} isLoading={isDeleting}>
+            <Button variant={ButtonVariant.Destructive} onClick={handleOpenDeleteModal} isLoading={isDeleting}>
               Radera valda ({selectedIds.size})
             </Button>
           )}
@@ -196,6 +229,25 @@ export const AdminUploadPage = () => {
             <p>Inga material har laddats upp till biblioteket ännu.</p>
           )}
       </section>
+
+      {/* Modal för att BEKRÄFTA RADERING */}
+                  <Modal 
+                    isOpen={isDeleteModalOpen} 
+                    onClose={() => setIsDeleteModalOpen(false)}
+                    title="Bekräfta radering"
+                  >
+                    <div>
+                      <p>Är du säker på att du vill radera materialet. Denna åtgärd kan inte ångras.</p>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+                      <Button variant={ButtonVariant.Ghost} onClick={() => (null)}>
+                          Avbryt
+                        </Button>
+                        <Button variant={ButtonVariant.Primary} isLoading={isDeleting} onClick={handleConfirmDelete}>
+                          Ja, radera
+                        </Button>
+                      </div>
+                    </div>
+                  </Modal>
     </div>
   );
 };

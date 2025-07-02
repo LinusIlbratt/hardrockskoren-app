@@ -8,17 +8,78 @@ $baseFontSize: 15px;
 
 :root {
   // --- FÄRGER ---
-  --color-background: #121212;
-  --color-background-hover: #373737;
-  --color-text: #E0E0E0;
-  --color-primary: #D2B48C; // Beige
-  --color-accent: #B22222; // Röd
-  --color-dark-gray: #282828;
-  --color-border: #4b5563;
+   /** * Bakgrundsfärg för hela sidan.
+   * I bilden är detta en djup, nästintill helt svart färg för maximal kontrast.
+   */
+  --color-background: #0A0A0A;
+
+  /**
+   * En mörkgrå färg för paneler, "cards" och widgets som ska ligga ovanpå bakgrunden.
+   * Används för t.ex. "Login form" och "New album"-sektionerna i bilden.
+   */
+  --color-dark-gray: #1A1A1A;
+
+  /**
+   * Hover-effekt för interaktiva ytor som list-items eller tabeller. 
+   * En subtil ljusning av --color-dark-gray för att ge visuell feedback.
+   */
+  --color-background-hover: #292929;
+
+  /**
+   * Hover-effekt för knappar och länkar. En mörkare grå för att ge en tydlig skillnad.
+   * Används för att indikera att ett element är interaktivt.
+   */
+  --color-background-hover-accent: #494949;
+
+  /**
+   * Primär textfärg för brödtext, rubriker och all viktig information.
+   * Ett brutet vitt för att vara aningen mjukare för ögonen än kritvitt.
+   */
+  --color-text: #F5F5F5;
+
+  /**
+   * NY: En sekundär textfärg för mindre viktig information.
+   * Används för metadata som datum, låtlängd, eller "posted by...". Skapar visuell hierarki.
+   */
+  --color-text-secondary: #A0A0A0;
+
+  /**
+   * Den primära action-färgen. I denna design är det den starka röda färgen.
+   * Används för huvudmenyn, viktiga knappar och andra element som ska fånga uppmärksamheten.
+   * Jag har satt denna till samma som --color-accent för att matcha bildens tema.
+   */
+  --color-primary: #fe160a;
+
+  /**
+   * Accentfärgen. I ett Svart/Vitt/Rött-tema är detta den viktigaste färgen.
+   * Används för att "färglägga" temat. Perfekt för ikoner, aktiva länkar och highlights.
+   */
+  --color-accent: #a90000ec;
+
+  --color-border: #333333;
+
+  /* --- NYA, REKOMMENDERADE VARIABLER --- */
+
+  /**
+   * NY: En ljusare röd för hover-effekter på knappar och länkar.
+   * Ger tydlig feedback när användaren för muspekaren över ett rött element.
+   */
+  --color-accent-hover: #FF2D2D;
+
+  --color-dark-button: #d300008f;
+
+  --color-icon-view: #A0AEC0;
+  --color-icon-view-hover: #CBD5E0;
+
+  --color-icon-play: #9AE6B4;
+  --color-icon-play-hover: #C6F6D5;
+
+  
 
   // --- TYPSNITT ---
-  --font-heading: 'Trajan Pro', serif;
-  --font-body: 'Lato', sans-serif;
+  --font-heading: 'Merriweather', serif;
+  --font-body: 'Merriweather', serif;
+  --font-button: 'Pirata One', cursive;
 
   // --- TYPOGRAFISK SKALA (i rem) ---
   // Baseras på att 1rem = 16px (eller webbläsarens standard).

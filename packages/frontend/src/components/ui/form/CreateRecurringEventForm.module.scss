@@ -1,60 +1,140 @@
-// Importera dina globala variabler och mixins
-@import '@/styles/variables';
+@use '@/styles/variables' as *;
 
 // Grundläggande stil för hela formuläret
 .form {
-  @include column; // Använder din mixin för att stapla elementen
-  gap: var(--gap-large); // Lite större mellanrum mellan formgrupperna
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg); // Avstånd mellan varje FormGroup
 }
 
-// Stil för att lägga element sida-vid-sida (för start/slutdatum)
+// En hjälpklass för att lägga två fält på samma rad
 .row {
-  display: flex;
-  gap: var(--gap);
+  @include column;;
+  gap: var(--spacing-md);
   
-  // Få varje FormGroup att ta upp lika mycket plats
+  // Se till att varje FormGroup inuti en rad tar upp lika mycket plats
   > * {
-      flex: 1;
+    flex: 1;
   }
 }
 
-// Stil för att lägga checkboxarna horisontellt
-.checkboxGroup {
-  display: flex;
-  flex-wrap: wrap; // Tillåt dem att hoppa ner på ny rad
-  gap: var(--gap); 
-  align-items: center;
+.input {
+  // --- Grundläggande utseende och layout ---
+  display: block; // Se till att den tar upp hela bredden
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--spacing-md);
+  
+  // --- Färger och kanter ---
+  background-color: #1d1d1d;
+  color: var(--color-text); // Antagande att du vill ha ljus text
+  border-radius: var(--radius-md);
+  
+  // Sätter tjocklek, stil och grundfärg för kantlinjen
+  border: 1px solid var(--color-border); 
+  
+  // --- Effekter och interaktion ---
+  cursor: pointer;
+  // Mjuk övergång för effekterna nedan
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  // --- Tillstånd (States) ---
+
+  // Hover-tillstånd
+  // &:hover är korrekt SCSS-syntax för att styla när muspekaren är över elementet
+  &:hover {
+    border-color: var(--color-primary);
+  }
+
+  // Fokus-tillstånd
+  // Logiken 'state.isFocused' från ditt exempel översätts till en :focus-regel i CSS
+  &:focus {
+    outline: none; // Ta bort webbläsarens standard-ram vid fokus
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 1px var(--color-primary);
+  }
 }
 
-// Stil för varje enskild checkbox + dess text
+// Behållare för repetitions-kontrollerna ("Var", dropdown, "på:")
+.repetitionControls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+
+  // Ge dropdown-menyn utrymme att växa
+  select {
+    flex-grow: 1;
+    // Du kan behöva lägga till din generella input/select-styling här
+    // om den inte ärvs, t.ex. från en global stil.
+  }
+}
+
+.repetitionSelect {
+  width: 100%;
+}
+
+// Behållare för gruppen av checkboxar
+.checkboxGroup {
+  display: grid;
+  // MAGISK RAD: Skapar automatiskt så många kolumner som får plats.
+  // Varje kolumn är minst 90px bred. Perfekt för responsivitet!
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-sm); // Lite extra luft från kontrollerna ovanför
+}
+
+// Styling för varje enskild checkbox med sin label
 .checkboxLabel {
   display: flex;
   align-items: center;
-  gap: var(--gap-sml);
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  // Ta bort default-marginaler från input för snyggare linjering
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: var(--color-background-hover);
+  }
+
+  // Göm den faktiska checkboxen...
   input[type="checkbox"] {
-    margin: 0;
+    display: none;
+  }
+
+  // ...och skapa vår egen snygga version
+  input[type="checkbox"] + span::before {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    margin-right: var(--spacing-sm);
+    background-color: var(--color-dark-gray);
+    vertical-align: middle;
+  }
+
+  // När checkboxen är ikryssad, ändra vår fejk-checkbox
+  input[type="checkbox"]:checked + span::before {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+    // Du kan även lägga till en bock-ikon här med en background-image
   }
 }
 
-// Stil för felmeddelanden
-.error {
-    color: var(--color-accent); // Använder din globala accent-färg
-    margin-top: var(--margin);
-    font-weight: bold;
-}
 
-// Vi kan återanvända .select-stilen från AdminEventPage om vi vill,
-// men det är bättre att den är definierad här om komponenten ska vara helt fristående.
-// Om du inte har en global select-stil, lägg till denna:
-select {
-  width: 100%;
-  padding: var(--padding-sml) var(--padding);
-  background-color: var(--color-background);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-tier-2);
-  font-family: var(--font-body);
-  font-size: var(--fs-base);
+/* =============================================== */
+/* --- RESPONSIVA STILAR FÖR STÖRRE SKÄRMAR --- */
+/* =============================================== */
+
+@media (min-width: #{$tabletBreakpoint}) {
+  // På större skärmar behöver vi nästan inga ändringar,
+  // eftersom vår mobila layout redan är flexibel och anpassar sig bra!
+  // Detta är styrkan med Mobile-First och moderna CSS-egenskaper som Grid.
+
+  // Vi kan ge checkboxarna lite mer utrymme om vi vill.
+  .checkboxGroup {
+    gap: var(--spacing-md);
+  }
 }
