@@ -8,20 +8,14 @@
   padding: 0 var(--spacing-md); // Luft på sidorna inuti fältet
   
   // --- Utseende ---
-  background-color: var(--color-background-hover); // Något ljusare än bakgrunden
+  background-color: var(--color-dark-gray); // Något ljusare än bakgrunden
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   color: var(--color-text);
-  
-  // --- Typografi ---
   font-family: var(--font-body);
-  // Viktigt! 1rem (16px) förhindrar automatisk zoom på iOS
   font-size: var(--fs-base); 
-
-  // Mjuk övergång för effekter
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 
-  // Stil för placeholder-texten
   &::placeholder {
     color: #9ca3af;
     opacity: 1;
@@ -31,8 +25,7 @@
   // Tydliggör vilket fält som är aktivt (har fokus)
   &:focus {
     outline: none; // Ta bort webbläsarens standard-ram
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(210, 180, 140, 0.3); // En snygg "glow"-effekt
+     box-shadow: 0 0 0 3px rgba(211, 0, 0, 0.3);
   }
 
   // Stil för när fältet är inaktiverat

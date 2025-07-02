@@ -1,7 +1,6 @@
 import type { RoleTypes } from '../types';
 
 export const RoleGroups: Record<string, RoleTypes[]> = {
- 
   ALL_LOGGED_IN: ['admin', 'leader', 'user'],
   MANAGEMENT: ['admin', 'leader'],
   ADMIN_ONLY: ['admin'],
@@ -36,14 +35,18 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   // === Material & Repertoire Management ===
   'POST /materials/upload-url': RoleGroups.ADMIN_ONLY,
   'POST /materials': RoleGroups.ADMIN_ONLY,
+  'POST /practice/materials': RoleGroups.ADMIN_ONLY,
   'GET /materials': RoleGroups.ALL_LOGGED_IN,
+  'GET /practice/materials': RoleGroups.ALL_LOGGED_IN,
   'DELETE /materials/{materialId}': RoleGroups.ADMIN_ONLY,
   'POST /materials/batch-delete': RoleGroups.ADMIN_ONLY,
-  'GET /my-materials': RoleGroups.ALL_LOGED_IN,
+  'GET /my-materials': RoleGroups.ALL_LOGGED_IN, // <-- KORRIGERAD
   'POST /groups/{groupName}/repertoires': RoleGroups.MANAGEMENT,
   'GET /groups/{groupName}/repertoires': RoleGroups.ALL_LOGGED_IN,
   'DELETE /groups/{groupName}/repertoires/{repertoireId}': RoleGroups.MANAGEMENT,
   'GET /groups/{groupName}/repertoires/{repertoireId}/materials': RoleGroups.ALL_LOGGED_IN,
   'POST /groups/{groupName}/repertoires/{repertoireId}/link-materials': RoleGroups.MANAGEMENT,
   'DELETE /groups/{groupName}/repertoires/{repertoireId}/materials/{materialId}': RoleGroups.MANAGEMENT,
+  'POST /practice/upload-url': RoleGroups.ADMIN_ONLY,
+  'POST /practice/batch-delete': RoleGroups.ADMIN_ONLY,
 };

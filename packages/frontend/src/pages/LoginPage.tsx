@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
-import { Button } from '@/components/ui/button/Button';
+import { Button, ButtonRadius, ButtonSize } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
 import { FormGroup } from '@/components/ui/form/FormGroup';
 import { LoginPoster } from '@/components/layout/LoginPoster';
@@ -100,9 +100,19 @@ export const LoginPage = () => {
                 required
               />
             </FormGroup>
-
-            <Button type="submit" isLoading={isLoading} fullWidth>Rock'n Roll</Button>
+            <div className={styles.buttonGroup}>
+              <Button
+                type="submit"
+                radius={ButtonRadius.Small}
+                size={ButtonSize.Login}
+                isLoading={isLoading}
+                fullWidth
+              >
+                Rock'n Roll
+              </Button>
+            </div>
           </form>
+
         </div>
 
       </div>

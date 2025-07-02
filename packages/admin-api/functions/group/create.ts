@@ -18,7 +18,7 @@ export const handler = middy()
       event: APIGatewayProxyEventV2WithLambdaAuthorizer<any>
     ): Promise<APIGatewayProxyResultV2> => {
       const userPoolId = process.env.COGNITO_USER_POOL_ID as string;
-      const { groupSlug, name, description } = JSON.parse(event.body);
+      const { groupSlug, name, choirLeader } = JSON.parse(event.body);
 
       try {
         // --- FÖRBÄTTRING 1: Effektivare behörighetskontroll ---
@@ -31,7 +31,6 @@ export const handler = middy()
         const createCognitoGroupCmd = new CreateGroupCommand({
           UserPoolId: userPoolId,
           GroupName: groupSlug,
-          Description: description,
         });
         await cognitoClient.send(createCognitoGroupCmd);
 
@@ -45,7 +44,7 @@ export const handler = middy()
             id: groupId,
             name: name,
             slug: groupSlug,
-            description,
+            choirLeader: choirLeader,
             createdAt: new Date().toISOString(),
             createdBy: event.requestContext.authorizer.lambda.uuid,
           }),

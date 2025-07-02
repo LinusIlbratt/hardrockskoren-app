@@ -8,7 +8,7 @@ import { UserEditModal } from '@/components/ui/modal/UserEditModal';
 import type { RoleTypes } from '@hrk/core/types';
 import { Search } from 'lucide-react';
 import type { GroupMember } from '@/types';
-import { UserList } from '@/components/ui/user/userList';
+import { UserList } from '@/components/ui/user/UserList';
 import styles from './AdminUserManagementPage.module.scss';
 
 // Props för komponenten

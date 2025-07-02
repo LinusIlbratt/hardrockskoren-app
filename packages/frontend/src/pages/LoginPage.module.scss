@@ -6,6 +6,7 @@
   flex-direction: row;
   height: 100vh;
   overflow: hidden;
+  
 }
 
 .container {
@@ -38,16 +39,22 @@
   width: 100%;
   max-width: 400px; // Testa att ändra detta värde!
   border-radius: 0.75rem;
-  padding: var(--padding-sml);
-}
+  padding: var(--spacing-lg);
 
-.formField {
-  background-color: var(--color-dark-gray);  
-  border-bottom: 1px solid var(--color-border);
-  border-radius: var(--radius-tier-3);
-  width: 100%; // Tar upp hela bredden av sin förälder, .formWrapper
+  > form {
+    display: flex;
+    flex-direction: column;
+    
+    // Här är magin! Använd en av dina globala spacing-variabler.
+    // --spacing-lg (24px) är ofta ett bra avstånd för formulärfält.
+    gap: var(--spacing-lg); 
+  }
 }
 
 .lastFormField {
   border-bottom: none;
+}
+
+.buttonGroup {
+  margin-top: var(--spacing-lg);
 }

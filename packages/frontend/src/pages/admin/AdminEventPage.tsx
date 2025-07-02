@@ -175,7 +175,7 @@ export const AdminEventPage = () => {
           <p>Är du säker på att du vill radera eventet "{eventToDelete?.title}"?</p>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
             <Button variant={ButtonVariant.Ghost} onClick={() => setEventToDelete(null)}>Avbryt</Button>
-            <Button variant={ButtonVariant.Destructive} isLoading={isDeleting} onClick={handleConfirmDelete}>Ja, radera</Button>
+            <Button variant={ButtonVariant.Primary} isLoading={isDeleting} onClick={handleConfirmDelete}>Ja, radera</Button>
           </div>
         </div>
       </Modal>

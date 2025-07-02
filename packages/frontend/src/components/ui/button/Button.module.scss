@@ -7,12 +7,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  
   background-color: var(--color-primary); // Primärfärg som standard
-  border-radius: var(--radius-tier-2);
+  border-radius: 0;
   border: 1px solid transparent; // För en snygg övergång
-  font-weight: 500;
-  
+  font-weight: 700;
   white-space: nowrap;
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s, opacity 0.2s;
@@ -31,8 +29,12 @@
 // Här definieras bara det som ändras, t.ex. färger
 
 .variantPrimary {
-  background-color: var(--color-primary);
-  color: var(--color-background);
+  background-color: var(--color-accent);
+  color: var(--color-text);
+  
+  &:hover {
+    background-color: var(--color-primary);
+  }
 }
 
 .variantDestructive {
@@ -41,7 +43,7 @@
 }
 
 .variantGhost {
-  background-color: transparent;
+  background-color: var(--color-background-hover);
   color: var(--color-text);
   &:hover {
     background-color: rgba(255, 255, 255, 0.1);
@@ -68,6 +70,36 @@
   font-size: var(--fs-lg);
   padding: 0 var(--spacing-lg); // Mer padding på sidorna
   height: 52px; // Högre höjd
+}
+
+.sizeLogin {
+  // Använd en generös fast höjd som passar din design
+  height: 55px; 
+  padding: 0 var(--spacing-md); 
+  font-size: 2rem; // Prova dig fram!
+  font-family: var(--font-button);
+  letter-spacing: 1.5px;
+}
+
+.sizeLogout {
+  font-size: var(--fs-base);  
+  padding: 0 var(--spacing-md);
+  height: 44px; // En bra standardhöjd
+  font-family: var(--font-button);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.radiusSmall {
+  border-radius: var(--radius-sm);
+}
+
+.radiusMedium {
+  border-radius: var(--radius-md); // Använder din globala variabel (8px)
+}
+
+.radiusPill {
+  border-radius: var(--radius-round); // Använder din globala variabel (99rem)
 }
 
 

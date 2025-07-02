@@ -45,7 +45,7 @@ export const handler = async (
     const groupDetails = unmarshall(groupItem);
 
     // --- NYTT: Hela logiken inuti map() är nu uppdaterad ---
-    const results = await Promise.all(emails.map(async (email: string) => {
+    const results = await Promise.allSettled(emails.map(async (email: string) => {
       
       // STEG 1: Kontrollera om användaren redan finns i Cognito
       const listUsersCmd = new ListUsersCommand({

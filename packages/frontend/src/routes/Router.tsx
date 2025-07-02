@@ -9,7 +9,8 @@ import { UserLayout } from "@/components/layout/UserLayout";
 import { AdminGroupListPage } from '@/pages/admin/AdminGroupListPage';
 import { GroupDashboardLayout } from '@/components/layout/GroupDashboardLayout';
 import { AdminRepertoireListPage } from '@/pages/admin/AdminRepertoireListPage';
-import { AdminUploadPage } from '@/pages/admin/AdminUploadPage';
+import { AdminUploadMaterialPage } from '@/pages/admin/AdminUploadMaterialPage';
+import { AdminUploadPracticePage } from '@/pages/admin/AdminUploadPracticePage';
 import { AdminUserManagementPage } from "@/pages/admin/AdminUserManagementPage";
 import { RegistrationPage } from "@/pages/RegistrationPage";
 import { AdminEventPage } from "@/pages/admin/AdminEventPage";
@@ -53,11 +54,11 @@ const router = createBrowserRouter([
             children: [
               {
                 path: "globalMaterial",
-                element: <AdminUploadPage />, // Placeholder för globalt material
+                element: <AdminUploadMaterialPage />, // Placeholder för globalt material
               },
               {
                 path: "practice",
-                element: <p>Practice Page</p>, // Placeholder för sjungupp
+                element: <AdminUploadPracticePage />, // Placeholder för sjungupp
               },
               {
                 path: "groups",

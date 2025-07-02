@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
-import Select from 'react-select';
-import type { StylesConfig } from 'react-select';
+
+// Importera vår nya, stylade komponent och den delade option-typen
+import { StyledSelect, type SelectOption } from '@/components/ui/select/StyledSelect';
+
+// Importer för datumväljaren
 import DatePicker, { registerLocale } from "react-datepicker"; 
 import { sv } from 'date-fns/locale'; 
 import { format } from 'date-fns';
 registerLocale('sv', sv); 
 
+// Dina nödvändiga importer som ska vara kvar
 import * as eventService from '@/services/eventService';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
@@ -13,55 +17,11 @@ import { FormGroup } from '@/components/ui/form/FormGroup';
 import styles from './CreateEventForm.module.scss';
 import type { Event } from '@/types';
 
-// =============================================================================
-// == Konfiguration för React-Select
-// =============================================================================
-
-interface SelectOption {
-  value: 'REHEARSAL' | 'CONCERT';
-  label: string;
-}
-
+// Datan för just detta formulär
 const eventTypeOptions: SelectOption[] = [
   { value: 'REHEARSAL', label: 'Repetition' },
   { value: 'CONCERT', label: 'Konsert' },
 ];
-
-const customSelectStyles: StylesConfig<SelectOption> = {
-  control: (provided, state) => ({
-    ...provided,
-    backgroundColor: '#1d1d1d',
-    borderColor: state.isFocused ? 'var(--color-primary)' : 'var(--color-border)',
-    boxShadow: state.isFocused ? '0 0 0 1px var(--color-primary)' : 'none',
-    borderRadius: 'var(--radius-md)',
-    minHeight: '48px',
-    border: '1px solid var(--color-border)',
-    cursor: 'pointer',
-    '&:hover': { borderColor: 'var(--color-primary)' }
-  }),
-  menu: (provided) => ({
-    ...provided,
-    backgroundColor: 'var(--color-dark-gray)',
-    borderRadius: 'var(--radius-md)',
-    border: '1px solid var(--color-border)',
-    zIndex: 10,
-  }),
-  option: (provided, state) => ({
-    ...provided,
-    backgroundColor: state.isSelected ? 'var(--color-primary)' : state.isFocused ? '#3d3d3d' : 'transparent',
-    color: state.isSelected ? 'var(--color-background)' : 'var(--color-text)',
-    cursor: 'pointer',
-    ':active': { backgroundColor: 'var(--color-primary)' },
-  }),
-  singleValue: (provided) => ({ ...provided, color: 'var(--color-text)' }),
-  input: (provided) => ({ ...provided, color: 'var(--color-text)' }),
-  indicatorSeparator: () => ({ display: 'none' }),
-  dropdownIndicator: (provided) => ({ ...provided, color: '#9ca3af', ':hover': { color: 'white' } }),
-};
-
-// =============================================================================
-// == Själva React-komponenten
-// =============================================================================
 
 interface CreateEventFormProps {
   groupSlug: string;
@@ -105,7 +65,7 @@ export const CreateEventForm = ({ groupSlug, authToken, eventToEdit, onSuccess, 
 
   const handleSelectChange = (selectedOption: SelectOption | null) => {
     if (selectedOption) {
-      setFormData(prev => ({ ...prev, eventType: selectedOption.value }));
+      setFormData(prev => ({ ...prev, eventType: selectedOption.value as 'REHEARSAL' | 'CONCERT' }));
     }
   };
 
@@ -162,12 +122,11 @@ export const CreateEventForm = ({ groupSlug, authToken, eventToEdit, onSuccess, 
       </FormGroup>
 
       <FormGroup label="Typ av event">
-        <Select<SelectOption>
+        <StyledSelect
           name="eventType"
           options={eventTypeOptions}
-          styles={customSelectStyles}
           value={eventTypeOptions.find(option => option.value === formData.eventType)}
-          onChange={handleSelectChange}
+          onChange={(option) => handleSelectChange(option as SelectOption)}
           placeholder="Välj typ..."
         />
       </FormGroup>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import axios from 'axios';
 import type { Material } from '@/types/index';
-import styles from './MediaModal.module.scss'; // Kan återanvända samma styling
+import styles from './MediaModal.module.scss';
 import { IoClose } from 'react-icons/io5';
 
 interface MediaModalProps {
@@ -17,8 +17,10 @@ export const MediaModal = ({ isOpen, onClose, material }: MediaModalProps) => {
   const [textContent, setTextContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // --- KORRIGERING 1: Använd fileKey för att identifiera textfiler ---
   useEffect(() => {
+    // Nollställ textinnehåll när materialet ändras
+    setTextContent('');
+
     if (material && material.fileKey.toLowerCase().endsWith('.txt')) {
       const fetchTextContent = async () => {
         setIsLoading(true);
@@ -33,8 +35,6 @@ export const MediaModal = ({ isOpen, onClose, material }: MediaModalProps) => {
         }
       };
       fetchTextContent();
-    } else {
-      setTextContent('');
     }
   }, [material]);
 
@@ -48,14 +48,27 @@ export const MediaModal = ({ isOpen, onClose, material }: MediaModalProps) => {
 
   if (!isOpen || !material) return null;
 
-  // Skapa ett säkert visningsnamn
   const displayName = material.title || material.fileKey.split('/').pop() || 'Okänd fil';
 
-  // --- KORRIGERING 2: Använd fileKey i render-logiken ---
   const renderContent = () => {
     const fullUrl = `${FILE_BASE_URL}/${material.fileKey}`;
     const normalizedFileKey = material.fileKey.toLowerCase();
 
+    // NYTT: Logik för att rendera videofiler
+    if (normalizedFileKey.endsWith('.mp4') || normalizedFileKey.endsWith('.webm') || normalizedFileKey.endsWith('.mov')) {
+      return (
+        <video 
+          src={fullUrl} 
+          className={styles.videoPlayer} // Du behöver lägga till denna klass i din .scss-fil
+          controls 
+          autoPlay
+          aria-label={`Videospelare för ${displayName}`}
+        >
+          Din webbläsare stöder inte video-taggen.
+        </video>
+      );
+    }
+    
     if (normalizedFileKey.endsWith('.pdf')) {
       return <iframe src={fullUrl} className={styles.pdfViewer} title={displayName} frameBorder="0" />;
     }
