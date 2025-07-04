@@ -36,6 +36,7 @@ provider:
 custom:
   mainTableName: HrkMainTable-${self:provider.stage}
   inviteTableName: HrkInviteTable-${self:provider.stage}
+  attendanceTableName: HrkAttendanceSessionsTable-${self:provider.stage}
   COGNITO_USER_POOL_ID: ${file(./env.${self:provider.stage}.yaml):COGNITO_USER_POOL_ID}
 
 
@@ -49,3 +50,4 @@ functions:
   - ${file(./yaml/group-functions.yml)}
   - ${file(./yaml/invite-functions.yml)}
   - ${file(./yaml/user-functions.yml)}
+  - ${file(./yaml/attendance-functions.yml)}

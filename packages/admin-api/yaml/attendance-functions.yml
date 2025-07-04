@@ -1,0 +1,94 @@
+attendanceStart:
+  handler: functions/attendance/attendanceStart.handler
+  name: hrk-admin-attendance-start-${sls:stage}
+  description: Skapar en ny närvarosession för en specifik grupp.
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        # UPPDATERAD PATH: Nu kopplad till en specifik grupp via {groupSlug}
+        path: /groups/{groupSlug}/attendance/start
+        authorizer: authorizer
+  environment:
+    ATTENDANCE_TABLE_NAME: ${self:custom.attendanceTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:PutItem"
+        - "dynamodb:Query"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.attendanceTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.attendanceTableName}/index/GroupDateIndex"
+
+# Funktion för medlemmar att anmäla sin närvaro med en kod
+# Denna path är korrekt som den är, eftersom medlemmen inte känner till gruppen.
+registerAttendance:
+  handler: functions/attendance/registerAttendance.handler
+  name: hrk-admin-register-attendance-${sls:stage}
+  description: Låter en medlem registrera sin närvaro med en giltig kod.
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        # UPPDATERAD PATH: Nu också kopplad till en specifik grupp för ökad säkerhet.
+        path: /groups/{groupSlug}/attendance/register
+        authorizer: authorizer
+  environment:
+    ATTENDANCE_TABLE_NAME: ${self:custom.attendanceTableName}
+    COGNITO_USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:UpdateItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.attendanceTableName}"
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.attendanceTableName}/index/AttendanceCodeIndex"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminGetUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
+
+# NY FUNKTION: Hämtar närvarolistan för en specifik grupp och datum
+getAttendance:
+  handler: functions/attendance/getAttendance.handler
+  name: hrk-admin-get-attendance-${sls:stage}
+  description: Hämtar närvarolistan för en specifik grupp och ett specifikt datum.
+  memorySize: 256
+  events:
+    - httpApi:
+        method: GET
+        path: /groups/{groupSlug}/attendance/{date}
+        authorizer: authorizer
+  environment:
+    ATTENDANCE_TABLE_NAME: ${self:custom.attendanceTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+      Resource:
+        # Rättigheter för att fråga det nya, optimerade indexet
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.attendanceTableName}/index/GroupDateIndex"
+
+getAttendanceStatus:
+  handler: functions/attendance/getAttendanceStatus.handler
+  name: hrk-admin-get-attendance-status-${sls:stage}
+  description: Checks if there is an active attendance session for a group.
+  memorySize: 256
+  events:
+    - httpApi:
+        method: GET
+        path: /groups/{groupSlug}/attendance/status
+        authorizer: authorizer
+  environment:
+    ATTENDANCE_TABLE_NAME: ${self:custom.attendanceTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.attendanceTableName}/index/GroupDateIndex"

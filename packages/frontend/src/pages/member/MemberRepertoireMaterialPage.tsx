@@ -1,10 +1,12 @@
 // src/pages/member/MemberRepertoireMaterialPage.tsx
 
-import { useState, useEffect, useCallback } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { MediaModal } from '@/components/ui/modal/MediaModal';
 import { MediaPlayer } from '@/components/media/MediaPlayer';
+import { FaPlayCircle } from "react-icons/fa";
+import { IoEyeOutline } from "react-icons/io5";
 import axios from 'axios';
 import styles from './MemberRepertoireMaterialPage.module.scss';
 import type { Material } from '@/types/index';
@@ -12,6 +14,68 @@ import type { Material } from '@/types/index';
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
 const FILE_BASE_URL = import.meta.env.VITE_S3_BUCKET_URL;
 
+// --- ÅTERANVÄNDBAR KOMPONENT (UPPDATERAD) ---
+interface MaterialSectionProps {
+  title: string;
+  files: Material[];
+  onPlay: (file: { url: string; title: string }) => void;
+  onView: (material: Material) => void;
+}
+
+const MaterialSection: React.FC<MaterialSectionProps> = ({ title, files, onPlay, onView }) => {
+  if (files.length === 0) {
+    return null;
+  }
+
+  const isAudioFile = (fileKey: string = '') => fileKey.toLowerCase().match(/\.(mp3|wav|m4a)$/);
+  const isVideoFile = (fileKey: string = '') => fileKey.toLowerCase().match(/\.(mp4|mov|webm|avi)$/);
+  const isDocumentFile = (fileKey: string = '') => fileKey.toLowerCase().match(/\.(pdf|txt)$/);
+
+  return (
+    <section className={styles.materialSection}>
+      <h2>{title}</h2>
+      <ul className={styles.materialList}>
+        {files.map(material => {
+          if (!material.fileKey) return null;
+          const fullUrl = `${FILE_BASE_URL}/${material.fileKey}`;
+          const displayName = material.title || material.fileKey.split('/').pop() || 'Okänd titel';
+
+          return (
+            <li key={material.materialId} className={styles.materialItem}>
+              <span className={styles.displayName}>{displayName}</span>
+              <div className={styles.actions}>
+                {isAudioFile(material.fileKey) && (
+                  <button onClick={() => onPlay({ url: fullUrl, title: displayName })} className={styles.iconPlay} aria-label={`Spela ${displayName}`}>
+                    <FaPlayCircle size={22} />
+                  </button>
+                )}
+                {/* NYTT: Hantering för videofiler */}
+                {isVideoFile(material.fileKey) && (
+                  <button onClick={() => onView({ ...material, title: displayName })} className={styles.iconPlay} aria-label={`Visa video ${displayName}`}>
+                     <FaPlayCircle size={22} />
+                  </button>
+                )}
+                {isDocumentFile(material.fileKey) && (
+                  <button onClick={() => onView({ ...material, title: displayName })} className={styles.iconView} aria-label={`Visa ${displayName}`}>
+                    <IoEyeOutline size={24} />
+                  </button>
+                )}
+                {!isAudioFile(material.fileKey) && !isVideoFile(material.fileKey) && !isDocumentFile(material.fileKey) && (
+                  <a href={fullUrl} target="_blank" rel="noopener noreferrer" className={styles.iconView} aria-label={`Öppna ${displayName}`}>
+                    <IoEyeOutline size={24} />
+                  </a>
+                )}
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+};
+
+
+// --- HUVUDKOMPONENT ---
 export const MemberRepertoireMaterialPage = () => {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,9 +84,11 @@ export const MemberRepertoireMaterialPage = () => {
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
 
   const { repertoireId } = useParams<{ repertoireId: string }>();
+  const location = useLocation();
   const { user } = useAuth();
+  const title = location.state?.title;
 
-  // Datahämtningen är oförändrad
+  // Datahämtning är oförändrad
   const fetchMaterials = useCallback(async () => {
     const userGroup = user?.groups?.[0];
     if (!userGroup || !repertoireId) { setIsLoading(false); setError("Kunde inte hitta info."); return; }
@@ -42,90 +108,55 @@ export const MemberRepertoireMaterialPage = () => {
 
   useEffect(() => { fetchMaterials(); }, [fetchMaterials]);
 
-  // --- ÄNDRING 1: Filtrera material-listan INNAN vi renderar ---
-  // Vi gör detta direkt i komponenten så att det alltid är uppdaterat.
+  // Filtrera material-listan
+  const isAudioFile = (fileKey: string = '') => fileKey.toLowerCase().match(/\.(mp3|wav|m4a)$/);
+  const isVideoFile = (fileKey: string = '') => fileKey.toLowerCase().match(/\.(mp4|mov|webm|avi)$/);
+  const isDocumentFile = (fileKey: string = '') => fileKey.toLowerCase().match(/\.(pdf|txt)$/);
   
-  // Funktioner för att identifiera filtyper
-  const isAudioFile = (fileKey: string = '') => {
-    const normalized = fileKey.toLowerCase();
-    return normalized.endsWith('.mp3') || normalized.endsWith('.wav') || normalized.endsWith('.m4a');
-  };
-
-  const isDocumentFile = (fileKey: string = '') => {
-    const normalized = fileKey.toLowerCase();
-    return normalized.endsWith('.pdf') || normalized.endsWith('.txt');
-  };
-
-  // Skapa de nya, filtrerade arrayerna
   const audioFiles = materials.filter(m => isAudioFile(m.fileKey));
   const documentFiles = materials.filter(m => isDocumentFile(m.fileKey));
-  // Samla alla övriga filer i en egen lista
-  const otherFiles = materials.filter(m => !isAudioFile(m.fileKey) && !isDocumentFile(m.fileKey));
+  const videoFiles = materials.filter(m => isVideoFile(m.fileKey));
+  const otherFiles = materials.filter(m => !isAudioFile(m.fileKey) && !isVideoFile(m.fileKey) && !isDocumentFile(m.fileKey));
 
-
-  // --- ÄNDRING 2: Skapa en återanvändbar funktion för att rendera en lista ---
-  // Detta är för att undvika att upprepa kod (DRY - Don't Repeat Yourself)
-  const renderMaterialList = (files: Material[]) => {
-    return (
-      <ul className={styles.materialList}>
-        {files.map(material => {
-          if (!material.fileKey) return null;
-          const fullUrl = `${FILE_BASE_URL}/${material.fileKey}`;
-          const displayName = material.title || material.fileKey.split('/').pop() || 'Okänd titel';
-
-          return (
-            <li key={material.materialId} className={styles.materialItem}>
-              {isAudioFile(material.fileKey) ? (
-                <button onClick={() => setNowPlaying({ url: fullUrl, title: displayName })} className={styles.playButton}>
-                  Spela {displayName}
-                </button>
-              ) : isDocumentFile(material.fileKey) ? (
-                <button onClick={() => setSelectedMaterial({ ...material, title: displayName })} className={styles.viewButton}>
-                  Visa {displayName}
-                </button>
-              ) : (
-                <a href={fullUrl} target="_blank" rel="noopener noreferrer">
-                  Öppna {displayName}
-                </a>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    );
-  };
 
   return (
     <div className={styles.container}>      
-      <h1>Material</h1>
+      <div className={styles.header}>
+        <h1 className={styles.repertoireTitle}>{title || 'Material'}</h1>
+      </div>
+
       {(() => {
         if (isLoading) return <p>Laddar material...</p>;
         if (error) return <p className={styles.error}>{error}</p>;
         if (materials.length === 0) return <p>Inget material hittades för denna låt.</p>;
 
-        // --- ÄNDRING 3: Ny renderingslogik med sektioner ---
         return (
           <>
-            {audioFiles.length > 0 && (
-              <section className={styles.materialSection}>
-                <h2>Ljudfiler</h2>
-                {renderMaterialList(audioFiles)}
-              </section>
-            )}
-
-            {documentFiles.length > 0 && (
-              <section className={styles.materialSection}>
-                <h2>Dokument & Noter</h2>
-                {renderMaterialList(documentFiles)}
-              </section>
-            )}
-            
-            {otherFiles.length > 0 && (
-              <section className={styles.materialSection}>
-                <h2>Övrigt</h2>
-                {renderMaterialList(otherFiles)}
-              </section>
-            )}
+          <MaterialSection 
+              title="Texter & Noter"
+              files={documentFiles}
+              onPlay={setNowPlaying}
+              onView={setSelectedMaterial}
+            />
+            <MaterialSection 
+              title="Ljudfiler"
+              files={audioFiles}
+              onPlay={setNowPlaying}
+              onView={setSelectedMaterial}
+            />
+            {/* NYTT: Sektion för videofiler */}
+            <MaterialSection 
+              title="Videos"
+              files={videoFiles}
+              onPlay={setNowPlaying}
+              onView={setSelectedMaterial}
+            />
+            <MaterialSection 
+              title="Övrigt"
+              files={otherFiles}
+              onPlay={setNowPlaying}
+              onView={setSelectedMaterial}
+            />
           </>
         );
       })()}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 import { Button, ButtonVariant } from '../button/Button';
 import styles from './UserEditModal.module.scss';
@@ -7,10 +7,6 @@ import type { GroupMember } from '@/types';
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
-/**
- * Props för UserEditModal-komponenten.
- * Kräver 'groupSlug' för att kunna bygga korrekta API-anrop.
- */
 interface UserEditModalProps {
   user: GroupMember;
   groupSlug: string;
@@ -19,163 +15,138 @@ interface UserEditModalProps {
 }
 
 export const UserEditModal = ({ user, groupSlug, onClose, onUserUpdate }: UserEditModalProps) => {
-  // State för att hantera laddning (för att inaktivera knappar) och visa fel.
+  // NYTT: Lokalt state för att hantera den användare som redigeras.
+  // Detta gör att vi kan uppdatera UI:t direkt utan att vänta på föräldern.
+  const [editedUser, setEditedUser] = useState(user);
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  /**
-   * Hanterar borttagning av en användare från gruppen.
-   * Anropar DELETE /api/groups/{groupSlug}/users
-   */
+  // Effekt för att synka det lokala statet om 'user'-propen utifrån ändras.
+  useEffect(() => {
+    setEditedUser(user);
+  }, [user]);
+
   const handleRemoveUser = async () => {
-    // Använd window.confirm för en enkel men effektiv bekräftelsedialog.
-    if (window.confirm(`Är du säker på att du vill ta bort ${user.given_name} från kören?`)) {
+    if (window.confirm(`Är du säker på att du vill ta bort ${editedUser.given_name} från kören?`)) {
       setIsSubmitting(true);
       setError(null);
-
       const token = localStorage.getItem('authToken');
-    if (!token) {
-      setError("Autentiseringstoken saknas. Vänligen logga in igen.");
-      setIsLoading(false);
-      return;
-    }
-
+      if (!token) { /* ... felhantering ... */ return; }
       try {
         const response = await fetch(`${API_BASE_URL}/groups/${groupSlug}/users`, {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}` 
-           },
-          body: JSON.stringify({ email: user.email, groupSlug: groupSlug }),
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ email: editedUser.email, groupSlug: groupSlug }),
         });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'Kunde inte ta bort användaren.');
-        }
-
-        onUserUpdate(); // Ladda om listan på huvudsidan
-        onClose();      // Stäng modalen
+        if (!response.ok) { throw new Error((await response.json()).message || 'Kunde inte ta bort användaren.'); }
+        onUserUpdate();
+        onClose();
       } catch (err: any) {
         setError(err.message);
-        console.error("Failed to remove user:", err);
       } finally {
         setIsSubmitting(false);
       }
     }
   };
 
-  /**
-   * Hanterar uppdatering av en användares roll.
-   * Anropar PATCH /api/groups/{groupSlug}/users
-   */
   const handleChangeRole = async (newRole: RoleTypes) => {
-    // Gör inget om man klickar på den redan aktiva rollen.
-    if (newRole === user.role) return;
-
+    if (newRole === editedUser.role) return;
     setIsSubmitting(true);
     setError(null);
-
+    const token = localStorage.getItem('authToken');
     try {
       const response = await fetch(`${API_BASE_URL}/groups/${groupSlug}/users`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: user.email, role: newRole }),
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ email: editedUser.email, role: newRole }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Kunde inte uppdatera rollen.');
-      }
-
-      // Anropa onUserUpdate för att hämta den nya datan. Detta kommer att
-      // uppdatera 'user'-propen och visa rätt aktiv knapp automatiskt.
+      if (!response.ok) { throw new Error((await response.json()).message || 'Kunde inte uppdatera rollen.'); }
+      
+      // Anropa föräldern för att ladda om den fullständiga listan i bakgrunden
       onUserUpdate();
+      
+      // NYTT: Uppdatera det lokala statet för att omedelbart visa ändringen i UI.
+      setEditedUser(prevUser => ({ ...prevUser, role: newRole }));
+
     } catch (err: any) {
       setError(err.message);
-      console.error("Failed to change role:", err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
- return (
-  <Modal isOpen={true} onClose={onClose} title={`Hantera användare`}>
-    <div className={styles.profileForm}>
+  return (
+    <Modal isOpen={true} onClose={onClose} title={`Hantera användare`}>
+      <div className={styles.profileForm}>
 
-      {/* Sektion 1: Header med avatar, namn och e-post */}
-      <div className={styles.profileHeader}>
-        <div className={styles.avatar}>
-          {user.given_name.charAt(0)}{user.family_name.charAt(0)}
+        <div className={styles.profileHeader}>
+          <div className={styles.avatar}>
+            {editedUser.given_name.charAt(0)}{editedUser.family_name.charAt(0)}
+          </div>
+          <div className={styles.headerText}>
+            <h3 className={styles.fullName}>{editedUser.given_name} {editedUser.family_name}</h3>
+            <p className={styles.emailAddress}>{editedUser.email}</p>
+          </div>
         </div>
-        <div className={styles.headerText}>
-          <h3 className={styles.fullName}>{user.given_name} {user.family_name}</h3>
-          <p className={styles.emailAddress}>{user.email}</p>
-        </div>
-      </div>
 
-      {/* Sektion 2: Formulärinnehåll */}
-      <div className={styles.formContent}>
-        <div className={styles.formGroup}>
-          <label htmlFor="firstName">Name</label>
-          <div className={styles.inputRow}>
-            <input id="firstName" type="text" value={user.given_name} readOnly className={styles.inputField} />
-            <input type="text" value={user.family_name} readOnly className={styles.inputField} />
+        <div className={styles.formContent}>
+          <div className={styles.formGroup}>
+            <label>Namn</label>
+            <div className={styles.inputRow}>
+              <div className={styles.readOnlyField}>{editedUser.given_name}</div>
+              <div className={styles.readOnlyField}>{editedUser.family_name}</div>
+            </div>
+          </div>
+          
+          <div className={styles.formGroup}>
+            <label>E-postadress</label>
+            <div className={styles.readOnlyField}>{editedUser.email}</div>
+          </div>
+
+          <div className={styles.formGroup}>
+            <label>Roll</label>
+            <div className={styles.segmentedControl}>
+              <button
+                onClick={() => handleChangeRole('user')}
+                className={editedUser.role === 'user' ? styles.active : ''}
+                disabled={isSubmitting}
+              >
+                Medlem
+              </button>
+              <button
+                onClick={() => handleChangeRole('leader')}
+                className={editedUser.role === 'leader' ? styles.active : ''}
+                disabled={isSubmitting}
+              >
+                Körledare
+              </button>
+            </div>
           </div>
         </div>
         
-        <div className={styles.formGroup}>
-          <label htmlFor="email">Email address</label>
-          <input id="email" type="email" value={user.email} readOnly className={styles.inputField} />
-        </div>
-
-        <div className={styles.formGroup}>
-          <label>Roll</label>
-          <div className={styles.segmentedControl}>
-            <button
-              onClick={() => handleChangeRole('user')}
-              className={user.role === 'user' ? styles.active : ''}
-              disabled={isSubmitting}
-            >
-              Medlem
-            </button>
-            <button
-              onClick={() => handleChangeRole('leader')}
-              className={user.role === 'leader' ? styles.active : ''}
-              disabled={isSubmitting}
-            >
-              Körledare
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      {/* Felmeddelande visas vid behov */}
-      {error && <p className={styles.errorMessage}>{error}</p>}
-      
-      {/* Sektion 3: Sidfot med åtgärdsknappar */}
-      <div className={styles.modalFooter}>
-        <Button 
-          onClick={handleRemoveUser} 
-          variant={ButtonVariant.Destructive}
-          disabled={isSubmitting}
-          isLoading={isLoading}
-        >
-          Delete user
-        </Button>
-        <div className={styles.footerActions}>
+        {error && <p className={styles.errorMessage}>{error}</p>}
+        
+        <div className={styles.modalFooter}>
           <Button 
-            onClick={onClose} 
-            variant={ButtonVariant.Primary}
+            onClick={handleRemoveUser} 
+            variant={ButtonVariant.Destructive}
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Arbetar...' : 'Stäng'}
+            Ta bort användare
           </Button>
+          <div className={styles.footerActions}>
+            <Button 
+              onClick={onClose} 
+              variant={ButtonVariant.Primary}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Arbetar...' : 'Stäng'}
+            </Button>
+          </div>
         </div>
-      </div>
 
-    </div>
-  </Modal>
-);
+      </div>
+    </Modal>
+  );
 };

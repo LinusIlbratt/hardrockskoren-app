@@ -20,6 +20,8 @@ import { MemberListRepertoirePage } from "@/pages/member/MemberListRepertoirePag
 import { MemberRepertoireMaterialPage } from "@/pages/member/MemberRepertoireMaterialPage";
 import { MemberEventPage } from "@/pages/member/MemberEventPage";
 import { AdminRepertoireMaterialPage } from "@/pages/admin/AdminRepertoireMaterialPage";
+import { PracticePage } from "@/pages/PracticePage";
+import { LeaderAttendancePage } from "@/pages/leader/LeaderAttendancePage";
 import { Outlet } from 'react-router-dom';
 
 const router = createBrowserRouter([
@@ -80,9 +82,17 @@ const router = createBrowserRouter([
                     path: "concerts",
                     element: <AdminEventPage />,
                   },
+                   {
+                    path: "practice",
+                    element: <PracticePage />, // Placeholder för sjungupp
+                  },
                   {
                     path: "users",
                     element: <AdminUserManagementPage viewerRole="admin" />, // Använd den nya komponenten här
+                  },
+                  {
+                    path: "attendance",
+                    element: <LeaderAttendancePage />, // Använd den nya komponenten här
                   },
                 ],
               },
@@ -123,7 +133,11 @@ const router = createBrowserRouter([
                   {
                     path: "practice",
                     element: <div>Sjungupp-sida för leader</div>,
-                  }
+                  },
+                  {
+                    path: "attendance",
+                    element: <LeaderAttendancePage />,
+                  },
                 ]
               }
             ],
@@ -138,7 +152,7 @@ const router = createBrowserRouter([
                 element: <MemberDashboard />,
                 children: [
                   {
-                    path: "userMaterial",
+                    path: "repertoires",
                     element: <Outlet />,
                     children: [
                       {
@@ -154,11 +168,11 @@ const router = createBrowserRouter([
                     ]
                   },
                   {
-                    path: "userSing",
+                    path: "practice",
                     element: <div>User Sing Page</div>,
                   },
                   {
-                    path: "userDates",
+                    path: "concerts",
                     element: <MemberEventPage />,
                   },
                 ]

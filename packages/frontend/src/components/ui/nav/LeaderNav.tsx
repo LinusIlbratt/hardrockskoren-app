@@ -9,7 +9,7 @@ export const LeaderNav = () => {
   return (
     <nav className={styles.nav}>
       {/* Dessa sökvägar är nu relativa till /leader/choir/:groupName */}
-      
+
       <NavLink to="repertoires" end className={styles.navLink}>
         Repertoar
       </NavLink>
@@ -17,13 +17,17 @@ export const LeaderNav = () => {
       <NavLink to="concerts" className={styles.navLink}>
         Konserter & Repdatum
       </NavLink>
-      
+
+      <NavLink to="practice" className={styles.navLink}>
+        Sjungupp!
+      </NavLink>
+
       <NavLink to="users" className={styles.navLink}>
         Användare
       </NavLink>
-      
-      <NavLink to="practice" className={styles.navLink}>
-        Sjungupp!
+
+      <NavLink to="attendance" className={styles.navLink}>
+        Närvaro
       </NavLink>
     </nav>
   );

@@ -1,10 +1,8 @@
 @use '@/styles/variables' as *;
 
 /* Hela sidans behållare med "kort"-design */
-.pageContainer {
-  
-  border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.07);
+.page {
+  padding: var(--spacing-xs);
 }
 
 /* Sidhuvudet med titel och knappar */
@@ -55,6 +53,17 @@
       background-color: #fff;
       box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.15);
     }
+  }
+}
+
+@media (min-width: #{$tabletBreakpoint}) {
+  .page {
+    padding: var(--spacing-xl);
+  }
+
+  .header {
+  @include row;
+    justify-content: space-between; // Placera titel och knappar på samma rad
   }
 }
 

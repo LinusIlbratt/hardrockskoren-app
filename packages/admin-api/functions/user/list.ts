@@ -1,14 +1,12 @@
 import { CognitoIdentityProviderClient, ListUsersInGroupCommand, UserType } from "@aws-sdk/client-cognito-identity-provider";
-// Importera typerna för event och context
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
-import { AuthContext } from "../../../core/types"; // Se till att sökvägen till din AuthContext-typ är korrekt
+import { AuthContext } from "../../../core/types";
 import { sendResponse, sendError } from "../../../core/utils/http";
 
 const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
 const USER_POOL_ID = process.env.USER_POOL_ID;
 
 export const handler = async (
-  // Använd den typsäkra versionen av eventet
   event: APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>
 ): Promise<APIGatewayProxyResultV2> => {
   if (!USER_POOL_ID) {
@@ -21,47 +19,33 @@ export const handler = async (
       return sendError(400, "Group name is required in the path.");
     }
 
-    let allUsers: UserType[] = [];
-    let nextToken: string | undefined;
+    // STEG 1: Läs paginerings-parametrar från query string
+    const limit = parseInt(event.queryStringParameters?.limit || '25', 10);
+    const nextToken = event.queryStringParameters?.nextToken;
 
-    // Paginering - Loopa tills vi har hämtat alla användare
-    do {
-      const command = new ListUsersInGroupCommand({
-        UserPoolId: USER_POOL_ID,
-        GroupName: groupName,
-        NextToken: nextToken,
-      });
+    // STEG 2: Ta bort do...while-loopen och gör bara ETT anrop
+    const command = new ListUsersInGroupCommand({
+      UserPoolId: USER_POOL_ID,
+      GroupName: groupName,
+      Limit: limit, // Använd den angivna gränsen
+      NextToken: nextToken, // Skicka med token för att hämta nästa sida
+    });
 
-      const response = await cognitoClient.send(command);
-      
-      if (response.Users) {
-        allUsers = [...allUsers, ...response.Users];
-      }
-      
-      nextToken = response.NextToken;
-    } while (nextToken);
-
-    // --- NY BEHÖRIGHETS-FILTRERING ---
-    // Hämta roll och ID för den som anropar API:et från authorizer-kontexten.
+    const response = await cognitoClient.send(command);
+    const usersForPage = response.Users || [];
+    
+    // Behåll din befintliga behörighets-filtrering
     const invokerRole = event.requestContext.authorizer.lambda.role;
     const invokerId = event.requestContext.authorizer.lambda.uuid;
 
-    let usersToFormat = allUsers;
-
-    // Om den som anropar är en 'leader', filtrera bort alla andra ledare.
+    let usersToFormat = usersForPage;
     if (invokerRole === 'leader') {
-      usersToFormat = allUsers.filter(user => {
+      usersToFormat = usersForPage.filter(user => {
         const userRole = user.Attributes?.find(attr => attr.Name === 'custom:role')?.Value;
-        // Behåll användaren om:
-        // 1. Deras roll INTE är 'leader'
-        // ELLER
-        // 2. Deras roll ÄR 'leader', MEN det är den inloggade användaren själv.
         return userRole !== 'leader' || user.Username === invokerId;
       });
     }
-    // En 'admin' kommer att hoppa över denna if-sats och ser alla.
     
-    // Formatera om den (potentiellt filtrerade) listan för frontenden
     const formattedUsers = usersToFormat.map(user => {
       const attributeMap = (user.Attributes || []).reduce((acc, attr) => {
         if (attr.Name && attr.Value) {
@@ -79,7 +63,11 @@ export const handler = async (
       };
     });
 
-    return sendResponse(formattedUsers, 200);
+    // STEG 3: Skicka tillbaka ett objekt med både användarna och nästa token
+    return sendResponse({
+      users: formattedUsers,
+      nextToken: response.NextToken // Denna är nyckeln för att hämta nästa sida
+    }, 200);
 
   } catch (error: any) {
     if (error.name === 'ResourceNotFoundException') {

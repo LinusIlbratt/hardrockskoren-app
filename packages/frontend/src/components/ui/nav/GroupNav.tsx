@@ -13,6 +13,15 @@ export const GroupNav = () => {
       >
         Repertoar
       </NavLink>
+       <NavLink
+        to="practice"
+        end
+        className={({ isActive }) =>
+          [styles.navLink, isActive ? 'active' : ''].join(' ')
+        }
+      >
+        Sjungupp!
+      </NavLink>
       <NavLink
         to="concerts"
         className={({ isActive }) =>
@@ -28,6 +37,14 @@ export const GroupNav = () => {
         }
       >
         Användare
+      </NavLink>
+      <NavLink
+        to="attendance"
+        className={({ isActive }) =>
+          [styles.navLink, isActive ? 'active' : ''].join(' ')
+        }
+      >
+        Närvaro
       </NavLink>
     </nav>
   );
