@@ -4,7 +4,7 @@ import { sendResponse, sendError } from "../../../core/utils/http";
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { createGroupSchema } from "./schemas";
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
-import { CognitoIdentityProviderClient, CreateGroupCommand, AdminGetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
+import { CognitoIdentityProviderClient, CreateGroupCommand, DeleteGroupCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { marshall } from "@aws-sdk/util-dynamodb";
 import { nanoid } from "nanoid";
 
@@ -17,52 +17,55 @@ export const handler = middy()
     async (
       event: APIGatewayProxyEventV2WithLambdaAuthorizer<any>
     ): Promise<APIGatewayProxyResultV2> => {
+      const userPoolId = process.env.COGNITO_USER_POOL_ID as string;
+      const { groupSlug, name, choirLeader } = JSON.parse(event.body);
+
       try {
-        // --- Verifiera Admin-roll (som tidigare) ---
-        const userPoolId = process.env.COGNITO_USER_POOL_ID as string;
-        const userId = event.requestContext.authorizer.lambda.uuid;
-        const userCommand = new AdminGetUserCommand({ UserPoolId: userPoolId, Username: userId });
-        const userResponse = await cognitoClient.send(userCommand);
-        const roleAttribute = userResponse.UserAttributes?.find(attr => attr.Name === "custom:role");
-        if (roleAttribute?.Value !== "admin") {
+        // --- FÖRBÄTTRING 1: Effektivare behörighetskontroll ---
+        const invokerRole = event.requestContext.authorizer.lambda.role;
+        if (invokerRole !== "admin") {
           return sendError(403, "Forbidden: You do not have permission to create groups.");
         }
 
-        if (!event.body) {
-          return sendError(400, "Request body is required.");
-        }
-        const { name, groupSlug, description } = JSON.parse(event.body);
-
-        // --- STEG 2: Skapa gruppen i Cognito med SLUGGEN ---
+        // --- Skapa gruppen i Cognito ---
         const createCognitoGroupCmd = new CreateGroupCommand({
           UserPoolId: userPoolId,
-          GroupName: groupSlug, // Använd den säkra sluggen här
-          Description: description,
+          GroupName: groupSlug,
         });
         await cognitoClient.send(createCognitoGroupCmd);
 
-        // --- STEG 3: Skapa posten i DynamoDB med SLUGGEN som PK ---
+        // --- Skapa posten i DynamoDB ---
         const groupId = nanoid();
         const putDynamoCmd = new PutItemCommand({
           TableName: process.env.MAIN_TABLE as string,
           Item: marshall({
-            PK: `GROUP#${groupSlug}`, // Använd den säkra sluggen här
+            PK: `GROUP#${groupSlug}`,
             SK: `METADATA`,
             id: groupId,
-            name: name, // Spara det ursprungliga, snygga namnet
-            slug: groupSlug, // Spara även sluggen för enkel åtkomst
-            description,
+            name: name,
+            slug: groupSlug,
+            choirLeader: choirLeader,
             createdAt: new Date().toISOString(),
-            createdBy: userId,
+            createdBy: event.requestContext.authorizer.lambda.uuid,
           }),
         });
-        await dbClient.send(putDynamoCmd);
+        
+        // --- FÖRBÄTTRING 2: Manuell rollback vid fel ---
+        try {
+            await dbClient.send(putDynamoCmd);
+        } catch (dbError) {
+            console.error("DynamoDB write failed, rolling back Cognito group.", dbError);
+            const deleteCognitoGroupCmd = new DeleteGroupCommand({ UserPoolId: userPoolId, GroupName: groupSlug });
+            await cognitoClient.send(deleteCognitoGroupCmd);
+            throw dbError; // Kasta ursprungliga felet vidare
+        }
 
         return sendResponse({ message: "Group created successfully.", groupId }, 201);
 
       } catch (error: any) {
+        // Din existerande, bra felhantering
         if (error.name === 'GroupExistsException') {
-          return sendError(409, "A group with this name already exists.");
+          return sendError(409, "A group with this name already exists in Cognito.");
         }
         if (error.name === 'InvalidParameterException') {
             return sendError(400, "Group name contains invalid characters.");

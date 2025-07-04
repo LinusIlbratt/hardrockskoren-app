@@ -8,13 +8,13 @@ interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  footer?: React.ReactNode; // <-- NY, VALFRI PROP FÖR KNAPPARNA
 }
 
-export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
-  // Om modalen inte är öppen, rendera ingenting.
+export const Modal = ({ isOpen, onClose, title, children, footer }: ModalProps) => {
   if (!isOpen) return null;
 
-  // Hantera stängning via Escape-tangenten
+   // Hantera stängning via Escape-tangenten
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -27,7 +27,6 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
     };
   }, [onClose]);
 
-  // Använd en React Portal för att rendera modalen i #modal-root
   return ReactDOM.createPortal(
     <div className={styles.backdrop} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -37,9 +36,17 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
             <IoClose size={24} />
           </button>
         </header>
+
         <div className={styles.content}>
           {children}
         </div>
+
+        {/* Visa bara footern om den har skickats med som en prop */}
+        {footer && (
+          <footer className={styles.footer}>
+            {footer}
+          </footer>
+        )}
       </div>
     </div>,
     document.getElementById('modal-root')!

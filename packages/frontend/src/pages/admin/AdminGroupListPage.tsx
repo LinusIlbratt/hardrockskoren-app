@@ -148,7 +148,7 @@ export const AdminGroupListPage = () => {
           <Button variant={ButtonVariant.Ghost} onClick={() => setGroupToDelete(null)}>
               Avbryt
             </Button>
-            <Button variant={ButtonVariant.Destructive} isLoading={isDeleting} onClick={handleConfirmDelete}>
+            <Button variant={ButtonVariant.Primary} isLoading={isDeleting} onClick={handleConfirmDelete}>
               Ja, radera
             </Button>
           </div>

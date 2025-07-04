@@ -15,7 +15,6 @@ interface CreateRepertoireFormProps {
 export const CreateRepertoireForm = ({ onSuccess }: CreateRepertoireFormProps) => {
   const { groupName } = useParams<{ groupName: string }>();
   const [title, setTitle] = useState('');
-  const [artist, setArtist] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +32,7 @@ export const CreateRepertoireForm = ({ onSuccess }: CreateRepertoireFormProps) =
     try {
       await axios.post(
         `${API_BASE_URL}/groups/${groupName}/repertoires`,
-        { title, artist },
+        { title },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       onSuccess(); // Anropa för att stänga modalen och uppdatera listan
@@ -56,14 +55,7 @@ export const CreateRepertoireForm = ({ onSuccess }: CreateRepertoireFormProps) =
           required
         />
       </FormGroup>
-      <FormGroup label="Artist" htmlFor="repertoire-artist">
-        <Input
-          id="repertoire-artist"
-          value={artist}
-          onChange={(e) => setArtist(e.target.value)}
-          className={styles.input}
-        />
-      </FormGroup>
+      
       {error && <p className={styles.error}>{error}</p>}
       <Button type="submit" isLoading={isLoading}>Skapa Låt</Button>
     </form>

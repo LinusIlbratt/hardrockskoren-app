@@ -1,24 +1,37 @@
-import { useAuth } from '@/context/AuthContext'; // Importera från rätt ställe
+import { useAuth } from '@/context/AuthContext';
 import { Navigate } from 'react-router-dom';
-import { MemberDashboard } from '@/pages/member/MemberDashboard';
 
 export const DashboardPage = () => {
   const { user, isLoading } = useAuth();
 
-  // Om vi fortfarande hämtar användardata, visa en laddningssida
   if (isLoading) {
     return <div>Laddar...</div>;
   }
 
-  // Om vi har laddat klart och ingen användare finns, skicka till login
+  // Om ingen användare finns, skicka till login
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  // Nu har vi den korrekta användardatan från /me-endpointen
+  // Om användaren är admin, skicka till admin-sidorna
   if (user.role === 'admin') {
     return <Navigate to="/admin/groups" replace />;
-  } else {
-    return <MemberDashboard user={user} />;
+  } 
+
+  if (user.role === 'leader') {
+  const leaderGroupSlug = user.groups?.[0]; 
+
+  if (leaderGroupSlug) {
+    // Skicka dem direkt till den specifika körens dashboard-sida
+    return <Navigate to={`/leader/choir/${leaderGroupSlug}/repertoires`} replace />;
   }
+  
+  // Fallback om de av någon anledning inte har en grupp
+  // Skicka dem till en tom leader-sida eller en fel-sida.
+  // För nu skickar vi dem till en generell /leader-sida.
+  return <Navigate to="/leader" replace />;
+}
+  
+  // Om det är en vanlig användare, skicka till deras personliga dashboard
+  return <Navigate to="/user/me" replace />;
 };

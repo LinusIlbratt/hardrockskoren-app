@@ -1,17 +1,8 @@
+import type { Event } from '@/types';
 import axios from 'axios';
 
 // OBS! Kontrollera att VITE_EVENT_API_URL är rätt namn på miljövariabeln i din .env-fil
 const API_BASE_URL = import.meta.env.VITE_EVENT_API_URL;
-
-// --- Typer ---
-// Definierar hur ett event-objekt ser ut.
-interface Event {
-  eventId: string;
-  title: string;
-  eventDate: string;
-  eventType: 'CONCERT' | 'REHEARSAL';
-  description: string | null;
-}
 
 // Typ för datan som skickas när man skapar/uppdaterar ett enstaka event.
 type EventData = Partial<Event>;

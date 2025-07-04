@@ -1,26 +1,38 @@
 @use '@/styles/variables' as *;
-// Denna fil stylar vårt formulär.
 
+// Huvudbehållaren för formuläret
 .form {
-    @include column;
+  display: flex;
+  flex-direction: column; // Stapla alla formulär-element vertikalt
+  gap: var(--spacing-lg);  // Skapa ett konsekvent, luftigt avstånd mellan varje element
+}
+
+// Styling för input-fälten
+.input {
+  width: 100%; // Se till att fälten tar upp hela bredden
+  padding: var(--spacing-md); // Rejäl padding gör dem lätta att trycka på
+  font-size: var(--fs-base);
+  color: var(--color-text);
+  background-color: var(color-background-hover);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+  // Tydliggör vilket fält som är aktivt
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(210, 180, 140, 0.2); // En "glow"-effekt
   }
-  
-  // Stilar för att förbättra Input-komponenten när den används här
-  .input {
-    // Gör så att input-fältet får en tydlig bakgrund och ram
-    background-color: rgba(0,0,0,0.2);
-    border: 1px solid var(--color-border);
-    padding: var(--padding-sml);
-    transition: border-color 0.2s ease;
-  
-    &:focus {
-      border-color: var(--color-primary);
-    }
-  }
-  
-  .error {
-    color: var(--color-accent);
-    font-size: 0.875rem;
-    text-align: center;
-    margin-top: -0.5rem; // Minska avståndet till fältet ovanför
-  }
+}
+
+
+
+// Just nu behövs ingen specifik styling för knappen eftersom den ärver
+// från den globala Button-komponenten. Om vi vill justera den specifikt
+// för detta formulär kan vi lägga till regler här, t.ex.:
+//
+// .form > button {
+//   margin-top: var(--spacing-md);
+// }
+//

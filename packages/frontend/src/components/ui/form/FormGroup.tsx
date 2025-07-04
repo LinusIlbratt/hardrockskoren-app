@@ -4,7 +4,7 @@ import styles from './FormGroup.module.scss';
 
 export interface FormGroupProps extends React.HTMLAttributes<HTMLDivElement> {  
   children: React.ReactNode;  
-  label?: string;  
+  label?: React.ReactNode;  
   htmlFor?: string;  
   error?: string | null;
 }

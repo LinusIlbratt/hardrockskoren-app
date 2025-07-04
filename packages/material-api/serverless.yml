@@ -36,7 +36,8 @@ plugins:
 
 custom:
   mainTableName: HrkMainTable-${self:provider.stage}
-  mediaBucketName: hrk-media-${self:provider.stage}-${aws:accountId} 
+  mediaBucketName: hrk-media-${self:provider.stage}-${aws:accountId}
+  userPoolId: ${file(./env.${self:provider.stage}.yaml):COGNITO_USER_POOL_ID}
   
 functions:
   - ${file(./yaml/material-functions.yml)}

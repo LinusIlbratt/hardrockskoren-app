@@ -1,0 +1,174 @@
+@use '@/styles/variables' as *;
+
+.playerContainer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: auto; // Höjden anpassas efter innehållet
+  min-height: 120px; // En bra minsta höjd för den nya layouten
+  background-color: #181818;
+  color: white;
+  z-index: 2000;
+  box-sizing: border-box;
+  
+  // Stapla de tre huvudsektionerna vertikalt
+  display: flex;
+  flex-direction: column;
+  justify-content: center; // Centrera innehållet vertikalt
+  align-items: center;    // Centrera innehållet horisontellt
+  
+  padding: var(--spacing-sm) var(--spacing-lg);
+  gap: var(--spacing-xs); // Lite luft mellan raderna
+  transition: bottom 0.4s ease-in-out;
+}
+
+// NY KLASS: Appliceras för att gömma spelaren
+.hidden {
+  // Skjut ner spelaren så bara toppen (ca 25px) är synlig
+  bottom: -120px; 
+}
+
+.playerContent {
+  width: 100%;
+  height: 100%;
+  padding: 0 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr;
+  align-items: center;
+  gap: 2rem;
+}
+
+// NY KNAPP: För att visa/dölja
+.toggleButton {
+  position: absolute;
+  top: -1px; // Placera den precis ovanför spelarens kant
+  left: 50%;
+  transform: translateX(-50%) translateY(-100%);
+
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-bottom: none;
+  color: white;
+  padding: 4px 16px;
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--color-background);
+  }
+}
+
+.nowPlayingInfo {
+  position: absolute;
+  top: var(--spacing-sm); // Avstånd från toppen
+  left: var(--spacing-lg); // Avstånd från vänster
+  
+  // Se till att långa titlar inte förstör layouten
+  max-width: 40%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  
+  // Styling för texten
+  .nowPlayingLabel {
+    font-size: var(--fs-sm);
+    color: #a0a0a0;
+    margin-right: var(--spacing-sm);
+  }
+  
+  .trackTitle {
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: white;
+  }
+}
+
+// Sektion 2: Huvudkontroller (Play/Pause)
+.mainControls {
+  // Denna behållare behövs för att ge play-knappen luft
+  padding: var(--spacing-xs) 0;
+}
+
+.playPauseButton {
+  background: white;
+  color: black;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  
+  // Lite mindre knapp, som du önskade
+  width: 40px;
+  height: 40px;
+  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.1s ease;
+  &:hover {
+    transform: scale(1.05);
+  }
+}
+
+// Sektion 3: Den nedre raden med tidslinje och volym
+.seekBarContainer {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.time {
+  font-size: 0.75rem;
+  color: #b3b3b3;
+}
+
+// Tidslinjen ska växa och ta upp ledigt utrymme
+.timelineSlider {
+  flex-grow: 1; 
+}
+
+// Behållare för volymikon och slider
+.volumeControl {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  width: 150px;
+  justify-content: flex-end;
+}
+
+.volumeIcon {
+  color: #a0a0a0;
+}
+
+
+// Generisk styling för sliders
+.timelineSlider,
+.volumeSlider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: #4d4d4d;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+  }
+  
+  &:hover::-webkit-slider-runnable-track {
+    background: var(--color-primary);
+  }
+  // Stilar för Firefox...
+  &::-moz-range-track { background: #4d4d4d; height: 4px; border-radius: 2px; }
+  &::-moz-range-thumb { width: 12px; height: 12px; background: white; border-radius: 50%; border: none; }
+  &:hover::-moz-range-track { background: var(--color-primary); }
+}

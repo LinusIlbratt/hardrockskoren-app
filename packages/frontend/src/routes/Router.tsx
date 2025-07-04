@@ -1,18 +1,28 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-
-// Importera alla dina sidor och layouts
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
 import { LoginPage } from "@/pages/LoginPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { AdminLayout } from '@/components/layout/AdminLayout';
+import { LeaderLayout } from "@/components/layout/LeaderLayout";
+import { UserLayout } from "@/components/layout/UserLayout";
 import { AdminGroupListPage } from '@/pages/admin/AdminGroupListPage';
 import { GroupDashboardLayout } from '@/components/layout/GroupDashboardLayout';
 import { AdminRepertoireListPage } from '@/pages/admin/AdminRepertoireListPage';
-import { AdminUploadPage } from '@/pages/admin/AdminUploadPage';
+import { AdminUploadMaterialPage } from '@/pages/admin/AdminUploadMaterialPage';
+import { AdminUploadPracticePage } from '@/pages/admin/AdminUploadPracticePage';
 import { AdminUserManagementPage } from "@/pages/admin/AdminUserManagementPage";
 import { RegistrationPage } from "@/pages/RegistrationPage";
 import { AdminEventPage } from "@/pages/admin/AdminEventPage";
+import { MemberDashboard } from "@/pages/member/MemberDashboard";
+import { LeaderDashboard } from "@/pages/leader/LeaderDashboard";
+import { MemberListRepertoirePage } from "@/pages/member/MemberListRepertoirePage";
+import { MemberRepertoireMaterialPage } from "@/pages/member/MemberRepertoireMaterialPage";
+import { MemberEventPage } from "@/pages/member/MemberEventPage";
+import { AdminRepertoireMaterialPage } from "@/pages/admin/AdminRepertoireMaterialPage";
+import { PracticePage } from "@/pages/PracticePage";
+import { LeaderAttendancePage } from "@/pages/leader/LeaderAttendancePage";
+import { Outlet } from 'react-router-dom';
 
 const router = createBrowserRouter([
   {
@@ -45,6 +55,14 @@ const router = createBrowserRouter([
             element: <AdminLayout />,
             children: [
               {
+                path: "globalMaterial",
+                element: <AdminUploadMaterialPage />, // Placeholder för globalt material
+              },
+              {
+                path: "practice",
+                element: <AdminUploadPracticePage />, // Placeholder för sjungupp
+              },
+              {
                 path: "groups",
                 element: <AdminGroupListPage />,
               },
@@ -58,7 +76,51 @@ const router = createBrowserRouter([
                   },
                   {
                     path: "repertoires/:repertoireId/materials",
-                    element: <AdminUploadPage />,
+                    element: <AdminRepertoireMaterialPage />, // Placeholder för repertoarmaterial
+                  },
+                  {
+                    path: "concerts",
+                    element: <AdminEventPage />,
+                  },
+                   {
+                    path: "practice",
+                    element: <PracticePage />, // Placeholder för sjungupp
+                  },
+                  {
+                    path: "users",
+                    element: <AdminUserManagementPage viewerRole="admin" />, // Använd den nya komponenten här
+                  },
+                  {
+                    path: "attendance",
+                    element: <LeaderAttendancePage />, // Använd den nya komponenten här
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            // Sektion för Körledare
+            path: "leader",
+            element: <LeaderLayout />,
+            children: [
+              // Denna route är för när en specifik kör har valts
+              // URL: /leader/choir/:groupName
+              {
+                path: "choir/:groupName",
+                element: <LeaderDashboard />, 
+                children: [
+                  {
+                    // Detta gör "repertoires" till default-sidan
+                    index: true,
+                    element: <Navigate to="repertoires" replace /> 
+                  },
+                  {
+                    path: "repertoires",
+                    element: <AdminRepertoireListPage />, 
+                  },
+                  {
+                    path: "repertoires/:repertoireId/materials",
+                    element: <AdminRepertoireMaterialPage />, // Placeholder för repertoarmaterial
                   },
                   {
                     path: "concerts",
@@ -66,11 +128,56 @@ const router = createBrowserRouter([
                   },
                   {
                     path: "users",
-                    element: <AdminUserManagementPage />, // Använd den nya komponenten här
+                    element: <AdminUserManagementPage viewerRole="leader" />
                   },
-                ],
-              },
+                  {
+                    path: "practice",
+                    element: <PracticePage />,
+                  },
+                  {
+                    path: "attendance",
+                    element: <LeaderAttendancePage />,
+                  },
+                ]
+              }
             ],
+          },
+          {
+            // Användarens dashboard
+            path: "user",
+            element: <UserLayout />,
+            children: [
+              {
+                path: "me",
+                element: <MemberDashboard />,
+                children: [
+                  {
+                    path: "repertoires",
+                    element: <Outlet />,
+                    children: [
+                      {
+                        // index: true betyder att denna route renderas när URL:en är EXAKT /user/me/userMaterial
+                        index: true,
+                        element: <MemberListRepertoirePage />,
+                      },
+                      {
+                        // Denna route renderas när URL:en är /user/me/userMaterial/EttId
+                        path: ":repertoireId",
+                        element: <MemberRepertoireMaterialPage />,
+                      }
+                    ]
+                  },
+                  {
+                    path: "practice",
+                    element: <PracticePage />,
+                  },
+                  {
+                    path: "concerts",
+                    element: <MemberEventPage />,
+                  },
+                ]
+              },
+            ]
           },
         ],
       },

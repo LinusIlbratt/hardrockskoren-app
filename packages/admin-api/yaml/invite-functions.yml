@@ -1,3 +1,4 @@
+
 createInvite:
   handler: functions/invite/create.handler
   name: hrk-create-invite-${sls:stage}
@@ -12,16 +13,23 @@ createInvite:
     FROM_EMAIL_ADDRESS: ${env:FROM_EMAIL_ADDRESS}
     FRONTEND_URL: ${env:FRONTEND_URL}
     MAIN_TABLE : ${self:custom.mainTableName}
+    USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
   iamRoleStatements:
     - Effect: "Allow"
       Action: ["dynamodb:PutItem"]
       Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.inviteTableName}"
     - Effect: "Allow"
-      Action: ["dynamodb:GetItem"]
+      Action: ["dynamodb:GetItem", "dynamodb:PutItem"]
       Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
     - Effect: "Allow"
       Action: ["ses:SendEmail"] # Tillåt att skicka e-post
       Resource: "*" # Begränsa gärna detta till en specifik ARN i produktion
+    - Effect: "Allow"
+      Action: 
+      - "cognito-idp:ListUsers"
+      - "cognito-idp:AdminAddUserToGroup"
+      - "cognito-idp:AdminGetUser"
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
 getInvite:
   handler: functions/invite/get.handler

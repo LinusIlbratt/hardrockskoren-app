@@ -1,99 +1,155 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal/Modal';
 import { InviteForm } from '@/components/ui/form/InviteForm';
+import { UserEditModal } from '@/components/ui/modal/UserEditModal';
 import type { RoleTypes } from '@hrk/core/types';
+import { Search } from 'lucide-react';
+import type { GroupMember } from '@/types';
+import { UserList } from '@/components/ui/user/UserList';
 import styles from './AdminUserManagementPage.module.scss';
 
-// Definiera en typ för en användare i listan
-interface GroupMember {
-  id: string;
-  email: string;
-  given_name: string;
-  family_name: string;
-  role: RoleTypes;
+interface AdminUserManagementPageProps {
+  viewerRole: 'admin' | 'leader';
 }
 
-const API_BASE_URL = 'https://api.hardrockskoren.se';
+const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
-export const AdminUserManagementPage = () => {
+export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageProps) => {
   const { groupName } = useParams<{ groupName: string }>();
-  const [roleToInvite, setRoleToInvite] = useState<RoleTypes | null>(null);
 
-  // --- NY STATE FÖR ANVÄNDARLISTAN ---
-  const [members, setMembers] = useState<GroupMember[]>([]);
+  // --- State-variabler ---
+  const [allMembers, setAllMembers] = useState<GroupMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // Funktion för att hämta användare
-  const fetchMembers = useCallback(async () => {
+  // NYTT: State för paginering
+  const [nextToken, setNextToken] = useState<string | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  const [roleToInvite, setRoleToInvite] = useState<RoleTypes | null>(null);
+  const [selectedUser, setSelectedUser] = useState<GroupMember | null>(null);
+
+  // --- Funktioner ---
+  const fetchMembers = useCallback(async (tokenForNextPage?: string | null) => {
     if (!groupName) return;
-    setIsLoading(true);
+
+    // Sätt rätt laddnings-state
+    if (tokenForNextPage) {
+      setIsLoadingMore(true);
+    } else {
+      setIsLoading(true);
+    }
+
     const token = localStorage.getItem('authToken');
     try {
-      const response = await axios.get(`${API_BASE_URL}/admin/groups/${groupName}/users`, {
+      // Bygg URL med paginerings-parametrar
+      const params = new URLSearchParams();
+      if (tokenForNextPage) {
+        params.append('nextToken', tokenForNextPage);
+      }
+      params.append('limit', '25'); // Hämta 25 i taget
+
+      const response = await axios.get(`${API_BASE_URL}/groups/${groupName}/users?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMembers(response.data);
+
+      const { users, nextToken: newNextToken } = response.data;
+
+      // Om vi hämtar en ny sida, lägg till användarna. Annars, ersätt.
+      setAllMembers(prev => tokenForNextPage ? [...prev, ...users] : users);
+      setNextToken(newNextToken || null);
+
     } catch (error) {
       console.error("Failed to fetch members:", error);
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
     }
   }, [groupName]);
 
-  // Hämta medlemmar när sidan laddas
+  // Hämta den första sidan när komponenten laddas
   useEffect(() => {
     fetchMembers();
   }, [fetchMembers]);
 
-
   const handleInviteSuccess = () => {
     setRoleToInvite(null);
-    fetchMembers(); // Hämta den uppdaterade medlemslistan!
+    fetchMembers(); // Ladda om hela listan från början
   };
 
-return (
+  const filteredMembers = useMemo(() => {
+    // 1) dela upp söksträngen i ord (och ta bort tomma strängar)
+    const terms = searchTerm
+      .toLowerCase()
+      .trim()
+      .split(/\s+/)
+      .filter(term => term.length > 0);
+
+    return allMembers.filter(member => {
+      const fullName = `${member.given_name} ${member.family_name}`.toLowerCase();
+      const email = member.email.toLowerCase();
+
+      // 2) kontrollera att varje term finns antingen i namn eller e-post
+      return terms.every(term =>
+        fullName.includes(term) ||
+        email.includes(term)
+      );
+    });
+  }, [allMembers, searchTerm]);
+
+  return (
     <div className={styles.page}>
       <div className={styles.header}>
         <h2>Hantera medlemmar</h2>
         <div className={styles.buttonGroup}>
-          <Button onClick={() => setRoleToInvite('user')}>Bjud in medlem</Button>
-          <Button variant={ButtonVariant.Ghost} onClick={() => setRoleToInvite('leader')}>Bjud in körledare</Button>
+          <Button variant={ButtonVariant.Primary} onClick={() => setRoleToInvite('user')}>Bjud in medlem</Button>
+          {viewerRole === 'admin' && (
+            <Button variant={ButtonVariant.Primary} onClick={() => setRoleToInvite('leader')}>Bjud in körledare</Button>
+          )}
         </div>
       </div>
-      
-      {/* Denna yttre div behåller vi precis som den är */}
-      <div className={styles.userList}>
-        {isLoading ? (
-          <p>Laddar medlemmar...</p>
-        ) : (
-          // Vi byter ut tabellen mot vår nya grid-container
-          <div className={styles.gridContainer}>
-            {/* --- Vår nya Header-rad --- */}
-            <div className={styles.gridHeader}>
-              <span className={styles.gridCell}>Namn</span>
-              <span className={styles.gridCell}>E-post</span>
-              <span className={styles.gridCell}>Roll</span>
-            </div>
 
-            {/* --- Mappa ut varje medlem som en Grid-rad --- */}
-            {members.map(member => (
-              <div key={member.id} className={styles.gridRow}>
-                <span className={styles.gridCell}>{member.given_name} {member.family_name}</span>
-                <span className={styles.gridCell}>{member.email}</span>
-                <span className={styles.gridCell}>{member.role}</span>
-              </div>
-            ))}
-            
-            {members.length === 0 && (
-                <p>Inga medlemmar har bjudits in till denna grupp ännu.</p>
-            )}
-          </div>
-        )}
+      <div className={styles.searchBar}>
+        <Search className={styles.searchIcon} size={20} />
+        <input
+          type="text"
+          placeholder="Sök på namn eller e-post..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </div>
 
+      {isLoading ? (
+        <p>Laddar medlemmar...</p>
+      ) : filteredMembers.length > 0 ? (
+        <>
+          <UserList
+            members={filteredMembers}
+            onEditUser={(member) => setSelectedUser(member)}
+          />
+          {/* NYTT: "Ladda fler"-knapp */}
+          {nextToken && !searchTerm && (
+            <div className={styles.loadMoreContainer}>
+              <Button
+                onClick={() => fetchMembers(nextToken)}
+                isLoading={isLoadingMore}
+                variant={ButtonVariant.Primary}
+              >
+                Ladda fler
+              </Button>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className={styles.emptyState}>
+          <p>{searchTerm ? 'Inga medlemmar matchade din sökning.' : 'Inga medlemmar har bjudits in till denna kör ännu.'}</p>
+        </div>
+      )}
+
+      {/* KORRIGERING: Lade tillbaka InviteForm i modalen */}
       <Modal
         isOpen={!!roleToInvite}
         onClose={() => setRoleToInvite(null)}
@@ -103,6 +159,16 @@ return (
           <InviteForm roleToInvite={roleToInvite} onSuccess={handleInviteSuccess} />
         )}
       </Modal>
+
+      {/* KORRIGERING: Lade tillbaka UserEditModal */}
+      {selectedUser && groupName && (
+        <UserEditModal
+          user={selectedUser}
+          groupSlug={groupName}
+          onClose={() => setSelectedUser(null)}
+          onUserUpdate={fetchMembers}
+        />
+      )}
     </div>
   );
 };

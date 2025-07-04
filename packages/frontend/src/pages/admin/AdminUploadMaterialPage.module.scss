@@ -1,0 +1,158 @@
+@use '@/styles/variables' as *;
+
+.title {
+  margin-bottom: var(--spacing-lg);
+}
+
+.divider {
+  border: none;
+  height: 1px;
+  background-color: var(--color-border);
+  margin: var(--spacing-xl) 0;
+}
+
+// Styling för uppladdningsformuläret
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+
+  // Se till att knappen tar upp hela bredden i formuläret
+  & > button {
+    width: 100%;
+  }
+}
+
+.labelHint {
+  color: var(--color-text-secondary);
+}
+
+// Styling för statusmeddelanden
+.successMessage,
+.errorMessage,
+.destructiveMessage {
+  text-align: center;
+  margin-top: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  animation: fade-in-and-out 4s ease-in-out forwards;
+}
+.successMessage {
+  color: #a7f3d0; // Ljusgrön
+  background-color: #052e16;
+}
+.errorMessage,
+.destructiveMessage {
+  color: #fca5a5; // Ljusröd
+  background-color: #450a0a;
+}
+
+@keyframes fade-in-and-out {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+
+// Headern ovanför listan med befintligt material
+.listHeader {
+  display: flex;
+  flex-direction: column; // Stapla på mobil
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.categorySection {
+  &:not(:last-child) {
+    margin-bottom: var(--spacing-xl);
+  }
+
+  h3 {
+    margin: 0 0 1rem 0;
+    color: var(--color-primary);
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 0.5rem;
+  }
+}
+
+// Lista med material
+.materialList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  background-color: var(--color-dark-gray);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  // Mobil: En enkel vertikal lista
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-);
+}
+
+.materialItem {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-xs);
+
+  label {
+    flex-grow: 1; // Se till att texten tar upp resten av platsen
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.checkbox {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0; // Förhindra att checkboxen kläms ihop
+  cursor: pointer;
+}
+
+/* =============================================== */
+/* --- RESPONSIVA STILAR FÖR STÖRRE SKÄRMAR --- */
+/* =============================================== */
+
+@media (min-width: #{$tabletBreakpoint}) {
+  .page {
+    padding: var(--spacing-xl);
+  }
+
+  // Placera titel och knapp på samma rad
+  .listHeader {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  // Byt till ett responsivt rutnät för materiallistan
+  .materialList {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  // Se till att varje item ser bra ut i rutnätet
+  
+}
+
+@media (min-width: #{$desktopBreakpoint}) {
+  .materialList {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}

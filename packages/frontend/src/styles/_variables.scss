@@ -1,82 +1,165 @@
 // src/styles/_variables.scss
 
-// SASS-variabler används BARA för saker som SCSS-logik behöver, som breakpoints.
-$mobileBreakpoint: 480px;
 $tabletBreakpoint: 768px;
 $desktopBreakpoint: 1024px;
+$maxWidth: 1100px; // Kan användas för att begränsa bredden på containers.
+$baseFontSize: 15px;
 
-/* LAYOUT */
 
-$maxWidth: 900px;
-
-// Alla design-tokens definieras som CSS Custom Properties inuti :root.
-// Detta gör dem globalt tillgängliga i hela din app.
 :root {
-    // Färger
-    --color-background: #121212;
-    --color-text: #E0E0E0;
-    --color-primary: #D2B48C; // Beige
-    --color-accent: #B22222; // Röd
-    --color-dark-gray: #282828;
-    --color-border: #4b5563;
+  // --- FÄRGER ---
+   /** * Bakgrundsfärg för hela sidan.
+   * I bilden är detta en djup, nästintill helt svart färg för maximal kontrast.
+   */
+  --color-background: #0A0A0A;
 
-    // Typsnittsfamiljer
-    --font-heading: 'Trajan Pro', serif; // Byt ut mot ditt typsnitt
-    --font-body: 'Lato', sans-serif;
+  /**
+   * En mörkgrå färg för paneler, "cards" och widgets som ska ligga ovanpå bakgrunden.
+   * Används för t.ex. "Login form" och "New album"-sektionerna i bilden.
+   */
+  --color-dark-gray: #1A1A1A;
 
-    // Typsnittsstorlekar
-    --fs-base: 16px; // Grundstorlek
-    --fs-sm: 14px;
-    --fs-lg: 18px;
-    --fs-xl: 24px;
-    --fs-xxl: 36px;
+  /**
+   * Hover-effekt för interaktiva ytor som list-items eller tabeller. 
+   * En subtil ljusning av --color-dark-gray för att ge visuell feedback.
+   */
+  --color-background-hover: #292929;
 
-    // Effekter
-    --radius-tier-1: 8px;
-    --radius-tier-2: 4px;
-    --radius-tier-3: 2px;
-    --radius-round: 99rem;
+  /**
+   * Hover-effekt för knappar och länkar. En mörkare grå för att ge en tydlig skillnad.
+   * Används för att indikera att ett element är interaktivt.
+   */
+  --color-background-hover-accent: #494949;
 
-    // Padding, Margin, Gap
+  /**
+   * Primär textfärg för brödtext, rubriker och all viktig information.
+   * Ett brutet vitt för att vara aningen mjukare för ögonen än kritvitt.
+   */
+  --color-text: #F5F5F5;
 
-    --base: 16px;
+  /**
+   * NY: En sekundär textfärg för mindre viktig information.
+   * Används för metadata som datum, låtlängd, eller "posted by...". Skapar visuell hierarki.
+   */
+  --color-text-secondary: #A0A0A0;
 
-    --padding-huge: calc(var(--base) * 2);
-    --pading-large: calc(var(--base) * 1.5);
-    --padding: (var(--base));
-    --padding-sml: calc(var(--base) / 2);
-    --padding-nano: calc(var(--base) / 4);
+  /**
+   * Den primära action-färgen. I denna design är det den starka röda färgen.
+   * Används för huvudmenyn, viktiga knappar och andra element som ska fånga uppmärksamheten.
+   * Jag har satt denna till samma som --color-accent för att matcha bildens tema.
+   */
+  --color-primary: #fe160a;
 
-    --margin-huge: calc(var(--base) * 2);
-    --margin-large: calc(var(--base) * 1.5);
-    --margin: (var(--base));
-    --margin-sml: calc(var(--base) / 2);
-    --margin-nano: calc(var(--base) / 4);
+  /**
+   * Accentfärgen. I ett Svart/Vitt/Rött-tema är detta den viktigaste färgen.
+   * Används för att "färglägga" temat. Perfekt för ikoner, aktiva länkar och highlights.
+   */
+  --color-accent: #a90000ec;
 
-    --gap-huge: calc(var(--base) * 2);
-    --gap-large: calc(var(--base) * 1.5);
-    --gap: (var(--base));
-    --gap-sml: calc(var(--base) / 2);
-    --gap-nano: calc(var(--base) / 4);
+  --color-border: #333333;
+  --color-border-hover: #626262;
+
+  /* --- NYA, REKOMMENDERADE VARIABLER --- */
+
+  /**
+   * NY: En ljusare röd för hover-effekter på knappar och länkar.
+   * Ger tydlig feedback när användaren för muspekaren över ett rött element.
+   */
+  --color-accent-hover: #FF2D2D;
+
+  --color-dark-button: #d300008f;
+
+  --color-icon-view: #8fadd3;
+  --color-icon-view-hover: #CBD5E0;
+
+  --color-icon-play: #9AE6B4;
+  --color-icon-play-hover: #C6F6D5;
+
+  
+
+  // --- TYPSNITT ---
+  --font-heading: 'Merriweather', serif;
+  --font-body: 'Merriweather', serif;
+  --font-button: 'Pirata One', cursive;
+
+  // --- TYPOGRAFISK SKALA (i rem) ---
+  // Baseras på att 1rem = 16px (eller webbläsarens standard).
+  --fs-xxs: 0.625rem; // 10px
+  --fs-xs: 0.75rem;     // 12px
+  --fs-sm: 0.875rem;    // 14px
+  --fs-base: 1rem;      // 16px
+  --fs-lg: 1.125rem;    // 18px
+  
+  --fs-h4: 1.125rem;    // 18px (mobil)
+  --fs-h3: 1.25rem;     // 20px (mobil)
+  --fs-h2: 1.5rem;      // 24px (mobil)
+  --fs-h1: 2rem;        // 32px (mobil)
+
+  --fs-display: 3rem;   // 48px (för stora rubriker på desktop)
+
+  // --- MELLANRUM (SPACING i rem) ---
+  // Konsekvent skala för padding, margin och gap.
+  --spacing-xs: 0.25rem;  // 4px
+  --spacing-sm: 0.5rem;   // 8px
+  --spacing-md: 1rem;     // 16px
+  --spacing-lg: 1.5rem;   // 24px
+  --spacing-xl: 2rem;     // 32px
+  --spacing-xxl: 3rem;    // 48px
+
+  // --- RADIE ---
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-round: 99rem;
 }
 
 
- /*  HELPERS */
+// =============================================================================
+// ! HELPERS (Mixins)
+// =============================================================================
 
- @mixin center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
+@mixin center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-@mixin column {
-    display: flex;
-    flex-direction: column;
-    gap: var(--gap-sml);
-  }
+@mixin column($gap-size: var(--spacing-md)) {
+  display: flex;
+  flex-direction: column;
+  gap: $gap-size;
+}
 
-  @mixin row {
-    display: flex;
-    flex-direction: row;
-    gap: (var(--base));
-  }
+@mixin row($gap-size: var(--spacing-md)) {
+  display: flex;
+  flex-direction: row;
+  gap: $gap-size;
+}
+
+// För WebKit-baserade webbläsare (Chrome, Safari, Edge etc.)
+::-webkit-scrollbar {
+  width: 2px;  // En lite mer användbar bredd än 1px
+  height: 2px;
+}
+
+::-webkit-scrollbar-track {
+  // Gör spåret helt genomskinligt
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  // Själva "tummen" som man drar i
+  background-color: rgba(255, 0, 0, 0.25); // Använder din röda primärfärg
+  border-radius: var(--radius-xs);
+  
+  // Lägg till en liten genomskinlig kant för att undvika att den "fastnar" i kanten
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+// För Firefox
+* {
+  scrollbar-width: thin; // Gör scrollbaren smal
+  // Sätter färgen på tummen till din primärfärg och spåret till helt genomskinligt
+  scrollbar-color: rgba(255, 0, 0, 0.25) transparent;
+}

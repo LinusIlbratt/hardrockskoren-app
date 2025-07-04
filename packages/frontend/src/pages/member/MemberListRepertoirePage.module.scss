@@ -1,0 +1,35 @@
+@use '@/styles/variables' as *;
+
+// .page och .header är samma som på AdminEventPage
+.page {
+  padding: var(--spacing-xs);
+}
+
+.header {
+  @include column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.repertoireList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.repertoireItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) 0; // Padding bara upp och ner
+
+  // Separera varje rad med en linje, förutom den sista
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--color-border);
+  }
+}

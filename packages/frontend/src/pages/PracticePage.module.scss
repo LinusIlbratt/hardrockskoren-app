@@ -1,0 +1,110 @@
+@use '@/styles/variables' as *;
+
+// Grundläggande layout för hela sidan
+.page {
+  padding: var(--spacing-xs);
+  margin-top: var(--spacing-md);
+
+  @media (min-width: #{$tabletBreakpoint}) {
+    padding: var(--spacing-xl);
+  }
+}
+
+// Sidhuvudet med titel och knappar
+.header {
+  display: flex;
+  flex-direction: column; // Stapla vertikalt på mobil
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+
+  h2 {
+    margin: 0;
+  }
+}
+
+// Behållare för listan
+.materialList {
+  list-style: none;
+  padding: 0;
+  margin: 0;  
+  border-radius: var(--radius-md);
+  overflow: hidden; // Lägger till en skugga för bättre separation från bakgrunden
+}
+
+// Varje rad i listan
+.materialItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--color-dark-gray);
+  color: var(--color-text-secondary);
+
+  &:not(:first-child) {
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+.materialTitle {
+  font-weight: 500;
+  flex-grow: 1; // Se till att titeln tar upp allt ledigt utrymme
+  // Förhindra att långa titlar förstör layouten
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// NY: Behållare för alla ikon-knappar på en rad
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-shrink: 0; // Förhindra att knapp-gruppen kläms ihop
+}
+
+// NY: Generell stil för alla ikon-knappar
+.iconPlay, .iconView, .iconDelete {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-round);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.iconPlay {
+  color: var(--color-icon-play);
+  transition: color 0.2s, background-color 0.2s;
+
+  &:hover {
+    color: var(--color-icon-play-hover); 
+  } 
+}
+.iconView {
+  color: var(--color-icon-view);
+  transition: color 0.2s, background-color 0.2s;
+  
+  &:hover {
+    color: var(--color-icon-view-hover); 
+  }
+}
+.iconDelete {
+  color: var(--color-accent); // Använder standard sekundär textfärg
+  transition: color 0.2s, background-color 0.2s;
+
+  &:hover {
+    color: var(--color-primary); 
+  }
+} 
+
+// Radera-knappen får en egen hover-färg
+.deleteButton {
+  &:hover {
+    color: var(--color-accent); // Använder din röda accent-färg
+  }
+}

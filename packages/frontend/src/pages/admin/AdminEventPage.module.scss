@@ -1,97 +1,183 @@
-@import '@/styles/variables';
+@use '@/styles/variables' as *;
 
-// ===================================================================
-// Sektion 1: Sidlayout och Formulär
-// Allt som rör sidans övergripande struktur och formuläret för att
-// skapa eller redigera ett event.
-// ===================================================================
-
-.pageLayout {
-  display: flex;
-  flex-direction: column;
-  gap: var(--gap-huge); // Stort mellanrum mellan formulär-sektionen och list-sektionen
+// Grundläggande layout för hela sidan
+.page {
+  padding: var(--spacing-xs);
 }
 
+// Sidhuvudet med titel och knappar
 .header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  
+  flex-direction: column; // Stapla vertikalt på mobil
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+
   h2 {
     margin: 0;
-    color: var(--color-primary);
   }
 }
+
+// En behållare för knappar
+.buttonGroup {
+  display: flex;
+  flex-wrap: wrap; // Tillåt knappar att radbrytas
+  gap: var(--spacing-sm);
+}
+
+// --- NYA STILAR FÖR FLIKARNA ---
+
+// Behållare för flik-knapparna
+.tabs {
+  display: flex;
+  gap: var(--spacing-lg); // Mellanrum mellan knapparna
+  border-bottom: 1px solid var(--color-border); // Linje som sträcker sig över hela bredden
+  width: 100%;
+  margin-top: var(--spacing-xl); // Lite avstånd från knapparna ovanför
+}
+
+// Styling för varje enskild flik-knapp
+.tabButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-sm) 0;
+  padding-bottom: var(--spacing-md); // Lite extra utrymme för att lyfta texten från linjen
+  
+  // Återskapar utseendet från din gamla .listHeader
+  font-size: var(--fs-base);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  
+  // Standardfärg för inaktiva flikar
+  color: #a0a0a0; 
+  
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+// Speciell stil för den aktiva fliken
+.activeTab {
+  color: var(--color-primary); // Den röda färgen
+}
+
+
+// --- SLUT PÅ NYA STILAR ---
+
 
 .listSection {
-  background-color: var(--color-dark-gray);
-  border-radius: var(--radius-tier-1);
-  padding: var(--pading-large);
-  border: 1px solid var(--color-border);
-}
-
-.topBar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  
-  // Ta bort margin från titeln när den är i en topBar
-  .title {
-    margin-bottom: 0;
-    border: none;
-    padding-bottom: 0;
-  }
-}
-
-.eventListWrapper {
-  margin-top: var(--margin-large);
+  margin-top: var(--spacing-xl);
 }
 
 .listGroup {
-  // En container för varje typ av event (Repetitioner / Konserter)
-  margin-bottom: var(--gap-huge);
+  &:not(:last-child) {
+    margin-bottom: var(--spacing-xl);
+  }
 }
 
 .listHeader {
-  font-family: var(--font-heading);
   text-transform: uppercase;
-  letter-spacing: 1.5px;
+  letter-spacing: 1px;
   font-size: var(--fs-base);
-  color: var(--color-text);
-  opacity: 0.8;
-  padding-bottom: var(--padding-sml);
+  color: var(--color-primary);
   border-bottom: 1px solid var(--color-border);
-  margin-bottom: var(--gap);
+  padding-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
 }
 
+// Behållare för listan
+.eventList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+// Varje rad i listan
 .eventItem {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: var(--padding) 0; // Padding bara uppe och nere
-
-  // Lägg till en linje mellan varje item, förutom det sista
+  padding: var(--spacing-md) 0; // Bara padding upp/ner, ingen padding på sidorna
+  
+  // En linje mellan varje rad, förutom den sista
   &:not(:last-child) {
     border-bottom: 1px solid var(--color-border);
   }
 }
 
+// Detaljer (Titel och datum)
 .itemDetails {
   display: flex;
   flex-direction: column;
-  gap: var(--gap-nano);
+  gap: var(--spacing-xs);
 }
 
 .itemTitle {
-  font-family: var(--font-heading);
-  font-size: var(--fs-lg);
-  color: var(--color-text);
-  font-weight: bold;
+  font-weight: 600;
+  font-size: var(--fs-base); // Något mindre typsnitt
 }
 
 .itemDate {
-  font-family: var(--font-body);
   font-size: var(--fs-sm);
-  color: var(--color-text);
-  opacity: 0.7;
+  color: #a0a0a0;
+}
+
+// Behållare för ikon-knapparna
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+// Generell stil för en ikon-knapp
+.iconButton, .iconEye {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-round);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s, color 0.2s;
+
+  &:hover {
+    background-color: var(--color-dark-gray);
+    color: var(--color-text);
+  }
+}
+
+.iconButton {
+  color: #a0a0a0;
+}
+
+.iconEye {
+  color: var(--color-icon-view);
+  transition: color 0.2s, background-color 0.2s;
+
+  &:hover {
+    color: var(--color-icon-view-hover);
+  }
+}
+
+// Speciell färg för radera-ikonen vid hover
+.deleteIcon {
+  &:hover {
+    color: var(--color-accent);
+  }
+}
+
+@media (min-width: #{$tabletBreakpoint}) {
+  .page {
+    padding: var(--spacing-xl);
+  }
+
+  .header {
+  @include row;
+    justify-content: space-between; // Placera titel och knappar på samma rad
+  }
 }

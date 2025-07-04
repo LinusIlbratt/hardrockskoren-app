@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Outlet, useParams, Link } from 'react-router-dom';
+import { Outlet, useParams } from 'react-router-dom';
 import { GroupNav } from '@/components/ui/nav/GroupNav';
 import axios from 'axios';
-import { IoArrowBack } from 'react-icons/io5'; 
 import styles from './GroupDashboardLayout.module.scss';
 
 // Återanvänd Group-typen från din lista-sida
@@ -54,15 +53,7 @@ export const GroupDashboardLayout = () => {
 
   return (
     <div className={styles.dashboardLayout}>
-      <div className={styles.breadcrumb}>
-        <Link to="/admin/groups">
-          <IoArrowBack />
-          Tillbaka till alla körer
-        </Link>
-      </div>
       <header className={styles.header}>
-        {/* Använd nu det hämtade namnet från state */}
-        <h1 className={styles.title}>{currentGroup.name}</h1>
         <GroupNav />
       </header>
       <main className={styles.content}>

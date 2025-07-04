@@ -1,12 +1,13 @@
-import { CognitoIdentityProviderClient, ListUsersInGroupCommand } from "@aws-sdk/client-cognito-identity-provider";
-import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
+import { CognitoIdentityProviderClient, ListUsersInGroupCommand, UserType } from "@aws-sdk/client-cognito-identity-provider";
+import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
+import { AuthContext } from "../../../core/types";
 import { sendResponse, sendError } from "../../../core/utils/http";
 
 const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
 const USER_POOL_ID = process.env.USER_POOL_ID;
 
 export const handler = async (
-  event: APIGatewayProxyEvent
+  event: APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>
 ): Promise<APIGatewayProxyResultV2> => {
   if (!USER_POOL_ID) {
     return sendError(500, "Server configuration error: User Pool ID not set.");
@@ -18,28 +19,60 @@ export const handler = async (
       return sendError(400, "Group name is required in the path.");
     }
 
+    // STEG 1: Läs paginerings-parametrar från query string
+    const limit = parseInt(event.queryStringParameters?.limit || '25', 10);
+    const nextToken = event.queryStringParameters?.nextToken;
+
+    // STEG 2: Ta bort do...while-loopen och gör bara ETT anrop
     const command = new ListUsersInGroupCommand({
       UserPoolId: USER_POOL_ID,
       GroupName: groupName,
+      Limit: limit, // Använd den angivna gränsen
+      NextToken: nextToken, // Skicka med token för att hämta nästa sida
     });
 
-    const { Users } = await cognitoClient.send(command);
+    const response = await cognitoClient.send(command);
+    const usersForPage = response.Users || [];
+    
+    // Behåll din befintliga behörighets-filtrering
+    const invokerRole = event.requestContext.authorizer.lambda.role;
+    const invokerId = event.requestContext.authorizer.lambda.uuid;
 
-    // Formatera om svaret till ett enklare format för frontenden
-    const formattedUsers = (Users || []).map(user => {
-      const attributes = user.Attributes || [];
+    let usersToFormat = usersForPage;
+    if (invokerRole === 'leader') {
+      usersToFormat = usersForPage.filter(user => {
+        const userRole = user.Attributes?.find(attr => attr.Name === 'custom:role')?.Value;
+        return userRole !== 'leader' || user.Username === invokerId;
+      });
+    }
+    
+    const formattedUsers = usersToFormat.map(user => {
+      const attributeMap = (user.Attributes || []).reduce((acc, attr) => {
+        if (attr.Name && attr.Value) {
+          acc[attr.Name] = attr.Value;
+        }
+        return acc;
+      }, {} as Record<string, string>);
+
       return {
-        id: attributes.find(a => a.Name === 'sub')?.Value,
-        email: attributes.find(a => a.Name === 'email')?.Value,
-        given_name: attributes.find(a => a.Name === 'given_name')?.Value,
-        family_name: attributes.find(a => a.Name === 'family_name')?.Value,
-        role: attributes.find(a => a.Name === 'custom:role')?.Value,
+        id: user.Username,
+        email: attributeMap['email'],
+        given_name: attributeMap['given_name'],
+        family_name: attributeMap['family_name'],
+        role: attributeMap['custom:role'],
       };
     });
 
-    return sendResponse(formattedUsers, 200);
+    // STEG 3: Skicka tillbaka ett objekt med både användarna och nästa token
+    return sendResponse({
+      users: formattedUsers,
+      nextToken: response.NextToken // Denna är nyckeln för att hämta nästa sida
+    }, 200);
 
   } catch (error: any) {
+    if (error.name === 'ResourceNotFoundException') {
+        return sendError(404, `Group with name '${event.pathParameters?.groupName}' not found.`);
+    }
     console.error("Error listing users in group:", error);
     return sendError(500, error.message || "Internal server error");
   }

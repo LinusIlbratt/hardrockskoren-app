@@ -31,8 +31,5 @@ export const changePasswordSchema = Joi.object({
       "string.length": "Code must be exactly 6 characters",
     }),
     newPassword: Joi.string().min(8).required(),
-    confirmPassword: Joi.string().valid(Joi.ref("newPassword")).required().messages({
-      "any.only": "Passwords do not match",
-    }),
   });
   

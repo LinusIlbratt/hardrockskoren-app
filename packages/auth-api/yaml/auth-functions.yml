@@ -96,8 +96,10 @@ changeMyPassword:
         - cognito-idp:ChangePassword
       Resource: "*"
 
+
 forgotPassword:
-  handler: ./functions/password.forgotPassword
+  # Se till att sökvägen matchar din filstruktur, t.ex. functions/password/forgotPassword.handler
+  handler: ./functions/forgotPassword.handler
   name: hrk-forgot-password-${sls:stage}
   description: User forgot their password
   memorySize: 256
@@ -106,19 +108,50 @@ forgotPassword:
         method: POST
         path: /forgot-password
   environment:
-    CLIENT_ID: ${env:CLIENT_ID}
+    USER_POOL_ID: ${env:USER_POOL_ID}
+    RESET_TABLE_NAME: HrkPasswordResetTokensTable-${opt:stage}
+    FROM_EMAIL_ADDRESS: ${env:FROM_EMAIL_ADDRESS}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:ListUsers" # För att kunna verifiera att användaren finns
+      Resource: 
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/*"
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:PutItem" # För att spara koden i den nya tabellen
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/HrkPasswordResetTokensTable-${opt:stage}"
+    - Effect: "Allow"
+      Action:
+        - "ses:SendEmail" # För att skicka mailet
+      Resource: "*" # SES kräver ofta en bredare behörighet
 
 resetPassword:
-  handler: ./functions/password.resetPassword
+  handler: ./functions/resetPassword.handler 
   name: hrk-reset-password-${sls:stage}
-  description: User resets their password
+  description: User resets their password with a code
   memorySize: 256
   events:
     - httpApi:
         method: POST
         path: /reset-password
   environment:
+    USER_POOL_ID: ${env:USER_POOL_ID}
+    RESET_TABLE_NAME: HrkPasswordResetTokensTable-${opt:stage}
     CLIENT_ID: ${env:CLIENT_ID}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:DeleteItem"
+      Resource: 
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/HrkPasswordResetTokensTable-${opt:stage}"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminSetUserPassword"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${env:USER_POOL_ID}"
 
 
 
