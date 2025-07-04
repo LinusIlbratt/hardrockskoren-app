@@ -132,3 +132,17 @@
   text-align: center;
   margin-top: -8px; // Negativ marginal för att dra den närmare
 }
+
+.confirmDeleteContent {
+  p {
+    margin: 0;
+    margin-bottom: var(--spacing-xl);
+    line-height: 1.6;
+  }
+}
+
+.confirmDeleteActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+}

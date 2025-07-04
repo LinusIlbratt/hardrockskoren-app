@@ -24,7 +24,7 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
   const [allMembers, setAllMembers] = useState<GroupMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // NYTT: State för paginering
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -74,18 +74,30 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
   useEffect(() => {
     fetchMembers();
   }, [fetchMembers]);
-  
+
   const handleInviteSuccess = () => {
     setRoleToInvite(null);
     fetchMembers(); // Ladda om hela listan från början
   };
-  
+
   const filteredMembers = useMemo(() => {
-    return allMembers.filter(member =>
-      member.given_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.family_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      member.email.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    // 1) dela upp söksträngen i ord (och ta bort tomma strängar)
+    const terms = searchTerm
+      .toLowerCase()
+      .trim()
+      .split(/\s+/)
+      .filter(term => term.length > 0);
+
+    return allMembers.filter(member => {
+      const fullName = `${member.given_name} ${member.family_name}`.toLowerCase();
+      const email = member.email.toLowerCase();
+
+      // 2) kontrollera att varje term finns antingen i namn eller e-post
+      return terms.every(term =>
+        fullName.includes(term) ||
+        email.includes(term)
+      );
+    });
   }, [allMembers, searchTerm]);
 
   return (

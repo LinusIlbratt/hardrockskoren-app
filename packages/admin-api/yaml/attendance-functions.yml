@@ -92,3 +92,22 @@ getAttendanceStatus:
         - "dynamodb:Query"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.attendanceTableName}/index/GroupDateIndex"
+
+listAttendanceDays:
+  handler: functions/attendance/listAttendanceDays.handler
+  name: hrk-admin-list-attendance-days-${sls:stage}
+  description: Lists all unique dates that have attendance records for a group.
+  memorySize: 256
+  events:
+    - httpApi:
+        method: GET
+        path: /groups/{groupSlug}/attendance/days
+        authorizer: authorizer
+  environment:
+    ATTENDANCE_TABLE_NAME: ${self:custom.attendanceTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.attendanceTableName}/index/GroupDateIndex"

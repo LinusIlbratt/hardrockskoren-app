@@ -132,7 +132,7 @@ const router = createBrowserRouter([
                   },
                   {
                     path: "practice",
-                    element: <div>Sjungupp-sida för leader</div>,
+                    element: <PracticePage />,
                   },
                   {
                     path: "attendance",
@@ -169,7 +169,7 @@ const router = createBrowserRouter([
                   },
                   {
                     path: "practice",
-                    element: <div>User Sing Page</div>,
+                    element: <PracticePage />,
                   },
                   {
                     path: "concerts",

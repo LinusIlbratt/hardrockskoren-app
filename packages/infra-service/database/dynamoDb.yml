@@ -80,3 +80,19 @@ Resources:
       TimeToLiveSpecification:
         AttributeName: "expiresAt"
         Enabled: true
+
+  HrkPasswordResetTokensTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: HrkPasswordResetTokensTable-${opt:stage}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: email # Partition Key: Vi slår upp koden med e-postadressen
+          AttributeType: S
+      KeySchema:
+        - AttributeName: email
+          KeyType: HASH
+      # Koden kommer automatiskt att raderas efter 15 minuter
+      TimeToLiveSpecification:
+        AttributeName: "expiresAt"
+        Enabled: true

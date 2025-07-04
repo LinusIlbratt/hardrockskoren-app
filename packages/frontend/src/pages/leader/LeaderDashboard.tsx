@@ -4,8 +4,8 @@ import { LeaderNav } from '@/components/ui/nav/LeaderNav';
 import styles from './LeaderDashboard.module.scss';
 
 export const LeaderDashboard = () => {
-  // STEG 1: Hämta groupName från URL-parametern
-  const { groupName } = useParams<{ groupName: string }>(); 
+const { groupName: _groupName } = useParams<{ groupName: string }>();
+
   const { user } = useAuth(); 
 
   if (!user) {
