@@ -45,8 +45,10 @@ export const GroupCard = ({ group, onDelete }: GroupCardProps) => {
         <nav className={styles.nav}>
           {/* Notera hur 'to'-sökvägen byggs dynamiskt med gruppens namn */}          
           <NavLink to={`/admin/groups/${group.slug}/repertoires`} className={styles.navLink}>Repetoar</NavLink>
+          <NavLink to={`/admin/groups/${group.slug}/practice`} className={styles.navLink}>Sjungupp!</NavLink>
           <NavLink to={`/admin/groups/${group.slug}/concerts`} className={styles.navLink}>Konserter & repdatum</NavLink>
           <NavLink to={`/admin/groups/${group.slug}/users`} className={styles.navLink}>Användare</NavLink>
+          <NavLink to={`/admin/groups/${group.slug}/attendance`} className={styles.navLink}>Närvaro</NavLink>
         </nav>
       </div>
     </article>

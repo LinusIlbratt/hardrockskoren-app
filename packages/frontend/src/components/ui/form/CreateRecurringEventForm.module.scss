@@ -26,7 +26,7 @@
   padding: 0 var(--spacing-md);
   
   // --- Färger och kanter ---
-  background-color: #1d1d1d;
+  background-color: var(--color-background);
   color: var(--color-text); // Antagande att du vill ha ljus text
   border-radius: var(--radius-md);
   
@@ -78,7 +78,7 @@
   display: grid;
   // MAGISK RAD: Skapar automatiskt så många kolumner som får plats.
   // Varje kolumn är minst 90px bred. Perfekt för responsivitet!
-  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--spacing-sm);
   margin-top: var(--spacing-sm); // Lite extra luft från kontrollerna ovanför
 }
@@ -136,5 +136,6 @@
   // Vi kan ge checkboxarna lite mer utrymme om vi vill.
   .checkboxGroup {
     gap: var(--spacing-md);
+    grid-template-columns: repeat(3, 1fr);
   }
 }

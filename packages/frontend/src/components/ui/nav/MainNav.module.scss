@@ -24,6 +24,11 @@
   }
 }
 
+.centerSection {
+  // Dölj som standard (mobil)
+  display: none;
+}
+
 .rightSection {
   display: flex;
   align-items: center;
@@ -44,12 +49,12 @@
     line-height: 1.2;
   }
   .email {
-    font-size: 0.875rem;
+    font-size: var(--fs-base);
   }
   .role {
     font-size: 0.75rem;
-    text-transform: uppercase;
     color: var(--color-primary);
+    padding-top: var(--spacing-xs);
   }
 }
 

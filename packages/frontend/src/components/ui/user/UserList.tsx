@@ -1,6 +1,7 @@
 // UserList.tsx
 
 import type { GroupMember } from '@/types';
+import { translateRole } from '@/utils/translations';
 import styles from './UserList.module.scss';
 import { FiEdit } from 'react-icons/fi';
 
@@ -32,7 +33,7 @@ export const UserList = ({ members, onEditUser }: UserListProps) => {
                         </div>
                         <span className={styles.cellName}>{member.given_name} {member.family_name}</span>
                         <span className={styles.cellEmail}>{member.email}</span>
-                        <span className={styles.cellRole}>{member.role}</span>
+                        <span className={styles.cellRole}>{translateRole(member.role)}</span>
                         <div className={styles.cellActions}>
                             <button
                                 onClick={() => onEditUser(member)}

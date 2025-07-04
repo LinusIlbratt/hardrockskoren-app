@@ -45,21 +45,16 @@
   flex-direction: column;
   gap: var(--spacing-xs);
   // Vi tar bort hover-effekten härifrån...
-}
-
-.songTitle {
-  font-weight: 600;
-  transition: color 0.2s ease;
-
-  // ...och lägger den här istället. Bara texten ändrar färg.
-  .songLink:hover & {
+    &:hover {
+    text-decoration: none;
     color: var(--color-primary);
   }
 }
 
-.songArtist {
-  font-size: var(--fs-sm);
-  color: #a0a0a0;
+.songTitle {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  transition: color 0.2s ease;
 }
 
 // Radera-knappen (exakt samma stil som på AdminEventPage)
@@ -86,17 +81,22 @@
   .page {
     padding: var(--spacing-xl);
   }
+  
+  .header {
+  @include row;
+    justify-content: space-between; // Placera titel och knappar på samma rad
+  }
 
   // På desktop, lägg titel och artist på samma rad för en mer kompakt vy
   .songLink {
     flex-direction: row;
     align-items: center;
     gap: var(--spacing-sm);
+
   }
 
-  .songArtist::before {
-    content: '-';
-    margin-right: var(--spacing-sm);
-    color: #a0a0a0;
-  }
+  .songTitle {
+  font-size: var(--fs-h3);
+}
+
 }

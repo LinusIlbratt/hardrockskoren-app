@@ -1,46 +1,26 @@
 @use '@/styles/variables' as *;
 
+// Grundläggande layout för hela sidan
 .page {
   padding: var(--spacing-xs);
+  margin-top: var(--spacing-md);
 
   @media (min-width: #{$tabletBreakpoint}) {
     padding: var(--spacing-xl);
   }
 }
 
-.backLink {
-  display: inline-block;
-  margin-bottom: var(--spacing-lg);
-  color: #a0a0a0;
-  text-decoration: none;
-  transition: color 0.2s ease;
-  
-  &:hover {
-    color: var(--color-primary);
-  }
-}
-
+// Sidhuvudet med titel och knappar
 .header {
   display: flex;
-  flex-direction: column;
+  flex-direction: column; // Stapla vertikalt på mobil
   align-items: flex-start;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-xl);
 
-  @media (min-width: #{$tabletBreakpoint}) {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
+  h2 {
+    margin: 0;
   }
-}
-
-.repertoireTitle {
-  margin: 0;
-}
-
-.subHeader {
-  margin: 0;
-  color: #a0a0a0;
 }
 
 // Behållare för listan
@@ -49,7 +29,7 @@
   padding: 0;
   margin: 0;  
   border-radius: var(--radius-md);
-  overflow: hidden;
+  overflow: hidden; // Lägger till en skugga för bättre separation från bakgrunden
 }
 
 // Varje rad i listan
@@ -102,7 +82,7 @@
   transition: color 0.2s, background-color 0.2s;
 
   &:hover {
-    background-color: var(--color-icon-play-hover); 
+    color: var(--color-icon-play-hover); 
   } 
 }
 .iconView {
@@ -110,7 +90,7 @@
   transition: color 0.2s, background-color 0.2s;
   
   &:hover {
-    background-color: var(--color-icon-view-hover); 
+    color: var(--color-icon-view-hover); 
   }
 }
 .iconDelete {
@@ -118,7 +98,7 @@
   transition: color 0.2s, background-color 0.2s;
 
   &:hover {
-    background-color: var(--color-primary); 
+    color: var(--color-primary); 
   }
 } 
 

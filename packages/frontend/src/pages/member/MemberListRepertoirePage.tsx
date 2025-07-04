@@ -50,8 +50,10 @@ export const MemberListRepertoirePage = () => {
     }, [fetchRepertoires]);
 
     return (
-        <div>
-            <h1>Repertoar</h1>
+        <div className={styles.page}>
+            <div className={styles.header}>
+                <h2>Låtar i Repertoar</h2>
+            </div>
             {isLoading ? (
                 <p>Laddar...</p>
             ) : (
@@ -59,8 +61,11 @@ export const MemberListRepertoirePage = () => {
                     {repertoires.map(item => (
                         <li key={item.repertoireId} className={styles.repertoireItem}>
                             {/* Länken pekar nu till den nya, specifika materialsidan */}
-                            <Link to={item.repertoireId}>
-                                {item.title} - {item.artist}
+                            <Link
+                                to={item.repertoireId}
+                                state={{ title: item.title }} // Skicka med datan här
+                            >
+                                {item.title}
                             </Link>
                         </li>
                     ))}

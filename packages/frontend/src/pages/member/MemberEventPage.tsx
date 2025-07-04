@@ -1,6 +1,10 @@
+// src/pages/member/MemberEventPage.tsx
+
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
+import { Modal } from '@/components/ui/modal/Modal';
+import { IoEyeOutline } from 'react-icons/io5';
 import styles from './MemberEventPage.module.scss';
 import type { Event } from '@/types';
 
@@ -10,6 +14,11 @@ export const MemberEventPage = () => {
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [eventToShowDescription, setEventToShowDescription] = useState<Event | null>(null);
+  
+  // NYTT: State för att hålla koll på aktiv flik. 'REHEARSAL' är standard.
+  const [activeTab, setActiveTab] = useState<'REHEARSAL' | 'CONCERT' | 'OTHER'>('REHEARSAL');
+  
   const { user } = useAuth();
 
   const fetchEvents = useCallback(async () => {
@@ -36,79 +45,94 @@ export const MemberEventPage = () => {
     if (user) fetchEvents();
   }, [user, fetchEvents]);
 
-  // --- KORRIGERING 1: Gruppera på 'eventType' istället för 'type' ---
-  const groupedEvents = events.reduce((acc, event) => {
-    const typeKey = event.eventType || 'Övrigt';
-    if (!acc[typeKey]) {
-      acc[typeKey] = [];
-    }
-    acc[typeKey].push(event);
-    return acc;
-  }, {} as Record<string, Event[]>);
-
-  const formatSimpleDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return `${date.getDate()}/${date.getMonth() + 1}`;
-  };
-
   if (isLoading) return <p>Laddar kommande händelser...</p>;
   if (error) return <p className={styles.error}>{error}</p>;
 
+  const rehearsals = events.filter(e => e.eventType === 'REHEARSAL');
+  const concerts = events.filter(e => e.eventType === 'CONCERT');
+  const others = events.filter(e => e.eventType !== 'REHEARSAL' && e.eventType !== 'CONCERT');
+
+  const renderEventItem = (event: Event) => (
+    <li key={event.eventId} className={styles.eventItem}>
+      <div className={styles.itemDetails}>
+        <span className={styles.itemTitle}>{event.title}</span>
+        <span className={styles.itemDate}>{new Date(event.eventDate).toLocaleString('sv-SE', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+      </div>
+      <div className={styles.actions}>
+        {event.description && (
+          <button className={styles.iconButton} onClick={() => setEventToShowDescription(event)} title="Visa beskrivning">
+            <IoEyeOutline size={22} />
+          </button>
+        )}
+      </div>
+    </li>
+  );
+
   return (
-    <div className={styles.container}>
-      {events.length > 0 ? (
-        <div className={styles.eventsContainer}>
-          <h2 className={styles.mainTitle}>EVENT</h2>
-
-          {/* --- KORRIGERING 2: Leta efter 'REHEARSAL' som nyckel --- */}
-          {groupedEvents['REHEARSAL'] && (
-            <section className={styles.eventSection}>
-              <h3 className={styles.sectionTitle}>Repetitioner</h3>
-              <ul className={styles.eventList}>
-                {groupedEvents['REHEARSAL'].map(event => (
-                  <li key={event.eventId} className={styles.eventItem}>
-                    <span>{formatSimpleDate(event.eventDate)}</span>
-                    <span>{event.title}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <h2>Mina Events</h2>
+        
+        {/* NYTT: Flik-navigering */}
+        <div className={styles.tabs}>
+          <button 
+            className={`${styles.tabButton} ${activeTab === 'REHEARSAL' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('REHEARSAL')}
+          >
+            Repetitioner
+          </button>
+          <button 
+            className={`${styles.tabButton} ${activeTab === 'CONCERT' ? styles.activeTab : ''}`}
+            onClick={() => setActiveTab('CONCERT')}
+          >
+            Konserter
+          </button>
+          {others.length > 0 && (
+            <button 
+              className={`${styles.tabButton} ${activeTab === 'OTHER' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('OTHER')}
+            >
+              Övrigt
+            </button>
           )}
-
-          {/* --- KORRIGERING 3: Leta efter 'CONCERT' som nyckel --- */}
-          {groupedEvents['CONCERT'] && (
-            <section className={styles.eventSection}>
-              <h3 className={styles.sectionTitle}>Konserter</h3>
-              <ul className={styles.eventList}>
-                {groupedEvents['CONCERT'].map(event => (
-                  <li key={event.eventId} className={styles.eventItem}>
-                    <span>{formatSimpleDate(event.eventDate)}</span>
-                    <span>{event.title}</span>
-                    {event.location && <span>{event.location}</span>}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-          
-          {groupedEvents['Övrigt'] && (
-            <section className={styles.eventSection}>
-              <h3 className={styles.sectionTitle}>Övrigt</h3>
-              <ul className={styles.eventList}>
-                {groupedEvents['Övrigt'].map(event => (
-                  <li key={event.eventId} className={styles.eventItem}>
-                    <span>{formatSimpleDate(event.eventDate)}</span>
-                    <span>{event.title}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-
         </div>
+      </div>
+
+      {events.length > 0 ? (
+        <section className={styles.listSection}>
+          {/* NYTT: Villkorlig rendering av listan baserat på aktiv flik */}
+          {activeTab === 'REHEARSAL' && (
+            <ul className={styles.eventList}>
+              {rehearsals.map(renderEventItem)}
+            </ul>
+          )}
+          {activeTab === 'CONCERT' && (
+            <ul className={styles.eventList}>
+              {concerts.map(renderEventItem)}
+            </ul>
+          )}
+          {activeTab === 'OTHER' && (
+            <ul className={styles.eventList}>
+              {others.map(renderEventItem)}
+            </ul>
+          )}
+        </section>
       ) : (
         <p>Det finns inga inplanerade händelser för tillfället.</p>
       )}
+
+      {/* Modal för att visa beskrivning (oförändrad) */}
+      <Modal 
+        isOpen={!!eventToShowDescription} 
+        onClose={() => setEventToShowDescription(null)}
+        title={eventToShowDescription?.title || "Eventbeskrivning"}
+      >
+        <div>
+          <pre className={styles.descriptionText}>
+            {eventToShowDescription?.description}
+          </pre>
+        </div>
+      </Modal>
     </div>
   );
 };

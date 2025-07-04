@@ -91,7 +91,6 @@ export const AdminRepertoireListPage = () => {
             <li key={item.repertoireId} className={styles.repertoireItem}>
               <Link to={`${item.repertoireId}/materials`} state={{ repertoireTitle: item.title }} className={styles.songLink}>
                 <span className={styles.songTitle}>{item.title}</span>
-                <span className={styles.songArtist}>{item.artist}</span>
               </Link>
               <button
                 onClick={() => setRepertoireToDelete(item)}
@@ -111,7 +110,7 @@ export const AdminRepertoireListPage = () => {
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
-        title="Skapa ny låt i repertoaren"
+        title="Skapa ny låt mapp i repertoaren"
       >
         {/* Använd den nya formulär-komponenten och skicka med onSuccess-funktionen */}
         <CreateRepertoireForm onSuccess={onRepertoireCreated} />

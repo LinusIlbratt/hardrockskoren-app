@@ -68,7 +68,7 @@ $baseFontSize: 15px;
 
   --color-dark-button: #d300008f;
 
-  --color-icon-view: #A0AEC0;
+  --color-icon-view: #8fadd3;
   --color-icon-view-hover: #CBD5E0;
 
   --color-icon-play: #9AE6B4;
@@ -133,4 +133,32 @@ $baseFontSize: 15px;
   display: flex;
   flex-direction: row;
   gap: $gap-size;
+}
+
+// För WebKit-baserade webbläsare (Chrome, Safari, Edge etc.)
+::-webkit-scrollbar {
+  width: 2px;  // En lite mer användbar bredd än 1px
+  height: 2px;
+}
+
+::-webkit-scrollbar-track {
+  // Gör spåret helt genomskinligt
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  // Själva "tummen" som man drar i
+  background-color: rgba(255, 0, 0, 0.25); // Använder din röda primärfärg
+  border-radius: var(--radius-xs);
+  
+  // Lägg till en liten genomskinlig kant för att undvika att den "fastnar" i kanten
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+// För Firefox
+* {
+  scrollbar-width: thin; // Gör scrollbaren smal
+  // Sätter färgen på tummen till din primärfärg och spåret till helt genomskinligt
+  scrollbar-color: rgba(255, 0, 0, 0.25) transparent;
 }

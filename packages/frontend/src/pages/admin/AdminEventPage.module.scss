@@ -25,6 +25,50 @@
   gap: var(--spacing-sm);
 }
 
+// --- NYA STILAR FÖR FLIKARNA ---
+
+// Behållare för flik-knapparna
+.tabs {
+  display: flex;
+  gap: var(--spacing-lg); // Mellanrum mellan knapparna
+  border-bottom: 1px solid var(--color-border); // Linje som sträcker sig över hela bredden
+  width: 100%;
+  margin-top: var(--spacing-xl); // Lite avstånd från knapparna ovanför
+}
+
+// Styling för varje enskild flik-knapp
+.tabButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-sm) 0;
+  padding-bottom: var(--spacing-md); // Lite extra utrymme för att lyfta texten från linjen
+  
+  // Återskapar utseendet från din gamla .listHeader
+  font-size: var(--fs-base);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  
+  // Standardfärg för inaktiva flikar
+  color: #a0a0a0; 
+  
+  transition: color 0.2s;
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
+
+// Speciell stil för den aktiva fliken
+.activeTab {
+  color: var(--color-primary); // Den röda färgen
+}
+
+
+// --- SLUT PÅ NYA STILAR ---
+
+
 .listSection {
   margin-top: var(--spacing-xl);
 }
@@ -90,11 +134,10 @@
 }
 
 // Generell stil för en ikon-knapp
-.iconButton {
+.iconButton, .iconEye {
   background: none;
   border: none;
   cursor: pointer;
-  color: #a0a0a0;
   padding: var(--spacing-sm);
   border-radius: var(--radius-round);
   display: flex;
@@ -105,6 +148,19 @@
   &:hover {
     background-color: var(--color-dark-gray);
     color: var(--color-text);
+  }
+}
+
+.iconButton {
+  color: #a0a0a0;
+}
+
+.iconEye {
+  color: var(--color-icon-view);
+  transition: color 0.2s, background-color 0.2s;
+
+  &:hover {
+    color: var(--color-icon-view-hover);
   }
 }
 
@@ -121,8 +177,7 @@
   }
 
   .header {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
+  @include row;
+    justify-content: space-between; // Placera titel och knappar på samma rad
   }
 }

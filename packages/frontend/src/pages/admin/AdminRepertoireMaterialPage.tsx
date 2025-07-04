@@ -108,7 +108,7 @@ export const AdminRepertoireMaterialPage = () => {
           )}
           {isVideoFile(material.fileKey) && (
             <button onClick={() => setMaterialToView(material)} className={styles.iconPlay} aria-label={`Spela video ${displayName}`}>
-              <FaPlayCircle size={22} />
+              <FaPlayCircle size={24} />
             </button>
           )}
           {isDocumentFile(material.fileKey) && (
@@ -117,7 +117,7 @@ export const AdminRepertoireMaterialPage = () => {
             </button>
           )}
           <button onClick={() => handleUnlinkMaterial(material)} className={`${styles.iconDelete} ${styles.deleteButton}`} aria-label={`Ta bort koppling för ${displayName}`}>
-            <IoTrashOutline size={22} />
+            <IoTrashOutline size={24} />
           </button>
         </div>
       </li>
@@ -153,7 +153,7 @@ export const AdminRepertoireMaterialPage = () => {
 
           {audioFiles.length > 0 && (
             <section className={styles.categorySection}>
-              <h3>Låtar</h3>
+              <h3>Ljudfiler</h3>
               <ul className={styles.materialList}>
                 {audioFiles.map(renderMaterialItem)}
               </ul>
