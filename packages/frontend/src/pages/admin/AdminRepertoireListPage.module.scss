@@ -20,6 +20,9 @@
   list-style: none;
   padding: 0;
   margin: 0;
+
+  // Zebra-ränder anpassade för mörkt tema
+  
 }
 
 // Varje enskild rad/låt i listan
@@ -28,12 +31,14 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
-  padding: var(--spacing-md) 0; // Padding bara upp och ner
+  padding: var(--spacing-sm) 0; // Padding bara upp och ner
 
   // Separera varje rad med en linje, förutom den sista
   &:not(:last-child) {
     border-bottom: 1px solid var(--color-border);
   }
+
+  
 }
 
 // Länken som omsluter titel och artist
@@ -96,7 +101,7 @@
   }
 
   .songTitle {
-  font-size: var(--fs-h3);
+  font-size: var(--fs-md);
 }
 
 }

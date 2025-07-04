@@ -58,3 +58,23 @@
 .buttonGroup {
   margin-top: var(--spacing-lg);
 }
+
+.forgotPasswordLink {
+  text-align: right;
+  margin-top: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+
+  button {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--color-primary);
+    font-size: var(--fs-sm);
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

@@ -74,49 +74,49 @@ export const changeAdminPassword = middy()
     }
   );
 
-export const forgotPassword = middy()
-  .use(validateSchema(forgotPasswordSchema))
-  .handler(
-    async (
-      event: APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>
-    ): Promise<APIGatewayProxyStructuredResultV2> => {
-      try {
-        const { email } = JSON.parse(event.body || "{}")
-        await cognito.forgotPassword({
-          ClientId: process.env.CLIENT_ID!, // Din Cognito app client ID
-          Username: email.toLowerCase(),
-        });
+// export const forgotPassword = middy()
+//   .use(validateSchema(forgotPasswordSchema))
+//   .handler(
+//     async (
+//       event: APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>
+//     ): Promise<APIGatewayProxyStructuredResultV2> => {
+//       try {
+//         const { email } = JSON.parse(event.body || "{}")
+//         await cognito.forgotPassword({
+//           ClientId: process.env.CLIENT_ID!, // Din Cognito app client ID
+//           Username: email.toLowerCase(),
+//         });
 
-        return sendResponse({
-          message: "Password reset email sent if user exists.",
-        });
-      } catch (error: any) {
-        console.error("Forgot password failed", error);
-        return sendError(500, "Something went wrong. Try again.");
-      }
-    }
-  );
+//         return sendResponse({
+//           message: "Password reset email sent if user exists.",
+//         });
+//       } catch (error: any) {
+//         console.error("Forgot password failed", error);
+//         return sendError(500, "Something went wrong. Try again.");
+//       }
+//     }
+//   );
 
-  export const resetPassword = middy()
-  .use(validateSchema(resetPasswordSchema))
-  .handler(
-    async (
-      event: APIGatewayProxyEventV2
-    ): Promise<APIGatewayProxyStructuredResultV2> => {
-      try {
-        const { email, code, newPassword } = JSON.parse(event.body || "{}");
+//   export const resetPassword = middy()
+//   .use(validateSchema(resetPasswordSchema))
+//   .handler(
+//     async (
+//       event: APIGatewayProxyEventV2
+//     ): Promise<APIGatewayProxyStructuredResultV2> => {
+//       try {
+//         const { email, code, newPassword } = JSON.parse(event.body || "{}");
 
-        await cognito.confirmForgotPassword({
-          ClientId: process.env.CLIENT_ID!,
-          Username: email.toLowerCase(),
-          ConfirmationCode: code,
-          Password: newPassword,
-        });
+//         await cognito.confirmForgotPassword({
+//           ClientId: process.env.CLIENT_ID!,
+//           Username: email.toLowerCase(),
+//           ConfirmationCode: code,
+//           Password: newPassword,
+//         });
 
-        return sendResponse({ message: "Password reset successful." });
-      } catch (error: any) {
-        console.error("Reset password failed", error);
-        return sendError(400, error.message || "Failed to reset password.");
-      }
-    }
-  );
+//         return sendResponse({ message: "Password reset successful." });
+//       } catch (error: any) {
+//         console.error("Reset password failed", error);
+//         return sendError(400, error.message || "Failed to reset password.");
+//       }
+//     }
+//   );

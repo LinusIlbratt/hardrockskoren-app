@@ -17,6 +17,7 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   'GET /groups/{groupSlug}/attendance/status': RoleGroups.MANAGEMENT,
   'POST /groups/{groupSlug}/attendance/start': RoleGroups.MANAGEMENT,
   'POST /groups/{groupSlug}/attendance/register': RoleGroups.ALL_LOGGED_IN,
+  'GET /groups/{groupSlug}/attendance/days': RoleGroups.MANAGEMENT,
 
   // === User & Invite Management ===
   'POST /invites': RoleGroups.MANAGEMENT,

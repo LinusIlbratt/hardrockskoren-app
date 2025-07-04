@@ -107,3 +107,11 @@
   color: var(--color-accent);
   text-align: center;
 }
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end; // Placera knappen till höger
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
+}

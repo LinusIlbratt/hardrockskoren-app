@@ -9,7 +9,7 @@ const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
 interface ActiveSession {
   code: string;
-  expiresAt: number; // Unix timestamp (sekunder)
+  expiresAt: number;
 }
 
 interface AttendanceDay {
@@ -28,11 +28,49 @@ export const LeaderAttendancePage = () => {
   const [selectedDay, setSelectedDay] = useState<AttendanceDay | null>(null);
   const [presentMembers, setPresentMembers] = useState<string[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(false);
+  
+  // NYTT: State för att ge feedback vid kopiering
+  const [copySuccess, setCopySuccess] = useState(false);
 
-  // Effekt som kollar status när komponenten laddas
+  // NYTT: Funktion för att hantera kopiering av listan
+  const handleCopyList = () => {
+    if (presentMembers.length === 0) return;
+
+    // Slå ihop alla e-postadresser till en enda sträng
+    const emailString = presentMembers.join(', ');
+    
+    // Använd en säker metod för att kopiera till urklipp
+    const textArea = document.createElement('textarea');
+    textArea.value = emailString;
+    document.body.appendChild(textArea);
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000); // Återställ efter 2 sekunder
+    } catch (err) {
+      console.error('Kunde inte kopiera text: ', err);
+    }
+    document.body.removeChild(textArea);
+  };
+
+  const fetchAttendanceDays = useCallback(async () => {
+    if (!groupName) return;
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await axios.get(`${API_BASE_URL}/groups/${groupName}/attendance/days`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAttendanceDays(response.data.attendanceDays || []);
+    } catch (error) {
+      console.error("Failed to fetch attendance days:", error);
+    }
+  }, [groupName]);
+
   useEffect(() => {
-    const checkStatusOnLoad = async () => {
+    const checkStatusAndFetchDays = async () => {
       if (!groupName) return;
+      await fetchAttendanceDays();
       try {
         const token = localStorage.getItem('authToken');
         const response = await axios.get(`${API_BASE_URL}/groups/${groupName}/attendance/status`, {
@@ -48,8 +86,8 @@ export const LeaderAttendancePage = () => {
         console.error("Failed to check attendance status on load:", error);
       }
     };
-    checkStatusOnLoad();
-  }, [groupName]);
+    checkStatusAndFetchDays();
+  }, [groupName, fetchAttendanceDays]);
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -96,10 +134,7 @@ export const LeaderAttendancePage = () => {
         code: response.data.attendanceCode,
         expiresAt: response.data.expiresAt,
       });
-      const today = new Date().toLocaleDateString('sv-SE');
-      if (!attendanceDays.some(day => day.date === today)) {
-        setAttendanceDays(prev => [{ date: today }, ...prev]);
-      }
+      await fetchAttendanceDays();
     } catch (err: any) {
       setStartError(err.response?.data?.message || 'Kunde inte starta närvaro.');
     } finally {
@@ -182,13 +217,25 @@ export const LeaderAttendancePage = () => {
         {isLoadingList ? (
           <p>Laddar lista...</p>
         ) : (
-          <ul className={styles.memberList}>
-            {presentMembers.length > 0 ? (
-              presentMembers.map((email, index) => <li key={index}>{email}</li>)
-            ) : (
-              <li>Inga medlemmar har anmält sig ännu.</li>
+          <>
+            <ul className={styles.memberList}>
+              {presentMembers.length > 0 ? (
+                presentMembers.map((email, index) => <li key={index}>{email}</li>)
+              ) : (
+                <li>Inga medlemmar har anmält sig ännu.</li>
+              )}
+            </ul>
+            {presentMembers.length > 0 && (
+              <div className={styles.modalFooter}>
+                <Button
+                  onClick={handleCopyList}
+                  variant={copySuccess ? ButtonVariant.Primary : ButtonVariant.Primary}
+                >
+                  {copySuccess ? 'Kopierat!' : 'Kopiera listan'}
+                </Button>
+              </div>
             )}
-          </ul>
+          </>
         )}
       </Modal>
     </div>

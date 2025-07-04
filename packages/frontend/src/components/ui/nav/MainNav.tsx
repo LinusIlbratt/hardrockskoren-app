@@ -58,15 +58,7 @@ export const MainNav = () => {
             <header className={styles.mainNav}>
                 <div className={styles.logo}>
                     <img src={logoImage} alt="Logo för Hårdrockskören" />
-                </div>
-
-                <div className={styles.centerSection}>
-                    {user?.role === 'user' && (
-                        <Button variant={ButtonVariant.Primary} onClick={openAttendanceModal}>
-                            Anmäl närvaro
-                        </Button>
-                    )}
-                </div>
+                </div>          
 
                 <nav className={`${styles.nav} ${isMenuOpen ? styles.navOpen : ''}`}>
                     <button className={styles.navCloseButton} onClick={() => setIsMenuOpen(false)}>
@@ -99,6 +91,8 @@ export const MainNav = () => {
                         <UserInfoAndLogout />
                     </div>
                 </nav>
+
+                
 
                 <div className={styles.rightSection}>
                     <div className={styles.desktopOnlyUserInfo}>
