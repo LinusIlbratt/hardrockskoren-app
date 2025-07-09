@@ -7,15 +7,16 @@ const API_BASE_URL = import.meta.env.VITE_EVENT_API_URL;
 // Typ för datan som skickas när man skapar/uppdaterar ett enstaka event.
 type EventData = Partial<Event>;
 
-// NY TYP: Definierar "receptet" som skickas till batch-endpointet.
 interface BatchCreatePayload {
     title: string;
     eventType: 'CONCERT' | 'REHEARSAL';
     description?: string;
     startDate: string;
     endDate: string;
-    time: string;
+    startTime: string; // Bytte från 'time'
+    endTime: string;   // Lade till 'endTime'
     selectedWeekdays: number[];
+    repetitionInterval: number; // Denna fanns också med i ditt formulär
 }
 
 
@@ -39,7 +40,7 @@ const getApiClient = (token: string) => {
 };
 
 /**
- * Hämtar en lista över alla events för en specifik grupp.
+ * Hämtar en lista över alla events för en specifik kör.
  */
 export const listEvents = async (groupSlug: string, token:string): Promise<Event[]> => {
   const apiClient = getApiClient(token);
@@ -48,7 +49,7 @@ export const listEvents = async (groupSlug: string, token:string): Promise<Event
 };
 
 /**
- * Skapar ett nytt, enstaka event för en specifik grupp.
+ * Skapar ett nytt, enstaka event för en specifik kör.
  */
 export const createEvent = async (groupSlug: string, eventData: EventData, token: string): Promise<Event> => {
   const apiClient = getApiClient(token);
@@ -57,7 +58,7 @@ export const createEvent = async (groupSlug: string, eventData: EventData, token
 };
 
 /**
- * Hämtar ett specifikt event för en grupp baserat på eventId.
+ * Hämtar ett specifikt event för en kör baserat på eventId.
  */
 export const updateEvent = async (groupSlug: string, eventId: string, eventData: EventData, token: string): Promise<Event> => {
   const apiClient = getApiClient(token);
@@ -66,7 +67,7 @@ export const updateEvent = async (groupSlug: string, eventId: string, eventData:
 };
 
 /**
- * Hämtar ett specifikt event för en grupp baserat på eventId.
+ * Hämtar ett specifikt event för en kör baserat på eventId.
  */
 export const deleteEvent = async (groupSlug: string, eventId: string, token: string): Promise<void> => {
   const apiClient = getApiClient(token);
@@ -74,8 +75,8 @@ export const deleteEvent = async (groupSlug: string, eventId: string, token: str
 };
 
 /**
- * Skapar flera events i en batch för en specifik grupp.
- * @param groupSlug - Slug för gruppen där events ska skapas.
+ * Skapar flera events i en batch för en specifik kör.
+ * @param groupSlug - Slug för kören där events ska skapas.
  * @param batchData - Data som beskriver de events som ska skapas i batchen.
  * @param token - Autentiseringstoken för API-anropet.
  */

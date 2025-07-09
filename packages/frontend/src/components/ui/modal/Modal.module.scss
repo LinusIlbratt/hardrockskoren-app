@@ -105,7 +105,7 @@
   background-color: var(--color-dark-gray); // Samma som modalen
   flex-shrink: 0; // Se till att footern inte krymper
   
-  // Detta är en bra plats för att styla knapp-gruppen i footern
+  // Detta är en bra plats för att styla knapp-kören i footern
   // Vi kan använda :global för att styla en klass som inte är del av denna modul
   :global(.buttonGroup) {
     display: flex;
@@ -113,6 +113,8 @@
     gap: var(--spacing-sm);
   }
 }
+
+
 
 // Används för att tona in bakgrunden (backdrop)
 @keyframes fadeIn {

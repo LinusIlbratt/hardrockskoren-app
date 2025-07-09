@@ -2,14 +2,15 @@
 
 // Grundläggande layout för hela sidan
 .page {
-  padding: var(--spacing-xl);
+  padding: var(--spacing-sm);
 }
 
 // Sidhuvudet med titel och knappar
 .header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column; // Mobil-först: stapla vertikalt
+  align-items: flex-start;
+  gap: var(--spacing-md);
   margin-bottom: var(--spacing-xl);
 
   h2 {
@@ -114,4 +115,15 @@
   margin-top: var(--spacing-lg);
   padding-top: var(--spacing-lg);
   border-top: 1px solid var(--color-border);
+}
+
+@media (min-width: #{$tabletBreakpoint}) {
+  .page {
+    padding: var(--spacing-xl);
+  }
+
+  .header {
+  @include row;
+    justify-content: space-between; // Placera titel och knappar på samma rad
+  }
 }

@@ -102,7 +102,7 @@ export const AdminRepertoireListPage = () => {
             </li>
           ))
         ) : (
-          <p>Inga låtar har lagts till i repertoaren för denna grupp ännu.</p>
+          <p>Inga låtar har lagts till i repertoaren för denna kör ännu.</p>
         )}
       </ul>
 
