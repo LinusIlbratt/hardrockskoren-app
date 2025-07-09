@@ -1,4 +1,4 @@
-import { DynamoDBClient, BatchWriteItemCommand, WriteRequest, BatchWriteItemCommandOutput } from "@aws-sdk/client-dynamodb"; // <-- FIX HÄR 1/2: Importera BatchWriteItemCommandOutput
+import { DynamoDBClient, BatchWriteItemCommand, WriteRequest, BatchWriteItemCommandOutput } from "@aws-sdk/client-dynamodb";
 import { marshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
@@ -13,13 +13,15 @@ type AuthorizerContext = {
 };
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthorizerContext>;
 
+// ✅ ÄNDRING: Lade till endDate
 interface EventItem {
     PK: string;
     SK: string;
     eventId: string;
     groupSlug: string;
     title: string;
-    eventDate: string;
+    eventDate: string;  // Detta blir nu starttiden
+    endDate: string;    // Detta blir sluttiden
     eventType: 'CONCERT' | 'REHEARSAL';
     description: string | null;
     createdAt: string;
@@ -28,13 +30,15 @@ interface EventItem {
     GSI1SK: string;
 }
 
+// ✅ ÄNDRING: Uppdaterad för att matcha formuläret
 interface BatchCreateBody {
     title: string;
     eventType: 'CONCERT' | 'REHEARSAL';
     description?: string;
     startDate: string;
     endDate: string;
-    time: string;
+    startTime: string; // Bytte från 'time'
+    endTime: string;   // Lade till 'endTime'
     selectedWeekdays: number[];
 }
 
@@ -47,7 +51,21 @@ export const handler = async (
 
   try {
     const userRole = event.requestContext.authorizer?.lambda?.role;
-    if (userRole !== 'admin') {
+    
+    if (!event.body) {
+      return sendError(400, "Request body is required.");
+    }
+    
+    const body: BatchCreateBody = JSON.parse(event.body);
+    const { eventType } = body;
+
+    if (userRole === 'admin') {
+      // Admins får fortsätta
+    } else if (userRole === 'leader') {
+      if (eventType !== 'REHEARSAL') {
+        return sendError(403, "Forbidden: You only have permission to batch-create rehearsals.");
+      }
+    } else {
       return sendError(403, "Forbidden: You do not have permission for this action.");
     }
     
@@ -56,23 +74,30 @@ export const handler = async (
       return sendError(400, "Group slug is required in the path.");
     }
     
-    if (!event.body) {
-      return sendError(400, "Request body is required.");
-    }
-    
-    const body: BatchCreateBody = JSON.parse(event.body);
-    
     const itemsToCreate: EventItem[] = [];
     let currentDate = new Date(body.startDate);
     const finalDate = new Date(body.endDate);
-    const [hours, minutes] = body.time.split(':').map(Number);
+    
+    // ✅ ÄNDRING: Hämta både start- och sluttid
+    const [startHours, startMinutes] = body.startTime.split(':').map(Number);
+    const [endHours, endMinutes] = body.endTime.split(':').map(Number);
 
     while (currentDate <= finalDate) {
         if (body.selectedWeekdays.includes(currentDate.getDay())) {
             const eventId = nanoid();
-            const eventDate = new Date(currentDate);
-            eventDate.setUTCHours(hours, minutes, 0, 0);
-            const isoDate = eventDate.toISOString();
+
+            // Skapa startdatum och tid
+            const eventStartDate = new Date(currentDate);
+            eventStartDate.setUTCHours(startHours, startMinutes, 0, 0);
+
+            // Skapa slutdatum och tid
+            const eventEndDate = new Date(currentDate);
+            eventEndDate.setUTCHours(endHours, endMinutes, 0, 0);
+
+            // Hantera event som går över midnatt (t.ex. 22:00 - 01:00)
+            if (eventEndDate <= eventStartDate) {
+                eventEndDate.setDate(eventEndDate.getDate() + 1);
+            }
 
             const item: EventItem = {
                 PK: `GROUP#${groupSlug}`,
@@ -80,13 +105,14 @@ export const handler = async (
                 eventId,
                 groupSlug,
                 title: body.title,
-                eventDate: isoDate,
+                eventDate: eventStartDate.toISOString(), // Starttid
+                endDate: eventEndDate.toISOString(),     // Sluttid
                 eventType: body.eventType,
                 description: body.description || null,
                 createdAt: new Date().toISOString(),
                 type: "Event",
                 GSI1PK: `GROUP#${groupSlug}`,
-                GSI1SK: isoDate,
+                GSI1SK: eventStartDate.toISOString(), // Sortera på starttid
             };
             itemsToCreate.push(item);
         }
@@ -97,8 +123,6 @@ export const handler = async (
         return sendResponse({ message: "No events were created based on the provided pattern." }, 200);
     }
 
-    // --- FIXEN ÄR HÄR, Del 2/2 ---
-    // Ge 'writePromises'-arrayen en tydlig typ.
     const writePromises: Promise<BatchWriteItemCommandOutput>[] = [];
     
     for (let i = 0; i < itemsToCreate.length; i += BATCH_SIZE) {
@@ -125,6 +149,9 @@ export const handler = async (
 
   } catch (error: any) {
     console.error("Error batch creating events:", error);
+    if (error.name === 'SyntaxError') {
+      return sendError(400, "Invalid JSON format in request body.");
+    }
     return sendError(500, error.message || "Internal server error");
   }
 };

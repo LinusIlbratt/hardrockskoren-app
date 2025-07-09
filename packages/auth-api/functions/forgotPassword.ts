@@ -1,44 +1,60 @@
 import middy from "@middy/core";
 import { CognitoIdentityProviderClient, ListUsersCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
-import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
 import { marshall } from "@aws-sdk/util-dynamodb";
 import { sendResponse, sendError } from "../../core/utils/http";
 import { APIGatewayProxyEventV2, APIGatewayProxyResultV2 } from "aws-lambda";
 import { validateSchema } from "../../core/middleware/validateSchema";
 import { forgotPasswordSchema } from "./schemas"; 
+import { Resend } from 'resend';
 
 // --- Initialisering ---
 const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
-const sesClient = new SESv2Client({ region: process.env.AWS_REGION });
+// ÄNDRING: SES-klienten är borttagen.
+// const sesClient = new SESv2Client({ region: process.env.AWS_REGION });
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const USER_POOL_ID = process.env.USER_POOL_ID!;
 const RESET_TABLE_NAME = process.env.RESET_TABLE_NAME!;
-const FROM_EMAIL_ADDRESS = process.env.FROM_EMAIL_ADDRESS!;
+// ÄNDRING: Använd en verifierad "From"-adress för Resend
+const FROM_EMAIL = 'Hårdrockskören <noreply@hardrockskoren.se>'; 
 
 interface RequestBody {
     email: string;
 }
 
-// Funktion för att generera en 6-siffrig kod
+// Funktion för att generera en 6-siffrig kod (ingen ändring här)
 const generateCode = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
+
+// ÄNDRING: Ny e-postmall för återställningskoden
+const ResetCodeEmailTemplate = ({ code }: { code: string }): string => `
+  <div style="font-family: sans-serif; padding: 20px; background-color: #f4f4f4;">
+    <div style="background-color: #ffffff; border: 1px solid #e0e0e0; border-radius: 8px; padding: 40px; max-width: 600px; margin: 0 auto; text-align: center;">
+      <h1 style="font-size: 24px; color: #333;">Återställning av lösenord</h1>
+      <p style="font-size: 16px; color: #555; line-height: 1.5;">Använd koden nedan för att återställa ditt lösenord. Koden är giltig i 15 minuter.</p>
+      <div style="background: #f0f0f0; border-radius: 5px; padding: 10px 20px; margin: 20px 0;">
+        <h2 style="letter-spacing: 4px; font-size: 32px; margin: 0; color: #333;">${code}</h2>
+      </div>
+    </div>
+  </div>
+`;
 
 // --- Lambda Handler ---
 export const handler = middy<APIGatewayProxyEventV2, APIGatewayProxyResultV2>()
   .use(validateSchema(forgotPasswordSchema))
   .handler(
     async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
-      if (!USER_POOL_ID || !RESET_TABLE_NAME || !FROM_EMAIL_ADDRESS) {
+      // ÄNDRING: Lade till RESEND_API_KEY i konfigurationskollen
+      if (!USER_POOL_ID || !RESET_TABLE_NAME || !process.env.RESEND_API_KEY) {
         return sendError(500, "Serverkonfigurationen är ofullständig.");
       }
 
       try {
         const { email } = JSON.parse(event.body || '{}') as RequestBody;
 
-        // STEG 1: Kontrollera att användaren faktiskt finns i Cognito
         const listUsersCmd = new ListUsersCommand({
           UserPoolId: USER_POOL_ID,
           Filter: `email = "${email}"`,
@@ -51,9 +67,8 @@ export const handler = middy<APIGatewayProxyEventV2, APIGatewayProxyResultV2>()
           return sendResponse({ message: "Om ett konto med den e-postadressen finns, har en återställningskod skickats." });
         }
 
-        // STEG 2: Generera kod och spara den i vår nya tabell
         const code = generateCode();
-        const expiresAt = Math.floor(Date.now() / 1000) + 900; // Giltig i 15 minuter
+        const expiresAt = Math.floor(Date.now() / 1000) + 900; // 15 minuter
 
         const putCommand = new PutItemCommand({
           TableName: RESET_TABLE_NAME,
@@ -61,20 +76,13 @@ export const handler = middy<APIGatewayProxyEventV2, APIGatewayProxyResultV2>()
         });
         await dbClient.send(putCommand);
 
-        // STEG 3: Skicka e-post med koden via SES
-        const sendEmailCommand = new SendEmailCommand({
-          FromEmailAddress: FROM_EMAIL_ADDRESS,
-          Destination: { ToAddresses: [email] },
-          Content: {
-            Simple: {
-              Subject: { Data: `Din återställningskod för Hårdrockskören` },
-              Body: {
-                Html: { Data: `<h1>Återställning av lösenord</h1><p>Använd koden nedan för att återställa ditt lösenord. Koden är giltig i 15 minuter.</p><h2 style="letter-spacing: 2px;">${code}</h2>` },
-              },
-            },
-          },
+        // ÄNDRING: Byt ut SES mot Resend
+        await resend.emails.send({
+          from: FROM_EMAIL,
+          to: [email],
+          subject: `Din återställningskod för Hårdrockskören`,
+          html: ResetCodeEmailTemplate({ code }),
         });
-        await sesClient.send(sendEmailCommand);
 
         console.log(`En återställningskod har skickats till ${email}`);
         return sendResponse({ message: "Om ett konto med den e-postadressen finns, har en återställningskod skickats." });

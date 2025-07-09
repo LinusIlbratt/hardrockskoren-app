@@ -33,8 +33,11 @@ provider:
         identitySource:
           - $request.header.Authorization
 
+custom:
+  RESEND_API_KEY: ${file(./env.${self:provider.stage}.yaml):RESEND_API_KEY}
+
 plugins:
-  - serverless-iam-roles-per-function   
+  - serverless-iam-roles-per-function
 
 package:
   individually: true

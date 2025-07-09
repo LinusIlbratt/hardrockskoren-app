@@ -18,13 +18,13 @@ export const handler = async (
     
     let groupName = event.pathParameters?.groupName;
 
-    // Om inget gruppnamn finns i URL:en, fall tillbaka på att hämta det
+    // Om inget kör finns i URL:en, fall tillbaka på att hämta det
     // från den inloggade användarens token (för vanliga medlemmar)
     if (!groupName) {
       groupName = event.requestContext.authorizer?.lambda?.group;
     }
 
-    // Om vi fortfarande inte har ett gruppnamn, kan vi inte fortsätta.
+    // Om vi fortfarande inte har ett kör namn, kan vi inte fortsätta.
     if (!groupName) {
       return sendError(400, "Group could not be determined.");
     }

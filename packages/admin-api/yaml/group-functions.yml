@@ -19,7 +19,7 @@ createGroup:
   memorySize: 256
   events:
     - httpApi:
-        method: POST
+        method: POST  
         path: /groups
         authorizer: authorizer
   environment:
@@ -126,4 +126,23 @@ updateGroup:
           - dynamodb:UpdateItem
         Resource:
           - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+batchGetGroups:
+  handler: functions/group/batch-get.handler
+  name: hrk-batch-get-groups-${sls:stage}
+  description: Get details for multiple groups in a single request.
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        path: /groups/batch-get
+        authorizer: authorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - dynamodb:BatchGetItem
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
     

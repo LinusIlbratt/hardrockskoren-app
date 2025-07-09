@@ -47,3 +47,7 @@
 // .react-datepicker__navigation--previous--with-time:not(.react-datepicker__navigation--previous--with-today-button) {
 //   // Fix för pilarnas position
 // }
+
+.tour-mask {
+  z-index: 20000;
+}

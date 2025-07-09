@@ -5,153 +5,157 @@ import { FormGroup } from '@/components/ui/form/FormGroup';
 import axios from 'axios';
 import styles from './CreateGroupForm.module.scss';
 
-interface CreateGroupFormProps {
-  onSuccess: () => void;
+// FÖRBÄTTRING: Vi behöver en typ för den data som skickas och tas emot.
+// Detta gör koden säkrare och enklare att arbeta med.
+interface Group {
+  id: string;
+  name: string;
+  groupSlug: string;
+  choirLeader?: string;
 }
 
-// Skapa en typ för vårt error-objekt för bättre typsäkerhet
+interface CreateGroupFormProps {
+  // FÖRBÄTTRING: onSuccess skickar nu tillbaka den nya gruppen.
+  // Detta är nödvändigt för att kunna starta den korts-specifika guiden.
+  onSuccess: (newGroup: Group) => void;
+}
+
+// FÖRBÄTTRING: En typ för formulärdatan.
+interface FormData {
+  name: string;
+  groupSlug: string;
+  choirLeader: string;
+}
+
+// En typ för vårt error-objekt för bättre typsäkerhet.
+// FÖRBÄTTRING: 'groupSlug' är borttagen eftersom fältet är dolt.
 interface FormErrors {
   name?: string;
-  groupSlug?: string;
-  description?: string;
   general?: string; // För generella fel, t.ex. nätverksfel
 }
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
 export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
-  const [name, setName] = useState('');
-  const [groupSlug, setGroupSlug] = useState('');
-  const [choirLeader, setChoirLeader] = useState('');
+  // FÖRBÄTTRING: All formulärdata samlas i ett enda state-objekt.
+  const [formData, setFormData] = useState<FormData>({
+    name: '',
+    groupSlug: '',
+    choirLeader: '',
+  });
+
   const [isLoading, setIsLoading] = useState(false);
-
-  // Använd det nya error-objektet
   const [errors, setErrors] = useState<FormErrors>({});
+  
+  // FÖRBÄTTRING: 'isSlugManuallyEdited' behövs inte längre.
 
-  // VALIDERINGSFUNKTION
-  const validateForm = (): FormErrors => {
+  // Valideringsfunktion
+  const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
+    const { name } = formData; // Behöver inte längre validera slugen här.
 
-    // Validering för namn
     if (!name.trim()) {
       newErrors.name = 'Namn får inte vara tomt.';
     } else if (name.length < 3) {
       newErrors.name = 'Namnet måste vara minst 3 tecken långt.';
     }
 
-    // Validering för kör-slug (som per dina krav)
-    const slugRegex = /^[a-z0-9-]+$/; // Tillåter endast gemener (a-z), siffror (0-9) och bindestreck (-)
-    if (!groupSlug.trim()) {
-      newErrors.groupSlug = 'Kör-slug får inte vara tomt.';
-    } else if (!slugRegex.test(groupSlug)) {
-      newErrors.groupSlug = 'Får endast innehålla små bokstäver (a-z), siffror och bindestreck.';
-    }
+    // FÖRBÄTTRING: Validering för slug är borttagen.
 
-    return newErrors;
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setErrors({}); // Rensa gamla fel vid nytt försök
 
-    // Steg 1: Validera formuläret på klientsidan
-    const formErrors = validateForm();
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
-      return; // Avbryt om det finns valideringsfel
+    if (!validateForm()) {
+      return; // Avbryt om valideringen misslyckas
     }
 
-    // Steg 2: Fortsätt med API-anropet om valideringen lyckades
     setIsLoading(true);
-
+    setErrors({});
     const token = localStorage.getItem('authToken');
-    if (!token) {
-      setErrors({ general: "Autentiseringstoken saknas. Vänligen logga in igen." });
-      setIsLoading(false);
-      return;
-    }
 
     try {
-      await axios.post(
+      // FÖRBÄTTRING: Vi fångar upp svaret från servern.
+      const response = await axios.post<Group>(
         `${API_BASE_URL}/groups`,
-        { name, groupSlug, choirLeader },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
+        formData, // Skicka hela formData-objektet (inklusive den dolda slugen)
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      onSuccess(); // Körs vid lyckat anrop
+      // Skicka tillbaka den nya gruppens data till föräldern.
+      onSuccess(response.data);
     } catch (err) {
-      // Hantera server-specifika fel
-      if (axios.isAxiosError(err) && err.response?.status === 409) {
-        setErrors({ groupSlug: 'En grupp med denna slug eller namn finns redan.' });
-      } else {
-        setErrors({ general: 'Kunde inte skapa gruppen. Försök igen.' });
-      }
       console.error("Create group failed:", err);
+      if (axios.isAxiosError(err)) {
+        // FÖRBÄTTRING: Om servern klagar på att slugen finns (409),
+        // visar vi nu felet på namn-fältet istället, eftersom det är källan.
+        if (err.response?.status === 409) {
+          setErrors({ name: 'En kör med detta namn eller slug finns redan.' });
+        } else {
+          const message = err.response?.data?.message || 'Ett oväntat fel inträffade. Försök igen.';
+          setErrors({ general: message });
+        }
+      } else {
+        setErrors({ general: 'Ett okänt fel inträffade.' });
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Funktion för att automatiskt generera en slug från namnet
-  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newName = e.target.value;
-    setName(newName);
-
-    const newSlug = newName
-      .toLowerCase() // Gör allt till gemener
-      .replace(/å/g, 'a') // Ersätt å, ä, ö
-      .replace(/ä/g, 'a')
-      .replace(/ö/g, 'o')
-      .replace(/\s+/g, '-') // Ersätt mellanslag med bindestreck
-      .replace(/[^a-z0-9-]/g, '') // Ta bort alla ogiltiga tecken
-      .slice(0, 50); // Begränsa längden
-
-    setGroupSlug(newSlug);
+  // FÖRBÄTTRING: En generell funktion för att hantera ändringar i alla input-fält.
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  // FÖRBÄTTRING: Funktionen uppdaterar nu alltid slugen baserat på namnet.
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newName = e.target.value;
+    const newSlug = newName
+      .toLowerCase()
+      .replace(/å/g, 'a').replace(/ä/g, 'a').replace(/ö/g, 'o')
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .slice(0, 50);
+    
+    // Uppdatera både namn och slug i vårt state
+    setFormData(prev => ({ ...prev, name: newName, groupSlug: newSlug }));
+  };
+
+  // FÖRBÄTTRING: 'handleSlugChange' behövs inte längre.
 
   return (
-  <form onSubmit={handleSubmit} className={styles.form}>
-    <FormGroup label="Namn på kör" htmlFor="group-name" error={errors.name}>
-      <Input
-        id="group-name"
-        value={name}
-        onChange={handleNameChange}
-        required
-        className={styles.input}
-      />
-    </FormGroup>
+    <form onSubmit={handleSubmit} className={styles.form}>
+      <FormGroup label="Namn på kör" htmlFor="name" error={errors.name}>
+        <Input
+          id="name"
+          name="name"
+          value={formData.name}
+          onChange={handleNameChange}
+          required
+        />
+      </FormGroup>
 
-    <FormGroup label="Kör slug (används i URL)" htmlFor="group-slug" error={errors.groupSlug}>
-      <Input
-        id="group-slug"
-        value={groupSlug}
-        onChange={(e) => setGroupSlug(e.target.value)}
-        required
-        className={styles.input}
-      />
-    </FormGroup>
+      {/* FÖRBÄTTRING: FormGroup och Input för 'groupSlug' är helt borttagna från gränssnittet. */}
 
-    <FormGroup label="Körledare (valfritt)" htmlFor="group-choir-leader" error={errors.description}>
-      <Input
-        id="group-choir-leader"
-        value={choirLeader}
-        onChange={(e) => setChoirLeader(e.target.value)}
-        placeholder="Ange e-post för körledare"
-        required={false} // Gör fältet valfritt
-        className={styles.input}
-      />
-    </FormGroup>
+      <FormGroup label={<>Körledare <span className={styles.labelHelper}>(valfritt)</span></>} htmlFor="choirLeader">
+        <Input
+          id="choirLeader"
+          name="choirLeader"
+          value={formData.choirLeader}
+          onChange={handleChange}
+          placeholder="Ange namn eller e-post"
+        />
+      </FormGroup>
 
-    {/* Visa generella fel som inte är kopplade till ett fält */}
-    {errors.general && <p className={styles.generalError}>{errors.general}</p>}
+      {errors.general && <p className={styles.generalError}>{errors.general}</p>}
 
-    <Button type="submit" isLoading={isLoading}>
-      Skapa Grupp
-    </Button>
-  </form>
-);
+      <Button type="submit" isLoading={isLoading} disabled={isLoading}>
+        {isLoading ? 'Skapar...' : 'Skapa Kör'}
+      </Button>
+    </form>
+  );
 };

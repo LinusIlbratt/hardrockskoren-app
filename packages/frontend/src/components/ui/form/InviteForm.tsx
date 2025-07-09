@@ -62,7 +62,10 @@ export const InviteForm = ({ roleToInvite, onSuccess }: InviteFormProps) => {
           placeholder="klistra in en eller flera e-postadresser..."
           required
         />
-        <p className={styles.description}>Separera flera adresser med kommatecken,</p>
+        <p className={styles.description}>Separera flera adresser med kommatecken,
+          och mellanslag. <br></br><br></br>
+          Exempel: <br></br>mail@epost.com, mail@epost.com, mail@epost.com
+        </p>
       </div>
 
       {error && <p className={styles.error}>{error}</p>}

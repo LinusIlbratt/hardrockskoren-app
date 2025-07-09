@@ -4,6 +4,12 @@ import { IoFilterOutline } from "react-icons/io5";
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal/Modal';
 import { CreateGroupForm } from '@/components/ui/form/CreateGroupForm';
+
+import { adminListGroupPageStepsMobile } from '@/tours/admin/adminListGroupPageStepsMobile';
+import { adminListGroupPageStepsDesktop } from '@/tours/admin/adminListGroupPageStepsDesktop';
+import { AppTourProvider } from '@/tours/AppTourProvider';
+import { useIsMobile } from '@/hooks/useIsMobile';
+
 import axios from 'axios';
 import styles from './AdminGroupListPage.module.scss'
 
@@ -27,13 +33,14 @@ export const AdminGroupListPage = () => {
   const [filteredGroups, setFilteredGroups] = useState<Group[]>([]);
   // State för söksträngen
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // State för modaler och laddning
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [groupToDelete, setGroupToDelete] = useState<Group | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const isMobile = useIsMobile();
 
-  // Funktion för att hämta alla grupper från backend
+  // Funktion för att hämta alla körer från backend
   const fetchGroups = useCallback(async () => {
     const token = localStorage.getItem('authToken');
     if (!token) return;
@@ -49,7 +56,7 @@ export const AdminGroupListPage = () => {
     }
   }, []);
 
-  // Hämta grupper en gång när sidan laddas
+  // Hämta körer en gång när sidan laddas
   useEffect(() => {
     fetchGroups();
   }, [fetchGroups]);
@@ -78,82 +85,96 @@ export const AdminGroupListPage = () => {
       await axios.delete(`${API_BASE_URL}/groups/${groupToDelete.slug}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       setGroupToDelete(null); // Stäng modalen
       fetchGroups(); // Hämta den nya, uppdaterade listan
 
     } catch (error) {
       console.error(`Failed to delete group ${groupToDelete.slug}:`, error);
-      alert(`Kunde inte radera gruppen.`);
+      alert(`Kunde inte radera kören.`);
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // Funktion som körs när en ny grupp har skapats
+  // Funktion som körs när en ny kör har skapats
   const onGroupCreated = () => {
     setIsCreateModalOpen(false);
     fetchGroups(); // Hämta den uppdaterade listan
   };
 
+  // useCloseTourOnUserInteraction(); // Kommenterad bort
+
   return (
-    <div className={styles.page}>
-      <h1 className={styles.title}>Hantera Körer</h1>
+    <AppTourProvider
+      steps={isMobile ? adminListGroupPageStepsMobile : adminListGroupPageStepsDesktop}
+      tourKey={isMobile ? "admin_groups_mobile" : "admin_groups_desktop"}
+      // ÄNDRING 1: Inaktivera klick på bakgrunden
+      onClickMask={() => {}}
+    >
+      <div className={styles.page}>
+        <h1 className={styles.title}>Hantera Körer</h1>
 
-      <div className={styles.topBar}>
-        <div className={styles.filterSection}>
-          <IoFilterOutline size={20} />
-          <input
-            type="text"
-            placeholder="Filtrera på körnamn..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <Button onClick={() => setIsCreateModalOpen(true)}>
-          Skapa Kör
-        </Button>
-      </div>
-
-      <div className={styles.grid}>
-        {filteredGroups.map((group) => (
-          <GroupCard 
-            key={group.id} 
-            group={group} 
-            // När papperskorgen klickas, spara gruppen som ska raderas
-            // Detta triggar modalen att öppnas.
-            onDelete={() => setGroupToDelete(group)} 
-          />
-        ))}
-      </div>
-
-      {/* Modal för att SKAPA grupp */}
-      <Modal 
-        isOpen={isCreateModalOpen} 
-        onClose={() => setIsCreateModalOpen(false)} 
-        title="Skapa ny kör"
-      >
-        <CreateGroupForm onSuccess={onGroupCreated} />
-      </Modal>
-
-      {/* Modal för att BEKRÄFTA RADERING */}
-      <Modal 
-        isOpen={!!groupToDelete} 
-        onClose={() => setGroupToDelete(null)}
-        title="Bekräfta radering"
-      >
-        <div>
-          <p>Är du säker på att du vill radera kören "{groupToDelete?.name}"? Denna åtgärd kan inte ångras.</p>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
-          <Button variant={ButtonVariant.Ghost} onClick={() => setGroupToDelete(null)}>
-              Avbryt
-            </Button>
-            <Button variant={ButtonVariant.Primary} isLoading={isDeleting} onClick={handleConfirmDelete}>
-              Ja, radera
-            </Button>
+        <div className={styles.topBar}>
+          <div className={styles.filterSection}>
+            <IoFilterOutline size={20} />
+            {/* ÄNDRING 2: Återställd onChange */}
+            <input
+              type="text"
+              placeholder="Filtrera på körnamn..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              data-tour="admin-filter-input"
+            />
           </div>
+          {/* ÄNDRING 3: Återställd onClick */}
+          <Button 
+            onClick={() => setIsCreateModalOpen(true)} 
+            data-tour="admin-create-group-button"
+          >
+            Skapa Kör
+          </Button>
         </div>
-      </Modal>
-    </div>
+
+        <div className={styles.grid}>
+          {filteredGroups.map((group) => (
+            <GroupCard
+              key={group.id}
+              group={group}
+              onDelete={() => setGroupToDelete(group)}
+            />
+          ))}
+        </div>
+
+        {/* Modal för att SKAPA kör */}
+        <Modal
+          isOpen={isCreateModalOpen}
+          onClose={() => setIsCreateModalOpen(false)}
+          title="Skapa ny kör"
+        >
+          <CreateGroupForm onSuccess={onGroupCreated} />
+        </Modal>
+
+        {/* Modal för att BEKRÄFTA RADERING */}
+        <Modal
+          isOpen={!!groupToDelete}
+          onClose={() => setGroupToDelete(null)}
+          title="Bekräfta radering"
+        >
+          <div>
+            <p>Är du säker på att du vill radera kören "{groupToDelete?.name}"? Denna åtgärd kan inte ångras.</p>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+              <Button variant={ButtonVariant.Ghost} onClick={() => setGroupToDelete(null)}>
+                Avbryt
+              </Button>
+              <Button variant={ButtonVariant.Primary} isLoading={isDeleting} onClick={handleConfirmDelete}>
+                Ja, radera
+              </Button>
+            </div>
+          </div>
+        </Modal>
+      </div>
+    </AppTourProvider>
   );
+
 };

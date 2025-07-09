@@ -21,7 +21,7 @@ export const CreateRepertoireForm = ({ onSuccess }: CreateRepertoireFormProps) =
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!groupName) {
-      setError("Kunde inte identifiera gruppnamn från URL.");
+      setError("Kunde inte identifiera kören från URL.");
       return;
     }
     

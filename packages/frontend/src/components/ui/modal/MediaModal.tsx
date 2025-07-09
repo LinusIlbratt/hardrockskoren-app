@@ -70,8 +70,10 @@ export const MediaModal = ({ isOpen, onClose, material }: MediaModalProps) => {
     }
     
     if (normalizedFileKey.endsWith('.pdf')) {
-      return <iframe src={fullUrl} className={styles.pdfViewer} title={displayName} frameBorder="0" />;
-    }
+  // Använd Google Docs Viewer för bättre kompatibilitet på mobila enheter
+  const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`;
+  return <iframe src={viewerUrl} className={styles.pdfViewer} title={displayName} frameBorder="0" />;
+}
     
     if (normalizedFileKey.endsWith('.txt')) {
       if (isLoading) return <p>Laddar text...</p>;

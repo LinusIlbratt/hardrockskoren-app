@@ -1,35 +1,49 @@
 @use '@/styles/variables' as *;
 
-// Grundläggande layout för hela sidan
 .page {
-  padding: var(--spacing-xs);
-  margin-top: var(--spacing-md);
-
-  @media (min-width: #{$tabletBreakpoint}) {
-    padding: var(--spacing-xl);
-  }
+  @include column($gap-size: var(--spacing-xl));
 }
 
-// Sidhuvudet med titel och knappar
 .header {
-  display: flex;
-  flex-direction: column; // Stapla vertikalt på mobil
-  align-items: flex-start;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
-
+  @include column($gap-size: var(--spacing-xs));
+  
   h2 {
     margin: 0;
+    font-size: var(--fs-h2);
+  }
+  
+  p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: var(--fs-base);
   }
 }
 
-// Behållare för listan
+// Behållare för alla sektioner
+.sectionsContainer {
+  @include column($gap-size: var(--spacing-xl));
+}
+
+// Varje sektion (Ljudfiler, Videor, etc.)
+.categorySection {
+  @include column($gap-size: var(--spacing-md));
+  padding: var(--spacing-lg);
+  background-color: var(--color-dark-gray);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+}
+
+.categoryTitle {
+  margin: 0;
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid var(--color-border);
+  font-size: var(--fs-h3);
+  color: var(--color-text);
+}
+
+// Listan inuti en sektion
 .materialList {
-  list-style: none;
-  padding: 0;
-  margin: 0;  
-  border-radius: var(--radius-md);
-  overflow: hidden; // Lägger till en skugga för bättre separation från bakgrunden
+  @include column($gap-size: var(--spacing-sm));
 }
 
 // Varje rad i listan
@@ -38,73 +52,75 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
-  background-color: var(--color-dark-gray);
-  color: var(--color-text-secondary);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  transition: background-color 0.2s ease;
 
-  &:not(:first-child) {
-    border-top: 1px solid var(--color-border);
+  &:hover {
+    background-color: var(--color-background-hover);
   }
 }
 
+// Info-delen (ikon + namn)
+.itemInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  min-width: 0;
+}
+
+.fileIcon {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
 .materialTitle {
-  font-weight: 500;
-  flex-grow: 1; // Se till att titeln tar upp allt ledigt utrymme
-  // Förhindra att långa titlar förstör layouten
+  font-size: var(--fs-base);
+  color: var(--color-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-// NY: Behållare för alla ikon-knappar på en rad
+// Action-knapparna till höger
 .actions {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  flex-shrink: 0; // Förhindra att knapp-gruppen kläms ihop
 }
 
-// NY: Generell stil för alla ikon-knappar
-.iconPlay, .iconView, .iconDelete {
+// Generell stil för alla action-knappar
+.actionButton {
   background: none;
   border: none;
   cursor: pointer;
-  padding: var(--spacing-sm);
+  padding: var(--spacing-xs);
   border-radius: var(--radius-round);
+  color: var(--color-text-secondary);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s, background-color 0.2s;
+  transition: color 0.2s ease, background-color 0.2s ease;
+
+  &:hover {
+    background-color: var(--color-background-hover-accent);
+  }
 }
 
-.iconPlay {
+// Specifik stil för play-knappen
+.playButton {
   color: var(--color-icon-play);
-  transition: color 0.2s, background-color 0.2s;
-
   &:hover {
-    color: var(--color-icon-play-hover); 
-  } 
+    color: var(--color-icon-play-hover);
+  }
 }
-.iconView {
+
+// Specifik stil för view-knappen
+.viewButton {
   color: var(--color-icon-view);
-  transition: color 0.2s, background-color 0.2s;
-  
   &:hover {
-    color: var(--color-icon-view-hover); 
+    color: var(--color-icon-view-hover);
   }
 }
-.iconDelete {
-  color: var(--color-accent); // Använder standard sekundär textfärg
-  transition: color 0.2s, background-color 0.2s;
 
-  &:hover {
-    color: var(--color-primary); 
-  }
-} 
-
-// Radera-knappen får en egen hover-färg
-.deleteButton {
-  &:hover {
-    color: var(--color-accent); // Använder din röda accent-färg
-  }
+.errorMessage {
+  color: var(--color-accent);
 }

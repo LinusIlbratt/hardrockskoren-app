@@ -21,32 +21,39 @@ export const handler = async (
   }
 
   try {
-    // Steg 1: Verifiera att användaren är admin
+    const body = event.body ? JSON.parse(event.body) : {};
+    // ÄNDRING: Hämta även 'endDate' från request body.
+    const { eventType, title, eventDate, endDate, description } = body;
     const userRole = event.requestContext.authorizer?.lambda?.role;
-    if (userRole !== 'admin') {
+
+    // Behörighetskontroll (ingen ändring här)
+    if (userRole === 'admin') {
+      // Admins får skapa allt
+    } else if (userRole === 'leader') {
+      if (eventType !== 'REHEARSAL') {
+        return sendError(403, "Forbidden: You only have permission to create rehearsals.");
+      }
+    } else {
       return sendError(403, "Forbidden: You do not have permission to perform this action.");
     }
-    
-    // Steg 2: Hämta data från anropet
+
     const { groupSlug } = event.pathParameters || {};
     if (!groupSlug) {
       return sendError(400, "Group slug is required in the path.");
     }
-    
-    if (!event.body) {
-      return sendError(400, "Request body is required.");
-    }
-    const { title, eventDate, eventType, description } = JSON.parse(event.body);
-    if (!title || !eventDate || !eventType) {
-      return sendError(400, "title, eventDate, and eventType are required.");
+
+    // ÄNDRING: Validera att all nödvändig information finns, inklusive endDate.
+    if (!title || !eventDate || !endDate || !eventType) {
+      return sendError(400, "title, eventDate, endDate, and eventType are required.");
     }
     if (eventType !== 'CONCERT' && eventType !== 'REHEARSAL') {
       return sendError(400, "eventType must be either 'CONCERT' or 'REHEARSAL'.");
     }
 
-    // Steg 3: Skapa det nya event-objektet
     const eventId = nanoid();
-    const isoDate = new Date(eventDate).toISOString();
+    const isoStartDate = new Date(eventDate).toISOString();
+    // ÄNDRING: Konvertera även endDate till ISO-format.
+    const isoEndDate = new Date(endDate).toISOString();
 
     const item = {
       PK: `GROUP#${groupSlug}`,
@@ -54,16 +61,16 @@ export const handler = async (
       eventId,
       groupSlug,
       title,
-      eventDate: isoDate,
+      eventDate: isoStartDate,
+      endDate: isoEndDate, // ÄNDRING: Lägg till endDate i objektet som sparas.
       eventType,
-      description: description || null, // Beskrivning är valfri
+      description: description || null,
       createdAt: new Date().toISOString(),
-      type: "Event",      
-      GSI1PK: `GROUP#${groupSlug}`, // Samma som PK, för att kunna fråga på grupp i GSI:t
-      GSI1SK: isoDate,   
+      type: "Event",
+      GSI1PK: `GROUP#${groupSlug}`,
+      GSI1SK: isoStartDate,
     };
 
-    // Steg 4: Spara objektet i DynamoDB
     const command = new PutItemCommand({
       TableName: MAIN_TABLE,
       Item: marshall(item),
@@ -75,6 +82,9 @@ export const handler = async (
 
   } catch (error: any) {
     console.error("Error creating event:", error);
+    if (error.name === 'SyntaxError') {
+      return sendError(400, "Invalid JSON format in request body.");
+    }
     return sendError(500, error.message || "Internal server error");
   }
 };

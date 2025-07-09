@@ -1,0 +1,23 @@
+services:
+  infra-service:
+    path: infra-service
+
+  auth-api:
+    path: auth-api
+    dependsOn:
+      - infra-service
+
+  admin-service:
+    path: admin-api
+    dependsOn:
+      - infra-service
+
+  event-api:
+    path: event-api
+    dependsOn:
+      - infra-service
+
+  material-api:
+    path: material-api
+    dependsOn:
+      - infra-service

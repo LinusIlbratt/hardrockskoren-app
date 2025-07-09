@@ -68,10 +68,10 @@ export const MemberAttendancePage = () => {
       <div className={styles.header}>
         <h2>Närvaro</h2>
         <div className={styles.buttonGroup}>
-          <Button variant={ButtonVariant.Primary} onClick={openModal}>
+          <Button variant={ButtonVariant.Destructive} onClick={openModal}>
             Anmäl närvaro
           </Button>
-        </div>
+        </div>  
       </div>
 
       <Modal isOpen={isModalOpen} onClose={closeModal} title="Anmäl din närvaro">

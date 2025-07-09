@@ -81,7 +81,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  flex-shrink: 0; // Förhindra att knapp-gruppen kläms ihop
+  flex-shrink: 0; 
 }
 
 // NY: Generell stil för alla ikon-knappar

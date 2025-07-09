@@ -111,6 +111,7 @@ forgotPassword:
     USER_POOL_ID: ${env:USER_POOL_ID}
     RESET_TABLE_NAME: HrkPasswordResetTokensTable-${opt:stage}
     FROM_EMAIL_ADDRESS: ${env:FROM_EMAIL_ADDRESS}
+    RESEND_API_KEY: ${self:custom.RESEND_API_KEY}
   iamRoleStatements:
     - Effect: "Allow"
       Action:

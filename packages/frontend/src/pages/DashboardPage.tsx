@@ -1,37 +1,52 @@
+import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Navigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 export const DashboardPage = () => {
   const { user, isLoading } = useAuth();
+  const navigate = useNavigate();
 
-  if (isLoading) {
-    return <div>Laddar...</div>;
-  }
+  useEffect(() => {
+    // Vänta tills vi vet vem användaren är. Om vi fortfarande laddar, gör inget.
+    if (isLoading || !user) {
+      return;
+    }
 
-  // Om ingen användare finns, skicka till login
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
+    // Fall 1: Användaren är en admin
+    if (user.role === 'admin') {
+      navigate('/admin/groups', { replace: true });
+      return; // Avbryt för att undvika att annan logik körs
+    }
 
-  // Om användaren är admin, skicka till admin-sidorna
-  if (user.role === 'admin') {
-    return <Navigate to="/admin/groups" replace />;
-  } 
+    // Fall 2: Användaren är en leader eller en vanlig user
+    if (user.role === 'leader' || user.role === 'user') {
+      
+      // Kontrollera om grupper finns och hur många de är
+      if (user.groups && user.groups.length === 1) {
+        // Användaren har exakt EN grupp, skicka dem direkt dit.
+        const groupSlug = user.groups[0];
+        
+        // Bestäm destination baserat på roll
+        const destination = user.role === 'leader' 
+          ? `/leader/choir/${groupSlug}` // Körledare går till sin dashboard
+          : `/user/me`; // Användare går till sin dashboard (som sedan använder grupp-datan)
+        
+        navigate(destination, { replace: true });
 
-  if (user.role === 'leader') {
-  const leaderGroupSlug = user.groups?.[0]; 
+      } else {
+        // Användaren har 0 eller 2+ grupper. Skicka dem till urvalssidan.
+        navigate('/select-group', { replace: true });
+      }
+      return;
+    }
 
-  if (leaderGroupSlug) {
-    // Skicka dem direkt till den specifika körens dashboard-sida
-    return <Navigate to={`/leader/choir/${leaderGroupSlug}/repertoires`} replace />;
-  }
-  
-  // Fallback om de av någon anledning inte har en grupp
-  // Skicka dem till en tom leader-sida eller en fel-sida.
-  // För nu skickar vi dem till en generell /leader-sida.
-  return <Navigate to="/leader" replace />;
-}
-  
-  // Om det är en vanlig användare, skicka till deras personliga dashboard
-  return <Navigate to="/user/me" replace />;
+    // Fallback om användaren har en okänd roll eller något annat oväntat händer
+    // Du kan leda dem till en felsida eller tillbaka till login
+    navigate('/login', { replace: true });
+
+  }, [user, isLoading, navigate]); // Denna effekt körs när användarstatus ändras
+
+  // Visa en enkel laddningsindikator medan logiken ovan körs.
+  // Användaren kommer bara se detta en kort stund.
+  return <div>Laddar...</div>;
 };

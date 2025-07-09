@@ -24,14 +24,20 @@
 .logo {
   // Nu kan du ändra storleken på loggan här utan att det påverkar något annat
   width: 100%;
-  max-width: 500px;
-  margin: 0; // Nollställ default-marginaler
+  max-width: 300px; // Justera detta värde så det ser bra ut på en mobil!
+  margin: 0;
+  transition: max-width 0.2s ease-out;
 
   img {
     width: 100%;
     height: auto;
     display: block;
   }
+  @media (min-width: #{$tabletBreakpoint}) {
+    // ...öka loggans max-bredd.
+    max-width: 400px;
+  }
+
 }
 
 .formWrapper {
@@ -44,10 +50,6 @@
   > form {
     display: flex;
     flex-direction: column;
-    
-    // Här är magin! Använd en av dina globala spacing-variabler.
-    // --spacing-lg (24px) är ofta ett bra avstånd för formulärfält.
-    gap: var(--spacing-lg); 
   }
 }
 

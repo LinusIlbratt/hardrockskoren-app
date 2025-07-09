@@ -1,35 +1,86 @@
 @use '@/styles/variables' as *;
 
-// .page och .header är samma som på AdminEventPage
 .page {
-  padding: var(--spacing-xs);
+  // Använder din globala mixin för en konsekvent layout
+  @include column($gap-size: var(--spacing-xl));
 }
 
 .header {
-  @include column;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
-
+  @include column($gap-size: var(--spacing-xs));
+  
   h2 {
+    margin: 0; // Nollställ default-marginal för rubriker
+    font-size: var(--fs-h2);
+  }
+  
+  p {
     margin: 0;
+    color: var(--color-text-secondary);
+    font-size: var(--fs-base);
   }
 }
 
+// Behållaren för hela listan
 .repertoireList {
+  @include column($gap-size: var(--spacing-sm));
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
+// Varje klickbar rad/kort i listan
 .repertoireItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--spacing-md);
-  padding: var(--spacing-md) 0; // Padding bara upp och ner
+  
+  padding: var(--spacing-md) var(--spacing-lg);
+  background-color: var(--color-dark-gray);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  text-decoration: none; // Ta bort understrykning från länken
+  
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 
-  // Separera varje rad med en linje, förutom den sista
-  &:not(:last-child) {
-    border-bottom: 1px solid var(--color-border);
+  &:hover {
+    background-color: var(--color-background-hover);
+    border-color: var(--color-border-hover);
+    transform: translateY(-2px);
   }
+}
+
+// Behållare för textinnehållet (titel och artist)
+.itemInfo {
+  @include column($gap-size: 0.25rem); // Lite luft mellan titel och artist
+  min-width: 0; // Fixar flexbox-problem med långa texter
+}
+
+.itemTitle {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  color: var(--color-text);
+  
+  // Hantera långa titlar snyggt
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.itemArtist {
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+}
+
+// Pilen till höger
+.itemIcon {
+  flex-shrink: 0; // Se till att ikonen aldrig krymper
+  color: var(--color-primary); // ÄNDRING: Ikonen har nu din primära färg som standard
+  transition: color 0.2s ease;
+}
+
+// Ändra färgen på pilen vid hover för extra feedback
+.repertoireItem:hover .itemIcon {
+  color: var(--color-accent-hover); // ÄNDRING: Använder din ljusare accentfärg för hover
 }
