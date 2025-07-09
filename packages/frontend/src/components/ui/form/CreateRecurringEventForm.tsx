@@ -1,65 +1,62 @@
-import { useState } from 'react';
-
-// Importer för våra anpassade komponenter
+import React, { useState, useMemo, forwardRef } from 'react';
 import { StyledSelect, type SelectOption } from '@/components/ui/select/StyledSelect';
 import { Button } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
 import { FormGroup } from '@/components/ui/form/FormGroup';
-
-// Importer för datumväljaren
 import DatePicker, { registerLocale } from "react-datepicker";
 import { sv } from 'date-fns/locale';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 registerLocale('sv', sv);
-
-// Övriga importer
 import * as eventService from '@/services/eventService';
 import styles from './CreateRecurringEventForm.module.scss';
+import { useAuth } from '@/context/AuthContext';
 
-// --- Data-arrayer för våra select-komponenter ---
-const eventTypeOptions: SelectOption[] = [
-  { value: 'REHEARSAL', label: 'Repetition' },
-  { value: 'CONCERT', label: 'Konsert' },
-];
+const CustomDateInput = forwardRef<HTMLButtonElement, { value?: string; onClick?: () => void; className?: string; placeholder?: string }>(
+  ({ value, onClick, className, placeholder }, ref) => (
+    <button type="button" className={className} onClick={onClick} ref={ref}>{value || placeholder}</button>
+  )
+);
+CustomDateInput.displayName = 'CustomDateInput';
 
 const repetitionIntervalOptions: SelectOption[] = [
-  { value: 1, label: 'Varje vecka' },
-  { value: 2, label: 'Var annan vecka' },
-  { value: 3, label: 'Var tredje vecka' },
-  { value: 4, label: 'Var fjärde vecka' },
+  { value: 1, label: 'Varje vecka' }, { value: 2, label: 'Var annan vecka' },
+  { value: 3, label: 'Var tredje vecka' }, { value: 4, label: 'Var fjärde vecka' },
 ];
 
 const weekdaysMap = [
-  { label: 'Måndag', value: 1 },
-  { label: 'Tisdag', value: 2 },
-  { label: 'Onsdag', value: 3 },
-  { label: 'Torsdag', value: 4 },
-  { label: 'Fredag', value: 5 },
-  { label: 'Lördag', value: 6 },
-  { label: 'Söndag', value: 0 },
+  { label: 'Måndag', value: 1 }, { label: 'Tisdag', value: 2 }, { label: 'Onsdag', value: 3 },
+  { label: 'Torsdag', value: 4 }, { label: 'Fredag', value: 5 }, { label: 'Lördag', value: 6 }, { label: 'Söndag', value: 0 },
 ];
 
 interface CreateRecurringEventFormProps {
+  user: ReturnType<typeof useAuth>['user'];
   groupSlug: string;
   authToken: string;
   onSuccess: () => void;
 }
 
-export const CreateRecurringEventForm = ({ groupSlug, authToken, onSuccess }: CreateRecurringEventFormProps) => {
+export const CreateRecurringEventForm = ({ user, groupSlug, authToken, onSuccess }: CreateRecurringEventFormProps) => {
   const [formData, setFormData] = useState({
     title: '',
     eventType: 'REHEARSAL' as 'CONCERT' | 'REHEARSAL',
     description: '',
     startDate: '',
     endDate: '',
-    time: '19:00',
+    startTime: '19:00',
+    endTime: '21:00',
     selectedWeekdays: [] as number[],
     repetitionInterval: 1,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // --- Hanterare ---
+  const eventTypeOptions = useMemo((): SelectOption[] => {
+    const options: SelectOption[] = [{ value: 'REHEARSAL', label: 'Repetition' }];
+    if (user?.role === 'admin') {
+      options.push({ value: 'CONCERT', label: 'Konsert' });
+    }
+    return options;
+  }, [user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -99,11 +96,15 @@ export const CreateRecurringEventForm = ({ groupSlug, authToken, onSuccess }: Cr
     });
   };
 
-  const handleTimeChange = (date: Date | null) => {
+  const handleTimeChange = (field: 'startTime' | 'endTime', date: Date | null) => {
     if (date) {
-      // Formatera Date-objektet till en 'HH:mm'-sträng och spara i state
-      setFormData(prev => ({ ...prev, time: format(date, 'HH:mm') }));
+      setFormData(prev => ({ ...prev, [field]: format(date, 'HH:mm') }));
     }
+  };
+
+  const timeStringToDate = (timeString: string) => {
+    if (!timeString) return null;
+    return parse(timeString, 'HH:mm', new Date());
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -114,10 +115,17 @@ export const CreateRecurringEventForm = ({ groupSlug, authToken, onSuccess }: Cr
       setError("Du måste välja minst en veckodag.");
       return;
     }
+    
+    if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
+      setError("Sluttiden måste vara efter starttiden.");
+      return;
+    }
 
     setIsSubmitting(true);
     try {
-      await eventService.batchCreateEvents(groupSlug, { ...formData }, authToken);
+      // ✅ ÄNDRING: Vi skickar nu `formData` direkt, eftersom dess format
+      // matchar vad din nya backend-funktion förväntar sig.
+      await eventService.batchCreateEvents(groupSlug, formData, authToken);
       onSuccess();
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || 'Ett okänt fel uppstod.');
@@ -138,13 +146,12 @@ export const CreateRecurringEventForm = ({ groupSlug, authToken, onSuccess }: Cr
             selected={formData.startDate ? new Date(formData.startDate) : null}
             onChange={handleStartDateChange}
             dateFormat="yyyy-MM-dd"
-            className={styles.input}
             locale="sv"
-            required
-            selectsStart
+            required selectsStart
             startDate={formData.startDate ? new Date(formData.startDate) : null}
             endDate={formData.endDate ? new Date(formData.endDate) : null}
-            placeholderText="Välj startdatum..."
+            withPortal
+            customInput={<CustomDateInput className={styles.input} placeholder="Välj startdatum..." />}
           />
         </FormGroup>
         <FormGroup label="Slutdatum">
@@ -152,49 +159,51 @@ export const CreateRecurringEventForm = ({ groupSlug, authToken, onSuccess }: Cr
             selected={formData.endDate ? new Date(formData.endDate) : null}
             onChange={handleEndDateChange}
             dateFormat="yyyy-MM-dd"
-            className={styles.input}
             locale="sv"
-            required
-            selectsEnd
+            required selectsEnd
             startDate={formData.startDate ? new Date(formData.startDate) : null}
             endDate={formData.endDate ? new Date(formData.endDate) : null}
             minDate={formData.startDate ? new Date(formData.startDate) : undefined}
-            placeholderText="Välj slutdatum..."
+            withPortal
+            customInput={<CustomDateInput className={styles.input} placeholder="Välj slutdatum..." />}
+          />
+        </FormGroup>
+      </div>
+      
+      <div className={styles.row}>
+        <FormGroup label="Starttid">
+          <DatePicker
+            selected={timeStringToDate(formData.startTime)}
+            onChange={(date) => handleTimeChange('startTime', date)}
+            showTimeSelect
+            showTimeSelectOnly
+            timeIntervals={15}
+            timeCaption="Start"
+            dateFormat="HH:mm"
+            locale="sv"
+            required
+            withPortal
+            customInput={<CustomDateInput className={styles.input} placeholder="Välj tid..." />}
+          />
+        </FormGroup>
+        <FormGroup label="Sluttid">
+          <DatePicker
+            selected={timeStringToDate(formData.endTime)}
+            onChange={(date) => handleTimeChange('endTime', date)}
+            showTimeSelect
+            showTimeSelectOnly
+            timeIntervals={15}
+            timeCaption="Slut"
+            dateFormat="HH:mm"
+            locale="sv"
+            required
+            withPortal
+            customInput={<CustomDateInput className={styles.input} placeholder="Välj tid..." />}
           />
         </FormGroup>
       </div>
 
-      <FormGroup label="Tidpunkt (för alla events)">
-        <DatePicker
-          // 'selected' måste vara ett Date-objekt. Vi skapar ett temporärt
-          // Date-objekt från tids-strängen i vårt state.
-          selected={(() => {
-            const tempDate = new Date();
-            const [hours, minutes] = formData.time.split(':');
-            tempDate.setHours(parseInt(hours, 10), parseInt(minutes, 10));
-            return tempDate;
-          })()}
-          onChange={handleTimeChange}
-
-          // Dessa två props är nyckeln för att BARA visa tid
-          showTimeSelect
-          showTimeSelectOnly
-
-          // Konfiguration för hur tidslistan ser ut
-          timeIntervals={15}
-          timeCaption="Tid"
-
-          // Formatet som visas i själva input-fältet
-          dateFormat="HH:mm"
-
-          // Återanvänd din befintliga styling och andra props
-          className={styles.input}
-          locale="sv"
-          required
-        />
-      </FormGroup>
-
-      <FormGroup label="Repetera">
+      <FormGroup label="Repetera" className={styles.fieldset}>
         <div className={styles.repetitionControls}>
           <StyledSelect
             name="repetitionInterval"
@@ -207,11 +216,7 @@ export const CreateRecurringEventForm = ({ groupSlug, authToken, onSuccess }: Cr
         <div className={styles.checkboxGroup}>
           {weekdaysMap.map(day => (
             <label key={day.value} className={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={formData.selectedWeekdays.includes(day.value)}
-                onChange={() => handleWeekdayChange(day.value)}
-              />
+              <input type="checkbox" checked={formData.selectedWeekdays.includes(day.value)} onChange={() => handleWeekdayChange(day.value)} />
               <span>{day.label}</span>
             </label>
           ))}
@@ -226,6 +231,10 @@ export const CreateRecurringEventForm = ({ groupSlug, authToken, onSuccess }: Cr
           onChange={(option) => handleEventTypeChange(option as SelectOption)}
           placeholder="Välj typ..."
         />
+      </FormGroup>
+      
+      <FormGroup label="Beskrivning (valfri)">
+        <textarea name="description" value={formData.description} onChange={handleInputChange} className={styles.textarea} />
       </FormGroup>
 
       <Button type="submit" isLoading={isSubmitting}>

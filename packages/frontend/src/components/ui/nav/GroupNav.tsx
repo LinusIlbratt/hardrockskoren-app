@@ -3,13 +3,15 @@ import styles from './GroupNav.module.scss';
 
 export const GroupNav = () => {
   return (
-    <nav className={styles.nav}>
+    <nav className={styles.nav} data-tour="group-nav">
       <NavLink
         to="repertoires"
         end
         className={({ isActive }) =>
           [styles.navLink, isActive ? 'active' : ''].join(' ')
         }
+        // Lägg till data-tour här
+        data-tour="group-nav-repertoires"
       >
         Repertoar
       </NavLink>
@@ -19,6 +21,7 @@ export const GroupNav = () => {
         className={({ isActive }) =>
           [styles.navLink, isActive ? 'active' : ''].join(' ')
         }
+        data-tour="group-nav-practice"
       >
         Sjungupp!
       </NavLink>
@@ -27,6 +30,7 @@ export const GroupNav = () => {
         className={({ isActive }) =>
           [styles.navLink, isActive ? 'active' : ''].join(' ')
         }
+        data-tour="group-nav-concerts"
       >
         Konserter & repdatum
       </NavLink>
@@ -35,6 +39,7 @@ export const GroupNav = () => {
         className={({ isActive }) =>
           [styles.navLink, isActive ? 'active' : ''].join(' ')
         }
+        data-tour="group-nav-users"
       >
         Användare
       </NavLink>
@@ -43,6 +48,7 @@ export const GroupNav = () => {
         className={({ isActive }) =>
           [styles.navLink, isActive ? 'active' : ''].join(' ')
         }
+        data-tour="group-nav-attendance"
       >
         Närvaro
       </NavLink>

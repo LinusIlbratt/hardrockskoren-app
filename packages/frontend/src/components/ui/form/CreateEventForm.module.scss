@@ -3,12 +3,11 @@
 // Behållaren för hela formuläret
 .form {
   display: flex;
-  flex-direction: column; // Stapla alla formulär-element vertikalt
-  gap: var(--spacing-lg);  // Skapa ett konsekvent, luftigt avstånd mellan varje element
+  flex-direction: column;
+  gap: var(--spacing-lg);
 }
 
 // En gemensam bas för alla våra fält för att hålla dem konsekventa
-// Detta är en SASS "placeholder" som vi återanvänder med @extend
 %form-field-base {
   display: block;
   width: 100%;
@@ -19,8 +18,13 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  -webkit-appearance: none; // Ta bort iOS-specifikt utseende
+  -webkit-appearance: none;
   appearance: none;
+
+  // ✅ FÖRÄNDRING: Lägg till en fast höjd för att garantera konsistens
+  // Justera värdet så det passar din design. 44px är en bra utgångspunkt.
+  height: 44px; 
+  box-sizing: border-box; // Bra praxis för att inkludera padding/border i höjden
 
   &:focus {
     outline: none;
@@ -34,29 +38,42 @@
   @extend %form-field-base;
 }
 
+// ✅ NY REGEL: Justeringar specifikt för vår CustomDateInput-knapp
+// Detta säkerställer att knappen ser ut och beter sig exakt som ett input-fält.
+button.input {
+  // Återställ webbläsarens default-styling för knappar
+  text-align: left;       // Input-fält är vänsterställda, knappar är centrerade
+  font-family: inherit;   // Säkerställ att den ärver formulärets typsnitt
+  cursor: pointer;        // Gör det tydligt att den är klickbar
+  
+  // Ta bort extra padding/margin som knappar kan ha
+  margin: 0;
+}
+
 // Specifik styling för dropdown-menyn (<select>)
 .select {
   cursor: pointer;
-  // Trick för att lägga till en egen pil-ikon
   background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%239ca3af' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 0.75rem center;
   background-repeat: no-repeat;
   background-size: 1.25em;
-  padding-right: 2.5rem; // Ge plats för pilen
+  padding-right: 2.5rem;
 }
 
 // Specifik styling för textrutan (<textarea>)
 .textarea {
-  min-height: 120px; // Ge den en bra starthöjd
-  resize: vertical; // Tillåt användaren att bara ändra höjden, inte bredden
-  padding-top: var(--spacing-sm); // Lite annorlunda padding för textrutor
+  // ✅ FÖRÄNDRING: Ta bort fast höjd härifrån, den ärvs nu från basen.
+  min-height: 120px; 
+  height: auto; // Låt textarean växa, men ha en starthöjd
+  resize: vertical;
+  padding-top: var(--spacing-sm);
   padding-bottom: var(--spacing-sm);
 }
 
 // Behållare för knapparna längst ner
 .buttonGroup {
   display: flex;
-  justify-content: flex-end; // Placera knapparna till höger
+  justify-content: flex-end;
   gap: var(--spacing-sm);
   margin-top: var(--spacing-md);
 }
@@ -66,5 +83,21 @@
   color: var(--color-accent);
   font-size: var(--fs-sm);
   text-align: center;
-  // Ingen extra marginal behövs tack vare gap i .form
+}
+
+// Layout för datum/tid
+.dateTimeRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.timeInputsRow {
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-md);
+}
+
+.timeField {
+  flex: 1;
 }

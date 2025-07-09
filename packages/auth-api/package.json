@@ -13,7 +13,8 @@
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.826.0",
     "@middy/core": "^6.3.1",
-    "aws-jwt-verify": "^5.1.0"
+    "aws-jwt-verify": "^5.1.0",
+    "resend": "^4.6.0"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.149"

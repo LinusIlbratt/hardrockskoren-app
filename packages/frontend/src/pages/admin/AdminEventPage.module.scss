@@ -8,7 +8,7 @@
 // Sidhuvudet med titel och knappar
 .header {
   display: flex;
-  flex-direction: column; // Stapla vertikalt på mobil
+  flex-direction: column;
   align-items: flex-start;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-xl);
@@ -21,19 +21,17 @@
 // En behållare för knappar
 .buttonGroup {
   display: flex;
-  flex-wrap: wrap; // Tillåt knappar att radbrytas
+  flex-wrap: wrap;
   gap: var(--spacing-sm);
 }
-
-// --- NYA STILAR FÖR FLIKARNA ---
 
 // Behållare för flik-knapparna
 .tabs {
   display: flex;
-  gap: var(--spacing-lg); // Mellanrum mellan knapparna
-  border-bottom: 1px solid var(--color-border); // Linje som sträcker sig över hela bredden
+  gap: var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border);
   width: 100%;
-  margin-top: var(--spacing-xl); // Lite avstånd från knapparna ovanför
+  margin-top: var(--spacing-xl);
 }
 
 // Styling för varje enskild flik-knapp
@@ -42,17 +40,12 @@
   border: none;
   cursor: pointer;
   padding: var(--spacing-sm) 0;
-  padding-bottom: var(--spacing-md); // Lite extra utrymme för att lyfta texten från linjen
-  
-  // Återskapar utseendet från din gamla .listHeader
+  padding-bottom: var(--spacing-md);
   font-size: var(--fs-base);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
-  
-  // Standardfärg för inaktiva flikar
-  color: #a0a0a0; 
-  
+  color: var(--color-text-muted); 
   transition: color 0.2s;
 
   &:hover {
@@ -62,31 +55,12 @@
 
 // Speciell stil för den aktiva fliken
 .activeTab {
-  color: var(--color-primary); // Den röda färgen
+  color: var(--color-primary);
 }
 
-
-// --- SLUT PÅ NYA STILAR ---
-
-
+// Sektionen som innehåller listan
 .listSection {
   margin-top: var(--spacing-xl);
-}
-
-.listGroup {
-  &:not(:last-child) {
-    margin-bottom: var(--spacing-xl);
-  }
-}
-
-.listHeader {
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-size: var(--fs-base);
-  color: var(--color-primary);
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: var(--spacing-sm);
-  margin-bottom: var(--spacing-md);
 }
 
 // Behållare för listan
@@ -94,90 +68,133 @@
   list-style: none;
   padding: 0;
   margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
 }
 
 // Varje rad i listan
 .eventItem {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-md) 0; // Bara padding upp/ner, ingen padding på sidorna
+  gap: var(--spacing-md); // ÄNDRING: Minskad gap för en kompaktare layout
+  padding: var(--spacing-md);
+  background-color: var(--color-dark-gray);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid transparent;
+  // ÄNDRING: Tog bort 'transform' från transitionen
+  transition: opacity 0.3s ease, border-color 0.2s ease;
   
-  // En linje mellan varje rad, förutom den sista
-  &:not(:last-child) {
-    border-bottom: 1px solid var(--color-border);
+  // ÄNDRING: Tog bort hover-effekten på hela raden
+}
+
+// Stil för passerade event
+.pastEvent {
+  opacity: 0.5;
+  background-color: transparent;
+  
+  &:hover {
+    opacity: 0.7;
   }
 }
 
-// Detaljer (Titel och datum)
+// Kalenderblocket
+.calendarBlock {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 52px;   // ÄNDRING: Gjort blocket mindre
+  height: 52px;  // ÄNDRING: Gjort blocket mindre
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  transition: background-color 0.3s ease;
+
+  .month {
+    font-size: var(--fs-xs);
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--color-text-muted);
+  }
+  .day {
+    font-size: var(--fs-lg); // ÄNDRING: Mindre typsnitt på dagen för att passa
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--color-text-strong);
+  }
+}
+
+.pastEvent .calendarBlock {
+  background-color: transparent;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+// Event-detaljer
 .itemDetails {
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xs);
+  min-width: 0;
 }
 
 .itemTitle {
   font-weight: 600;
-  font-size: var(--fs-base); // Något mindre typsnitt
+  font-size: 1.1rem;
+  color: var(--color-text-strong);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.itemDate {
-  font-size: var(--fs-sm);
-  color: #a0a0a0;
+// Tiden med ikon
+.itemTime {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: var(--fs-sm); // ÄNDRING: Mindre typsnitt för att få plats på en rad
+  color: var(--color-text-muted);
 }
 
-// Behållare för ikon-knapparna
+// Actions (knapparna)
 .actions {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
 }
 
-// Generell stil för en ikon-knapp
-.iconButton, .iconEye {
+.iconButton {
   background: none;
   border: none;
   cursor: pointer;
   padding: var(--spacing-sm);
   border-radius: var(--radius-round);
+  color: var(--color-text-muted);
   display: flex;
-  align-items: center;
-  justify-content: center;
   transition: background-color 0.2s, color 0.2s;
 
   &:hover {
-    background-color: var(--color-dark-gray);
-    color: var(--color-text);
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-strong);
   }
 }
 
-.iconButton {
-  color: #a0a0a0;
+.deleteIcon:hover {
+  color: var(--color-accent);
 }
 
-.iconEye {
-  color: var(--color-icon-view);
-  transition: color 0.2s, background-color 0.2s;
-
-  &:hover {
-    color: var(--color-icon-view-hover);
-  }
-}
-
-// Speciell färg för radera-ikonen vid hover
-.deleteIcon {
-  &:hover {
-    color: var(--color-accent);
-  }
-}
-
+// Media query för större skärmar
 @media (min-width: #{$tabletBreakpoint}) {
   .page {
     padding: var(--spacing-xl);
   }
 
   .header {
-  @include row;
-    justify-content: space-between; // Placera titel och knappar på samma rad
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
   }
 }

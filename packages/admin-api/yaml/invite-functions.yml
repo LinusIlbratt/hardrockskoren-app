@@ -12,6 +12,7 @@ createInvite:
     # Du måste definiera denna i din .env-fil eller liknande
     FROM_EMAIL_ADDRESS: ${env:FROM_EMAIL_ADDRESS}
     FRONTEND_URL: ${env:FRONTEND_URL}
+    RESEND_API_KEY: ${env:RESEND_API_KEY}
     MAIN_TABLE : ${self:custom.mainTableName}
     USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
   iamRoleStatements:

@@ -11,6 +11,7 @@ export interface Event {
   eventId: string;
   title: string;
   eventDate: string;
+  endDate?: string;
   // Detta är det korrekta fältet från din databas
   eventType: 'REHEARSAL' | 'CONCERT' | string; 
   location?: string;

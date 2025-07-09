@@ -128,7 +128,8 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
         <>
           <UserList
             members={filteredMembers}
-            onEditUser={(member) => setSelectedUser(member)}
+            // Skicka bara med onEditUser-funktionen om viewerRole är 'admin'
+            onEditUser={viewerRole === 'admin' ? (member) => setSelectedUser(member) : undefined}
           />
           {/* NYTT: "Ladda fler"-knapp */}
           {nextToken && !searchTerm && (

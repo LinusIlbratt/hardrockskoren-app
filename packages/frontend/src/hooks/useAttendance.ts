@@ -35,11 +35,11 @@ export const useAttendance = () => {
         setError(null);
         setSuccessMessage(null);
 
-        // Använder den första gruppen i användarens lista.
+        // Använder den första kören i användarens lista.
         const groupSlug = user?.groups?.[0];
 
         if (!groupSlug) {
-            setError("Kunde inte hitta din grupp. Kontakta en administratör.");
+            setError("Kunde inte hitta din kör. Kontakta en administratör.");
             setIsLoading(false);
             return;
         }
