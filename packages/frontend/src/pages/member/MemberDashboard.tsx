@@ -65,8 +65,8 @@ export const MemberDashboard = () => {
       <header className={styles.header}>
         <h1>Välkommen {user.given_name}</h1>
         <p>
-          Dashboard för: 
-          <strong>{isLoadingName ? ' Laddar...' : ` ${choirDisplayName}`}</strong>
+          <span className={styles.subheadingLabel}>Medlem i
+          {isLoadingName ? ' Laddar...' : ` ${choirDisplayName}`}</span>
         </p>
       </header>
       

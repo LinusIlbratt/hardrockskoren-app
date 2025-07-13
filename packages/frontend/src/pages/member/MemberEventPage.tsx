@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { Modal } from '@/components/ui/modal/Modal';
-import { IoEyeOutline } from 'react-icons/io5';
+import { IoEyeOutline, IoInformationCircleOutline } from 'react-icons/io5';
 import { format, isPast } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import styles from './MemberEventPage.module.scss';
@@ -16,6 +16,9 @@ export const MemberEventPage = () => {
   const [error, setError] = useState<string | null>(null);
   const [eventToShowDescription, setEventToShowDescription] = useState<Event | null>(null);
   const [activeTab, setActiveTab] = useState<'REHEARSAL' | 'CONCERT' | 'OTHER'>('REHEARSAL');
+  
+  // ✅ NYTT: State för att hålla ID på nästa event
+  const [nextUpcomingEventId, setNextUpcomingEventId] = useState<string | null>(null);
   
   const { groupName } = useParams<{ groupName: string }>();
 
@@ -35,6 +38,13 @@ export const MemberEventPage = () => {
         new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
       );
       setEvents(sortedEvents);
+
+      // ✅ NYTT: Hitta det första kommande eventet efter att datan har hämtats och sorterats
+      const nextEvent = sortedEvents.find((event: Event) => !isPast(new Date(event.endDate || event.eventDate)));
+      if (nextEvent) {
+        setNextUpcomingEventId(nextEvent.eventId);
+      }
+
     } catch (err) {
       setError("Kunde inte hämta event.");
     } finally {
@@ -54,9 +64,12 @@ export const MemberEventPage = () => {
     const startDate = new Date(event.eventDate);
     const endDate = event.endDate ? new Date(event.endDate) : startDate;
     const hasEventPassed = isPast(endDate);
+    // ✅ NYTT: Kontrollera om detta är nästa event
+    const isNextUpcoming = event.eventId === nextUpcomingEventId;
 
     return (
-      <li key={event.eventId} className={`${styles.eventItem} ${hasEventPassed ? styles.pastEvent : ''}`}>
+      // ✅ NYTT: Lägg till en villkorlig klass
+      <li key={event.eventId} className={`${styles.eventItem} ${hasEventPassed ? styles.pastEvent : ''} ${isNextUpcoming ? styles.nextUpcomingEvent : ''}`}>
         <div className={styles.calendarBlock}>
           <span className={styles.month}>{format(startDate, "MMM", { locale: sv })}</span>
           <span className={styles.day}>{format(startDate, "d")}</span>
@@ -70,7 +83,7 @@ export const MemberEventPage = () => {
         <div className={styles.actions}>
           {event.description && (
             <button className={styles.iconButton} onClick={() => setEventToShowDescription(event)} title="Visa beskrivning">
-              <IoEyeOutline size={30} />
+              <IoEyeOutline size={32} />
             </button>
           )}
         </div>
@@ -108,6 +121,13 @@ export const MemberEventPage = () => {
         </div>
       </div>
 
+      <div className={styles.legend}>
+        <IoInformationCircleOutline size={20} className={styles.legendIcon} />
+        <p className={styles.legendText}>
+          Tryck på ögat-ikonen <IoEyeOutline size={20} className={styles.inlineIcon} /> för att läsa mer information om ett event.
+        </p>
+      </div>
+
       {isLoading && <p>Laddar kommande händelser...</p>}
       {error && <p className={styles.error}>{error}</p>}
       
@@ -118,7 +138,7 @@ export const MemberEventPage = () => {
               {eventsToDisplay.map(renderEventItem)}
             </ul>
           ) : (
-            <p>Det finns inga inplanerade händelser för denna kategori.</p>
+            <p>Det finns inga inplanerade händelser ännu.</p>
           )}
         </section>
       )}

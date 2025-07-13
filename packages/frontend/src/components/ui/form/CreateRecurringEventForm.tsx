@@ -178,7 +178,7 @@ export const CreateRecurringEventForm = ({ user, groupSlug, authToken, onSuccess
             showTimeSelect
             showTimeSelectOnly
             timeIntervals={15}
-            timeCaption="Start"
+            timeCaption=""
             dateFormat="HH:mm"
             locale="sv"
             required
@@ -193,7 +193,7 @@ export const CreateRecurringEventForm = ({ user, groupSlug, authToken, onSuccess
             showTimeSelect
             showTimeSelectOnly
             timeIntervals={15}
-            timeCaption="Slut"
+            timeCaption=""
             dateFormat="HH:mm"
             locale="sv"
             required
@@ -233,7 +233,7 @@ export const CreateRecurringEventForm = ({ user, groupSlug, authToken, onSuccess
         />
       </FormGroup>
       
-      <FormGroup label="Beskrivning (valfri)">
+      <FormGroup label="Information (valfri)">
         <textarea name="description" value={formData.description} onChange={handleInputChange} className={styles.textarea} />
       </FormGroup>
 
