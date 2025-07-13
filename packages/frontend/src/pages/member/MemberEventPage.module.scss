@@ -13,6 +13,35 @@
   }
 }
 
+.legend {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.legendIcon {
+  flex-shrink: 0;
+  color: var(--color-text);
+  margin-top: 3px; // Finjustering för vertikal linjering
+}
+
+.legendText {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+
+  .inlineIcon {
+    color: var(--color-icon-view); // Använder din befintliga färg för ögat
+    vertical-align: middle;
+    margin: 0 0.1em -0.2em 0.2em; // Finjustering för att linjera med texten
+  }
+}
+
 .tabs {
   display: flex;
   gap: var(--spacing-lg);
@@ -41,8 +70,8 @@
 }
 
 .activeTab {
-  color: var(--color-primary);
-  border-bottom-color: var(--color-primary);
+  color: var(--color-text);
+  border-bottom-color: var(--color-text);
 }
 
 .listSection {
@@ -64,6 +93,10 @@
   background-color: var(--color-dark-gray);
   border-radius: var(--radius-lg);
   transition: opacity 0.3s ease;
+}
+
+.nextUpcomingEvent {
+  box-shadow: 0 0 8px -2px var(--color-text);
 }
 
 .pastEvent {

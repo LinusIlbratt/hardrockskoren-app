@@ -8,7 +8,7 @@ import { Modal } from '@/components/ui/modal/Modal';
 import { CreateRecurringEventForm } from '@/components/ui/form/CreateRecurringEventForm';
 import { CreateEventForm } from '@/components/ui/form/CreateEventForm';
 import { FiEdit, FiClock } from 'react-icons/fi';
-import { IoTrashOutline, IoEyeOutline } from 'react-icons/io5';
+import { IoTrashOutline, IoEyeOutline, IoInformationCircleOutline } from 'react-icons/io5';
 import type { Event } from '@/types';
 import styles from './AdminEventPage.module.scss';
 import { useAuth } from '@/context/AuthContext';
@@ -46,7 +46,7 @@ export const AdminEventPage = () => {
 
   const handleOpenCreateModal = () => { setEventToEdit(null); setIsEventModalOpen(true); };
   const handleOpenEditModal = (event: Event) => { setEventToEdit(event); setIsEventModalOpen(true); };
-  
+
   const handleConfirmDelete = async () => {
     const token = localStorage.getItem('authToken');
     if (!token || !groupName || !eventToDelete) return;
@@ -65,7 +65,7 @@ export const AdminEventPage = () => {
   const rehearsals = events.filter(e => e.eventType === 'REHEARSAL');
   const concerts = events.filter(e => e.eventType === 'CONCERT');
   const others = events.filter(e => e.eventType !== 'REHEARSAL' && e.eventType !== 'CONCERT');
-  
+
   const renderEventItem = (event: Event) => {
     const startDate = new Date(event.eventDate);
     const endDate = event.endDate ? new Date(event.endDate) : startDate;
@@ -89,17 +89,22 @@ export const AdminEventPage = () => {
           </div>
         </div>
         <div className={styles.actions}>
+          {/* "Visa"-knappen är separat */}
           {event.description && (
             <button className={styles.iconButton} onClick={() => setEventToShowDescription(event)} title="Visa beskrivning">
               <IoEyeOutline size={22} />
             </button>
           )}
-          <button className={styles.iconButton} onClick={() => handleOpenEditModal(event)} title="Redigera">
-            <FiEdit size={18} />
-          </button>
-          <button className={`${styles.iconButton} ${styles.deleteIcon}`} onClick={() => setEventToDelete(event)} title="Radera">
-            <IoTrashOutline size={20} />
-          </button>
+
+          {/* Ny container för Redigera/Radera */}
+          <div className={styles.editActions}>
+            <button className={styles.iconButton} onClick={() => handleOpenEditModal(event)} title="Redigera">
+              <FiEdit size={18} />
+            </button>
+            <button className={`${styles.iconButton} ${styles.deleteIcon}`} onClick={() => setEventToDelete(event)} title="Radera">
+              <IoTrashOutline size={20} />
+            </button>
+          </div>
         </div>
       </li>
     );
@@ -115,15 +120,27 @@ export const AdminEventPage = () => {
         </div>
       </div>
 
+      <div className={styles.legend}>
+        <IoInformationCircleOutline size={20} className={styles.legendIcon} />
+        <p className={styles.legendText}>
+          Tryck på<IoEyeOutline size={20} className={styles.inlineIcon} />
+           för att se information, 
+          <FiEdit size={20} className={styles.inlineIcon} />
+           för att redigera, 
+          <IoTrashOutline size={20} className={styles.inlineIcon} />
+           ta bort ett event.
+        </p>
+      </div>
+
       <div className={styles.tabs}>
-        <button 
+        <button
           className={`${styles.tabButton} ${activeTab === 'REHEARSAL' ? styles.activeTab : ''}`}
           onClick={() => setActiveTab('REHEARSAL')}
         >
           Repetitioner
         </button>
         {(user?.role === 'admin' || user?.role === 'leader') && (
-          <button 
+          <button
             className={`${styles.tabButton} ${activeTab === 'CONCERT' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('CONCERT')}
           >
@@ -131,7 +148,7 @@ export const AdminEventPage = () => {
           </button>
         )}
         {others.length > 0 && (
-          <button 
+          <button
             className={`${styles.tabButton} ${activeTab === 'OTHER' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('OTHER')}
           >
@@ -139,7 +156,7 @@ export const AdminEventPage = () => {
           </button>
         )}
       </div>
-      
+
       {/* ✅ Logik för att visa listor återställd till din ursprungliga, fungerande metod */}
       <section className={styles.listSection}>
         {isLoading ? (
@@ -174,7 +191,7 @@ export const AdminEventPage = () => {
           <p>Är du säker på att du vill radera eventet "{eventToDelete?.title}"?</p>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
             <Button variant={ButtonVariant.Ghost} onClick={() => setEventToDelete(null)}>Avbryt</Button>
-            <Button variant={ButtonVariant.Destructive} isLoading={isDeleting} onClick={handleConfirmDelete}>Ja, radera</Button>
+            <Button variant={ButtonVariant.Primary} isLoading={isDeleting} onClick={handleConfirmDelete}>Ja, radera</Button>
           </div>
         </div>
       </Modal>

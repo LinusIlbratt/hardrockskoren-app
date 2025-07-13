@@ -19,6 +19,40 @@
   }
 }
 
+.legend {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.legendIcon {
+  flex-shrink: 0;
+  color: var(--color-text);
+  margin-top: 3px; // Finjustering för vertikal linjering
+}
+
+.legendText {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+
+  .inlineIcon, .inlinePlayIcon {
+    vertical-align: middle;
+    margin: 0 0.1em -0.2em 0.2em; // Finjustering för att linjera med texten
+  }
+  .inlinePlayIcon {
+    color: var(--color-icon-play);
+  }
+  .inlineIcon {
+    color: var(--color-icon-view);
+  }
+}
+
 // Behållare för alla sektioner
 .sectionsContainer {
   @include column($gap-size: var(--spacing-xl));

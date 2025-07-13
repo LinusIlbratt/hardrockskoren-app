@@ -2,10 +2,12 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
 import { MediaModal } from '@/components/ui/modal/MediaModal';
 import { MediaPlayer } from '@/components/media/MediaPlayer';
-import { FileText, Music, Video, Download, PlayCircle, Eye, ArrowLeft } from 'lucide-react';
+import { FileText, Music, Video, PlayCircle, Eye, ArrowLeft } from 'lucide-react'; // Tog bort Download-ikonen
 import axios from 'axios';
 import styles from './MemberRepertoireMaterialPage.module.scss';
 import type { Material } from '@/types/index';
+import { FaPlayCircle } from "react-icons/fa";
+import { IoEyeOutline, IoInformationCircleOutline } from 'react-icons/io5';
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
 const FILE_BASE_URL = import.meta.env.VITE_S3_BUCKET_URL;
@@ -25,7 +27,8 @@ const MaterialSection: React.FC<MaterialSectionProps> = ({ title, files, onPlay,
     if (key.match(/\.(mp3|wav|m4a)$/)) return <Music size={20} className={styles.fileIcon} />;
     if (key.match(/\.(mp4|mov|webm)$/)) return <Video size={20} className={styles.fileIcon} />;
     if (key.match(/\.(pdf|txt)$/)) return <FileText size={20} className={styles.fileIcon} />;
-    return <Download size={20} className={styles.fileIcon} />;
+    // Fallback-ikon om filtypen är okänd, men ingen nedladdning erbjuds
+    return <FileText size={20} className={styles.fileIcon} />;
   };
 
   const isPlayableAudio = (fileKey: string = '') => fileKey.toLowerCase().match(/\.(mp3|wav|m4a)$/);
@@ -53,15 +56,11 @@ const MaterialSection: React.FC<MaterialSectionProps> = ({ title, files, onPlay,
                   </button>
                 )}
                 {isViewable(material.fileKey) && !isPlayableAudio(material.fileKey) && (
-                   <button onClick={() => onView({ ...material, title: displayName })} className={`${styles.actionButton} ${styles.viewButton}`} aria-label={`Visa ${displayName}`}>
+                  <button onClick={() => onView({ ...material, title: displayName })} className={`${styles.actionButton} ${styles.viewButton}`} aria-label={`Visa ${displayName}`}>
                     <Eye size={30} />
                   </button>
                 )}
-                {!isPlayableAudio(material.fileKey) && !isViewable(material.fileKey) && (
-                  <a href={fullUrl} target="_blank" rel="noopener noreferrer" className={styles.actionButton} aria-label={`Ladda ner ${displayName}`}>
-                    <Download size={30} />
-                  </a>
-                )}
+                {/* ✅ ÄNDRING: Nedladdningslänken är nu helt borttagen */}
               </div>
             </div>
           );
@@ -112,7 +111,13 @@ export const MemberRepertoireMaterialPage = () => {
         <ArrowLeft size={16} />
         <span>Tillbaka till repertoar</span>
       </Link>
-      
+      <div className={styles.legend}>
+        <IoInformationCircleOutline size={20} className={styles.legendIcon} />
+        <p className={styles.legendText}>
+          Tryck på ikonerna <IoEyeOutline size={20} className={styles.inlineIcon} /><FaPlayCircle size={20} className={styles.inlinePlayIcon} /> för att öppna/spela upp filer.
+        </p>
+      </div>
+
       <header className={styles.header}>
         <h1 className={styles.repertoireTitle}>{title || 'Material'}</h1>
       </header>

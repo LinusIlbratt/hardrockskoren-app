@@ -24,11 +24,8 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
   const [allMembers, setAllMembers] = useState<GroupMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-
-  // NYTT: State för paginering
   const [nextToken, setNextToken] = useState<string | null>(null);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-
   const [roleToInvite, setRoleToInvite] = useState<RoleTypes | null>(null);
   const [selectedUser, setSelectedUser] = useState<GroupMember | null>(null);
 
@@ -36,7 +33,6 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
   const fetchMembers = useCallback(async (tokenForNextPage?: string | null) => {
     if (!groupName) return;
 
-    // Sätt rätt laddnings-state
     if (tokenForNextPage) {
       setIsLoadingMore(true);
     } else {
@@ -45,12 +41,11 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
 
     const token = localStorage.getItem('authToken');
     try {
-      // Bygg URL med paginerings-parametrar
       const params = new URLSearchParams();
       if (tokenForNextPage) {
         params.append('nextToken', tokenForNextPage);
       }
-      params.append('limit', '25'); // Hämta 25 i taget
+      params.append('limit', '25');
 
       const response = await axios.get(`${API_BASE_URL}/groups/${groupName}/users?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -58,7 +53,6 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
 
       const { users, nextToken: newNextToken } = response.data;
 
-      // Om vi hämtar en ny sida, lägg till användarna. Annars, ersätt.
       setAllMembers(prev => tokenForNextPage ? [...prev, ...users] : users);
       setNextToken(newNextToken || null);
 
@@ -70,18 +64,16 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
     }
   }, [groupName]);
 
-  // Hämta den första sidan när komponenten laddas
   useEffect(() => {
     fetchMembers();
   }, [fetchMembers]);
 
   const handleInviteSuccess = () => {
     setRoleToInvite(null);
-    fetchMembers(); // Ladda om hela listan från början
+    fetchMembers();
   };
 
   const filteredMembers = useMemo(() => {
-    // 1) dela upp söksträngen i ord (och ta bort tomma strängar)
     const terms = searchTerm
       .toLowerCase()
       .trim()
@@ -92,7 +84,6 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
       const fullName = `${member.given_name} ${member.family_name}`.toLowerCase();
       const email = member.email.toLowerCase();
 
-      // 2) kontrollera att varje term finns antingen i namn eller e-post
       return terms.every(term =>
         fullName.includes(term) ||
         email.includes(term)
@@ -128,10 +119,9 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
         <>
           <UserList
             members={filteredMembers}
-            // Skicka bara med onEditUser-funktionen om viewerRole är 'admin'
+            // ✅ KORRIGERING: Skickar bara med onEditUser-funktionen om användaren är admin.
             onEditUser={viewerRole === 'admin' ? (member) => setSelectedUser(member) : undefined}
           />
-          {/* NYTT: "Ladda fler"-knapp */}
           {nextToken && !searchTerm && (
             <div className={styles.loadMoreContainer}>
               <Button
@@ -150,7 +140,6 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
         </div>
       )}
 
-      {/* KORRIGERING: Lade tillbaka InviteForm i modalen */}
       <Modal
         isOpen={!!roleToInvite}
         onClose={() => setRoleToInvite(null)}
@@ -161,7 +150,6 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
         )}
       </Modal>
 
-      {/* KORRIGERING: Lade tillbaka UserEditModal */}
       {selectedUser && groupName && (
         <UserEditModal
           user={selectedUser}

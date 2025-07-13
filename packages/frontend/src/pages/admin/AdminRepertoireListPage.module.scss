@@ -15,14 +15,45 @@
   }
 }
 
+.legend {
+  display: flex;
+  align-items: center; // Centrera info-ikonen och textblocket vertikalt
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+// Info-ikonen till vänster
+.legendIcon {
+  flex-shrink: 0;
+  color: var(--color-text);
+}
+
+// Behållaren för texten och den inbäddade ikonen
+.legendText {
+  display: flex;       
+  align-items: center; 
+  flex-wrap: wrap;     
+  gap: 0.4em;          
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+// Den inbäddade ikonens (papperskorgen) stil
+.inlineIcon {
+  // Ingen mer vertical-align eller margin behövs, flexbox sköter allt!
+  flex-shrink: 0; // Se till att ikonen inte kläms ihop
+}
+
 // Behållare för listan med låtar
 .repertoireList {
   list-style: none;
   padding: 0;
-  margin: 0;
-
-  // Zebra-ränder anpassade för mörkt tema
-  
+  margin: 0;  
 }
 
 // Varje enskild rad/låt i listan

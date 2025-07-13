@@ -23,7 +23,21 @@ export const handler = async (
   }
   
   try {
-    // 1. Hämta och validera inbjudan
+    // --- STEG 1: Validera inkommande data ---
+    const { given_name, family_name, password } = JSON.parse(event.body);
+
+    if (!given_name || !family_name || !password) {
+      return sendError(400, "First name, last name, and password are required.");
+    }
+    if (password.length < 8) {
+      return sendError(400, "Password must be at least 8 characters long.");
+    }
+    // Denna regex bör matcha din frontend-validering
+    if (!/(?=.*[A-Za-z])(?=.*\d)/.test(password)) {
+      return sendError(400, "Password must contain both letters and numbers.");
+    }
+
+    // --- STEG 2: Hämta och validera inbjudan ---
     const getInviteCommand = new GetItemCommand({
       TableName: INVITE_TABLE,
       Key: { inviteId: { S: inviteId } },
@@ -34,8 +48,7 @@ export const handler = async (
     }
     const invite = unmarshall(inviteItem);
 
-    // 2. Skapa användaren i Cognito
-    const { given_name, family_name, password } = JSON.parse(event.body);
+    // --- STEG 3: Skapa användaren i Cognito ---
     const createUserCommand = new AdminCreateUserCommand({
       UserPoolId: USER_POOL_ID,
       Username: invite.email,
@@ -54,7 +67,7 @@ export const handler = async (
         throw new Error("Failed to create user in Cognito.");
     }
 
-    // 3. Sätt användarens lösenord
+    // --- STEG 4: Sätt användarens lösenord ---
     const setPasswordCommand = new AdminSetUserPasswordCommand({
         UserPoolId: USER_POOL_ID,
         Username: User.Username,
@@ -63,16 +76,15 @@ export const handler = async (
     });
     await cognitoClient.send(setPasswordCommand);
 
-    // 4. Lägg till användaren i rätt Cognito-grupp
+    // --- STEG 5: Lägg till användaren i rätt Cognito-grupp ---
     const addUserToGroupCmd = new AdminAddUserToGroupCommand({
         UserPoolId: USER_POOL_ID,
         Username: User.Username,
-        // KORRIGERING 2: Använd sluggen även här för att hitta rätt grupp
         GroupName: invite.groupSlug,
     });
     await cognitoClient.send(addUserToGroupCmd);
 
-    // 5. Radera den använda inbjudan
+    // --- STEG 6: Radera den använda inbjudan ---
     const deleteInviteCommand = new DeleteItemCommand({
         TableName: INVITE_TABLE,
         Key: { inviteId: { S: inviteId } },
@@ -84,6 +96,9 @@ export const handler = async (
   } catch (error: any) {
     if (error.name === "UsernameExistsException") {
       return sendError(409, "A user with this email already exists.");
+    }
+    if (error.name === 'SyntaxError') {
+      return sendError(400, "Invalid JSON format in request body.");
     }
     console.error("Error confirming invite:", error);
     return sendError(500, error.message);

@@ -206,7 +206,7 @@ export const AdminUploadPracticePage = () => {
     <div className={styles.page}>
       <section>
         <h1 className={styles.title}>Hantera Sjungupp-material</h1>
-        <p>Här kan du som admin ladda upp och hantera globalt övningsmaterial som är tillgängligt för alla körer.</p>
+        <p className={styles.subtitle}>Här kan du som admin ladda upp och hantera globalt övningsmaterial som är tillgängligt för alla körer.</p>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <FormGroup htmlFor="practice-title" label="Titel på övning">
