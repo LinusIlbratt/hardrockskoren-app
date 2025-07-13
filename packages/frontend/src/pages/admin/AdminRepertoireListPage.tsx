@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/modal/Modal';
 import { CreateRepertoireForm } from '@/components/ui/form/CreateRepertoireForm'; // Importera den nya komponenten
 import { IoTrashOutline } from 'react-icons/io5';
 import styles from './AdminRepertoireListPage.module.scss';
+import { IoInformationCircleOutline } from 'react-icons/io5'
 
 // Definiera en typ för repertoar-objektet
 interface Repertoire {
@@ -83,6 +84,12 @@ export const AdminRepertoireListPage = () => {
       <div className={styles.header}>
         <h2>Låtar i Repertoaren</h2>
         <Button onClick={() => setIsCreateModalOpen(true)}>Skapa ny låt</Button>
+      </div>
+      <div className={styles.legend}>
+        <IoInformationCircleOutline size={20} className={styles.legendIcon} />
+        <p className={styles.legendText}>
+          Tryck på ikonen <IoTrashOutline size={20} className={styles.inlineIcon} /> för ta bort en låt.
+        </p>
       </div>
 
       <ul className={styles.repertoireList}>

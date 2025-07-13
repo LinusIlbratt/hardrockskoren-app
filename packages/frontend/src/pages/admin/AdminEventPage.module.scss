@@ -18,6 +18,36 @@
   }
 }
 
+.legend {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.legendIcon {
+  flex-shrink: 0;
+  color: var(--color-text);
+  margin-top: 3px; // Finjustering för vertikal linjering
+}
+
+.legendText {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+
+  .inlineIcon {
+    vertical-align: middle;
+    margin: 0 0.1em -0.1em 0.2em; // Finjustering för att linjera med texten
+    margin-right: 2px;
+    color: var(--color-text);
+  }
+}
+
 // En behållare för knappar
 .buttonGroup {
   display: flex;
@@ -41,21 +71,25 @@
   cursor: pointer;
   padding: var(--spacing-sm) 0;
   padding-bottom: var(--spacing-md);
-  font-size: var(--fs-base);
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-family: var(--font-heading);
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: var(--color-text-muted); 
-  transition: color 0.2s;
+  color: var(--color-text-secondary);
+  border-bottom: 3px solid transparent;
+  transition: color 0.2s, border-color 0.2s;
+  margin-bottom: -1px; // Justerar så ramen ligger snyggt
 
   &:hover {
     color: var(--color-text);
   }
 }
 
+
+
 // Speciell stil för den aktiva fliken
 .activeTab {
-  color: var(--color-primary);
+  color: var(--color-text);
 }
 
 // Sektionen som innehåller listan
@@ -78,7 +112,8 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-md); // ÄNDRING: Minskad gap för en kompaktare layout
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm);
+  padding-left: var(--spacing-md);
   background-color: var(--color-dark-gray);
   border-radius: var(--radius-lg);
   border-left: 4px solid transparent;
@@ -105,8 +140,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 52px;   // ÄNDRING: Gjort blocket mindre
-  height: 52px;  // ÄNDRING: Gjort blocket mindre
+  width: 15px;   // ÄNDRING: Gjort blocket mindre
+  height: 15px;  // ÄNDRING: Gjort blocket mindre
   background-color: rgba(255, 255, 255, 0.05);
   border-radius: var(--radius-md);
   color: var(--color-text);

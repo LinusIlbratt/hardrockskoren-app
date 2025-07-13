@@ -30,7 +30,7 @@ const customSelectStyles: StylesConfig<SelectOption> = {
   }),
   option: (provided, state) => ({
     ...provided,
-    backgroundColor: state.isSelected ? 'var(--color-primary)' : state.isFocused ? '#3d3d3d' : 'transparent',
+    backgroundColor: state.isSelected ? 'var(--color-text)' : state.isFocused ? '#3d3d3d' : 'transparent',
     color: state.isSelected ? 'var(--color-background)' : 'var(--color-text)',
     cursor: 'pointer',
     ':active': {

@@ -250,7 +250,7 @@ export const CreateEventForm = ({ user, groupSlug, authToken, eventToEdit, onSuc
         />
       </FormGroup>
 
-      <FormGroup label="Beskrivning (valfri)">
+      <FormGroup label="Information (valfri)">
         <textarea name="description" value={formData.description} onChange={handleInputChange} className={styles.textarea} />
       </FormGroup>
 

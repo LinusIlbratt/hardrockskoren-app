@@ -208,13 +208,15 @@ export const AdminUploadMaterialPage = () => {
             <>
               {mediaFiles.length > 0 && (
                 <div className={styles.categorySection}>
-                  <h3>Mediafiler (Ljud & Video)</h3>
+                  <h3>
+                    Mediafiler <span className={styles.subCategorTitle}>(Ljud & Video)</span>
+                  </h3>
                   {renderMaterialList(mediaFiles)}
                 </div>
               )}
               {documentFiles.length > 0 && (
                 <div className={styles.categorySection}>
-                  <h3>Dokument (Noter, Texter etc.)</h3>
+                  <h3>Dokument <span className={styles.subCategorTitle}>(Noter, Texter etc.)</span></h3>
                   {renderMaterialList(documentFiles)}
                 </div>
               )}

@@ -16,7 +16,7 @@
   transition: color 0.2s ease;
 
   &:hover {
-    color: var(--color-primary);
+    color: var(--color-text);
     text-decoration: none;
   }
 }
@@ -25,6 +25,39 @@
   .repertoireTitle {
     margin: 0;
     font-size: var(--fs-h1);
+  }
+}
+.legend {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.legendIcon {
+  flex-shrink: 0;
+  color: var(--color-text);
+  margin-top: 3px; // Finjustering för vertikal linjering
+}
+
+.legendText {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+
+  .inlineIcon, .inlinePlayIcon {
+    vertical-align: middle;
+    margin: 0 0.1em -0.2em 0.2em; // Finjustering för att linjera med texten
+  }
+  .inlinePlayIcon {
+    color: var(--color-icon-play);
+  }
+  .inlineIcon {
+    color: var(--color-icon-view);
   }
 }
 
@@ -64,10 +97,6 @@
   padding: var(--spacing-sm);
   border-radius: var(--radius-md);
   transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: var(--color-background-hover);
-  }
 }
 
 // Info-delen (ikon + namn)
@@ -80,7 +109,7 @@
 
 .fileIcon {
   flex-shrink: 0;
-  color: var(--color-primary);
+  color: var(--color-text-secondary);
 }
 
 .displayName {

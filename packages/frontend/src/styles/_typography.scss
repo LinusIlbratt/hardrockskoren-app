@@ -26,7 +26,7 @@ body {
 // Grundstilar för rubriker (detta är nu mobil-stilarna)
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
-  color: var(--color-tex);
+  color: var(--color-text);
   line-height: 1.2;
   margin: var(--spacing-lg) 0 var(--spacing-md) 0;
 }
