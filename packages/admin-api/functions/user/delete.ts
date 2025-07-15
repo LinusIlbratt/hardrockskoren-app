@@ -1,4 +1,7 @@
-import { CognitoIdentityProviderClient, AdminRemoveUserFromGroupCommand } from "@aws-sdk/client-cognito-identity-provider";
+import { 
+  CognitoIdentityProviderClient, 
+  AdminDeleteUserCommand // Importera rätt kommando
+} from "@aws-sdk/client-cognito-identity-provider";
 import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
 
@@ -15,34 +18,33 @@ export const handler = async (
   }
 
   try {
-    const { email, groupSlug } = JSON.parse(event.body);
-    if (!email || !groupSlug) {
-      return sendError(400, "User email and groupSlug are required.");
+    // Vi behöver bara email för att radera användaren. 
+    const { email } = JSON.parse(event.body);
+    if (!email) {
+      return sendError(400, "User email is required.");
     }
 
-    // DEN ENDA ÅTGÄRDEN: Ta bort användaren från Cognito-gruppen.
-    // Detta återkallar användarens medlemskap och behörigheter för den specifika kören.
-    const removeUserFromGroupCmd = new AdminRemoveUserFromGroupCommand({
+    // SKAPA OCH SKICKA KOMMANDOT FÖR ATT RADERA ANVÄNDAREN PERMANENT
+    const deleteUserCmd = new AdminDeleteUserCommand({
       UserPoolId: USER_POOL_ID,
       Username: email,       // Cognito använder 'Username' för att identifiera användaren
-      GroupName: groupSlug,  // Namnet på gruppen de ska tas bort från
     });
 
-    await cognitoClient.send(removeUserFromGroupCmd);
+    await cognitoClient.send(deleteUserCmd);
 
-    // Eftersom vi inte längre interagerar med DynamoDB, är vi klara här.
-
-    return sendResponse({ message: `User ${email} successfully removed from group ${groupSlug}.` }, 200);
+    // Uppdaterat svarsmeddelande för att reflektera den nya åtgärden
+    return sendResponse({ message: `User ${email} has been permanently deleted.` }, 200);
 
   } catch (error: any) {
-    console.error("Error removing user from group:", error);
+    console.error("Error deleting user:", error);
 
     // Om användaren inte finns i Cognito överhuvudtaget
     if (error.name === 'UserNotFoundException') {
-      return sendError(404, `User with email ${JSON.parse(event.body!).email} not found.`);
+      const requestBody = JSON.parse(event.body || '{}');
+      return sendError(404, `User with email ${requestBody.email} not found.`);
     }
-    // Andra vanliga fel kan också hanteras här om det behövs
-
+    
+    // Andra vanliga fel kan också hanteras här
     return sendError(500, error.message);
   }
 };
