@@ -1,31 +1,42 @@
-import React, { useRef } from 'react'; // useState är inte längre nödvändig här
+import React, { useRef } from 'react';
 import styles from './FileInput.module.scss';
 import { Button, ButtonVariant } from '../button/Button';
 
+// Uppdaterat interface för att vara mer flexibelt
 interface FileInputProps {
-  id: string;
-  onFileSelect: (file: File | null) => void;
-  value: File | null; // <-- NY PROP: Tar emot den nuvarande filen
+  id?: string; // Gör id valfritt
+  onFileSelect: (files: File | FileList | null) => void;
+  value?: File | null; // Valfritt, för att visa namn på enskild fil
+  label?: string; // NY: Valfri label för knappen
+  isFolderPicker?: boolean; // NY: Flagga för att aktivera mapp-val
 }
 
-export const FileInput = ({ id, onFileSelect, value }: FileInputProps) => {
-  // --- BORTTAGET: Inget internt state för filnamnet längre ---
-  // const [fileName, setFileName] = useState<string | null>(null);
-  
+export const FileInput = ({
+  id,
+  onFileSelect,
+  value,
+  label = 'Välj fil', // Standardvärde för label
+  isFolderPicker = false,
+}: FileInputProps) => {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    // Vi anropar bara förälderns funktion, sätter inget eget state
-    onFileSelect(file);
+    // Om det är en mapp-väljare, skicka hela fillistan
+    if (isFolderPicker) {
+      onFileSelect(e.target.files);
+    } else {
+      // Annars, skicka bara den första filen
+      const file = e.target.files?.[0] || null;
+      onFileSelect(file);
+    }
   };
 
   const handleButtonClick = () => {
     inputRef.current?.click();
   };
 
-  // Hämta filnamnet direkt från propen vi får från föräldern
-  const displayName = value ? value.name : "Ingen fil har valts";
+  // Visa filnamn endast för enskilda filer
+  const displayName = !isFolderPicker && value ? value.name : "Ingen fil har valts";
 
   return (
     <div className={styles.fileInputContainer}>
@@ -35,8 +46,9 @@ export const FileInput = ({ id, onFileSelect, value }: FileInputProps) => {
         ref={inputRef}
         onChange={handleFileChange}
         className={styles.hiddenInput}
-        // Vi lägger till en key här för att hjälpa React att nollställa fältet
-        key={value?.name || 'empty'}
+        // Lägg till attribut för mapp-val villkorligt
+        {...(isFolderPicker ? { webkitdirectory: "true", directory: "true", multiple: true } : {})}
+        key={!isFolderPicker && value ? value.name : 'empty'}
       />
       
       <Button 
@@ -44,13 +56,15 @@ export const FileInput = ({ id, onFileSelect, value }: FileInputProps) => {
         variant={ButtonVariant.Ghost} 
         onClick={handleButtonClick}
       >
-        Välj fil
+        {label} {/* Använd den nya label-propen */}
       </Button>
 
-      {/* Visar namnet från propen */}
-      <span className={styles.fileName}>
-        {displayName}
-      </span>
+      {/* Visa bara filnamnet för enskilda fil-uppladdningar */}
+      {!isFolderPicker && (
+        <span className={styles.fileName}>
+          {displayName}
+        </span>
+      )}
     </div>
   );
 };
