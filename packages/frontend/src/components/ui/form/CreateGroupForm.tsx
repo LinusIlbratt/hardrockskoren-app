@@ -5,54 +5,52 @@ import { FormGroup } from '@/components/ui/form/FormGroup';
 import axios from 'axios';
 import styles from './CreateGroupForm.module.scss';
 
-// FÖRBÄTTRING: Vi behöver en typ för den data som skickas och tas emot.
-// Detta gör koden säkrare och enklare att arbeta med.
+// Typ för den data som skickas och tas emot
 interface Group {
   id: string;
   name: string;
   groupSlug: string;
   choirLeader?: string;
+  location: string; // <-- LADE TILL LOCATION
 }
 
 interface CreateGroupFormProps {
-  // FÖRBÄTTRING: onSuccess skickar nu tillbaka den nya gruppen.
-  // Detta är nödvändigt för att kunna starta den korts-specifika guiden.
   onSuccess: (newGroup: Group) => void;
 }
 
-// FÖRBÄTTRING: En typ för formulärdatan.
+// Typ för formulärdatan
 interface FormData {
   name: string;
   groupSlug: string;
   choirLeader: string;
+  location: string; // <-- LADE TILL LOCATION
 }
 
-// En typ för vårt error-objekt för bättre typsäkerhet.
-// FÖRBÄTTRING: 'groupSlug' är borttagen eftersom fältet är dolt.
+// Typ för vårt error-objekt
 interface FormErrors {
   name?: string;
-  general?: string; // För generella fel, t.ex. nätverksfel
+  location?: string; // <-- LADE TILL LOCATION
+  general?: string;
 }
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
 export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
-  // FÖRBÄTTRING: All formulärdata samlas i ett enda state-objekt.
+  // All formulärdata samlas i ett enda state-objekt
   const [formData, setFormData] = useState<FormData>({
     name: '',
     groupSlug: '',
     choirLeader: '',
+    location: '', // <-- LADE TILL LOCATION
   });
 
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
-  
-  // FÖRBÄTTRING: 'isSlugManuallyEdited' behövs inte längre.
 
   // Valideringsfunktion
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-    const { name } = formData; // Behöver inte längre validera slugen här.
+    const { name, location } = formData; // <-- LADE TILL LOCATION
 
     if (!name.trim()) {
       newErrors.name = 'Namn får inte vara tomt.';
@@ -60,7 +58,12 @@ export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
       newErrors.name = 'Namnet måste vara minst 3 tecken långt.';
     }
 
-    // FÖRBÄTTRING: Validering för slug är borttagen.
+    // LADE TILL VALIDERING FÖR LOCATION
+    if (!location.trim()) {
+      newErrors.location = 'Plats får inte vara tomt.';
+    } else if (location.length < 2) {
+      newErrors.location = 'Plats måste vara minst 2 tecken långt.';
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -70,7 +73,7 @@ export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
     e.preventDefault();
 
     if (!validateForm()) {
-      return; // Avbryt om valideringen misslyckas
+      return;
     }
 
     setIsLoading(true);
@@ -78,19 +81,15 @@ export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
     const token = localStorage.getItem('authToken');
 
     try {
-      // FÖRBÄTTRING: Vi fångar upp svaret från servern.
       const response = await axios.post<Group>(
         `${API_BASE_URL}/groups`,
-        formData, // Skicka hela formData-objektet (inklusive den dolda slugen)
+        formData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Skicka tillbaka den nya gruppens data till föräldern.
       onSuccess(response.data);
     } catch (err) {
       console.error("Create group failed:", err);
       if (axios.isAxiosError(err)) {
-        // FÖRBÄTTRING: Om servern klagar på att slugen finns (409),
-        // visar vi nu felet på namn-fältet istället, eftersom det är källan.
         if (err.response?.status === 409) {
           setErrors({ name: 'En kör med detta namn eller slug finns redan.' });
         } else {
@@ -105,13 +104,12 @@ export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
     }
   };
 
-  // FÖRBÄTTRING: En generell funktion för att hantera ändringar i alla input-fält.
+  // En generell funktion för att hantera ändringar i alla input-fält
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // FÖRBÄTTRING: Funktionen uppdaterar nu alltid slugen baserat på namnet.
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newName = e.target.value;
     const newSlug = newName
@@ -121,11 +119,8 @@ export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
       .replace(/[^a-z0-9-]/g, '')
       .slice(0, 50);
     
-    // Uppdatera både namn och slug i vårt state
     setFormData(prev => ({ ...prev, name: newName, groupSlug: newSlug }));
   };
-
-  // FÖRBÄTTRING: 'handleSlugChange' behövs inte längre.
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
@@ -139,7 +134,16 @@ export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
         />
       </FormGroup>
 
-      {/* FÖRBÄTTRING: FormGroup och Input för 'groupSlug' är helt borttagna från gränssnittet. */}
+      {/* LADE TILL NYTT FÄLT FÖR LOCATION */}
+      <FormGroup label="Plats (stad)" htmlFor="location" error={errors.location}>
+        <Input
+          id="location"
+          name="location"
+          value={formData.location}
+          onChange={handleChange}
+          required
+        />
+      </FormGroup>
 
       <FormGroup label={<>Körledare <span className={styles.labelHelper}>(valfritt)</span></>} htmlFor="choirLeader">
         <Input

@@ -19,6 +19,7 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   'POST /groups/{groupSlug}/attendance/register': RoleGroups.ALL_LOGGED_IN,
   'GET /groups/{groupSlug}/attendance/days': RoleGroups.MANAGEMENT,
   'POST /groups/batch-get': RoleGroups.ALL_LOGGED_IN,
+  'GET /groups/public-list': RoleGroups.ALL_LOGGED_IN,
 
   // === User & Invite Management ===
   'POST /invites': RoleGroups.MANAGEMENT,
@@ -56,4 +57,6 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   'POST /practice/upload-url': RoleGroups.ADMIN_ONLY,
   'POST /practice/batch-delete': RoleGroups.ADMIN_ONLY,
   'POST /materials/prepare-batch-upload': RoleGroups.ADMIN_ONLY,
+  'GET /materials-by-path': RoleGroups.ADMIN_ONLY,
+  'POST /groups/{groupName}/repertoires/from-library': RoleGroups.MANAGEMENT,
 };

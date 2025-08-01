@@ -22,9 +22,16 @@ const MAIN_TABLE = process.env.MAIN_TABLE;
 const BUCKET_NAME = process.env.MEDIA_BUCKET_NAME;
 const COGNITO_USER_POOL_ID = process.env.COGNITO_USER_POOL_ID;
 
+// <-- ÄNDRING: Tydligare interface för vad vi förväntar oss från frontend
+interface FilePayload {
+  fileName: string;
+  relativePath: string;
+}
+
 interface UploadTask {
   fileName: string;
   uploadUrl: string;
+  relativePath: string; // <-- ÄNDRING: Skicka tillbaka för att klienten ska kunna mappa rätt
 }
 
 export const handler = async (
@@ -35,7 +42,7 @@ export const handler = async (
   }
 
   try {
-    // Admin-behörighetskontroll
+    // Admin-behörighetskontroll (inga ändringar här)
     const userId = event.requestContext.authorizer?.lambda?.uuid;
     if (!userId) return sendError(403, "Forbidden: User not identifiable.");
     const userCommand = new AdminGetUserCommand({ UserPoolId: COGNITO_USER_POOL_ID, Username: userId });
@@ -45,7 +52,7 @@ export const handler = async (
 
     // Validera input från frontend
     if (!event.body) return sendError(400, "Request body is missing.");
-    const { files } = JSON.parse(event.body);
+    const { files }: { files: FilePayload[] } = JSON.parse(event.body); // <-- ÄNDRING: Använd vårt nya interface
     if (!files || !Array.isArray(files) || files.length === 0) {
       return sendError(400, "Request requires a non-empty 'files' array.");
     }
@@ -55,6 +62,11 @@ export const handler = async (
 
     // Loopa igenom varje fil som ska laddas upp
     for (const file of files) {
+      // <-- ÄNDRING: Validera att vi fått den nya datan
+      if (!file.fileName || !file.relativePath) {
+          return sendError(400, "Each file in the 'files' array must have 'fileName' and 'relativePath'.");
+      }
+
       const materialId = nanoid();
       const createdAt = new Date().toISOString();
       const s3Key = `materials/${randomUUID()}-${file.fileName}`;
@@ -66,8 +78,9 @@ export const handler = async (
         GSI1PK: "MATERIALS",
         GSI1SK: createdAt,
         materialId,
-        title: file.fileName, // Titeln blir filnamnet
+        title: file.fileName,
         fileKey: s3Key,
+        filePath: file.relativePath, // <-- ÄNDRING: Här sparar vi den fullständiga sökvägen!
         createdAt,
         type: "GlobalMaterial",
       };
@@ -78,6 +91,7 @@ export const handler = async (
       const promise = getSignedUrl(s3Client, command, { expiresIn: 3600 }).then(uploadUrl => ({
         fileName: file.fileName,
         uploadUrl: uploadUrl,
+        relativePath: file.relativePath, // <-- ÄNDRING: Inkludera i svaret
       }));
       signedUrlPromises.push(promise);
     }

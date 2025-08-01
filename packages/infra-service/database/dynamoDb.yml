@@ -13,6 +13,8 @@ Resources:
           AttributeType: S
         - AttributeName: GSI1SK
           AttributeType: S
+        - AttributeName: filePath
+          AttributeType: S
       KeySchema:
         - AttributeName: PK
           KeyType: HASH
@@ -24,6 +26,14 @@ Resources:
             - AttributeName: GSI1PK
               KeyType: HASH
             - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: GSI2
+          KeySchema:
+            - AttributeName: GSI1PK 
+              KeyType: HASH
+            - AttributeName: filePath 
               KeyType: RANGE
           Projection:
             ProjectionType: ALL

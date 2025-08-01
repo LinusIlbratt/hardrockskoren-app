@@ -1,0 +1,61 @@
+// src/pages/PublicChoirListPage.module.scss
+@use '@/styles/variables' as *;
+
+.page {
+  padding: var(--spacing-md) var(--spacing-lg);
+  @include column(var(--spacing-lg));
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-h2);
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.error {
+  color: var(--color-accent);
+}
+
+.choirList {
+  display: grid;
+  gap: var(--spacing-md);
+  
+  // Mobile-first: En kolumn på små skärmar
+  grid-template-columns: 1fr;
+
+  // Två kolumner på surfplattor och uppåt
+  @media (min-width: #{$tabletBreakpoint}) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  // Tre kolumner på större skärmar
+  @media (min-width: #{$desktopBreakpoint}) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.choirCard {
+  background-color: var(--color-dark-gray);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  @include column(var(--spacing-sm));
+}
+
+.choirName {
+  margin: 0;
+  font-size: var(--fs-h4);
+  font-weight: 600;
+}
+
+.choirLocation {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-sm);
+}

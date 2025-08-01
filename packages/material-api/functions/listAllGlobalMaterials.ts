@@ -12,19 +12,16 @@ export const handler = async (): Promise<APIGatewayProxyResultV2> => {
   }
 
   try {
-    // --- BORTTAGET ---
-    // All logik för att hämta groupName är borttagen. Vi behöver den inte.
-
-    // --- NYTT QUERY-KOMMANDO ---
+    
     // Detta kommando siktar på GSI1 istället för huvudnyckeln.
     const command = new QueryCommand({
       TableName: MAIN_TABLE,
-      IndexName: 'GSI1', // Specificera att vi frågar mot GSI1
-      KeyConditionExpression: "GSI1PK = :gsi1pk", // Fråga efter vår statiska nyckel
+      IndexName: 'GSI1', 
+      KeyConditionExpression: "GSI1PK = :gsi1pk", 
       ExpressionAttributeValues: {
-        ":gsi1pk": { S: "MATERIALS" }, // Hämta allt som har denna "etikett"
+        ":gsi1pk": { S: "MATERIALS" }, 
       },
-      // Frivilligt: Sortera fallande så att de nyaste filerna kommer först
+      
       ScanIndexForward: false, 
     });
 

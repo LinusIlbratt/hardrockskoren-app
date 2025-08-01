@@ -5,6 +5,8 @@ export interface Material {
   title?: string; // Här definierar vi den som valfri, en gång för alla.
   fileKey: string;
   fileType?: string;
+  filePath?: string;
+  createdAt?: string;
 }   
 
 export interface Event {

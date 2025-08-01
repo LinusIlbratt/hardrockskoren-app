@@ -1,5 +1,8 @@
+// MainNav.module.scss
+
 @use '@/styles/variables' as *;
 
+// ... (mainNav, etc. är oförändrade)
 .mainNav {
   background-color: var(--color-dark-gray);
   border-bottom: 1px solid var(--color-border);
@@ -17,10 +20,11 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
+  // ÄNDRING: Lägg till ett gap här för desktop-vyn
+  gap: var(--spacing-xl);
 }
 
 .middleSection {
-  // Göm på mobil som standard, vi visar den i desktop-media-query
   display: none; 
 }
 
@@ -31,6 +35,7 @@
   gap: var(--spacing-md);
 }
 
+// ... (alla klasser fram till @media-blocket är oförändrade) ...
 .logo {
   img {
     max-height: 60px;
@@ -56,7 +61,6 @@
   }
 }
 
-/* --- MOBIL-SPECIFIKT --- */
 .hamburgerButton {
   background: none;
   border: none;
@@ -70,7 +74,6 @@
   display: none;
 }
 
-// Detta är sidopanelen som glider in
 .nav {
   position: fixed;
   top: 0;
@@ -133,11 +136,14 @@
 .navFooter {
   margin-top: auto;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
 }
 
 .mobileAttendanceButton {
   width: 100%;
-  margin-bottom: var(--spacing-lg);
   
   button {
     width: 100%;
@@ -161,6 +167,30 @@
   }
 }
 
+.headerLink {
+  display: flex;             
+  flex-direction: row;       
+  align-items: center;       
+  gap: var(--spacing-sm);    
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+
+  &:hover {
+    color: var(--color-text-primary);
+    background-color: var(--color-background-hover);
+  }
+
+  span {
+    @media (max-width: #{$tabletBreakpoint}) {
+      display: none;
+    }
+  }
+}
+
 /* --- DESKTOP-STILAR --- */
 @media (min-width: #{$tabletBreakpoint}) {
   .mainNav {
@@ -175,19 +205,27 @@
     display: block;
   }
 
-  // Definiera layouten för de tre sektionerna på desktop
-  .leftSection, .rightSection {
-    flex: 1; // Ger sektionerna lika mycket utrymme
+  // ÄNDRING: Justera fördelningen av utrymme
+  .leftSection {
+    flex: 2; 
+  }
+  .middleSection {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+  }
+  .rightSection {
+    flex: 1;
+  }
+  
+  // Lägg till en klass för desktop-nav för tydlighetens skull
+  .desktopNav {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
   }
 
-  .middleSection {
-      flex: 2; // Ge mitten lite mer utrymme att andas
-      display: flex;
-      justify-content: center;
-    }
-  
-  // Återställ .nav-klassen så den fungerar som mitten-sektion
-  // (Detta är bara för att återanvända klassnamnet, det är inte sidopanelen längre)
+  // Återställ .nav, men nu används .desktopNav istället
   .nav {
     position: static;
     transform: none;
@@ -198,7 +236,7 @@
     background-color: transparent;
     gap: var(--spacing-lg);
   }
-
+  
   .navLink {
     font-size: var(--fs-sm);
     color: #a0a0a0;
