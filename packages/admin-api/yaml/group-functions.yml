@@ -145,4 +145,27 @@ batchGetGroups:
         - dynamodb:BatchGetItem
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+listPublicGroups:
+    # ÄNDRING: Nytt namn och ny handler-sökväg
+    handler: functions/group/listPublic.handler
+    name: hrk-list-public-groups-${sls:stage}
+    description: List all groups with only public information (name, slug, location).
+    memorySize: 256
+    events:
+      - httpApi:
+          method: GET
+          # ÄNDRING: En ny, unik sökväg för detta API-anrop
+          path: /groups/public-list
+          authorizer: authorizer # Samma authorizer, då alla inloggade ska kunna se listan
+    environment:
+      # Denna funktion behöver bara känna till tabellnamnet
+      MAIN_TABLE: ${self:custom.mainTableName}
+    iamRoleStatements:
+      # Samma behörigheter som förut, då den också behöver läsa från tabellen
+      - Effect: "Allow"
+        Action:
+          - dynamodb:Scan
+        Resource:
+          - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
     

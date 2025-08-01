@@ -25,6 +25,8 @@ import { LeaderAttendancePage } from "@/pages/leader/LeaderAttendancePage";
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { GroupSelectionPage } from '@/pages/GroupSelectionPage';
+import { MaterialDetailPage } from "@/pages/admin/MaterialDetailPage";
+import { PublicChoirListPage } from "@/pages/PublicChoirListPage";
 
 // Denna komponent ersätter din gamla DashboardPage.
 // Dess enda syfte är att omedelbart dirigera användaren till rätt plats.
@@ -78,13 +80,15 @@ const router = createBrowserRouter([
         children: [
           {
             index: true,
-            // Använd den nya "redirector"-sidan som startsida
             element: <DashboardPage />,
           },
           {
-            // NY ROUTE: Lägg till din urvalssida här
             path: "select-group",
             element: <GroupSelectionPage />,
+          },
+           {
+            path: "choirs",
+            element: <PublicChoirListPage />,
           },
           {
             path: "admin",
@@ -93,6 +97,10 @@ const router = createBrowserRouter([
               {
                 path: "globalMaterial",
                 element: <AdminUploadMaterialPage />,
+              },
+               {
+                path: "globalMaterial/:folderPath",
+                element: <MaterialDetailPage />,
               },
               {
                 path: "practice",
@@ -107,7 +115,8 @@ const router = createBrowserRouter([
                 element: <GroupDashboardLayout />,
                 children: [
                   { path: "repertoires", element: <AdminRepertoireListPage /> },
-                  { path: "repertoires/:repertoireId/materials", element: <AdminRepertoireMaterialPage /> },
+                  // ✅ ÄNDRING 1 HÄR:
+                  { path: "repertoires/:repertoireId/materials/*", element: <AdminRepertoireMaterialPage /> },
                   { path: "concerts", element: <AdminEventPage /> },
                   { path: "practice", element: <PracticePage /> },
                   { path: "users", element: <AdminUserManagementPage viewerRole="admin" /> },
@@ -121,14 +130,11 @@ const router = createBrowserRouter([
             path: "leader",
             element: <LeaderLayout />,
             children: [
-              // Denna route är för när en specifik kör har valts
-              // URL: /leader/choir/:groupName
               {
                 path: "choir/:groupName",
                 element: <LeaderDashboard />, 
                 children: [
                   {
-                    // Detta gör "repertoires" till default-sidan
                     index: true,
                     element: <Navigate to="repertoires" replace /> 
                   },
@@ -137,8 +143,9 @@ const router = createBrowserRouter([
                     element: <AdminRepertoireListPage />, 
                   },
                   {
-                    path: "repertoires/:repertoireId/materials",
-                    element: <AdminRepertoireMaterialPage />, // Placeholder för repertoarmaterial
+                    // ✅ ÄNDRING 2 HÄR:
+                    path: "repertoires/:repertoireId/materials/*",
+                    element: <AdminRepertoireMaterialPage />,
                   },
                   {
                     path: "concerts",
@@ -166,12 +173,10 @@ const router = createBrowserRouter([
             element: <UserLayout />,
             children: [
               {
-                // ✅ ÄNDRING 1: Lade till den dynamiska parametern :groupName
                 path: "me/:groupName",
                 element: <MemberDashboard />,
                 children: [
                   {
-                    // ✅ ÄNDRING 2: Lade till en index-route för att sätta en standardsida
                     index: true,
                     element: <Navigate to="repertoires" replace />
                   },

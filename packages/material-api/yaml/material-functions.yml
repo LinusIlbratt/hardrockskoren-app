@@ -420,3 +420,46 @@ prepareBatchMaterialUpload:
     - Effect: "Allow"
       Action: ["s3:PutObject"]
       Resource: "arn:aws:s3:::${self:custom.mediaBucketName}/materials/*"
+
+listMaterialsByPath:
+  handler: functions/getMaterialsByPath.handler 
+  name: hrk-list-materials-by-path-${sls:stage}
+  description: Fetches materials within a specific folder path using GSI2.
+  events:
+    - httpApi:
+        method: GET
+        path: /materials-by-path 
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action: ["dynamodb:Query"]
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI2"
+
+addRepertoireFromLibrary:
+  handler: functions/addRepertoireFromLibrary.handler 
+  name: hrk-add-repertoire-from-library-${sls:stage}
+  description: Creates a repertoire item from a media library folder and links all its materials.
+  events:
+    - httpApi:
+        method: POST
+        path: /groups/{groupName}/repertoires/from-library
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:PutItem"           
+        - "dynamodb:Query"             
+        - "dynamodb:BatchWriteItem"    
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI2"
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminGetUser"]
+      Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]

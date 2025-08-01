@@ -1,33 +1,23 @@
+// admin-api/attendance/attendanceRegister.ts
+
 import middy from "@middy/core";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { sendResponse, sendError } from "../../../core/utils/http";
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { AuthContext } from "../../../core/types";
-import { cognito } from "../../../core/services/cognito"; // Importerar din Cognito-service
+import { cognito } from "../../../core/services/cognito";
 
-// --- TypeScript Typer (Baserat på din input) ---
-
-export type RoleTypes = "user" | "admin" | "leader";
-
-// Denna matchar nu din befintliga AuthContext
-
-
-// KORRIGERAD TYP: Generic-typen ska vara innehållet i 'lambda', inte ett objekt som omsluter det.
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
 interface RequestBody {
     attendanceCode: string;
 }
 
-// --- Initialisering ---
-
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 const tableName = process.env.ATTENDANCE_TABLE_NAME;
 const indexName = "AttendanceCodeIndex";
-
-// --- Lambda Handler med Middy ---
 
 export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>()
   .handler(
@@ -40,13 +30,11 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>()
       try {
         const { attendanceCode } = JSON.parse(event.body || '{}') as RequestBody;
         const userContext = event.requestContext.authorizer.lambda;
-
-         const groupSlug = event.pathParameters?.groupSlug;
+        const groupSlug = event.pathParameters?.groupSlug;
 
         if (!groupSlug) {
             return sendError(400, "Grupp-ID saknas i URL:en.");
         }
-
         if (!attendanceCode) {
             return sendError(400, "Närvarokod saknas i anropet.");
         }
@@ -54,18 +42,27 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>()
             return sendError(400, "Användarinformation (uuid, userPoolId) saknas från authorizer.");
         }
 
-        // STEG 1: HÄMTA E-POST FRÅN COGNITO (samma mönster som i me.ts)
+        // STEG 1: HÄMTA ATTRIBUT FRÅN COGNITO
         const { UserAttributes } = await cognito.adminGetUser({
             UserPoolId: userContext.userPoolId,
             Username: userContext.uuid,
         });
-        const userEmail = UserAttributes?.find(attr => attr.Name === 'email')?.Value;
+        const attributes = UserAttributes || [];
+        const givenName = attributes.find(attr => attr.Name === 'given_name')?.Value;
+        const familyName = attributes.find(attr => attr.Name === 'family_name')?.Value;
+        const userEmail = attributes.find(attr => attr.Name === 'email')?.Value;
 
         if (!userEmail) {
             return sendError(404, "Kunde inte hitta användarens e-post i Cognito.");
         }
 
-        // STEG 2: HITTA SESSIONEN VIA KODEN (QUERY PÅ GSI)
+        // Skapa ett objekt som ska sparas
+        const memberObject = {
+          givenName: givenName || '',
+          familyName: familyName || userEmail,
+        };
+
+        // STEG 2: HITTA SESSIONEN VIA KODEN
         const queryCommand = new QueryCommand({
             TableName: tableName,
             IndexName: indexName,
@@ -74,7 +71,6 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>()
         });
 
         const { Items } = await docClient.send(queryCommand);
-
         if (!Items || Items.length === 0) {
             return sendError(404, "Ogiltig närvarokod.");
         }
@@ -87,22 +83,23 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>()
             return sendError(410, "Koden har gått ut och är inte längre giltig.");
         }
         
-        // STEG 4: LÄGG TILL MEDLEMMEN I NÄRVAROLISTAN
+        // STEG 4: LÄGG TILL ANVÄNDAROBJEKTET I NÄRVAROLISTAN
         const updateCommand = new UpdateCommand({
             TableName: tableName,
             Key: {
                 date: session.date,
                 sessionId: session.sessionId,
             },
-            UpdateExpression: "ADD presentMembers :email",
+            UpdateExpression: "SET presentMembers = list_append(if_not_exists(presentMembers, :empty_list), :new_member)",
             ExpressionAttributeValues: {
-                ":email": new Set([userEmail]),
+                ":new_member": [memberObject],
+                ":empty_list": [],
             },
             ReturnValues: "NONE",
         });
 
         await docClient.send(updateCommand);
-        console.log(`Användare ${userEmail} anmälde närvaro för session ${session.sessionId}`);
+        console.log(`Användare ${memberObject.givenName} ${memberObject.familyName} anmälde närvaro för session ${session.sessionId}`);
 
         // STEG 5: RETURNERA SUCCÉ-SVAR
         return sendResponse({ message: "Närvaro registrerad!" });

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input/Input';
 import styles from './MainNav.module.scss';
 import { IoClose } from 'react-icons/io5';
 import { RxHamburgerMenu } from "react-icons/rx";
+import { FiGlobe } from 'react-icons/fi';
 import logoImage from '@/assets/images/hrk-logo.webp';
 import { useAttendance } from '@/hooks/useAttendance';
 import { translateRole } from '@/utils/translations';
@@ -16,109 +17,125 @@ import { createAdminMainNavMobileSteps } from '@/tours/admin/adminMainNavStepsMo
 import { useCloseTourOnUserInteraction } from '@/hooks/useCloseTourOnUserInteraction';
 import { useIsMobile } from '@/hooks/useIsMobile';
 
+// ... (interface och all logik innan 'return' är oförändrad) ...
+
 interface MainNavProps {
-  isMenuOpen: boolean;
-  setIsMenuOpen: (open: boolean) => void;
-}
-
-export const MainNav = ({ isMenuOpen, setIsMenuOpen }: MainNavProps) => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const isMobile = useIsMobile();
-
-  const [showMainNavTour, setShowMainNavTour] = useState(false);
-
-  const mobileNavSteps = useMemo(() => {
-    if (!user) return [];
-    return createAdminMainNavMobileSteps(user.role);
-  }, [user]);
-
-  useCloseTourOnUserInteraction();
-
-  const {
-    isAttendanceModalOpen,
-    setIsAttendanceModalOpen,
-    code,
-    setCode,
-    isLoading,
-    error,
-    successMessage,
-    openAttendanceModal,
-    handleRegisterSubmit,
-  } = useAttendance();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
-
-  const handleLinkClick = () => {
-    setIsMenuOpen(false);
-  };
-
-  // FÖRBÄTTRING: Denna funktion hanterar nu logiken för att bara visa guiden en gång.
-  const handleHamburgerClick = () => {
-    setIsMenuOpen(true); // Öppna alltid menyn
-
-    const tourKey = "main_nav_mobile_tour";
-    const hasSeenTour = localStorage.getItem(`tour_seen_for_${tourKey}`);
-
-    // Starta bara guiden om användaren INTE har sett den förut (i produktion),
-    // eller om vi är i utvecklingsläge.
-    if (process.env.NODE_ENV === 'development' || !hasSeenTour) {
-      setShowMainNavTour(true);
-    }
-  };
-
-  const UserInfoAndLogout = () => (
-    user && (
-      <div className={styles.userInfo} data-tour="user-info-area">
-        <div className={styles.userDetails}>
-          <p className={styles.email}>{user.given_name} {user.family_name}</p>
-          <p className={styles.role}>{translateRole(user.role)}</p>
+    isMenuOpen: boolean;
+    setIsMenuOpen: (open: boolean) => void;
+  }
+  
+  export const MainNav = ({ isMenuOpen, setIsMenuOpen }: MainNavProps) => {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+    const isMobile = useIsMobile();
+  
+    const [showMainNavTour, setShowMainNavTour] = useState(false);
+  
+    const mobileNavSteps = useMemo(() => {
+      if (!user) return [];
+      return createAdminMainNavMobileSteps(user.role);
+    }, [user]);
+  
+    useCloseTourOnUserInteraction();
+  
+    const {
+      isAttendanceModalOpen,
+      setIsAttendanceModalOpen,
+      code,
+      setCode,
+      isLoading,
+      error,
+      successMessage,
+      openAttendanceModal,
+      handleRegisterSubmit,
+    } = useAttendance();
+  
+    const handleLogout = () => {
+      logout();
+      navigate('/login');
+    };
+  
+    const handleLinkClick = () => {
+      setIsMenuOpen(false);
+    };
+    
+    const handleHamburgerClick = () => {
+      setIsMenuOpen(true);
+      const tourKey = "main_nav_mobile_tour";
+      const hasSeenTour = localStorage.getItem(`tour_seen_for_${tourKey}`);
+      if (process.env.NODE_ENV === 'development' || !hasSeenTour) {
+        setShowMainNavTour(true);
+      }
+    };
+  
+    const UserInfoAndLogout = () => (
+      user && (
+        <div className={styles.userInfo} data-tour="user-info-area">
+          <div className={styles.userDetails}>
+            <p className={styles.email}>{user.given_name} {user.family_name}</p>
+            <p className={styles.role}>{translateRole(user.role)}</p>
+          </div>
+          <Button
+            onClick={handleLogout}
+            variant={ButtonVariant.Ghost}
+            size={ButtonSize.Logout}
+            radius={ButtonRadius.Small}
+          >
+            Logga ut
+          </Button>
         </div>
-        <Button
-          onClick={handleLogout}
-          variant={ButtonVariant.Ghost}
-          size={ButtonSize.Logout}
-          radius={ButtonRadius.Small}
-        >
-          Logga ut
-        </Button>
-      </div>
-    )
-  );
-
-  const MainNavLinks = (
-    <>
-      {user?.role === 'admin' && (
-        <>
-          <NavLink to="/admin/groups" className={styles.navLink} onClick={handleLinkClick} data-tour="admin-groups-link">Körer</NavLink>
-          <NavLink to="/admin/globalMaterial" className={styles.navLink} onClick={handleLinkClick} data-tour="admin-global-material-link">Material</NavLink>
-          <NavLink to="/admin/practice" className={styles.navLink} onClick={handleLinkClick} data-tour="admin-practice-link">Sjungupp!</NavLink>
-        </>
-      )}
-      {(user?.role === 'leader' || user?.role === 'user') && user.groups && user.groups.length > 1 && (
-        <NavLink to="/select-group" className={styles.navLink} onClick={handleLinkClick}>Mina körer</NavLink>
-      )}
-    </>
-  );
-
-  const AttendanceButton = (
-    <>
-      {user?.role === 'user' && (
-        <Button
-          variant={ButtonVariant.Primary}
-          onClick={() => {
-            openAttendanceModal();
-            handleLinkClick();
-          }}
-        >
-          Anmäl närvaro
-        </Button>
-      )}
-    </>
-  );
+      )
+    );
+  
+    const MainNavLinks = (
+      <>
+        {user?.role === 'admin' && (
+          <>
+            <NavLink to="/admin/groups" className={styles.navLink} onClick={handleLinkClick}>Körer</NavLink>
+            <NavLink to="/admin/globalMaterial" className={styles.navLink} onClick={handleLinkClick}>Material</NavLink>
+            <NavLink to="/admin/practice" className={styles.navLink} onClick={handleLinkClick}>Sjungupp!</NavLink>
+          </>
+        )}
+        {(user?.role === 'leader' || user?.role === 'user') && user.groups && user.groups.length > 0 && (
+          user.groups.length === 1 ? (
+            <NavLink
+              to={user.role === 'leader' ? `/leader/choir/${user.groups[0]}` : `/user/me/${user.groups[0]}`}
+              className={styles.navLink}
+              onClick={handleLinkClick}
+            >
+              Min Kör
+            </NavLink>
+          ) : (
+            <NavLink to="/select-group" className={styles.myChoir} onClick={handleLinkClick}>
+              Mina Körer
+            </NavLink>
+          )
+        )}
+      </>
+    );
+  
+    const AttendanceButton = (
+      <>
+        {user?.role === 'user' && (
+          <Button
+            variant={ButtonVariant.Primary}
+            onClick={() => {
+              openAttendanceModal();
+              handleLinkClick();
+            }}
+          >
+            Anmäl närvaro
+          </Button>
+        )}
+      </>
+    );
+  
+    const AllChoirsLink = (
+      <NavLink to="/choirs" className={styles.headerLink} title="Visa alla körer" onClick={handleLinkClick}>
+        <FiGlobe size={22} />
+        <span>Alla körer</span>
+      </NavLink>
+    );
 
   return (
     <>
@@ -130,18 +147,20 @@ export const MainNav = ({ isMenuOpen, setIsMenuOpen }: MainNavProps) => {
               <div className={styles.logo}>
                 <img src={logoImage} alt="Logo för Hårdrockskören" />
               </div>
-            </div>
-
-            <div className={styles.middleSection}>
+              {/* ÄNDRING: Länkarna ligger nu här i desktop-vyn */}
               <nav className={styles.desktopNav}>
                 {MainNavLinks}
               </nav>
+            </div>
+
+            <div className={styles.middleSection}>
               <div className={styles.desktopAttendanceButton}>
                 {AttendanceButton}
               </div>
             </div>
 
             <div className={styles.rightSection}>
+              {AllChoirsLink}
               <div className={styles.desktopOnlyUserInfo}>
                 <UserInfoAndLogout />
               </div>
@@ -149,10 +168,10 @@ export const MainNav = ({ isMenuOpen, setIsMenuOpen }: MainNavProps) => {
           </>
         )}
 
-        {/* --- MOBIL LAYOUT --- */}
+        {/* --- MOBIL LAYOUT (Oförändrad) --- */}
         {isMobile && (
           <>
-            <div className={styles.leftSection}>
+             <div className={styles.leftSection}>
               <div className={styles.logo}>
                 <img src={logoImage} alt="Logo för Hårdrockskören" />
               </div>
@@ -171,7 +190,7 @@ export const MainNav = ({ isMenuOpen, setIsMenuOpen }: MainNavProps) => {
           </>
         )}
 
-        {/* MOBILMENY (SIDE-PANEL): visas bara om öppen */}
+        {/* MOBILMENY (SIDE-PANEL) (Oförändrad) */}
         {isMobile && isMenuOpen && (
           <AppTourProvider
             steps={mobileNavSteps}
@@ -192,6 +211,7 @@ export const MainNav = ({ isMenuOpen, setIsMenuOpen }: MainNavProps) => {
                 <div className={styles.mobileAttendanceButton} data-tour="user-attendance-button">
                   {AttendanceButton}
                 </div>
+                {AllChoirsLink}
                 <div className={styles.mobileOnlyUserInfo}>
                   <UserInfoAndLogout />
                 </div>
@@ -201,7 +221,7 @@ export const MainNav = ({ isMenuOpen, setIsMenuOpen }: MainNavProps) => {
         )}
       </header>
 
-      {/* Modal för närvaro */}
+      {/* Modal för närvaro (Oförändrad) */}
       <Modal isOpen={isAttendanceModalOpen} onClose={() => setIsAttendanceModalOpen(false)} title="Anmäl din närvaro">
         {successMessage ? (
           <div className={styles.successContainer}>
