@@ -79,9 +79,9 @@ const MaterialFolderItem: React.FC<MaterialFolderItemProps> = ({ node, onDelete,
           <span className={styles.itemSubtitle}>{fileCount} {fileCount === 1 ? 'fil' : 'filer'}</span>
         </div>
       </div>
-      <button 
-        className={styles.deleteButton} 
-        onClick={handleDeleteClick} 
+      <button
+        className={styles.deleteButton}
+        onClick={handleDeleteClick}
         title={`Radera mappen ${node.name}`}
         disabled={isDeleting} // ADDED: Inaktivera knappen under radering
       >
@@ -100,7 +100,8 @@ export const AdminUploadMaterialPage = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  
+  const [selectedFolder, setSelectedFolder] = useState<FileList | null>(null);
+
   // CHANGED: Bättre state för att hantera radering av specifik mapp
   const [deletingFolder, setDeletingFolder] = useState<string | null>(null);
 
@@ -124,6 +125,7 @@ export const AdminUploadMaterialPage = () => {
     setIsUploading(true);
     setUploadProgress(0);
     setStatusMessage(null);
+    setSelectedFolder(files);
     const token = localStorage.getItem('authToken');
     const filesToUpload = Array.from(files).map(f => ({ fileName: f.name, relativePath: (f as any).webkitRelativePath || f.name }));
     try {
@@ -152,7 +154,7 @@ export const AdminUploadMaterialPage = () => {
   const handleDeleteFolder = useCallback(async (folderName: string, ids: string[]) => {
     if (ids.length === 0 || deletingFolder) return;
     if (!window.confirm(`Är du säker på att du vill radera mappen "${folderName}" och allt dess innehåll (${ids.length} filer)? Detta kan inte ångras.`)) return;
-    
+
     setDeletingFolder(folderName); // CHANGED: Sätt vilken mapp som raderas
     setStatusMessage(null);
     const token = localStorage.getItem('authToken');
@@ -168,9 +170,9 @@ export const AdminUploadMaterialPage = () => {
   }, [deletingFolder, fetchMaterials]); // ADDED: Dependencies
 
   const fileTree = useMemo(() => materials.length > 0 ? buildFileTree(materials) : null, [materials]);
-  const topLevelFolders = useMemo(() => 
-    fileTree?.children.filter((node): node is FolderNode => node.type === 'folder') || [], 
-  [fileTree]);
+  const topLevelFolders = useMemo(() =>
+    fileTree?.children.filter((node): node is FolderNode => node.type === 'folder') || [],
+    [fileTree]);
 
   return (
     <div className={styles.page}>
@@ -193,7 +195,13 @@ export const AdminUploadMaterialPage = () => {
         </div>
         <div className={styles.cardBody}>
           <p>Välj en mapp från din dator. Alla filer och undermappar kommer att laddas upp och organiseras automatiskt.</p>
-          <FileInput label="Välj mapp" onFileSelect={handleFolderUpload} isFolderPicker={true} disabled={isUploading || !!deletingFolder} />
+          <FileInput
+            label="Välj mapp"
+            onFileSelect={handleFolderUpload}
+            isFolderPicker={true}
+            disabled={isUploading || !!deletingFolder}
+            value={selectedFolder} // <-- LÄGG TILL DENNA RAD
+          />
           {isUploading && (
             <div className={styles.progressWrapper}>
               <div className={styles.progressBarContainer}><div className={styles.progressBar} style={{ width: `${uploadProgress}%` }} /></div>
@@ -212,9 +220,9 @@ export const AdminUploadMaterialPage = () => {
             topLevelFolders.length > 0 ? (
               <div className={styles.materialList}>
                 {topLevelFolders.sort((a, b) => a.name.localeCompare(b.name)).map(node => (
-                  <MaterialFolderItem 
-                    key={node.name} 
-                    node={node} 
+                  <MaterialFolderItem
+                    key={node.name}
+                    node={node}
                     onDelete={handleDeleteFolder}
                     isDeleting={deletingFolder === node.name} // CHANGED: Skicka med rätt status
                   />

@@ -1,6 +1,7 @@
 @use '@/styles/variables' as *;
 
 .page {
+  padding: var(--spacing-md) var(--spacing-lg);
   @include column($gap-size: var(--spacing-xl));
 }
 
@@ -16,6 +17,7 @@
     margin: 0;
     color: var(--color-text-secondary);
     font-size: var(--fs-base);
+    max-width: 60ch; // Förbättrar läsbarhet
   }
 }
 
@@ -32,7 +34,7 @@
 .legendIcon {
   flex-shrink: 0;
   color: var(--color-text);
-  margin-top: 3px; // Finjustering för vertikal linjering
+  margin-top: 3px; 
 }
 
 .legendText {
@@ -43,116 +45,18 @@
 
   .inlineIcon, .inlinePlayIcon {
     vertical-align: middle;
-    margin: 0 0.1em -0.2em 0.2em; // Finjustering för att linjera med texten
+    margin: 0 0.1em -0.2em 0.2em;
   }
-  .inlinePlayIcon {
-    color: var(--color-icon-play);
-  }
-  .inlineIcon {
-    color: var(--color-icon-view);
-  }
+  .inlinePlayIcon { color: var(--color-icon-play); }
+  .inlineIcon { color: var(--color-icon-view); }
 }
 
-// Behållare för alla sektioner
-.sectionsContainer {
-  @include column($gap-size: var(--spacing-xl));
-}
-
-// Varje sektion (Ljudfiler, Videor, etc.)
-.categorySection {
-  @include column($gap-size: var(--spacing-md));
-  padding: var(--spacing-lg);
-  background-color: var(--color-dark-gray);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-}
-
-.categoryTitle {
-  margin: 0;
-  padding-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--color-border);
-  font-size: var(--fs-h3);
-  color: var(--color-text);
-}
-
-// Listan inuti en sektion
-.materialList {
-  @include column($gap-size: var(--spacing-sm));
-}
-
-// Varje rad i listan
-.materialItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-md);
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-md);
-  transition: background-color 0.2s ease;
-
-  &:hover {
-    background-color: var(--color-background-hover);
-  }
-}
-
-// Info-delen (ikon + namn)
-.itemInfo {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  min-width: 0;
-}
-
-.fileIcon {
-  flex-shrink: 0;
-  color: var(--color-text-secondary);
-}
-
-.materialTitle {
-  font-size: var(--fs-base);
-  color: var(--color-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-// Action-knapparna till höger
-.actions {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
-// Generell stil för alla action-knappar
-.actionButton {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: var(--spacing-xs);
-  border-radius: var(--radius-round);
-  color: var(--color-text-secondary);
-  display: flex;
-  transition: color 0.2s ease, background-color 0.2s ease;
-
-  &:hover {
-    background-color: var(--color-background-hover-accent);
-  }
-}
-
-// Specifik stil för play-knappen
-.playButton {
-  color: var(--color-icon-play);
-  &:hover {
-    color: var(--color-icon-play-hover);
-  }
-}
-
-// Specifik stil för view-knappen
-.viewButton {
-  color: var(--color-icon-view);
-  &:hover {
-    color: var(--color-icon-view-hover);
-  }
+// Ny behållare för dragspels-listan
+.accordionContainer {
+  width: 100%;
+  max-width: 900px; // Sätter en maxbredd för bättre läsbarhet
+  margin-inline: auto; // Centrerar listan på stora skärmar
+  @include column(var(--spacing-md));
 }
 
 .errorMessage {

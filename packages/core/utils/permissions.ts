@@ -59,4 +59,6 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   'POST /materials/prepare-batch-upload': RoleGroups.ADMIN_ONLY,
   'GET /materials-by-path': RoleGroups.ADMIN_ONLY,
   'POST /groups/{groupName}/repertoires/from-library': RoleGroups.MANAGEMENT,
+  'GET /practice/materials-by-week': RoleGroups.ADMIN_ONLY,
+  'GET /practice/materials/member-view': RoleGroups.ALL_LOGGED_IN,
 };
