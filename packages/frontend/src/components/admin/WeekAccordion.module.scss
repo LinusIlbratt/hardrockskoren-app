@@ -1,0 +1,112 @@
+@use '@/styles/variables' as *;
+
+.accordion {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-dark-gray);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  font-size: var(--fs-h4);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: var(--color-background-hover);
+  }
+}
+
+.headerTitle {
+  display: flex;
+  align-items: baseline; // Linjerar "Vecka 32" och "(3 filer)" snyggare
+  gap: var(--spacing-sm);
+  flex-wrap: wrap; // Tillåter texten att radbrytas snyggt
+}
+
+.fileCount {
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.content {
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
+  @include column(var(--spacing-lg)); // Ökat gap för bättre luftighet
+}
+
+.contentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap; // Tillåter knapp och rubrik att radbrytas på små skärmar
+  gap: var(--spacing-md);
+
+  h4 {
+    margin: 0; // Tar bort standardmarginal
+  }
+}
+
+.materialList {
+  list-style-type: none;
+  padding-left: 0;
+  @include column(var(--spacing-sm));
+}
+
+.materialItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+
+  // Garanterar att hela raden är klickbar för checkboxen
+  label {
+    cursor: pointer;
+    flex-grow: 1;
+  }
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin-block: var(--spacing-md);
+}
+
+.form {
+  @include column(var(--spacing-md));
+  padding: var(--spacing-md);
+  background-color: var(--color-background); // Avskiljer formuläret visuellt
+  border-radius: var(--radius-md);
+}
+
+.error {
+  color: var(--color-accent);
+}
+
+// --- FÖRBÄTTRINGAR FÖR STÖRRE SKÄRMAR ---
+@media (min-width: #{$tabletBreakpoint}) {
+  .form {
+    // Lägger titel och fil-input bredvid varandra på större skärmar
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "title file"
+      "button button";
+    align-items: flex-end;
+
+    // Placerar ut elementen i grid-layouten
+    .formGroup:nth-child(1) { grid-area: title; }
+    .formGroup:nth-child(2) { grid-area: file; }
+    .submitButton { grid-area: button; }
+  }
+}

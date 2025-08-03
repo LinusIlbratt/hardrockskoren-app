@@ -1,0 +1,106 @@
+@use '@/styles/variables' as *;
+
+.page {
+  @include column(var(--spacing-xl));
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-h2);
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+  max-width: 60ch; // Förbättrar läsbarhet på breda skärmar
+}
+
+.form {
+  @include column(var(--spacing-lg));
+  width: 100%;
+  max-width: 800px; // Sätter en maxbredd på formuläret
+}
+
+// Behållare för datumväljare och fil-input
+.dateAndFileContainer {
+  display: grid;
+  gap: var(--spacing-lg);
+  
+  // Mobile-first: En kolumn som standard
+  grid-template-columns: 1fr;
+
+  // Två kolumner på surfplattor och uppåt
+  @media (min-width: #{$tabletBreakpoint}) {
+    grid-template-columns: 1fr 1fr;
+    align-items: flex-end; // Linjerar "Välj fil"-knappen snyggt
+  }
+}
+
+// Styling för att DatePicker ska matcha dina befintliga Input-fält
+.datePicker {
+  width: 100%;
+  padding: var(--spacing-md);
+  background-color: var(--color-background);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  font-size: var(--fs-base);
+  font-family: inherit; // Ser till att den använder samma typsnitt som resten
+
+  &:focus {
+    outline: 2px solid var(--color-primary);
+    border-color: transparent;
+  }
+}
+
+// Återanvänder din befintliga struktur för meddelanden
+.successMessage, .errorMessage {
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  text-align: center;
+  // Använder en animation för att tona in och ut
+  animation: fade-in-out 4s ease-in-out forwards;
+}
+
+.successMessage {
+  background-color: rgba(var(--color-success-rgb), 0.1);
+  color: var(--color-success);
+}
+
+.errorMessage {
+  background-color: rgba(var(--color-accent-rgb), 0.1);
+  color: var(--color-accent);
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  width: 100%;
+}
+
+.listSection {
+  @include column(var(--spacing-md));
+  width: 100%;
+}
+
+.accordionContainer {
+  @include column(var(--spacing-md));
+  width: 100%;
+  max-width: 800px;
+}
+
+.createWeekForm {
+  display: flex;
+  flex-direction: column; // Lägger elementen i en kolumn (ovanpå varandra)
+  gap: var(--spacing-md);  // Skapar ett mellanrum mellan dem
+}
+
+
+// Animation för statusmeddelanden
+@keyframes fade-in-out {
+  0% { opacity: 0; transform: translateY(-10px); }
+  10% { opacity: 1; transform: translateY(0); }
+  90% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-10px); }
+}

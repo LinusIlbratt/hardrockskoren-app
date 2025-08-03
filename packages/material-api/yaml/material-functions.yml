@@ -463,3 +463,42 @@ addRepertoireFromLibrary:
     - Effect: "Allow"
       Action: ["cognito-idp:AdminGetUser"]
       Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
+
+listPracticeByWeek:
+  handler: functions/listByWeek.handler
+  name: hrk-list-practice-by-week-${sls:stage}
+  description: Lists all practice materials, grouped by week.
+  memorySize: 256
+  events:
+    - httpApi:
+        method: GET
+        path: /practice/materials-by-week
+        authorizer:
+          name: centralJwtAuthorizer # FIX: Korrekt indragning
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - dynamodb:Scan
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+listPracticeForMembers:
+    handler: functions/listForMembers.handler
+    name: hrk-list-practice-for-members-${sls:stage}
+    description: Lists current and past practice materials for members.
+    memorySize: 256
+    events:
+      - httpApi:
+          method: GET
+          path: /practice/materials/member-view # Ett nytt endpoint för medlemmar
+          authorizer: centralJwtAuthorizer
+    environment:
+      MAIN_TABLE: ${self:custom.mainTableName}
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - dynamodb:Scan
+        Resource:
+          - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
