@@ -38,6 +38,10 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   'PUT /groups/{groupSlug}/events/{eventId}': RoleGroups.MANAGEMENT,
   'DELETE /groups/{groupSlug}/events/{eventId}': RoleGroups.MANAGEMENT,
   'POST /groups/{groupSlug}/events/batch': RoleGroups.MANAGEMENT,
+  'POST /events/mark-as-viewed': RoleGroups.ALL_LOGGED_IN,
+  'GET /groups/{groupSlug}/events/notification-status': RoleGroups.ALL_LOGGED_IN,
+  'POST /events/reset-view-timestamp': RoleGroups.ALL_LOGGED_IN,
+
 
   // === Material & Repertoire Management ===
   'POST /materials/upload-url': RoleGroups.ADMIN_ONLY,

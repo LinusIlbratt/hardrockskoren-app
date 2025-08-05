@@ -86,3 +86,68 @@ batchCreateEvents:
       # Denna funktion behöver den speciella BatchWriteItem-behörigheten
       Action: ["dynamodb:BatchWriteItem"]
       Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+getEventNotificationStatus:
+  handler: functions/event/getNotificationStatus.handler
+  name: hrk-get-event-notification-status-${sls:stage}
+  description: Checks if there are new or updated events for a user in a group.
+  events:
+    - httpApi:
+        method: GET
+        path: /groups/{groupSlug}/events/notification-status
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+    COGNITO_USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - dynamodb:Query
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI1"
+    - Effect: "Allow"
+      Action:
+        - cognito-idp:AdminGetUser
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
+
+markEventsAsViewed:
+  handler: functions/event/markEventsAsViewed.handler
+  name: hrk-mark-events-as-viewed-${sls:stage}
+  description: Updates the user's eventsLastViewedAt timestamp to the current time.
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        path: /events/mark-as-viewed
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    COGNITO_USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminUpdateUserAttributes"
+        - "cognito-idp:AdminGetUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
+
+resetViewTimestamp:
+  handler: functions/event/resetViewTimestamp.handler
+  name: hrk-reset-view-timestamp-${sls:stage}
+  description: Resets the user's eventsLastViewedAt timestamp to the current time.
+  events:
+    - httpApi:
+        method: POST
+        path: /events/reset-view-timestamp
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    COGNITO_USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminUpdateUserAttributes"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"

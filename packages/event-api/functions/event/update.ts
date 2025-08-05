@@ -1,9 +1,10 @@
+// functions/event/update.ts
+
 import { DynamoDBClient, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
 
-// Samma typdefinition som i create.ts för att hantera authorizer-kontexten
 type AuthorizerContext = {
   role?: string;
 };
@@ -20,13 +21,12 @@ export const handler = async (
   }
 
   try {
-    // Steg 1: Verifiera att användaren är admin
     const userRole = event.requestContext.authorizer?.lambda?.role;
-    if (userRole !== 'admin') {
+    // ÄNDRING: Tillåt även 'leader' att uppdatera events
+    if (userRole !== 'admin' && userRole !== 'leader') {
       return sendError(403, "Forbidden: You do not have permission to perform this action.");
     }
 
-    // Steg 2: Hämta identifierare från sökvägen och data från body
     const { groupSlug, eventId } = event.pathParameters || {};
     if (!groupSlug || !eventId) {
       return sendError(400, "Group slug and event ID are required in the path.");
@@ -40,26 +40,27 @@ export const handler = async (
         return sendError(400, "Request body cannot be empty.");
     }
     
-    // Förhindra att man försöker uppdatera primärnycklar eller fasta ID:n
+    // Förhindra att man försöker uppdatera skyddade fält
     delete updates.PK;
     delete updates.SK;
-    delete updates.GSI1PK; // GSI1PK är baserad på groupSlug och ska inte kunna ändras direkt
+    delete updates.GSI1PK;
     delete updates.eventId;
     delete updates.groupSlug;
     delete updates.type;
     delete updates.createdAt;
+    delete updates.updatedAt; // Se till att en användare inte kan skicka in ett eget 'updatedAt'
+    
+    // ÄNDRING: Tvinga alltid en ny 'updatedAt'-stämpel vid varje uppdatering
+    updates.updatedAt = new Date().toISOString();
 
-    // VIKTIGT: Om eventDate uppdateras, se till att GSI1SK (sorteringsnyckeln) också uppdateras!
     if (updates.eventDate) {
         const isoDate = new Date(updates.eventDate).toISOString();
-        updates.eventDate = isoDate; // Säkerställ ISO-format
-        updates.GSI1SK = isoDate;  // Spegla värdet till GSI-sorteringsnyckeln
+        updates.eventDate = isoDate;
+        updates.GSI1SK = isoDate;
     }
     
-    // Steg 3: Bygg upp Update-kommandot dynamiskt
     const updateKeys = Object.keys(updates);
 
-    // Om inga giltiga fält finns kvar att uppdatera, returnera ett fel.
     if (updateKeys.length === 0) {
         return sendError(400, "No valid fields to update were provided.");
     }
@@ -79,10 +80,9 @@ export const handler = async (
             acc[`:${key}`] = updates[key];
             return acc;
         }, {} as Record<string, any>)),
-        ReturnValues: "ALL_NEW", // Returnera hela det uppdaterade objektet
+        ReturnValues: "ALL_NEW",
     });
 
-    // Steg 4: Skicka kommandot och returnera det uppdaterade objektet
     const result = await dbClient.send(command);
     const updatedItem = result.Attributes ? unmarshall(result.Attributes) : null;
 

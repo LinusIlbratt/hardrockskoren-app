@@ -92,7 +92,44 @@
   padding: var(--spacing-md);
   background-color: var(--color-dark-gray);
   border-radius: var(--radius-lg);
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s ease, background-color 0.2s ease; // Lade till background-color här
+
+  // LÄGG TILL DETTA BLOCK INUTI .eventItem
+  &.clickableRow {
+    cursor: pointer;
+    &:hover {
+      background-color: var(--color-background-hover);
+    }
+  }
+}
+
+.newEvent {
+  // En subtil men tydlig markering för helt nya event
+  border: 1px solid var(--color-primary);
+  background-color: rgba(var(--color-primary-rgb), 0.05);
+}
+
+// Byt namn på denna klass och ändra färgen till röd
+.unreadDescription {
+  // Byt färg på ögat-ikonen om beskrivningen är ny ELLER uppdaterad
+  color: #ff4d4d !important; // En tydlig röd färg. !important kan behövas.
+  animation: pulse 1.5s infinite; // Behåll den pulserande effekten
+}
+
+// Keyframes för den pulserande animationen (oförändrad)
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .nextUpcomingEvent {

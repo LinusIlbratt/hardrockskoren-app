@@ -123,6 +123,34 @@
   // ÄNDRING: Tog bort hover-effekten på hela raden
 }
 
+.newEvent {
+  // En subtil men tydlig markering för helt nya event
+  border: 1px solid var(--color-primary);
+  background-color: rgba(var(--color-primary-rgb), 0.05);
+}
+
+.updatedDescription {
+  // Byt färg på ögat-ikonen om beskrivningen är uppdaterad
+  color: var(--color-primary) !important; // !important kan behövas för att skriva över annan färg
+  animation: pulse 1.5s infinite; // Lägg till en pulserande effekt för att dra uppmärksamhet
+}
+
+// Keyframes för den pulserande animationen
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 // Stil för passerade event
 .pastEvent {
   opacity: 0.5;
