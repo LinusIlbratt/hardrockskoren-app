@@ -36,52 +36,61 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler
       const lastViewedAttr = UserAttributes?.find(attr => attr.Name === 'custom:eventsLastViewedAt');
 
       const readEventIds = new Set(readEventsAttr?.Value ? readEventsAttr.Value.split(',') : []);
-      const userLastViewedTimestamp = lastViewedAttr?.Value ? new Date(lastViewedAttr.Value) : new Date(0); // Sätt till en tidig startpunkt om värdet saknas
+      const userLastViewedTimestamp = lastViewedAttr?.Value ? new Date(lastViewedAttr.Value) : new Date(0);
 
-      // Hämta alla events med de fält som behövs för logiken
+      // STEG 1: Hämta även det nya 'descriptionUpdatedAt'-fältet
       const queryCommand = new QueryCommand({
         TableName: MAIN_TABLE,
         IndexName: "GSI1",
         KeyConditionExpression: "GSI1PK = :pk",
         ExpressionAttributeValues: { ":pk": { S: `GROUP#${groupSlug}` } },
-        // Hämta endast de fält vi behöver
-        ProjectionExpression: "eventId, createdAt, updatedAt",
+        ProjectionExpression: "eventId, createdAt, updatedAt, descriptionUpdatedAt",
       });
 
       const { Items } = await dbClient.send(queryCommand);
       
+      // STEG 2: Förbered de nya, mer specifika listorna
       const newEventIds: string[] = [];
-      const updatedEventIds: string[] = [];
+      const updatedDescriptionIds: string[] = [];
+      const updatedOtherIds: string[] = [];
 
       if (Items && Items.length > 0) {
         const events = Items.map(item => unmarshall(item));
 
         for (const event of events) {
+          // Säkerställ att vi har nödvändig data
           if (!event.eventId || !event.createdAt || !event.updatedAt) continue;
 
-          // LOGIK FÖR NYTT EVENT
-          // Ett event är "nytt" om användaren aldrig har sett dess ID förut.
+          // LOGIK FÖR NYTT EVENT (Oförändrad och korrekt)
           if (!readEventIds.has(event.eventId)) {
             newEventIds.push(event.eventId);
             continue; // Hoppa över resten av logiken för detta event
           }
           
-          // LOGIK FÖR UPPDATERAT EVENT
-          // Ett event är "uppdaterat" för denna användare om:
-          // 1. Det faktiskt har blivit ändrat sedan det skapades (updatedAt > createdAt).
-          // 2. Ändringen är nyare än senast användaren kollade.
-          if (event.updatedAt > event.createdAt && new Date(event.updatedAt) > userLastViewedTimestamp) {
-            updatedEventIds.push(event.eventId);
+          // STEG 3: Ny, smartare logik för att skilja på uppdateringar
+          const hasUpdatedDescription = event.descriptionUpdatedAt && new Date(event.descriptionUpdatedAt) > userLastViewedTimestamp;
+          const hasOtherUpdate = event.updatedAt > event.createdAt && new Date(event.updatedAt) > userLastViewedTimestamp;
+
+          // Prioritera beskrivnings-uppdatering. Om den finns, är det den notisen vi vill visa.
+          if (hasUpdatedDescription) {
+            updatedDescriptionIds.push(event.eventId);
+          } 
+          // Annars, om det finns en annan typ av uppdatering, lägg den i den andra listan.
+          else if (hasOtherUpdate) {
+            updatedOtherIds.push(event.eventId);
           }
         }
       }
 
-      const hasNotification = newEventIds.length > 0 || updatedEventIds.length > 0;
+      // STEG 4: Uppdatera logiken för att avgöra om det finns NÅGON notis
+      const hasNotification = newEventIds.length > 0 || updatedDescriptionIds.length > 0 || updatedOtherIds.length > 0;
 
+      // STEG 5: Skicka tillbaka det nya, mer detaljerade svaret
       return sendResponse({ 
         hasNotification,
         newEventIds,
-        updatedEventIds
+        updatedDescriptionIds,
+        updatedOtherIds
       }, 200);
 
     } catch (error: any) {

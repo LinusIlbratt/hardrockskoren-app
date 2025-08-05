@@ -1,3 +1,5 @@
+// functions/event/batch.ts
+
 import { DynamoDBClient, BatchWriteItemCommand, WriteRequest, BatchWriteItemCommandOutput } from "@aws-sdk/client-dynamodb";
 import { marshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
@@ -13,6 +15,7 @@ type AuthorizerContext = {
 };
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthorizerContext>;
 
+// STEG 1: Lägg till det nya fältet i interfacet
 interface EventItem {
     PK: string;
     SK: string;
@@ -24,7 +27,8 @@ interface EventItem {
     eventType: 'CONCERT' | 'REHEARSAL';
     description: string | null;
     createdAt: string;
-    updatedAt: string; // <-- LADE TILL DENNA RAD
+    updatedAt: string;
+    descriptionUpdatedAt: string | null; // Nytt fält
     type: string;
     GSI1PK: string;
     GSI1SK: string;
@@ -49,7 +53,6 @@ export const handler = async (
   }
 
   try {
-    // ... (Behörighetskontroll och validering är oförändrad) ...
     const userRole = event.requestContext.authorizer?.lambda?.role;
     if (!event.body) {
       return sendError(400, "Request body is required.");
@@ -87,6 +90,7 @@ export const handler = async (
                 eventEndDate.setDate(eventEndDate.getDate() + 1);
             }
 
+            // STEG 2: Lägg till den nya logiken när item-objektet skapas
             const item: EventItem = {
                 PK: `GROUP#${groupSlug}`,
                 SK: `EVENT#${eventId}`,
@@ -98,7 +102,8 @@ export const handler = async (
                 eventType: body.eventType,
                 description: body.description || null,
                 createdAt: nowISO,
-                updatedAt: nowISO, // <-- LADE TILL DENNA RAD
+                updatedAt: nowISO,
+                descriptionUpdatedAt: body.description ? nowISO : null, // Ny logik
                 type: "Event",
                 GSI1PK: `GROUP#${groupSlug}`,
                 GSI1SK: eventStartDate.toISOString(),
@@ -108,7 +113,6 @@ export const handler = async (
         currentDate.setDate(currentDate.getDate() + 1);
     }
     
-    // ... (Resten av funktionen för att skriva till DB är oförändrad) ...
     if (itemsToCreate.length === 0) {
         return sendResponse({ message: "No events were created based on the provided pattern." }, 200);
     }

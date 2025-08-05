@@ -25,7 +25,6 @@ export const handler = async (
     const { eventType, title, eventDate, endDate, description } = body;
     const userRole = event.requestContext.authorizer?.lambda?.role;
 
-    // ... (Behörighetskontroll är oförändrad) ...
     if (userRole === 'admin') {
     } else if (userRole === 'leader') {
       if (eventType !== 'REHEARSAL') {
@@ -62,7 +61,9 @@ export const handler = async (
       eventType,
       description: description || null,
       createdAt: nowISO,
-      updatedAt: nowISO, // <-- LADE TILL DENNA RAD
+      updatedAt: nowISO,
+      // NY LOGIK: Sätt tidsstämpel för beskrivningen endast om den finns
+      descriptionUpdatedAt: description ? nowISO : null,
       type: "Event",
       GSI1PK: `GROUP#${groupSlug}`,
       GSI1SK: isoStartDate,

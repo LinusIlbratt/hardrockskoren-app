@@ -22,7 +22,6 @@ export const handler = async (
 
   try {
     const userRole = event.requestContext.authorizer?.lambda?.role;
-    // ÄNDRING: Tillåt även 'leader' att uppdatera events
     if (userRole !== 'admin' && userRole !== 'leader') {
       return sendError(403, "Forbidden: You do not have permission to perform this action.");
     }
@@ -48,10 +47,21 @@ export const handler = async (
     delete updates.groupSlug;
     delete updates.type;
     delete updates.createdAt;
-    delete updates.updatedAt; // Se till att en användare inte kan skicka in ett eget 'updatedAt'
+    delete updates.updatedAt;
+    // STEG 1: Skydda det nya fältet från att manipuleras av klienten
+    delete updates.descriptionUpdatedAt;
     
-    // ÄNDRING: Tvinga alltid en ny 'updatedAt'-stämpel vid varje uppdatering
-    updates.updatedAt = new Date().toISOString();
+    // STEG 2: Kontrollera om 'description' finns med i uppdateringen
+    const isDescriptionBeingUpdated = 'description' in updates;
+    
+    const nowISO = new Date().toISOString();
+    // Tvinga alltid en ny 'updatedAt'-stämpel vid varje uppdatering
+    updates.updatedAt = nowISO;
+
+    // STEG 3: Om beskrivningen uppdateras, sätt dess specifika tidsstämpel
+    if (isDescriptionBeingUpdated) {
+        updates.descriptionUpdatedAt = nowISO;
+    }
 
     if (updates.eventDate) {
         const isoDate = new Date(updates.eventDate).toISOString();
