@@ -6,17 +6,17 @@ import { useAuth } from '@/context/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_EVENT_API_URL;
 
-// 1. KORREKT INTERFACE SOM MATCHAR BACKEND
+// STEG 1: Korrigera interfacet så att det matchar API:ets svar
 interface NotificationData {
   hasNotification: boolean;
   newEventIds: string[];
-  updatedEventIds: string[];
+  updatedEvents: Record<string, string[]>; // eventId -> ['title', 'eventDate']
 }
 
 const initialData: NotificationData = {
   hasNotification: false,
   newEventIds: [],
-  updatedEventIds: [],
+  updatedEvents: {}, // Detta ska vara ett tomt objekt
 };
 
 export const useEventNotification = (groupSlug: string | undefined) => {
@@ -24,7 +24,6 @@ export const useEventNotification = (groupSlug: string | undefined) => {
   const { user } = useAuth();
   const token = localStorage.getItem('authToken');
 
-  // Funktion för att hämta status från backend
   const fetchNotificationStatus = useCallback(async () => {
     if (!groupSlug || !user || !token || user.role === 'admin' || user.role === 'leader') {
       setNotificationData(initialData);
@@ -42,26 +41,23 @@ export const useEventNotification = (groupSlug: string | undefined) => {
     }
   }, [groupSlug, user, token]);
 
-  // Effekt för att hämta data vid start och sedan polla
   useEffect(() => {
     fetchNotificationStatus();
-    const intervalId = setInterval(fetchNotificationStatus, 60000); // Poll every 60 seconds
+    const intervalId = setInterval(fetchNotificationStatus, 60000);
     return () => clearInterval(intervalId);
   }, [fetchNotificationStatus]);
 
-  // 2. KORREKT FUNKTION FÖR ATT MARKERA ETT NYTT EVENT SOM LÄST
   const markNewEventAsRead = useCallback(async (eventId: string) => {
     if (!token) return;
     
-    // Uppdatera lokalt direkt för snabb UI-respons
+    // STEG 2: Korrigera logiken för hasNotification
     setNotificationData(prev => ({
       ...prev,
       newEventIds: prev.newEventIds.filter(id => id !== eventId),
-      hasNotification: prev.newEventIds.length - 1 > 0 || prev.updatedEventIds.length > 0
+      hasNotification: (prev.newEventIds.length - 1 > 0) || (Object.keys(prev.updatedEvents).length > 0)
     }));
 
     try {
-      // Anropa backend för att göra ändringen permanent
       await axios.post(
         `${API_BASE_URL}/events/mark-as-viewed`, 
         { eventId },
@@ -69,38 +65,38 @@ export const useEventNotification = (groupSlug: string | undefined) => {
       );
     } catch (error) {
       console.error("Failed to mark event as viewed:", error);
-      // Om anropet misslyckas, hämta den sanna statusen från servern igen
       fetchNotificationStatus();
     }
   }, [token, fetchNotificationStatus]);
 
-  // 3. NY FUNKTION FÖR ATT NOLLSTÄLLA ALLA "UPPDATERAD"-NOTISER
-  const resetUpdateNotifications = useCallback(async () => {
+  // STEG 3: TA BORT resetUpdateNotifications. Den passar inte den nya logiken.
+
+  // Denna funktion är nu korrekt eftersom interfacet är rätt
+  const markUpdateAsSeen = useCallback(async (eventId: string, eventUpdatedAt: string) => {
     if (!token) return;
 
-    // Uppdatera lokalt direkt
-    setNotificationData(prev => ({
-      ...prev,
-      updatedEventIds: [],
-      hasNotification: prev.newEventIds.length > 0
-    }));
+    setNotificationData(prev => {
+      const newUpdatedEvents = { ...prev.updatedEvents };
+      delete newUpdatedEvents[eventId];
+      return {
+        ...prev,
+        updatedEvents: newUpdatedEvents,
+        hasNotification: prev.newEventIds.length > 0 || Object.keys(newUpdatedEvents).length > 0,
+      };
+    });
 
     try {
-      // Anropa den nya endpointen
       await axios.post(
-        `${API_BASE_URL}/events/reset-view-timestamp`,
-        {}, // Ingen body behövs
+        `${API_BASE_URL}/events/${eventId}/mark-as-seen`,
+        { updatedAt: eventUpdatedAt },
         { headers: { Authorization: `Bearer ${token}` } }
       );
     } catch (error) {
-      console.error("Failed to reset update notifications:", error);
+      console.error("Failed to mark update as seen:", error);
       fetchNotificationStatus();
     }
   }, [token, fetchNotificationStatus]);
 
-  return { 
-    notificationData, 
-    markNewEventAsRead, 
-    resetUpdateNotifications 
-  };
+  // STEG 4: Returnera rätt funktioner
+  return { notificationData, markNewEventAsRead, markUpdateAsSeen };
 };

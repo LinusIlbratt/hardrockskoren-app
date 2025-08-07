@@ -92,10 +92,11 @@
   padding: var(--spacing-md);
   background-color: var(--color-dark-gray);
   border-radius: var(--radius-lg);
-  transition: opacity 0.3s ease, background-color 0.2s ease; // Lade till background-color här
+  border: 1px solid transparent;
+  transition: opacity 0.3s ease, background-color 0.2s ease, border-color 0.2s ease;
 
-  // LÄGG TILL DETTA BLOCK INUTI .eventItem
-  &.clickableRow {
+  // NYTT: Klass för att göra raden klickbar
+  &.hasNotification {
     cursor: pointer;
     &:hover {
       background-color: var(--color-background-hover);
@@ -103,33 +104,36 @@
   }
 }
 
+.tabBadge {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 8px;
+  background-color: var(--color-primary); // Använder din temafärg
+  border-radius: 50%;
+  animation: pulseScale 1.5s infinite; // Samma pulsering som ögat-ikonen
+}
+
+// Stil för helt nya event
 .newEvent {
-  // En subtil men tydlig markering för helt nya event
-  border: 1px solid var(--color-primary);
+  
+  background-color: var(--color-background-hover-accent);
+}
+
+// NYTT: Stil för event med "övriga" uppdateringar
+.updatedEvent {
   background-color: rgba(var(--color-primary-rgb), 0.05);
 }
 
-// Byt namn på denna klass och ändra färgen till röd
-.unreadDescription {
-  // Byt färg på ögat-ikonen om beskrivningen är ny ELLER uppdaterad
-  color: #ff4d4d !important; // En tydlig röd färg. !important kan behövas.
-  animation: pulse 1.5s infinite; // Behåll den pulserande effekten
+// NYTT: Stil för pulserande text (titel, datum, tid)
+.pulsingText {
+  animation: pulseColor 2s infinite;
 }
 
-// Keyframes för den pulserande animationen (oförändrad)
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.7;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
+// NYTT: Stil för det röda, pulserande ögat
+.pulsingRedEye {
+  color: #ff4d4d !important;
+  animation: pulseScale 1.5s infinite;
 }
 
 .nextUpcomingEvent {
@@ -158,12 +162,14 @@
     text-transform: uppercase;
     font-weight: 600;
     color: var(--color-text-secondary);
+    transition: color 0.3s ease;
   }
   .day {
     font-size: var(--fs-lg);
     font-weight: 700;
     line-height: 1.1;
     color: var(--color-text-strong);
+    transition: color 0.3s ease;
   }
 }
 
@@ -180,11 +186,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color 0.3s ease;
 }
 
 .itemTime {
   font-size: var(--fs-sm);
   color: var(--color-text-secondary);
+  transition: color 0.3s ease;
 }
 
 .actions {
@@ -216,4 +224,18 @@
 
 .error {
   color: var(--color-accent);
+}
+
+
+// NYA ANIMATIONER
+@keyframes pulseColor {
+  0% { color: inherit; }
+  50% { color: var(--color-primary); }
+  100% { color: inherit; }
+}
+
+@keyframes pulseScale {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }

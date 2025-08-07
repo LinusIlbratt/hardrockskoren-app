@@ -64,6 +64,7 @@ export const handler = async (
       updatedAt: nowISO,
       // NY LOGIK: Sätt tidsstämpel för beskrivningen endast om den finns
       descriptionUpdatedAt: description ? nowISO : null,
+      lastUpdatedFields: [],
       type: "Event",
       GSI1PK: `GROUP#${groupSlug}`,
       GSI1SK: isoStartDate,

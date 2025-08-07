@@ -15,82 +15,68 @@ type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
 export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler(
   async (event): Promise<APIGatewayProxyResultV2> => {
-    if (!MAIN_TABLE) {
-      return sendError(500, "Server configuration error: Table name not set.");
-    }
-
+    if (!MAIN_TABLE) return sendError(500, "Server configuration error.");
+    
     try {
       const userContext = event.requestContext.authorizer.lambda;
       const { groupSlug } = event.pathParameters || {};
 
-      if (!groupSlug) return sendError(400, "Group slug is required in the path.");
-      if (!userContext.uuid || !userContext.userPoolId) return sendError(400, "User context is missing.");
+      // UPPDATERAD RAD: Lägg till kontroll för userPoolId här
+      if (!groupSlug || !userContext.uuid || !userContext.userPoolId) {
+        return sendError(400, "Missing required parameters.");
+      }
 
-      // Hämta användarens senast sedda status från Cognito
+      // Nu vet TypeScript att userContext.userPoolId är en 'string' på raden nedan
       const { UserAttributes } = await cognito.adminGetUser({
         UserPoolId: userContext.userPoolId,
         Username: userContext.uuid,
       });
       
       const readEventsAttr = UserAttributes?.find(attr => attr.Name === 'custom:readEventIds');
-      const lastViewedAttr = UserAttributes?.find(attr => attr.Name === 'custom:eventsLastViewedAt');
+      const seenUpdatesAttr = UserAttributes?.find(attr => attr.Name === 'custom:seenEventUpdates');
 
       const readEventIds = new Set(readEventsAttr?.Value ? readEventsAttr.Value.split(',') : []);
-      const userLastViewedTimestamp = lastViewedAttr?.Value ? new Date(lastViewedAttr.Value) : new Date(0);
+      const seenEventUpdates: Record<string, string> = seenUpdatesAttr?.Value ? JSON.parse(seenUpdatesAttr.Value) : {};
 
-      // STEG 1: Hämta även det nya 'descriptionUpdatedAt'-fältet
       const queryCommand = new QueryCommand({
         TableName: MAIN_TABLE,
         IndexName: "GSI1",
         KeyConditionExpression: "GSI1PK = :pk",
         ExpressionAttributeValues: { ":pk": { S: `GROUP#${groupSlug}` } },
-        ProjectionExpression: "eventId, createdAt, updatedAt, descriptionUpdatedAt",
+        // Vi hämtar inte createdAt längre, men det skadar inte att ha kvar det
+        ProjectionExpression: "eventId, createdAt, updatedAt, lastUpdatedFields",
       });
 
       const { Items } = await dbClient.send(queryCommand);
       
-      // STEG 2: Förbered de nya, mer specifika listorna
       const newEventIds: string[] = [];
-      const updatedDescriptionIds: string[] = [];
-      const updatedOtherIds: string[] = [];
+      const updatedEvents: Record<string, string[]> = {};
 
       if (Items && Items.length > 0) {
         const events = Items.map(item => unmarshall(item));
 
         for (const event of events) {
-          // Säkerställ att vi har nödvändig data
-          if (!event.eventId || !event.createdAt || !event.updatedAt) continue;
+          if (!event.eventId || !event.updatedAt) continue;
 
-          // LOGIK FÖR NYTT EVENT (Oförändrad och korrekt)
           if (!readEventIds.has(event.eventId)) {
             newEventIds.push(event.eventId);
-            continue; // Hoppa över resten av logiken för detta event
+            continue;
           }
           
-          // STEG 3: Ny, smartare logik för att skilja på uppdateringar
-          const hasUpdatedDescription = event.descriptionUpdatedAt && new Date(event.descriptionUpdatedAt) > userLastViewedTimestamp;
-          const hasOtherUpdate = event.updatedAt > event.createdAt && new Date(event.updatedAt) > userLastViewedTimestamp;
-
-          // Prioritera beskrivnings-uppdatering. Om den finns, är det den notisen vi vill visa.
-          if (hasUpdatedDescription) {
-            updatedDescriptionIds.push(event.eventId);
-          } 
-          // Annars, om det finns en annan typ av uppdatering, lägg den i den andra listan.
-          else if (hasOtherUpdate) {
-            updatedOtherIds.push(event.eventId);
+          const lastSeenTimestamp = seenEventUpdates[event.eventId];
+          // Vi behöver inte `createdAt` här, så jag tar bort den jämförelsen för renare kod
+          if (!lastSeenTimestamp || new Date(event.updatedAt) > new Date(lastSeenTimestamp)) {
+            updatedEvents[event.eventId] = event.lastUpdatedFields || [];
           }
         }
       }
 
-      // STEG 4: Uppdatera logiken för att avgöra om det finns NÅGON notis
-      const hasNotification = newEventIds.length > 0 || updatedDescriptionIds.length > 0 || updatedOtherIds.length > 0;
+      const hasNotification = newEventIds.length > 0 || Object.keys(updatedEvents).length > 0;
 
-      // STEG 5: Skicka tillbaka det nya, mer detaljerade svaret
       return sendResponse({ 
         hasNotification,
         newEventIds,
-        updatedDescriptionIds,
-        updatedOtherIds
+        updatedEvents 
       }, 200);
 
     } catch (error: any) {

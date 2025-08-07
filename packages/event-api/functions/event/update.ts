@@ -1,6 +1,6 @@
 // functions/event/update.ts
 
-import { DynamoDBClient, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, UpdateItemCommand, GetItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
@@ -34,46 +34,66 @@ export const handler = async (
     if (!event.body) {
       return sendError(400, "Request body with fields to update is required.");
     }
-    const updates = JSON.parse(event.body);
-    if (Object.keys(updates).length === 0) {
+    const updatesFromClient = JSON.parse(event.body);
+    if (Object.keys(updatesFromClient).length === 0) {
         return sendError(400, "Request body cannot be empty.");
     }
+
+    // --- NY SMART LOGIK START ---
+
+    // STEG 1: Hämta det befintliga eventet från databasen
+    const getCommand = new GetItemCommand({
+        TableName: MAIN_TABLE,
+        Key: marshall({
+            PK: `GROUP#${groupSlug}`,
+            SK: `EVENT#${eventId}`
+        })
+    });
+    const { Item: existingItemRaw } = await dbClient.send(getCommand);
+
+    if (!existingItemRaw) {
+        return sendError(404, "Event not found.");
+    }
+    const existingEvent = unmarshall(existingItemRaw);
+
+    // STEG 2: Jämför fälten från klienten med de som redan finns i databasen
+    const actualChangedFields: string[] = [];
+    for (const key in updatesFromClient) {
+        // Jämför bara om fältet finns i båda objekten
+        if (Object.prototype.hasOwnProperty.call(updatesFromClient, key)) {
+            // Om värdet från klienten är annorlunda än det i databasen, är det en verklig ändring.
+            if (updatesFromClient[key] !== existingEvent[key]) {
+                actualChangedFields.push(key);
+            }
+        }
+    }
+
+    // Om inga fält faktiskt ändrades, behöver vi inte göra en uppdatering.
+    if (actualChangedFields.length === 0) {
+        return sendResponse({ message: "No actual changes detected.", item: existingEvent }, 200);
+    }
     
-    // Förhindra att man försöker uppdatera skyddade fält
-    delete updates.PK;
-    delete updates.SK;
-    delete updates.GSI1PK;
-    delete updates.eventId;
-    delete updates.groupSlug;
-    delete updates.type;
-    delete updates.createdAt;
-    delete updates.updatedAt;
-    // STEG 1: Skydda det nya fältet från att manipuleras av klienten
-    delete updates.descriptionUpdatedAt;
-    
-    // STEG 2: Kontrollera om 'description' finns med i uppdateringen
-    const isDescriptionBeingUpdated = 'description' in updates;
+    // --- NY SMART LOGIK SLUT ---
+
+    // Bygg upp det slutgiltiga uppdateringsobjektet
+    const updates: Record<string, any> = {};
+    for (const key of actualChangedFields) {
+        updates[key] = updatesFromClient[key];
+    }
     
     const nowISO = new Date().toISOString();
-    // Tvinga alltid en ny 'updatedAt'-stämpel vid varje uppdatering
     updates.updatedAt = nowISO;
+    updates.lastUpdatedFields = actualChangedFields; // Använd den nya, korrekta listan
 
-    // STEG 3: Om beskrivningen uppdateras, sätt dess specifika tidsstämpel
-    if (isDescriptionBeingUpdated) {
+    if (actualChangedFields.includes('description')) {
         updates.descriptionUpdatedAt = nowISO;
     }
 
-    if (updates.eventDate) {
-        const isoDate = new Date(updates.eventDate).toISOString();
-        updates.eventDate = isoDate;
-        updates.GSI1SK = isoDate;
+    if (actualChangedFields.includes('eventDate')) {
+        updates.GSI1SK = new Date(updates.eventDate).toISOString();
     }
     
     const updateKeys = Object.keys(updates);
-
-    if (updateKeys.length === 0) {
-        return sendError(400, "No valid fields to update were provided.");
-    }
 
     const command = new UpdateItemCommand({
         TableName: MAIN_TABLE,

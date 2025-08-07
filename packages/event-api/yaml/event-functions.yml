@@ -48,7 +48,9 @@ updateEvent:
     MAIN_TABLE: ${self:custom.mainTableName}
   iamRoleStatements:
     - Effect: "Allow"
-      Action: ["dynamodb:UpdateItem"]
+      Action:
+        - "dynamodb:UpdateItem"
+        - "dynamodb:GetItem"
       Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
 
 deleteEvent:
@@ -149,5 +151,26 @@ resetViewTimestamp:
     - Effect: "Allow"
       Action:
         - "cognito-idp:AdminUpdateUserAttributes"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
+
+# Lägg till detta block i din yml-fil för functions
+markUpdateAsSeen:
+  handler: functions/event/markUpdateAsSeen.handler
+  name: hrk-mark-update-as-seen-${sls:stage}
+  description: Marks a specific event update as seen by the user.
+  events:
+    - httpApi:
+        method: POST
+        path: /events/{eventId}/mark-as-seen
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    COGNITO_USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminUpdateUserAttributes"
+        - "cognito-idp:AdminGetUser"
       Resource:
         - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"

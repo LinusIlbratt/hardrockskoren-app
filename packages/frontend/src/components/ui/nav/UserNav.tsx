@@ -9,8 +9,8 @@ interface UserNavProps {
 }
 
 export const UserNav = ({ groupName }: UserNavProps) => {
-  // STEG 1: Hämta den nya funktionen 'resetUpdateNotifications' från hooken.
-  const { notificationData, resetUpdateNotifications } = useEventNotification(groupName);
+  // STEG 1: Förenkla anropet. Vi behöver bara datan här, inga funktioner.
+  const { notificationData } = useEventNotification(groupName);
 
   if (!groupName) {
     return null;
@@ -19,17 +19,12 @@ export const UserNav = ({ groupName }: UserNavProps) => {
   const getLinkClassName = ({ isActive }: { isActive: boolean }) => 
     isActive ? `${styles.navLink} ${styles.active}` : styles.navLink;
 
-  // STEG 3: Skapa en klick-hanterare för att nollställa "uppdaterad"-notiser.
-  // Detta är den perfekta platsen: när användaren klickar för att se event-listan,
-  // signalerar de att de har "sett" uppdateringarna.
-  const handleConcertsLinkClick = () => {
-    if (notificationData.updatedEventIds.length > 0) {
-      resetUpdateNotifications();
-    }
-  };
+  // STEG 2: Ta bort den gamla handleConcertsLinkClick. Den behövs inte i det nya systemet.
 
-  // STEG 2: Beräkna det totala antalet notiser från de två nya listorna.
-  const totalNotifications = notificationData.newEventIds.length + notificationData.updatedEventIds.length;
+  // STEG 3: Uppdatera beräkningen för att använda det nya 'updatedEvents'-objektet.
+  const totalNotifications = 
+    notificationData.newEventIds.length + 
+    Object.keys(notificationData.updatedEvents).length;
 
   return (
     <nav className={styles.nav}>
@@ -39,8 +34,7 @@ export const UserNav = ({ groupName }: UserNavProps) => {
         to="concerts" 
         end 
         className={getLinkClassName}
-        // Lägg till klick-hanteraren på NavLink
-        onClick={handleConcertsLinkClick}
+        // STEG 4: Ta bort onClick. Länkens enda syfte är nu att navigera.
       >
         Konsert & Repdatum
         {notificationData.hasNotification && totalNotifications > 0 && (

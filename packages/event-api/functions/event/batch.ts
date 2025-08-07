@@ -28,7 +28,8 @@ interface EventItem {
     description: string | null;
     createdAt: string;
     updatedAt: string;
-    descriptionUpdatedAt: string | null; // Nytt fält
+    descriptionUpdatedAt: string | null;
+    lastUpdatedFields: string[];
     type: string;
     GSI1PK: string;
     GSI1SK: string;
@@ -101,6 +102,7 @@ export const handler = async (
                 endDate: eventEndDate.toISOString(),
                 eventType: body.eventType,
                 description: body.description || null,
+                lastUpdatedFields: [],
                 createdAt: nowISO,
                 updatedAt: nowISO,
                 descriptionUpdatedAt: body.description ? nowISO : null, // Ny logik
