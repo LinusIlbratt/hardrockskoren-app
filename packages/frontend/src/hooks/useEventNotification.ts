@@ -1,22 +1,19 @@
-// hooks/useEventNotification.ts
-
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
 
 const API_BASE_URL = import.meta.env.VITE_EVENT_API_URL;
 
-// STEG 1: Korrigera interfacet så att det matchar API:ets svar
 interface NotificationData {
   hasNotification: boolean;
   newEventIds: string[];
-  updatedEvents: Record<string, string[]>; // eventId -> ['title', 'eventDate']
+  updatedEvents: Record<string, string[]>;
 }
 
 const initialData: NotificationData = {
   hasNotification: false,
   newEventIds: [],
-  updatedEvents: {}, // Detta ska vara ett tomt objekt
+  updatedEvents: {},
 };
 
 export const useEventNotification = (groupSlug: string | undefined) => {
@@ -50,11 +47,12 @@ export const useEventNotification = (groupSlug: string | undefined) => {
   const markNewEventAsRead = useCallback(async (eventId: string) => {
     if (!token) return;
     
-    // STEG 2: Korrigera logiken för hasNotification
+    // KORRIGERING: Denna funktion ska ENDAST påverka newEventIds.
+    // updatedEvents-objektet ska lämnas helt orört.
     setNotificationData(prev => ({
-      ...prev,
-      newEventIds: prev.newEventIds.filter(id => id !== eventId),
-      hasNotification: (prev.newEventIds.length - 1 > 0) || (Object.keys(prev.updatedEvents).length > 0)
+        ...prev,
+        newEventIds: prev.newEventIds.filter(id => id !== eventId),
+        hasNotification: (prev.newEventIds.length - 1 > 0) || (Object.keys(prev.updatedEvents).length > 0)
     }));
 
     try {
@@ -68,16 +66,20 @@ export const useEventNotification = (groupSlug: string | undefined) => {
       fetchNotificationStatus();
     }
   }, [token, fetchNotificationStatus]);
-
-  // STEG 3: TA BORT resetUpdateNotifications. Den passar inte den nya logiken.
-
-  // Denna funktion är nu korrekt eftersom interfacet är rätt
-  const markUpdateAsSeen = useCallback(async (eventId: string, eventUpdatedAt: string) => {
+  
+  const markGeneralUpdateAsSeen = useCallback(async (eventId: string, eventUpdatedAt: string) => {
     if (!token) return;
 
     setNotificationData(prev => {
       const newUpdatedEvents = { ...prev.updatedEvents };
-      delete newUpdatedEvents[eventId];
+      const remainingFields = newUpdatedEvents[eventId]?.filter(field => field === 'description');
+      
+      if (remainingFields && remainingFields.length > 0) {
+        newUpdatedEvents[eventId] = remainingFields;
+      } else {
+        delete newUpdatedEvents[eventId];
+      }
+
       return {
         ...prev,
         updatedEvents: newUpdatedEvents,
@@ -87,16 +89,52 @@ export const useEventNotification = (groupSlug: string | undefined) => {
 
     try {
       await axios.post(
-        `${API_BASE_URL}/events/${eventId}/mark-as-seen`,
+        `${API_BASE_URL}/events/${eventId}/mark-general-as-seen`,
         { updatedAt: eventUpdatedAt },
         { headers: { Authorization: `Bearer ${token}` } }
       );
     } catch (error) {
-      console.error("Failed to mark update as seen:", error);
+      console.error("Failed to mark general update as seen:", error);
       fetchNotificationStatus();
     }
   }, [token, fetchNotificationStatus]);
 
-  // STEG 4: Returnera rätt funktioner
-  return { notificationData, markNewEventAsRead, markUpdateAsSeen };
+  const markDescriptionUpdateAsSeen = useCallback(async (eventId: string, eventDescriptionUpdatedAt: string | null) => {
+    if (!token || !eventDescriptionUpdatedAt) return;
+
+     setNotificationData(prev => {
+      const newUpdatedEvents = { ...prev.updatedEvents };
+      const remainingFields = newUpdatedEvents[eventId]?.filter(field => field !== 'description');
+      
+      if (remainingFields && remainingFields.length > 0) {
+        newUpdatedEvents[eventId] = remainingFields;
+      } else {
+        delete newUpdatedEvents[eventId];
+      }
+      
+      return {
+        ...prev,
+        updatedEvents: newUpdatedEvents,
+        hasNotification: prev.newEventIds.length > 0 || Object.keys(newUpdatedEvents).length > 0,
+      };
+    });
+    
+    try {
+      await axios.post(
+        `${API_BASE_URL}/events/${eventId}/mark-description-as-seen`,
+        { descriptionUpdatedAt: eventDescriptionUpdatedAt },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+    } catch (error) {
+      console.error("Failed to mark description update as seen:", error);
+      fetchNotificationStatus();
+    }
+  }, [token, fetchNotificationStatus]);
+
+  return { 
+    notificationData, 
+    markNewEventAsRead, 
+    markGeneralUpdateAsSeen, 
+    markDescriptionUpdateAsSeen 
+  };
 };

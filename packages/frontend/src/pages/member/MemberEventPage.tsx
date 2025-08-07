@@ -1,3 +1,5 @@
+// src/pages/member/MemberEventPage.tsx
+
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
@@ -21,7 +23,8 @@ export const MemberEventPage = () => {
 
   const { groupName } = useParams<{ groupName: string }>();
 
-  const { notificationData, markNewEventAsRead, markUpdateAsSeen } = useEventNotification(groupName);
+  // STEG 1: Hämta de nya, specifika funktionerna från din hook
+  const { notificationData, markNewEventAsRead, markGeneralUpdateAsSeen, markDescriptionUpdateAsSeen } = useEventNotification(groupName);
 
   const fetchEvents = useCallback(async () => {
     if (!groupName) {
@@ -60,7 +63,6 @@ export const MemberEventPage = () => {
   const concerts = events.filter(e => e.eventType === 'CONCERT');
   const others = events.filter(e => e.eventType !== 'REHEARSAL' && e.eventType !== 'CONCERT');
 
-  // --- Logik för att avgöra om en flik ska ha en notis-prick ---
   const allNotificationIds = new Set([
     ...notificationData.newEventIds,
     ...Object.keys(notificationData.updatedEvents)
@@ -69,7 +71,6 @@ export const MemberEventPage = () => {
   const hasRehearsalNotification = rehearsals.some(event => allNotificationIds.has(event.eventId));
   const hasConcertNotification = concerts.some(event => allNotificationIds.has(event.eventId));
   const hasOtherNotification = others.some(event => allNotificationIds.has(event.eventId));
-  // --- Slut på logik för flik-notiser ---
 
   const renderEventItem = (event: Event) => {
     const startDate = new Date(event.eventDate);
@@ -81,18 +82,41 @@ export const MemberEventPage = () => {
     const updatedFields = notificationData.updatedEvents[event.eventId];
     const hasUnreadUpdate = !!updatedFields;
 
+    // STEG 2: Skapa två separata flaggor för de olika uppdateringstyperna
+    const hasUnreadDescription = hasUnreadUpdate && updatedFields.includes('description');
+    const hasOtherUnreadUpdates = hasUnreadUpdate && updatedFields.some(field => field !== 'description');
+
+    // STEG 3: Skapa två separata klick-hanterare med specifik logik
     const handleItemClick = () => {
       if (isNew) {
         markNewEventAsRead(event.eventId);
-      } else if (hasUnreadUpdate) {
-        markUpdateAsSeen(event.eventId, event.updatedAt);
+      } else if (hasOtherUnreadUpdates) {
+        // Denna rensar BARA de allmänna uppdateringarna
+        markGeneralUpdateAsSeen(event.eventId, event.updatedAt);
       }
     };
 
-    const showRedEye = event.description && (isNew || updatedFields?.includes('description'));
-    const pulseTitle = updatedFields?.includes('title');
-    const pulseDate = updatedFields?.includes('eventDate') || updatedFields?.includes('endDate');
-    const pulseTime = updatedFields?.includes('startTime') || updatedFields?.includes('endTime');
+    const handleEyeClick = (e: React.MouseEvent) => {
+      e.stopPropagation(); // Mycket viktig: förhindrar att handleItemClick också körs
+
+      // Denna rensar BARA beskrivnings-uppdateringen
+      if (hasUnreadDescription) {
+        markDescriptionUpdateAsSeen(event.eventId, event.descriptionUpdatedAt);
+      }
+
+      // Om det fanns andra uppdateringar också, rensa dem samtidigt
+      // eftersom användaren nu har interagerat med eventet.
+      if (hasOtherUnreadUpdates) {
+        markGeneralUpdateAsSeen(event.eventId, event.updatedAt);
+      }
+
+      setEventToShowDescription(event);
+    };
+
+    const showRedEye = event.description && (isNew || hasUnreadDescription);
+    const pulseTitle = hasOtherUnreadUpdates && updatedFields.includes('title');
+    const pulseDate = hasOtherUnreadUpdates && (updatedFields.includes('eventDate') || updatedFields.includes('endDate'));
+    const pulseTime = hasOtherUnreadUpdates && (updatedFields.includes('startTime') || updatedFields.includes('endTime'));
 
     const classNames = [
       styles.eventItem,
@@ -100,7 +124,7 @@ export const MemberEventPage = () => {
       isNextUpcoming ? styles.nextUpcomingEvent : '',
       (isNew || hasUnreadUpdate) ? styles.hasNotification : '',
       isNew ? styles.newEvent : '',
-      hasUnreadUpdate ? styles.updatedEvent : ''
+      hasOtherUnreadUpdates ? styles.updatedEvent : ''
     ].filter(Boolean).join(' ');
 
     return (
@@ -121,11 +145,7 @@ export const MemberEventPage = () => {
           {event.description && (
             <button
               className={`${styles.iconButton} ${showRedEye ? styles.pulsingRedEye : ''}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleItemClick();
-                setEventToShowDescription(event);
-              }}
+              onClick={handleEyeClick}
               title="Visa beskrivning"
             >
               <IoEyeOutline size={32} />
@@ -169,12 +189,19 @@ export const MemberEventPage = () => {
         </div>
       </div>
       <div className={styles.legend}>
+
         <IoInformationCircleOutline size={20} className={styles.legendIcon} />
+
         <p className={styles.legendText}>
+
           Tryck på ögat <IoEyeOutline size={20} className={styles.inlineIcon} /> för att läsa mer.
+
           Nya event har en ljusare bakgrund, medan en pulserande detalj visar exakt vad som har ändrats.
+
           Klicka på ett markerat event för att markera det som läst.
+
         </p>
+
       </div>
       {isLoading && <p>Laddar kommande händelser...</p>}
       {error && <p className={styles.error}>{error}</p>}

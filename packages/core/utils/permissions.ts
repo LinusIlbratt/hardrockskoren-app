@@ -42,6 +42,9 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   'GET /groups/{groupSlug}/events/notification-status': RoleGroups.ALL_LOGGED_IN,
   'POST /events/reset-view-timestamp': RoleGroups.ALL_LOGGED_IN,
   'POST /events/{eventId}/mark-as-seen': RoleGroups.ALL_LOGGED_IN,
+  'POST /events/{eventId}/mark-description-as-seen': RoleGroups.ALL_LOGGED_IN,
+  'POST /events/{eventId}/mark-general-as-seen': RoleGroups.ALL_LOGGED_IN,
+
 
 
   // === Material & Repertoire Management ===

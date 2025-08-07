@@ -36,7 +36,7 @@
   line-height: 1.6;
 
   .inlineIcon {
-    color: var(--color-icon-view); // Använder din befintliga färg för ögat
+    color: var(--color-text); // Använder din befintliga färg för ögat
     vertical-align: middle;
     margin: 0 0.1em -0.2em 0.2em; // Finjustering för att linjera med texten
   }
@@ -132,7 +132,7 @@
 
 // NYTT: Stil för det röda, pulserande ögat
 .pulsingRedEye {
-  color: #ff4d4d !important;
+  color: var(--color-text), !important; 
   animation: pulseScale 1.5s infinite;
 }
 
@@ -205,7 +205,7 @@
   cursor: pointer;
   padding: var(--spacing-xs);
   border-radius: var(--radius-round);
-  color: var(--color-icon-view);
+  color: var(--color-text);
   display: flex;
   transition: color 0.2s, background-color 0.2s;
 
@@ -230,7 +230,7 @@
 // NYA ANIMATIONER
 @keyframes pulseColor {
   0% { color: inherit; }
-  50% { color: var(--color-primary); }
+  50% { color: var(--color-border-hover); }
   100% { color: inherit; }
 }
 

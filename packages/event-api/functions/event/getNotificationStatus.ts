@@ -20,31 +20,29 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler
     try {
       const userContext = event.requestContext.authorizer.lambda;
       const { groupSlug } = event.pathParameters || {};
-
-      // UPPDATERAD RAD: Lägg till kontroll för userPoolId här
       if (!groupSlug || !userContext.uuid || !userContext.userPoolId) {
         return sendError(400, "Missing required parameters.");
       }
 
-      // Nu vet TypeScript att userContext.userPoolId är en 'string' på raden nedan
       const { UserAttributes } = await cognito.adminGetUser({
         UserPoolId: userContext.userPoolId,
         Username: userContext.uuid,
       });
       
       const readEventsAttr = UserAttributes?.find(attr => attr.Name === 'custom:readEventIds');
-      const seenUpdatesAttr = UserAttributes?.find(attr => attr.Name === 'custom:seenEventUpdates');
+      const seenGeneralAttr = UserAttributes?.find(attr => attr.Name === 'custom:seenGenUpd');
+      const seenDescriptionAttr = UserAttributes?.find(attr => attr.Name === 'custom:seenDescUpd');
 
       const readEventIds = new Set(readEventsAttr?.Value ? readEventsAttr.Value.split(',') : []);
-      const seenEventUpdates: Record<string, string> = seenUpdatesAttr?.Value ? JSON.parse(seenUpdatesAttr.Value) : {};
+      const seenGeneralUpdates: Record<string, string> = seenGeneralAttr?.Value ? JSON.parse(seenGeneralAttr.Value) : {};
+      const seenDescriptionUpdates: Record<string, string> = seenDescriptionAttr?.Value ? JSON.parse(seenDescriptionAttr.Value) : {};
 
       const queryCommand = new QueryCommand({
         TableName: MAIN_TABLE,
         IndexName: "GSI1",
         KeyConditionExpression: "GSI1PK = :pk",
         ExpressionAttributeValues: { ":pk": { S: `GROUP#${groupSlug}` } },
-        // Vi hämtar inte createdAt längre, men det skadar inte att ha kvar det
-        ProjectionExpression: "eventId, createdAt, updatedAt, lastUpdatedFields",
+        ProjectionExpression: "eventId, updatedAt, descriptionUpdatedAt, lastUpdatedFields",
       });
 
       const { Items } = await dbClient.send(queryCommand);
@@ -54,19 +52,37 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler
 
       if (Items && Items.length > 0) {
         const events = Items.map(item => unmarshall(item));
-
         for (const event of events) {
           if (!event.eventId || !event.updatedAt) continue;
 
+          let isNew = false;
+          const actualUpdates: string[] = [];
+          
+          // Steg 1: Kolla om eventet är nytt
           if (!readEventIds.has(event.eventId)) {
+            isNew = true;
             newEventIds.push(event.eventId);
-            continue;
           }
           
-          const lastSeenTimestamp = seenEventUpdates[event.eventId];
-          // Vi behöver inte `createdAt` här, så jag tar bort den jämförelsen för renare kod
-          if (!lastSeenTimestamp || new Date(event.updatedAt) > new Date(lastSeenTimestamp)) {
-            updatedEvents[event.eventId] = event.lastUpdatedFields || [];
+          // Steg 2: Kolla ALLTID efter olästa uppdateringar (även för nya event)
+          const lastSeenGeneral = seenGeneralUpdates[event.eventId];
+          const lastSeenDescription = seenDescriptionUpdates[event.eventId];
+
+          // Har beskrivningen en oläst uppdatering?
+          if (event.descriptionUpdatedAt && (!lastSeenDescription || new Date(event.descriptionUpdatedAt) > new Date(lastSeenDescription))) {
+            actualUpdates.push('description');
+          }
+
+          // Har andra fält en oläst uppdatering? (Körs ej för helt nya event)
+          if (!isNew && (!lastSeenGeneral || new Date(event.updatedAt) > new Date(lastSeenGeneral))) {
+            const otherFields = (event.lastUpdatedFields || []).filter((field: string) => field !== 'description');
+            if (otherFields.length > 0) {
+              actualUpdates.push(...otherFields);
+            }
+          }
+
+          if (actualUpdates.length > 0) {
+            updatedEvents[event.eventId] = [...new Set(actualUpdates)];
           }
         }
       }

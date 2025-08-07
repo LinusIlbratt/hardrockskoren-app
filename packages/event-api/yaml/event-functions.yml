@@ -174,3 +174,43 @@ markUpdateAsSeen:
         - "cognito-idp:AdminGetUser"
       Resource:
         - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
+
+markGeneralUpdateAsSeen:
+  handler: functions/event/markGeneralUpdateAsSeen.handler
+  name: hrk-mark-general-update-as-seen-${sls:stage}
+  description: Marks a general event update (e.g., time or title) as seen by the user.
+  events:
+    - httpApi:
+        method: POST
+        path: /events/{eventId}/mark-general-as-seen
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    COGNITO_USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminUpdateUserAttributes"
+        - "cognito-idp:AdminGetUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
+
+markDescriptionUpdateAsSeen:
+  handler: functions/event/markDescriptionUpdateAsSeen.handler
+  name: hrk-mark-desc-update-as-seen-${sls:stage}
+  description: Marks an event's description update as seen by the user.
+  events:
+    - httpApi:
+        method: POST
+        path: /events/{eventId}/mark-description-as-seen
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    COGNITO_USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminUpdateUserAttributes"
+        - "cognito-idp:AdminGetUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
