@@ -57,10 +57,9 @@ export const GroupDashboardLayout = () => {
   return (
     // ÄNDRING: Här wrappar vi allt i AppTourProvider
     <AppTourProvider
-      steps={groupDashboardSteps}
-      // Vi skapar en unik nyckel för varje kör guide!
-      tourKey={`group_dashboard_${currentGroup.slug}`}
-      onClickMask={() => {}}
+      steps={groupDashboardSteps} // <-- Korrigerat namn här
+      tourKey="group_dashboard_main"
+      onClickMask={() => { }}
     >
       <div className={styles.dashboardLayout}>
         <header className={styles.header}>
