@@ -1,3 +1,5 @@
+// admin-api/groups/createGroup.ts
+
 import middy from "@middy/core";
 import { validateSchema } from "../../../core/middleware/validateSchema";
 import { sendResponse, sendError } from "../../../core/utils/http";
@@ -18,23 +20,21 @@ export const handler = middy()
       event: APIGatewayProxyEventV2WithLambdaAuthorizer<any>
     ): Promise<APIGatewayProxyResultV2> => {
       const userPoolId = process.env.COGNITO_USER_POOL_ID as string;
-      const { groupSlug, name, choirLeader } = JSON.parse(event.body);
+      // ÄNDRING 1: Hämta ut 'location' från body
+      const { groupSlug, name, choirLeader, location } = JSON.parse(event.body);
 
       try {
-        // --- FÖRBÄTTRING 1: Effektivare behörighetskontroll ---
         const invokerRole = event.requestContext.authorizer.lambda.role;
         if (invokerRole !== "admin") {
           return sendError(403, "Forbidden: You do not have permission to create groups.");
         }
 
-        // --- Skapa gruppen i Cognito ---
         const createCognitoGroupCmd = new CreateGroupCommand({
           UserPoolId: userPoolId,
           GroupName: groupSlug,
         });
         await cognitoClient.send(createCognitoGroupCmd);
 
-        // --- Skapa posten i DynamoDB ---
         const groupId = nanoid();
         const putDynamoCmd = new PutItemCommand({
           TableName: process.env.MAIN_TABLE as string,
@@ -45,25 +45,24 @@ export const handler = middy()
             name: name,
             slug: groupSlug,
             choirLeader: choirLeader,
+            location: location, 
             createdAt: new Date().toISOString(),
             createdBy: event.requestContext.authorizer.lambda.uuid,
           }),
         });
         
-        // --- FÖRBÄTTRING 2: Manuell rollback vid fel ---
         try {
             await dbClient.send(putDynamoCmd);
         } catch (dbError) {
             console.error("DynamoDB write failed, rolling back Cognito group.", dbError);
             const deleteCognitoGroupCmd = new DeleteGroupCommand({ UserPoolId: userPoolId, GroupName: groupSlug });
             await cognitoClient.send(deleteCognitoGroupCmd);
-            throw dbError; // Kasta ursprungliga felet vidare
+            throw dbError;
         }
 
         return sendResponse({ message: "Group created successfully.", groupId }, 201);
 
       } catch (error: any) {
-        // Din existerande, bra felhantering
         if (error.name === 'GroupExistsException') {
           return sendError(409, "A group with this name already exists in Cognito.");
         }

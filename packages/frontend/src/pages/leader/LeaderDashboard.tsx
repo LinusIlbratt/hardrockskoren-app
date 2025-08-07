@@ -10,7 +10,7 @@ const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 interface Group {
   name: string;
   slug: string;
-}
+} 
 
 export const LeaderDashboard = () => {
   

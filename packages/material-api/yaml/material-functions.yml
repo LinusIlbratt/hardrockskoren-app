@@ -385,3 +385,120 @@ batchDeletePracticeMaterials:
       - Effect: "Allow"
         Action: ["cognito-idp:AdminGetUser"]
         Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
+
+prepareBatchMaterialUpload:
+  # Sökvägen till din funktion. Dubbelkolla att den matchar din mappstruktur.
+  handler: functions/prepareBatchMaterialUpload.handler 
+  name: hrk-prepare-batch-material-upload-${sls:stage}
+  description: Prepares a batch upload of global materials by creating DB entries and signed S3 URLs. (Admin only)
+  events:
+    - httpApi:
+        method: POST
+        path: /materials/prepare-batch-upload 
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+    COGNITO_USER_POOL_ID: ${self:custom.userPoolId}
+    # Sätter miljövariabeln som din Lambda-kod förväntar sig
+    MEDIA_BUCKET_NAME: ${self:custom.mediaBucketName} 
+  iamRoleStatements:
+    # Behörigheter för DynamoDB
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:TransactWriteItems"
+        - "dynamodb:PutItem"
+        - "dynamodb:Query"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI1"
+    # Behörighet för att verifiera admin-rollen i Cognito
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminGetUser"]
+      Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
+    # Behörighet för att skapa uppladdningslänkar till S3
+    - Effect: "Allow"
+      Action: ["s3:PutObject"]
+      Resource: "arn:aws:s3:::${self:custom.mediaBucketName}/materials/*"
+
+listMaterialsByPath:
+  handler: functions/getMaterialsByPath.handler 
+  name: hrk-list-materials-by-path-${sls:stage}
+  description: Fetches materials within a specific folder path using GSI2.
+  events:
+    - httpApi:
+        method: GET
+        path: /materials-by-path 
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action: ["dynamodb:Query"]
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI2"
+
+addRepertoireFromLibrary:
+  handler: functions/addRepertoireFromLibrary.handler 
+  name: hrk-add-repertoire-from-library-${sls:stage}
+  description: Creates a repertoire item from a media library folder and links all its materials.
+  events:
+    - httpApi:
+        method: POST
+        path: /groups/{groupName}/repertoires/from-library
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:PutItem"           
+        - "dynamodb:Query"             
+        - "dynamodb:BatchWriteItem"    
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI2"
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminGetUser"]
+      Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
+
+listPracticeByWeek:
+  handler: functions/listByWeek.handler
+  name: hrk-list-practice-by-week-${sls:stage}
+  description: Lists all practice materials, grouped by week.
+  memorySize: 256
+  events:
+    - httpApi:
+        method: GET
+        path: /practice/materials-by-week
+        authorizer:
+          name: centralJwtAuthorizer # FIX: Korrekt indragning
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - dynamodb:Scan
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+listPracticeForMembers:
+    handler: functions/listForMembers.handler
+    name: hrk-list-practice-for-members-${sls:stage}
+    description: Lists current and past practice materials for members.
+    memorySize: 256
+    events:
+      - httpApi:
+          method: GET
+          path: /practice/materials/member-view # Ett nytt endpoint för medlemmar
+          authorizer: centralJwtAuthorizer
+    environment:
+      MAIN_TABLE: ${self:custom.mainTableName}
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - dynamodb:Scan
+        Resource:
+          - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"

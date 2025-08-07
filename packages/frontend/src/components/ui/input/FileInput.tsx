@@ -1,56 +1,106 @@
-import React, { useRef } from 'react'; // useState är inte längre nödvändig här
+// src/components/ui/input/FileInput.tsx
+
+import React, { useRef } from 'react';
 import styles from './FileInput.module.scss';
 import { Button, ButtonVariant } from '../button/Button';
+import { FiFile, FiXCircle } from 'react-icons/fi';
 
-interface FileInputProps {
-  id: string;
+// --- Props-definitionerna är oförändrade ---
+
+interface SingleFileProps {
+  id?: string;
+  label?: string;
+  isFolderPicker?: false;
   onFileSelect: (file: File | null) => void;
-  value: File | null; // <-- NY PROP: Tar emot den nuvarande filen
+  disabled?: boolean;
+  value: File | null;
 }
 
-export const FileInput = ({ id, onFileSelect, value }: FileInputProps) => {
-  // --- BORTTAGET: Inget internt state för filnamnet längre ---
-  // const [fileName, setFileName] = useState<string | null>(null);
-  
+interface FolderPickerProps {
+  id?: string;
+  label?: string;
+  isFolderPicker: true;
+  onFileSelect: (files: FileList | null) => void;
+  disabled?: boolean;
+  value: FileList | null;
+}
+
+type FileInputProps = SingleFileProps | FolderPickerProps;
+
+export const FileInput = (props: FileInputProps) => {
+  const { id, label = 'Välj fil', disabled = false } = props;
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    // Vi anropar bara förälderns funktion, sätter inget eget state
-    onFileSelect(file);
+    if (props.isFolderPicker) {
+      props.onFileSelect(e.target.files);
+    } else {
+      const file = e.target.files?.[0] || null;
+      props.onFileSelect(file);
+    }
   };
 
+  const handleRemoveFile = () => {
+    if (props.isFolderPicker) {
+      props.onFileSelect(null);
+    } else {
+      props.onFileSelect(null);
+    }
+    if (inputRef.current) {
+      inputRef.current.value = '';
+    }
+  };
+  
   const handleButtonClick = () => {
     inputRef.current?.click();
   };
 
-  // Hämta filnamnet direkt från propen vi får från föräldern
-  const displayName = value ? value.name : "Ingen fil har valts";
+  const inputId = id || 'file-input';
+
+  // --- FIX: Här är den uppdaterade logiken ---
+  // Vi skapar en variabel för att avgöra om fältet är "tomt".
+  let isValueEmpty = false;
+  if (!props.value) {
+    isValueEmpty = true;
+  } else if (props.isFolderPicker && props.value.length === 0) {
+    // Om det är en mapp-väljare, kolla `length`.
+    // TypeScript förstår nu att props.value är en FileList här.
+    isValueEmpty = true;
+  }
 
   return (
     <div className={styles.fileInputContainer}>
       <input
-        id={id}
+        id={inputId}
         type="file"
         ref={inputRef}
         onChange={handleFileChange}
         className={styles.hiddenInput}
-        // Vi lägger till en key här för att hjälpa React att nollställa fältet
-        key={value?.name || 'empty'}
+        disabled={disabled}
+        {...(props.isFolderPicker ? { webkitdirectory: "true", directory: "true", multiple: true } : {})}
       />
-      
-      <Button 
-        type="button"
-        variant={ButtonVariant.Ghost} 
-        onClick={handleButtonClick}
-      >
-        Välj fil
-      </Button>
 
-      {/* Visar namnet från propen */}
-      <span className={styles.fileName}>
-        {displayName}
-      </span>
+      {/* Använd den nya variabeln för att styra vad som visas */}
+      {isValueEmpty ? (
+        <Button 
+          type="button"
+          variant={ButtonVariant.Primary}
+          onClick={handleButtonClick}
+          disabled={disabled}
+        >
+          {label}
+        </Button>
+      ) : (
+        <div className={styles.fileDisplay}>
+          <FiFile />
+          <span className={styles.fileName}>
+            {!props.isFolderPicker ? props.value!.name : `${props.value!.length} filer valda`}
+          </span>
+          <button type="button" onClick={handleRemoveFile} className={styles.removeButton} aria-label="Ta bort vald fil">
+             <FiXCircle size={22} />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

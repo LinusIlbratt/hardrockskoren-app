@@ -1,82 +1,26 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+// src/pages/PracticePage.tsx
+
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import type { Material } from '@/types';
 import { MediaModal } from '@/components/ui/modal/MediaModal';
 import { MediaPlayer } from '@/components/media/MediaPlayer';
 import styles from './PracticePage.module.scss';
-import { FileText, Music, Video, Download, Eye } from 'lucide-react';
-import { FaPlayCircle } from "react-icons/fa";
-import { IoEyeOutline, IoInformationCircleOutline } from 'react-icons/io5';
+import { MemberWeekAccordion } from '@/components/member/MemberWeekAccordion';
+import { IoInformationCircleOutline, IoEyeOutline } from 'react-icons/io5';
+import { FaPlayCircle } from 'react-icons/fa';
+
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
-const S3_PUBLIC_URL = import.meta.env.VITE_S3_BUCKET_URL;
 
-// --- ÅTERANVÄNDBAR KOMPONENT FÖR KATEGORIER ---
-interface MaterialCategoryProps {
-  title: string;
-  files: Material[];
-  onPlay: (file: { url: string; title: string }) => void;
-  onView: (material: Material) => void;
+// Typ för den nya datastrukturen
+interface WeekGroup {
+  weekId: string;
+  materials: Material[];
 }
 
-const MaterialCategory: React.FC<MaterialCategoryProps> = ({ title, files, onPlay, onView }) => {
-  if (files.length === 0) return null;
-
-  const getFileIcon = (fileKey: string = '') => {
-    const key = fileKey.toLowerCase();
-    if (key.match(/\.(mp3|wav|m4a)$/)) return <Music size={20} className={styles.fileIcon} />;
-    if (key.match(/\.(mp4|mov|webm)$/)) return <Video size={20} className={styles.fileIcon} />;
-    if (key.match(/\.(pdf|txt)$/)) return <FileText size={20} className={styles.fileIcon} />;
-    return <Download size={20} className={styles.fileIcon} />;
-  };
-
-  const isPlayableAudio = (fileKey: string = '') => fileKey.toLowerCase().match(/\.(mp3|wav|m4a)$/);
-  const isViewable = (fileKey: string = '') => fileKey.toLowerCase().match(/\.(pdf|txt|mp4|mov|webm)$/);
-
-  return (
-    <section className={styles.categorySection}>
-      <h3 className={styles.categoryTitle}>{title}</h3>
-      <div className={styles.materialList}>
-        {files.map(material => {
-          if (!material.fileKey) return null;
-          const displayName = material.title || material.fileKey.split('/').pop() || 'Okänd titel';
-          const fullUrl = `${S3_PUBLIC_URL}/${material.fileKey}`;
-
-          return (
-            <div key={material.materialId} className={styles.materialItem}>
-              <div className={styles.itemInfo}>
-                {getFileIcon(material.fileKey)}
-                <span className={styles.materialTitle}>{displayName}</span>
-              </div>
-              <div className={styles.actions}>
-                {isPlayableAudio(material.fileKey) && (
-                  <button onClick={() => onPlay({ url: fullUrl, title: displayName })} className={`${styles.actionButton} ${styles.playButton}`} aria-label={`Spela ${displayName}`}>
-                    <FaPlayCircle size={30} />
-                  </button>
-                )}
-                {isViewable(material.fileKey) && !isPlayableAudio(material.fileKey) && (
-                  <button onClick={() => onView(material)} className={`${styles.actionButton} ${styles.viewButton}`} aria-label={`Visa ${displayName}`}>
-                    <Eye size={30} />
-                  </button>
-                )}
-                {!isPlayableAudio(material.fileKey) && !isViewable(material.fileKey) && (
-                  <a href={fullUrl} target="_blank" rel="noopener noreferrer" className={styles.actionButton} aria-label={`Ladda ner ${displayName}`}>
-                    <Download size={22} />
-                  </a>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-};
-
-
-// --- HUVUDKOMPONENT ---
 export const PracticePage = () => {
-  const [materials, setMaterials] = useState<Material[]>([]);
+  const [weeklyMaterials, setWeeklyMaterials] = useState<WeekGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [nowPlaying, setNowPlaying] = useState<{ url: string; title: string; } | null>(null);
@@ -92,10 +36,11 @@ export const PracticePage = () => {
       return;
     }
     try {
-      const response = await axios.get(`${API_BASE_URL}/practice/materials`, {
+      // Anropa det nya, smarta endpointet för medlemmar
+      const response = await axios.get<WeekGroup[]>(`${API_BASE_URL}/practice/materials/member-view`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setMaterials(Array.isArray(response.data) ? response.data : []);
+      setWeeklyMaterials(response.data);
     } catch (err) {
       setError('Kunde inte hämta övningsmaterial. Försök igen senare.');
     } finally {
@@ -107,19 +52,6 @@ export const PracticePage = () => {
     fetchMaterials();
   }, [fetchMaterials]);
 
-  const { audioFiles, videoFiles, documentFiles, otherFiles } = useMemo(() => {
-    const isAudio = (key = '') => key.toLowerCase().match(/\.(mp3|wav|m4a)$/i);
-    const isVideo = (key = '') => key.toLowerCase().match(/\.(mp4|mov|webm)$/i);
-    const isDocument = (key = '') => key.toLowerCase().match(/\.(pdf|txt|doc|docx)$/i);
-
-    return {
-      audioFiles: materials.filter(m => isAudio(m.fileKey)),
-      videoFiles: materials.filter(m => isVideo(m.fileKey)),
-      documentFiles: materials.filter(m => isDocument(m.fileKey)),
-      otherFiles: materials.filter(m => !isAudio(m.fileKey) && !isVideo(m.fileKey) && !isDocument(m.fileKey)),
-    };
-  }, [materials]);
-
   if (isLoading) {
     return <div className={styles.page}><p>Laddar övningar...</p></div>;
   }
@@ -130,10 +62,9 @@ export const PracticePage = () => {
 
   return (
     <div className={styles.page}>
-
       <header className={styles.header}>
         <h2>Sjung upp</h2>
-        <p>Här hittar du allt övningsmaterial.</p>
+        <p>Här hittar du övningsmaterial för den här veckan och tidigare veckor.</p>
       </header>
 
       <div className={styles.legend}>
@@ -143,12 +74,18 @@ export const PracticePage = () => {
         </p>
       </div>
 
-      {materials.length > 0 ? (
-        <div className={styles.sectionsContainer}>
-          <MaterialCategory title="Ljudfiler" files={audioFiles} onPlay={setNowPlaying} onView={setMaterialToView} />
-          <MaterialCategory title="Videor" files={videoFiles} onPlay={setNowPlaying} onView={setMaterialToView} />
-          <MaterialCategory title="Dokument & Texter" files={documentFiles} onPlay={setNowPlaying} onView={setMaterialToView} />
-          <MaterialCategory title="Övrigt" files={otherFiles} onPlay={setNowPlaying} onView={setMaterialToView} />
+      {weeklyMaterials.length > 0 ? (
+        <div className={styles.accordionContainer}>
+          {weeklyMaterials.map((week, index) => (
+            <MemberWeekAccordion
+              key={week.weekId}
+              weekId={week.weekId}
+              materials={week.materials}
+              defaultOpen={index === 0} // Öppna den första (nyaste) veckan som standard
+              onPlay={setNowPlaying}
+              onView={setMaterialToView}
+            />
+          ))}
         </div>
       ) : (
         <p>Det finns inget Sjungupp-material uppladdat ännu.</p>

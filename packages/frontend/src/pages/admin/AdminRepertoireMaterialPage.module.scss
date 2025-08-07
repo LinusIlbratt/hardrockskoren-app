@@ -1,130 +1,214 @@
 @use '@/styles/variables' as *;
 
+// --- Generell sidlayout ---
 .page {
-  padding: var(--spacing-xs);
+  // FÖRBÄTTRING: Använder logiska egenskaper för padding.
+  padding-block: var(--spacing-md);
+  padding-inline: var(--spacing-lg);
 
-  @media (min-width: #{$tabletBreakpoint}) {
-    padding: var(--spacing-xl);
+  @include column(var(--spacing-lg)); // Denna mixin hanterar nu allt vertikalt avstånd mellan sektioner.
+}
+
+// --- Brödsmulor (navigering) ---
+.breadcrumbs {
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+
+  a {
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+    &:hover {
+      color: var(--color-primary);
+      text-decoration: underline;
+    }
+  }
+
+  span {
+    // FÖRBÄTTRING: Använder logisk egenskap.
+    padding-inline: var(--spacing-xs);
   }
 }
 
-.backLink {
-  display: inline-block;
-  margin-bottom: var(--spacing-lg);
-  color: #a0a0a0;
-  text-decoration: none;
-  transition: color 0.2s ease;
-  
-  &:hover {
-    color: var(--color-primary);
-  }
-}
-
+// --- Header ---
 .header {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
+  @include column(var(--spacing-xs));
+}
 
-  @media (min-width: #{$tabletBreakpoint}) {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
+.legend {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  background-color: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+}
+
+.legendIcon {
+  flex-shrink: 0;
+  color: var(--color-text);
+}
+
+.legendText {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4em;
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
 }
 
 .repertoireTitle {
   margin: 0;
+  font-size: var(--fs-h2);
 }
 
-.subHeader {
+.headerSubtitle {
   margin: 0;
-  color: #a0a0a0;
-}
-
-// Behållare för listan
-.materialList {
-  list-style: none;
-  padding: 0;
-  margin: 0;  
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-// Varje rad i listan
-.materialItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
-  background-color: var(--color-dark-gray);
   color: var(--color-text-secondary);
+  font-style: italic;
+}
 
-  &:not(:first-child) {
-    border-top: 1px solid var(--color-border);
+// --- Laddning/Fel-meddelanden ---
+.pageState {
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: var(--color-text-secondary);
+  &.error {
+    color: var(--color-accent);
   }
 }
 
-.materialTitle {
+// --- Tillbaka-knapp ---
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background-color: var(--color-dark-gray);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  
+  // FÖRBÄTTRING: Använder logiska egenskaper.
+  padding-block: var(--spacing-sm);
+  padding-inline: var(--spacing-md);
+
+  border-radius: var(--radius-md);
+  font-size: var(--fs-base);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  // FÖRBÄTTRING: Borttagen, då .page nu sköter avståndet med 'gap'.
+  // margin-bottom: var(--spacing-md);
+
+  &:hover {
+    background-color: var(--color-background-hover);
+    border-color: var(--color-text-secondary);
+  }
+}
+
+// --- Lista med mappar och filer ---
+.itemList {
+  @include column(var(--spacing-xs));
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+// Varje rad (både mapp och fil)
+.itemRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-dark-gray);
+  transition: background-color 0.2s ease;
+  color: inherit;
+  text-decoration: none;
+
+  &[href] { cursor: pointer; }
+}
+
+// Wrapper för ikon + namn
+.itemInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  min-width: 0; 
+  flex-grow: 1;
+}
+
+.itemIcon {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  font-size: 24px;
+}
+
+.itemName {
   font-weight: 500;
-  flex-grow: 1; // Se till att titeln tar upp allt ledigt utrymme
-  // Förhindra att långa titlar förstör layouten
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-// NY: Behållare för alla ikon-knappar på en rad
+// Chevron-ikon på mappar
+.chevronIcon {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  font-size: 24px;
+}
+
+// Behållare för action-knappar (på fil-rader)
 .actions {
   display: flex;
   align-items: center;
   gap: var(--spacing-sm);
-  flex-shrink: 0; 
-}
-
-// NY: Generell stil för alla ikon-knappar
-.iconPlay, .iconView, .iconDelete {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-round);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s, background-color 0.2s;
-}
-
-.iconPlay {
-  color: var(--color-icon-play);
-  transition: color 0.2s, background-color 0.2s;
-
-  &:hover {
-    background-color: var(--color-icon-play-hover); 
-  } 
-}
-.iconView {
-  color: var(--color-icon-view);
-  transition: color 0.2s, background-color 0.2s;
+  flex-shrink: 0;
   
-  &:hover {
-    background-color: var(--color-icon-view-hover); 
+  button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-round);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s, background-color 0.2s;
+
+    // FÖRBÄTTRING: Garanterar en minsta klickyta för mobil (touch target).
+    min-width: 44px;
+    min-height: 44px;
+    
+    &:hover {
+      background-color: var(--color-background-hover);
+    }
+  }
+
+  [aria-label^="Spela"] { color: var(--color-icon-play); }
+  [aria-label^="Visa"] { color: var(--color-icon-view); }
+  [aria-label^="Ta bort"] { color: var(--color-text-secondary); 
+    &:hover {
+      color: var(--color-accent);
+    }
   }
 }
-.iconDelete {
-  color: var(--color-accent); // Använder standard sekundär textfärg
-  transition: color 0.2s, background-color 0.2s;
 
-  &:hover {
-    background-color: var(--color-primary); 
+// --- Förbättringar för större skärmar ---
+@media (min-width: #{$tabletBreakpoint}) {
+  .itemRow[href]:hover {
+    background-color: var(--color-background-hover);
   }
-} 
+}
 
-// Radera-knappen får en egen hover-färg
-.deleteButton {
-  &:hover {
-    color: var(--color-accent); // Använder din röda accent-färg
-  }
+.errorMessage {
+  color: var(--color-accent);
+  background-color: var(--color-accent-transparent);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
 }

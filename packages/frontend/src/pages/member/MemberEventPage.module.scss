@@ -36,7 +36,7 @@
   line-height: 1.6;
 
   .inlineIcon {
-    color: var(--color-icon-view); // Använder din befintliga färg för ögat
+    color: var(--color-text); // Använder din befintliga färg för ögat
     vertical-align: middle;
     margin: 0 0.1em -0.2em 0.2em; // Finjustering för att linjera med texten
   }
@@ -92,7 +92,48 @@
   padding: var(--spacing-md);
   background-color: var(--color-dark-gray);
   border-radius: var(--radius-lg);
-  transition: opacity 0.3s ease;
+  border: 1px solid transparent;
+  transition: opacity 0.3s ease, background-color 0.2s ease, border-color 0.2s ease;
+
+  // NYTT: Klass för att göra raden klickbar
+  &.hasNotification {
+    cursor: pointer;
+    &:hover {
+      background-color: var(--color-background-hover);
+    }
+  }
+}
+
+.tabBadge {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-left: 8px;
+  background-color: var(--color-primary); // Använder din temafärg
+  border-radius: 50%;
+  animation: pulseScale 1.5s infinite; // Samma pulsering som ögat-ikonen
+}
+
+// Stil för helt nya event
+.newEvent {
+  
+  background-color: var(--color-background-hover-accent);
+}
+
+// NYTT: Stil för event med "övriga" uppdateringar
+.updatedEvent {
+  background-color: rgba(var(--color-primary-rgb), 0.05);
+}
+
+// NYTT: Stil för pulserande text (titel, datum, tid)
+.pulsingText {
+  animation: pulseColor 2s infinite;
+}
+
+// NYTT: Stil för det röda, pulserande ögat
+.pulsingRedEye {
+  color: var(--color-text), !important; 
+  animation: pulseScale 1.5s infinite;
 }
 
 .nextUpcomingEvent {
@@ -121,12 +162,14 @@
     text-transform: uppercase;
     font-weight: 600;
     color: var(--color-text-secondary);
+    transition: color 0.3s ease;
   }
   .day {
     font-size: var(--fs-lg);
     font-weight: 700;
     line-height: 1.1;
     color: var(--color-text-strong);
+    transition: color 0.3s ease;
   }
 }
 
@@ -143,11 +186,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color 0.3s ease;
 }
 
 .itemTime {
   font-size: var(--fs-sm);
   color: var(--color-text-secondary);
+  transition: color 0.3s ease;
 }
 
 .actions {
@@ -160,7 +205,7 @@
   cursor: pointer;
   padding: var(--spacing-xs);
   border-radius: var(--radius-round);
-  color: var(--color-icon-view);
+  color: var(--color-text);
   display: flex;
   transition: color 0.2s, background-color 0.2s;
 
@@ -179,4 +224,18 @@
 
 .error {
   color: var(--color-accent);
+}
+
+
+// NYA ANIMATIONER
+@keyframes pulseColor {
+  0% { color: inherit; }
+  50% { color: var(--color-border-hover); }
+  100% { color: inherit; }
+}
+
+@keyframes pulseScale {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
 }

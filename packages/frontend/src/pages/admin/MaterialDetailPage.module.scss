@@ -1,0 +1,88 @@
+@use '@/styles/variables' as *; // Importera era design-variabler
+
+// --- Generell sidlayout ---
+.page {
+  padding: var(--spacing-md) var(--spacing-lg);
+  @include column(var(--spacing-lg)); // Skapar vertikalt utrymme mellan sektionerna
+}
+
+// --- Brödsmulor (navigering) ---
+.breadcrumbs {
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+
+  a {
+    color: var(--color-text-secondary);
+    text-decoration: none;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: var(--color-primary);
+      text-decoration: underline;
+    }
+  }
+
+  span {
+    // Ger lite luft runt snedstrecken
+    padding: 0 var(--spacing-xs);
+  }
+}
+
+// --- Sidtitel ---
+.pageTitle {
+  font-size: var(--fs-h2);
+  margin: 0;
+}
+
+// --- Laddning/Fel-meddelanden ---
+.pageState {
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: var(--color-text-secondary);
+
+  &.error {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+}
+
+// --- Lista med mappar och filer ---
+.itemList {
+  @include column(var(--spacing-xs)); // Liten lucka mellan varje rad
+}
+
+// --- Varje enskild rad (oavsett om det är mapp eller fil) ---
+.itemRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg); // Ordentlig lucka mellan ikon och text
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  transition: background-color 0.2s ease;
+  cursor: pointer;
+  
+  // Nollställ standard-utseendet för länkar
+  color: inherit;
+  text-decoration: none;
+
+  .itemIcon {
+    flex-shrink: 0; // Se till att ikonen inte kläms ihop
+    color: var(--color-text-secondary);
+    font-size: 24px; // En bra, tydlig storlek
+  }
+
+  .itemName {
+    font-weight: 500;
+    // Hantera långa filnamn snyggt
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+// --- Förbättringar för större skärmar (Desktop) ---
+@media (min-width: #{$tabletBreakpoint}) {
+  .itemRow:hover {
+    background-color: var(--color-background-hover);
+  }
+}

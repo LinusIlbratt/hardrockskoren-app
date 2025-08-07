@@ -1,0 +1,118 @@
+// src/components/member/MemberWeekAccordion.module.scss
+@use '@/styles/variables' as *;
+
+.accordion {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-dark-gray);
+  overflow: hidden;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: none;
+  border: none;
+  color: var(--color-text-primary);
+  font-size: var(--fs-h4);
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+
+  &:hover {
+    background-color: var(--color-background-hover);
+  }
+}
+
+.headerTitle {
+  display: flex;
+  align-items: baseline;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.year {
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.content {
+  padding: var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
+  @include column(var(--spacing-lg));
+}
+
+// Stilar för MaterialCategory (från din gamla PracticePage)
+.categorySection {
+  @include column(var(--spacing-md));
+}
+
+.categoryTitle {
+  margin: 0;
+  font-size: var(--fs-h4);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--spacing-sm);
+}
+
+.materialList {
+  @include column(var(--spacing-sm));
+}
+
+.materialItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+}
+
+.itemInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  min-width: 0;
+  flex-grow: 1;
+}
+
+.fileIcon {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.materialTitle {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.actionButton {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: var(--spacing-sm);
+  display: flex;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--color-primary);
+  }
+}
+
+.playButton {
+  color: var(--color-primary);
+  &:hover {
+    color: var(--color-primary-hover);
+  }
+}

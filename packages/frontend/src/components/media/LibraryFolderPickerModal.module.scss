@@ -1,0 +1,52 @@
+@use '@/styles/variables' as *;
+
+.modalContent {
+  min-height: 30vh;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-background);
+}
+
+.folderList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  @include column(var(--spacing-xs));
+}
+
+.folderItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  border: 1px solid transparent;
+
+  &:hover {
+    background-color: var(--color-background-hover);
+  }
+
+  &.selected {
+    background-color: var(--color-primary-transparent);
+    border-color: var(--color-primary);
+    font-weight: 600;
+  }
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--spacing-lg);
+}
+
+.error {
+  color: var(--color-accent);
+}

@@ -16,6 +16,11 @@ interface AttendanceDay {
   date: string;
 }
 
+interface PresentMember {
+  givenName: string;
+  familyName: string;
+}
+
 export const LeaderAttendancePage = () => {
   const { groupName } = useParams<{ groupName: string }>();
 
@@ -26,28 +31,23 @@ export const LeaderAttendancePage = () => {
   const [startError, setStartError] = useState<string | null>(null);
   const [attendanceDays, setAttendanceDays] = useState<AttendanceDay[]>([]);
   const [selectedDay, setSelectedDay] = useState<AttendanceDay | null>(null);
-  const [presentMembers, setPresentMembers] = useState<string[]>([]);
+  const [presentMembers, setPresentMembers] = useState<PresentMember[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(false);
-  
-  // NYTT: State för att ge feedback vid kopiering
   const [copySuccess, setCopySuccess] = useState(false);
 
-  // NYTT: Funktion för att hantera kopiering av listan
   const handleCopyList = () => {
     if (presentMembers.length === 0) return;
-
-    // Slå ihop alla e-postadresser till en enda sträng
-    const emailString = presentMembers.join(', ');
-    
-    // Använd en säker metod för att kopiera till urklipp
+    const nameListString = presentMembers
+      .map(member => `${member.familyName}, ${member.givenName}`)
+      .join('\n');
     const textArea = document.createElement('textarea');
-    textArea.value = emailString;
+    textArea.value = nameListString;
     document.body.appendChild(textArea);
     textArea.select();
     try {
       document.execCommand('copy');
       setCopySuccess(true);
-      setTimeout(() => setCopySuccess(false), 2000); // Återställ efter 2 sekunder
+      setTimeout(() => setCopySuccess(false), 2000);
     } catch (err) {
       console.error('Kunde inte kopiera text: ', err);
     }
@@ -150,7 +150,13 @@ export const LeaderAttendancePage = () => {
       const response = await axios.get(`${API_BASE_URL}/groups/${groupName}/attendance/${date}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setPresentMembers(response.data.presentMembers || []);
+      
+      const members: PresentMember[] = response.data.presentMembers || [];
+      members.sort((a, b) => 
+        a.familyName.localeCompare(b.familyName, 'sv')
+      );
+      
+      setPresentMembers(members);
     } catch (error) {
       console.error("Kunde inte hämta närvarolista:", error);
       setPresentMembers([]);
@@ -191,6 +197,7 @@ export const LeaderAttendancePage = () => {
         {attendanceDays.length > 0 ? (
           attendanceDays.map(day => (
             <div key={day.date} className={styles.attendanceCard} onClick={() => setSelectedDay(day)}>
+              {/* FIX: Korrigerat stavfel här */}
               <span className={styles.cardDate}>Närvaro {new Date(day.date).toLocaleDateString('sv-SE', { day: 'numeric', month: 'long' })}</span>
             </div>
           ))
@@ -213,14 +220,18 @@ export const LeaderAttendancePage = () => {
         )}
       </Modal>
 
-      <Modal isOpen={!!selectedDay} onClose={() => setSelectedDay(null)} title={`Närvarande ${selectedDay?.date}`}>
+      <Modal isOpen={!!selectedDay} onClose={() => setSelectedDay(null)} title={`Närvarande ${selectedDay ? new Date(selectedDay.date).toLocaleDateString('sv-SE') : ''}`}>
         {isLoadingList ? (
           <p>Laddar lista...</p>
         ) : (
           <>
             <ul className={styles.memberList}>
               {presentMembers.length > 0 ? (
-                presentMembers.map((email, index) => <li key={index}>{email}</li>)
+                presentMembers.map((member) => (
+                  <li key={`${member.familyName}-${member.givenName}`}>
+                    {member.familyName}, {member.givenName}
+                  </li>
+                ))
               ) : (
                 <li>Inga medlemmar har anmält sig ännu.</li>
               )}
@@ -229,7 +240,7 @@ export const LeaderAttendancePage = () => {
               <div className={styles.modalFooter}>
                 <Button
                   onClick={handleCopyList}
-                  variant={copySuccess ? ButtonVariant.Primary : ButtonVariant.Primary}
+                  variant={ButtonVariant.Primary}
                 >
                   {copySuccess ? 'Kopierat!' : 'Kopiera listan'}
                 </Button>

@@ -35,7 +35,8 @@ plugins:
   - serverless-iam-roles-per-function
 
 custom:
-  mainTableName: HrkMainTable-${self:provider.stage} 
+  mainTableName: HrkMainTable-${self:provider.stage}
+  COGNITO_USER_POOL_ID: ${file(./env.${self:provider.stage}.yaml):COGNITO_USER_POOL_ID}
   
 functions:
   - ${file(./yaml/event-functions.yml)}

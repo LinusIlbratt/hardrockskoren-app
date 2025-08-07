@@ -11,6 +11,7 @@
 
 // Stilen för varje enskild länk/flik
 .navLink {
+  position: relative;
   @include center;
   width: 100%;
   padding: var(--spacing-md) 0;
@@ -40,6 +41,17 @@
 .active {
   background-color: var(--color-border); // ✅ Lade till den ljusare bakgrundsfärgen
   color: var(--color-text);             // ✅ Säkerställer starkare textfärg
+}
+
+.badge {
+  position: absolute;
+  top: 8px;      // Justera efter behov
+  right: 8px;    // Justera efter behov
+  width: 10px;
+  height: 10px;
+  background-color: var(--color-accent); // Använd din accent-färg
+  border-radius: 50%;
+  border: 2px solid var(--color-dark-gray); // Bakgrundsfärgen på din nav
 }
 
 @media (min-width: #{$tabletBreakpoint}) {

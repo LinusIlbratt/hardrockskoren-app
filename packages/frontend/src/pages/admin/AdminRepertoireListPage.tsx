@@ -3,16 +3,21 @@ import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal/Modal';
-import { CreateRepertoireForm } from '@/components/ui/form/CreateRepertoireForm'; // Importera den nya komponenten
-import { IoTrashOutline } from 'react-icons/io5';
+import { IoTrashOutline, IoInformationCircleOutline } from 'react-icons/io5';
+import { LibraryFolderPickerModal } from '@/components/media/LibraryFolderPickerModal';  // Importera den nya komponenten
 import styles from './AdminRepertoireListPage.module.scss';
-import { IoInformationCircleOutline } from 'react-icons/io5'
 
-// Definiera en typ för repertoar-objektet
+// --- TYPER ---
 interface Repertoire {
   repertoireId: string;
   title: string;
   artist: string;
+}
+
+// Typen för en mappnod från vår nya modal
+interface FolderNode {
+  name: string;
+  // ... andra fält om de finns
 }
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
@@ -21,18 +26,18 @@ export const AdminRepertoireListPage = () => {
   const { groupName } = useParams<{ groupName: string }>();
   const [repertoires, setRepertoires] = useState<Repertoire[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // State för modaler
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  
+  // --- State för modaler och anrop ---
+  const [isPickerModalOpen, setIsPickerModalOpen] = useState(false);
   const [repertoireToDelete, setRepertoireToDelete] = useState<Repertoire | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isAdding, setIsAdding] = useState(false); // ADDED: State för när vi lägger till
 
-  // Funktion för att hämta repertoarer
+  // Funktion för att hämta repertoarer (oförändrad)
   const fetchRepertoires = useCallback(async () => {
     if (!groupName) return;
     setIsLoading(true);
     const token = localStorage.getItem('authToken');
-
     try {
       const response = await axios.get(`${API_BASE_URL}/groups/${groupName}/repertoires`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -45,33 +50,51 @@ export const AdminRepertoireListPage = () => {
     }
   }, [groupName]);
 
-  // Hämta data när komponenten laddas
   useEffect(() => {
     fetchRepertoires();
   }, [fetchRepertoires]);
 
-  const onRepertoireCreated = () => {
-    setIsCreateModalOpen(false);
-    fetchRepertoires(); // Hämta den uppdaterade listan
-  }
-
-  // Funktion för att hantera bekräftelse av radering
+  // Funktion för att hantera bekräftelse av radering (oförändrad)
   const handleConfirmDelete = async () => {
     if (!repertoireToDelete || !groupName) return;
-
     setIsDeleting(true);
     const token = localStorage.getItem('authToken');
     try {
       await axios.delete(`${API_BASE_URL}/groups/${groupName}/repertoires/${repertoireToDelete.repertoireId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setRepertoireToDelete(null); // Stäng modalen
-      fetchRepertoires(); // Hämta den uppdaterade listan
+      setRepertoireToDelete(null);
+      fetchRepertoires();
     } catch (error) {
       console.error("Failed to delete repertoire:", error);
       alert("Kunde inte radera låten från repertoaren.");
     } finally {
       setIsDeleting(false);
+    }
+  };
+  
+  // --- CHANGED: Fullt implementerad funktion för att lägga till från biblioteket ---
+  const handleAddFromLibrary = async (folder: FolderNode) => {
+    if (!groupName) return;
+
+    setIsAdding(true);
+    setIsPickerModalOpen(false); // Stäng modalen direkt
+    const token = localStorage.getItem('authToken');
+
+    try {
+      // Anropa den nya backend-endpointen
+      await axios.post(
+        `${API_BASE_URL}/groups/${groupName}/repertoires/from-library`,
+        { folderPath: folder.name }, // Skicka med mappens sökväg
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      // Hämta den uppdaterade listan för att visa den nya låten
+      await fetchRepertoires();
+    } catch (error) {
+      console.error("Failed to add repertoire from library:", error);
+      alert("Kunde inte lägga till låten från biblioteket. Mappen kanske redan finns i repertoaren.");
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -83,7 +106,10 @@ export const AdminRepertoireListPage = () => {
     <div className={styles.page}>
       <div className={styles.header}>
         <h2>Låtar i Repertoaren</h2>
-        <Button onClick={() => setIsCreateModalOpen(true)}>Skapa ny låt</Button>
+        {/* Knappen är inaktiv medan ett anrop för att lägga till pågår */}
+        <Button onClick={() => setIsPickerModalOpen(true)} disabled={isAdding}>
+          {isAdding ? 'Lägger till...' : 'Lägg till från bibliotek'}
+        </Button>
       </div>
       <div className={styles.legend}>
         <IoInformationCircleOutline size={20} className={styles.legendIcon} />
@@ -113,17 +139,13 @@ export const AdminRepertoireListPage = () => {
         )}
       </ul>
 
-      {/* Modal för att skapa en ny låt */}
-      <Modal
-        isOpen={isCreateModalOpen}
-        onClose={() => setIsCreateModalOpen(false)}
-        title="Skapa ny låt mapp i repertoaren"
-      >
-        {/* Använd den nya formulär-komponenten och skicka med onSuccess-funktionen */}
-        <CreateRepertoireForm onSuccess={onRepertoireCreated} />
-      </Modal>
+      {isPickerModalOpen && (
+        <LibraryFolderPickerModal 
+          onClose={() => setIsPickerModalOpen(false)}
+          onAdd={handleAddFromLibrary}
+        />
+      )}
 
-      {/* Modal för att bekräfta radering */}
       <Modal
         isOpen={!!repertoireToDelete}
         onClose={() => setRepertoireToDelete(null)}
