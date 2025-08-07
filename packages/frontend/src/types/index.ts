@@ -11,15 +11,20 @@ export interface Material {
 
 export interface Event {
   eventId: string;
+  groupSlug: string; // Saknades, men finns i datan
   title: string;
-  eventDate: string;
-  endDate?: string;
-  // Detta är det korrekta fältet från din databas
-  eventType: 'REHEARSAL' | 'CONCERT' | string; 
+  eventDate: string;   // ISO-sträng
+  endDate: string;     // ISO-sträng (alltid obligatorisk enligt din create-logik)
+  eventType: 'REHEARSAL' | 'CONCERT' | string;
   location?: string;
-  description?: string;
-  // Detta fält verkar alltid vara "Event", så vi kan göra det valfritt
-  type?: string; 
+  description: string | null; // Mer exakt än valfri
+  type?: string;
+
+  // Fält som saknades och orsakade felet:
+  createdAt: string;
+  updatedAt: string;
+  descriptionUpdatedAt: string | null;
+  lastUpdatedFields: string[];
 }
 
 export interface GroupMember {

@@ -13,6 +13,8 @@ import type { Event } from '@/types';
 import styles from './AdminEventPage.module.scss';
 import { useAuth } from '@/context/AuthContext';
 
+// Notifikations-hooks är nu borttagna eftersom de inte behövs för admins/leaders
+
 export const AdminEventPage = () => {
   const { groupName } = useParams<{ groupName: string }>();
   const { user } = useAuth();
@@ -33,7 +35,8 @@ export const AdminEventPage = () => {
     setIsLoading(true);
     try {
       const data = await eventService.listEvents(groupName, token);
-      const sortedData = data.sort((b, a) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
+      // Notera: Ändrade sorteringen till fallande (nyast först) vilket ofta är mer logiskt i en admin-vy
+      const sortedData = data.sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
       setEvents(sortedData);
     } catch (error) {
       console.error("Failed to fetch events:", error);
@@ -89,14 +92,11 @@ export const AdminEventPage = () => {
           </div>
         </div>
         <div className={styles.actions}>
-          {/* "Visa"-knappen är separat */}
           {event.description && (
             <button className={styles.iconButton} onClick={() => setEventToShowDescription(event)} title="Visa beskrivning">
               <IoEyeOutline size={22} />
             </button>
           )}
-
-          {/* Ny container för Redigera/Radera */}
           <div className={styles.editActions}>
             <button className={styles.iconButton} onClick={() => handleOpenEditModal(event)} title="Redigera">
               <FiEdit size={18} />
@@ -133,51 +133,17 @@ export const AdminEventPage = () => {
       </div>
 
       <div className={styles.tabs}>
-        <button
-          className={`${styles.tabButton} ${activeTab === 'REHEARSAL' ? styles.activeTab : ''}`}
-          onClick={() => setActiveTab('REHEARSAL')}
-        >
-          Repetitioner
-        </button>
-        {(user?.role === 'admin' || user?.role === 'leader') && (
-          <button
-            className={`${styles.tabButton} ${activeTab === 'CONCERT' ? styles.activeTab : ''}`}
-            onClick={() => setActiveTab('CONCERT')}
-          >
-            Konserter
-          </button>
-        )}
-        {others.length > 0 && (
-          <button
-            className={`${styles.tabButton} ${activeTab === 'OTHER' ? styles.activeTab : ''}`}
-            onClick={() => setActiveTab('OTHER')}
-          >
-            Övrigt
-          </button>
-        )}
+        <button className={`${styles.tabButton} ${activeTab === 'REHEARSAL' ? styles.activeTab : ''}`} onClick={() => setActiveTab('REHEARSAL')}>Repetitioner</button>
+        {(user?.role === 'admin' || user?.role === 'leader') && (<button className={`${styles.tabButton} ${activeTab === 'CONCERT' ? styles.activeTab : ''}`} onClick={() => setActiveTab('CONCERT')}>Konserter</button>)}
+        {others.length > 0 && (<button className={`${styles.tabButton} ${activeTab === 'OTHER' ? styles.activeTab : ''}`} onClick={() => setActiveTab('OTHER')}>Övrigt</button>)}
       </div>
 
-      {/* ✅ Logik för att visa listor återställd till din ursprungliga, fungerande metod */}
       <section className={styles.listSection}>
-        {isLoading ? (
-          <p>Laddar events...</p>
-        ) : (
+        {isLoading ? ( <p>Laddar events...</p> ) : (
           <>
-            {activeTab === 'REHEARSAL' && (
-              <ul className={styles.eventList}>
-                {rehearsals.length > 0 ? rehearsals.map(renderEventItem) : <p>Inga repetitioner planerade.</p>}
-              </ul>
-            )}
-            {activeTab === 'CONCERT' && (
-              <ul className={styles.eventList}>
-                {concerts.length > 0 ? concerts.map(renderEventItem) : <p>Inga konserter planerade.</p>}
-              </ul>
-            )}
-            {activeTab === 'OTHER' && (
-              <ul className={styles.eventList}>
-                {others.length > 0 ? others.map(renderEventItem) : <p>Inga övriga events planerade.</p>}
-              </ul>
-            )}
+            {activeTab === 'REHEARSAL' && (<ul className={styles.eventList}>{rehearsals.length > 0 ? rehearsals.map(renderEventItem) : <p>Inga repetitioner planerade.</p>}</ul>)}
+            {activeTab === 'CONCERT' && (<ul className={styles.eventList}>{concerts.length > 0 ? concerts.map(renderEventItem) : <p>Inga konserter planerade.</p>}</ul>)}
+            {activeTab === 'OTHER' && (<ul className={styles.eventList}>{others.length > 0 ? others.map(renderEventItem) : <p>Inga övriga events planerade.</p>}</ul>)}
           </>
         )}
       </section>

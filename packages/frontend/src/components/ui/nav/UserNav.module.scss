@@ -11,6 +11,7 @@
 
 // Stilen för varje enskild länk/flik
 .navLink {
+  position: relative;
   @include center;
   width: 100%;
   padding: var(--spacing-md) 0;
@@ -36,6 +37,44 @@
     color: var(--color-text); // Gör texten ljusare vid hover för tydlighet
   }
 }
+
+.badge {
+  position: absolute;
+  top: 2px;
+  right: -5px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px; // Ger "pill"-formen
+
+  background-color: var(--color-text); // Ljus (nästan vit) bakgrund
+  color: var(--color-dark-gray);      // Mörk text
+  border: 1px solid var(--color-dark-gray);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 20px; // Centrerar texten vertikalt
+  text-align: center;
+
+  // En subtil animation för att dra till sig uppmärksamhet
+  animation: pop-in 0.5s ease-out;
+}
+
+// Keyframes för animationen
+@keyframes pop-in {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  80% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 
 .active {
   background-color: var(--color-border); // ✅ Lade till den ljusare bakgrundsfärgen

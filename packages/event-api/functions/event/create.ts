@@ -22,13 +22,10 @@ export const handler = async (
 
   try {
     const body = event.body ? JSON.parse(event.body) : {};
-    // ÄNDRING: Hämta även 'endDate' från request body.
     const { eventType, title, eventDate, endDate, description } = body;
     const userRole = event.requestContext.authorizer?.lambda?.role;
 
-    // Behörighetskontroll (ingen ändring här)
     if (userRole === 'admin') {
-      // Admins får skapa allt
     } else if (userRole === 'leader') {
       if (eventType !== 'REHEARSAL') {
         return sendError(403, "Forbidden: You only have permission to create rehearsals.");
@@ -41,8 +38,6 @@ export const handler = async (
     if (!groupSlug) {
       return sendError(400, "Group slug is required in the path.");
     }
-
-    // ÄNDRING: Validera att all nödvändig information finns, inklusive endDate.
     if (!title || !eventDate || !endDate || !eventType) {
       return sendError(400, "title, eventDate, endDate, and eventType are required.");
     }
@@ -51,8 +46,8 @@ export const handler = async (
     }
 
     const eventId = nanoid();
+    const nowISO = new Date().toISOString();
     const isoStartDate = new Date(eventDate).toISOString();
-    // ÄNDRING: Konvertera även endDate till ISO-format.
     const isoEndDate = new Date(endDate).toISOString();
 
     const item = {
@@ -62,10 +57,14 @@ export const handler = async (
       groupSlug,
       title,
       eventDate: isoStartDate,
-      endDate: isoEndDate, // ÄNDRING: Lägg till endDate i objektet som sparas.
+      endDate: isoEndDate,
       eventType,
       description: description || null,
-      createdAt: new Date().toISOString(),
+      createdAt: nowISO,
+      updatedAt: nowISO,
+      // NY LOGIK: Sätt tidsstämpel för beskrivningen endast om den finns
+      descriptionUpdatedAt: description ? nowISO : null,
+      lastUpdatedFields: [],
       type: "Event",
       GSI1PK: `GROUP#${groupSlug}`,
       GSI1SK: isoStartDate,
