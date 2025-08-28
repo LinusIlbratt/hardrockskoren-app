@@ -17,8 +17,6 @@ import { createAdminMainNavMobileSteps } from '@/tours/admin/adminMainNavStepsMo
 import { useCloseTourOnUserInteraction } from '@/hooks/useCloseTourOnUserInteraction';
 import { useIsMobile } from '@/hooks/useIsMobile';
 
-// ... (interface och all logik innan 'return' är oförändrad) ...
-
 interface MainNavProps {
     isMenuOpen: boolean;
     setIsMenuOpen: (open: boolean) => void;
@@ -178,6 +176,7 @@ interface MainNavProps {
             </div>
             
             <div className={styles.rightSection}>
+              
               <button
                 className={styles.hamburgerButton}
                 onClick={handleHamburgerClick}

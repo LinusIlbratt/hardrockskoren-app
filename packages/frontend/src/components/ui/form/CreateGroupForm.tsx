@@ -151,7 +151,7 @@ export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
           name="choirLeader"
           value={formData.choirLeader}
           onChange={handleChange}
-          placeholder="Ange namn eller e-post"
+          placeholder="Ange e-post"
         />
       </FormGroup>
 
