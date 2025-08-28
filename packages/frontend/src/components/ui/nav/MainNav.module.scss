@@ -183,12 +183,6 @@
     color: var(--color-text-primary);
     background-color: var(--color-background-hover);
   }
-
-  span {
-    @media (max-width: #{$tabletBreakpoint}) {
-      display: none;
-    }
-  }
 }
 
 /* --- DESKTOP-STILAR --- */
