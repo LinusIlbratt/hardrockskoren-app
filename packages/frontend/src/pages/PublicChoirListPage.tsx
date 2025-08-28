@@ -50,7 +50,6 @@ export const PublicChoirListPage = () => {
   return (
     <div className={styles.page}>
       <h1 className={styles.title}>Alla körer</h1>
-      <p className={styles.subtitle}>Upptäck alla körer som använder plattformen.</p>
 
       {isLoading && <p>Laddar körer...</p>}
       {error && <p className={styles.error}>{error}</p>}
