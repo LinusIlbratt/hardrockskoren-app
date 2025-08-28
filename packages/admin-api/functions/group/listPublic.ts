@@ -27,11 +27,12 @@ export const handler = middy().handler(
         // FÖRBÄTTRING: Detta är den viktiga ändringen.
         // Vi talar om för DynamoDB att BARA hämta dessa tre attribut.
         // Detta är både säkrare och mer kostnadseffektivt.
-        ProjectionExpression: "#n, #s, #l",
+        ProjectionExpression: "#n, #s, #l , #c",
         ExpressionAttributeNames: {
           "#n": "name",
           "#s": "slug",
           "#l": "location",
+          "#c": "choirLeader",
         },
       });
 

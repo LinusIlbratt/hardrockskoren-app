@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import styles from './PublicChoirListPage.module.scss';
-import { FiMapPin } from 'react-icons/fi';
+import { FiMapPin, FiMail } from 'react-icons/fi';
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
@@ -12,6 +12,7 @@ interface PublicGroup {
   name: string;
   slug: string;
   location: string;
+  choirLeader?: string;
 }
 
 export const PublicChoirListPage = () => {
@@ -62,6 +63,10 @@ export const PublicChoirListPage = () => {
               <div className={styles.choirLocation}>
                 <FiMapPin />
                 <span>{choir.location}</span>
+              </div>
+              <div className={styles.choirLeader}>
+                <FiMail />
+                <span>{choir.choirLeader || 'Ingen körledare angiven'}</span>
               </div>
             </div>
           ))}
