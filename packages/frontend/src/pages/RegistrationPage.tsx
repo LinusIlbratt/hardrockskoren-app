@@ -74,14 +74,17 @@ export const RegistrationPage = () => {
     if (!formData.lastName.trim()) {
       errors.lastName = 'Efternamn måste fyllas i.';
     }
+    const passwordRegex = /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/; 
+
     if (formData.password.length < 8) {
       errors.password = 'Lösenordet måste vara minst 8 tecken långt.';
-    } else if (!/(?=.*[A-Za-z])(?=.*\d)/.test(formData.password)) {
-      errors.password = 'Lösenordet måste innehålla både bokstäver och siffror.';
+    } else if (!passwordRegex.test(formData.password)) {
+      // VIKTIGT: Nytt, komplett felmeddelande som inkluderar alla kända krav
+      errors.password = 'Lösenordet måste innehålla minst en stor bokstav, en liten bokstav och en siffra.';
     }
 
     setFormErrors(errors);
-    // Returnerar true om error-objektet är tomt
+    // Denna rad avbryter anropet till handleSubmit om 'errors' inte är tomt.
     return Object.keys(errors).length === 0;
   };
 
@@ -93,9 +96,9 @@ export const RegistrationPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Kör valideringen. Om den misslyckas, avbryt.
+    // KONTROLLPUNKT: Denna check förhindrar anropet till axios/backend.
     if (!validateForm()) {
-      return;
+      return; // Återgår här om valideringen misslyckas.
     }
 
     setIsLoading(true);
@@ -160,7 +163,7 @@ export const RegistrationPage = () => {
           </FormGroup>
           <FormGroup label="Välj ett lösenord" htmlFor="password" error={formErrors.password}>
             <Input id="password" type="password" value={formData.password} onChange={handleChange} />
-            <p className={styles.passwordHint}>Minst 8 tecken, med både bokstäver och siffror.</p>
+            <p className={styles.passwordHint}>Minst 8 tecken, med stor bokstav, liten bokstav och siffror.</p>
           </FormGroup>
           {apiError && <p className={styles.formError}>{apiError}</p>}
           <div className={styles.buttonGroup}>
