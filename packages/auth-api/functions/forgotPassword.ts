@@ -47,7 +47,6 @@ export const handler = middy<APIGatewayProxyEventV2, APIGatewayProxyResultV2>()
   .use(validateSchema(forgotPasswordSchema))
   .handler(
     async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {
-      // ÄNDRING: Lade till RESEND_API_KEY i konfigurationskollen
       if (!USER_POOL_ID || !RESET_TABLE_NAME || !process.env.RESEND_API_KEY) {
         return sendError(500, "Serverkonfigurationen är ofullständig.");
       }
@@ -77,18 +76,28 @@ export const handler = middy<APIGatewayProxyEventV2, APIGatewayProxyResultV2>()
         await dbClient.send(putCommand);
 
         // ÄNDRING: Byt ut SES mot Resend
-        await resend.emails.send({
+       const { data, error } = await resend.emails.send({
           from: FROM_EMAIL,
           to: [email],
           subject: `Din återställningskod för Hårdrockskören`,
           html: ResetCodeEmailTemplate({ code }),
         });
 
-        console.log(`En återställningskod har skickats till ${email}`);
+        // 2. Kontrollera om 'error'-objektet finns
+        if (error) {
+          // Om det finns ett fel, logga det och returnera ett fel
+          console.error("Resend API-fel:", error);
+          // Du kan fortfarande returnera ett "OK" till klienten av säkerhetsskäl
+          return sendResponse({ message: "Om ett konto med den e-postadressen finns, har en återställningskod skickats." });
+        }
+
+        // 3. Om inget fel fanns (data finns), logga framgång
+        console.log(`En återställningskod har skickats till ${email}. Resend ID: ${data?.id}`);
         return sendResponse({ message: "Om ett konto med den e-postadressen finns, har en återställningskod skickats." });
 
       } catch (error: any) {
-        console.error("Misslyckades att initiera lösenordsåterställning:", error);
+        // Denna catch fångar nu fel från ListUsers eller DynamoDB
+        console.error("Misslyckades att initiera lösenordsåterställning (Generellt fel):", error);
         return sendError(500, "Internal server error.");
       }
     }
