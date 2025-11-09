@@ -91,7 +91,7 @@ const MAIN_TABLE = process.env.MAIN_TABLE!;
 const USER_POOL_ID = process.env.USER_POOL_ID!;
 const FRONTEND_URL = process.env.FRONTEND_URL!;
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM_EMAIL = 'Hårdrockskören <inbjudan@hardrockskoren.se>';
+const FROM_EMAIL = 'Hårdrockskörens app <inbjudan@hardrockskoren.se>';
 
 
 export const handler = async (
@@ -180,7 +180,7 @@ export const handler = async (
         await resend.emails.send({
           from: FROM_EMAIL,
           to: [email], // Byt till en ny test-adress
-          subject: `Inbjudan till kören ${groupDetails.name}!`,
+          subject: `Inbjudan till Hårdrockskörens app av Petra Kvännå`,
 
           // Både HTML och ren text inkluderas
           html: InviteEmailTemplate({

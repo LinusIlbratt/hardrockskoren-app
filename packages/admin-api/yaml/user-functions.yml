@@ -45,3 +45,29 @@ updateUserRole:
     - Effect: "Allow"
       Action: ["cognito-idp:AdminUpdateUserAttributes"]
       Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
+
+adminCreateUser:
+  # ANPASSA DENNA: Se till att sökvägen matchar din fil (t.ex. adminCreate.handler)
+  handler: functions/user/create.handler 
+  name: hrk-admin-create-user-${sls:stage}
+  events:
+    - httpApi:
+        method: POST
+        path: /admin/users 
+        authorizer: authorizer 
+  environment:
+    USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+    # KORRIGERAD: Använder ditt variabelnamn 'mainTableName'
+    MAIN_TABLE: ${self:custom.mainTableName} 
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action: 
+        - "cognito-idp:AdminCreateUser"
+        - "cognito-idp:AdminSetUserPassword"
+        - "cognito-idp:AdminAddUserToGroup"
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
+    - Effect: "Allow"
+      Action: 
+        - "dynamodb:PutItem"
+      # KORRIGERAD: Använder ditt variabelnamn 'mainTableName'
+      Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"

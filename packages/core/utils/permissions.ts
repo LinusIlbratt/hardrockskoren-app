@@ -31,6 +31,7 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   'GET /me': RoleGroups.ALL_LOGGED_IN,
   'POST /change-password': RoleGroups.ALL_LOGGED_IN,
   'POST /admin/change-password': RoleGroups.ADMIN_ONLY,
+  'POST /admin/users': RoleGroups.ADMIN_ONLY,
   
   // === Event Management ===
   'POST /groups/{groupSlug}/events': RoleGroups.MANAGEMENT,
