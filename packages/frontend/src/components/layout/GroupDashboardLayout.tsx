@@ -63,6 +63,7 @@ export const GroupDashboardLayout = () => {
     >
       <div className={styles.dashboardLayout}>
         <header className={styles.header}>
+          <h1 className={styles.groupName}>{currentGroup.name}</h1>
           <GroupNav />
         </header>
         <main className={styles.content}>
