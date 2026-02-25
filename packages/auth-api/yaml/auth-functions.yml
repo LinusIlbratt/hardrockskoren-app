@@ -98,7 +98,6 @@ changeMyPassword:
 
 
 forgotPassword:
-  # Se till att sökvägen matchar din filstruktur, t.ex. functions/password/forgotPassword.handler
   handler: ./functions/forgotPassword.handler
   name: hrk-forgot-password-${sls:stage}
   description: User forgot their password

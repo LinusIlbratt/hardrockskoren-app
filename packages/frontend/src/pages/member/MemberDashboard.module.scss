@@ -1,8 +1,9 @@
+.layout,
 .dashboardLayout {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem; // Justerat gap
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem; // Justerat gap
+}
 
   .header {
     border-bottom: 1px solid var(--color-border);
@@ -16,4 +17,11 @@
 
   .subheadingLabel {
     color: var(--color-text-secondary);
+  }
+
+  .groupName {
+    margin: 0 0 1rem 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--color-text);
   }

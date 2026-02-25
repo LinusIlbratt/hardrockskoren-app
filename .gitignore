@@ -25,3 +25,9 @@ env.*.yaml
 *.njsproj
 *.sln
 *.sw?
+
+# Analys och implementeringsplaner (interna dokument)
+analys/
+
+# Dokumentation (interna arbetsflöden m.m.)
+docs/
