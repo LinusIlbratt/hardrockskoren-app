@@ -24,12 +24,21 @@ export const handler = middy().handler(
         return sendError(400, "Group name (slug) is required.");
       }
 
-      // --- STEG 1: Radera gruppen från Cognito ---
-      const deleteCognitoGroupCmd = new DeleteGroupCommand({
-        UserPoolId: userPoolId,
-        GroupName: groupSlug,
-      });
-      await cognitoClient.send(deleteCognitoGroupCmd);
+      // --- STEG 1: Radera gruppen från Cognito (om den finns) ---
+      try {
+        const deleteCognitoGroupCmd = new DeleteGroupCommand({
+          UserPoolId: userPoolId,
+          GroupName: groupSlug,
+        });
+        await cognitoClient.send(deleteCognitoGroupCmd);
+      } catch (cognitoError: any) {
+        // Om gruppen inte finns i Cognito (t.ex. inkonsistent state) – fortsätt ändå och rensa DynamoDB
+        if (cognitoError.name === "ResourceNotFoundException") {
+          console.warn(`Group "${groupSlug}" not found in Cognito, cleaning up DynamoDB only.`);
+        } else {
+          throw cognitoError;
+        }
+      }
 
       // --- STEG 2: Radera alla poster för gruppen från DynamoDB ---
       const queryCommand = new QueryCommand({
@@ -39,7 +48,7 @@ export const handler = middy().handler(
         ProjectionExpression: "PK, SK",
       });
       const queryResponse = await dbClient.send(queryCommand);
-      
+
       if (queryResponse.Items && queryResponse.Items.length > 0) {
         const deleteRequests: WriteRequest[] = queryResponse.Items.map(item => ({
           DeleteRequest: { Key: { PK: item.PK, SK: item.SK } },
@@ -51,12 +60,9 @@ export const handler = middy().handler(
         await dbClient.send(batchWriteCommand);
       }
 
-      return sendResponse({ message: "Group deleted successfully from both Cognito and DynamoDB." }, 200);
+      return sendResponse({ message: "Group deleted successfully." }, 200);
 
     } catch (error: any) {
-      if (error.name === 'ResourceNotFoundException') {
-        return sendError(404, "Group not found in Cognito.");
-      }
       console.error("Error deleting group:", error);
       return sendError(500, error.message || "Internal server error");
     }
