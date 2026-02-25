@@ -13,3 +13,10 @@
   .subheadingLabel {
     color: var(--color-text-secondary);
   }
+
+  .groupName {
+    margin: 0 0 var(--spacing-md) 0;
+    font-size: var(--fs-lg, 1.25rem);
+    font-weight: 700;
+    color: var(--color-text);
+  }

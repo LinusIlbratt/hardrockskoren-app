@@ -3,7 +3,14 @@
     flex-direction: column;
   }
   
-  .header {
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: var(--spacing-lg);
-  }
+.header {
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--spacing-lg);
+}
+
+.groupName {
+  margin: 0 0 var(--spacing-md) 0;
+  font-size: var(--fs-lg, 1.25rem);
+  font-weight: 700;
+  color: var(--color-text);
+}

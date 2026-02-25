@@ -65,9 +65,12 @@ const [isLoadingName, setIsLoadingName] = useState(true);
         <p>
           <span className={styles.subheadingLabel}>Körledare i
           {isLoadingName ? ' Laddar...' : ` ${choirDisplayName}`}</span>
-        </p>        
+        </p>
       </header>
-      
+
+      {!isLoadingName && choirDisplayName && (
+        <h1 className={styles.groupName}>{choirDisplayName}</h1>
+      )}
       <LeaderNav />
       
       <main className={styles.content}>

@@ -69,7 +69,10 @@ export const MemberDashboard = () => {
           {isLoadingName ? ' Laddar...' : ` ${choirDisplayName}`}</span>
         </p>
       </header>
-      
+
+      {!isLoadingName && choirDisplayName && (
+        <h2 className={styles.groupName}>{choirDisplayName}</h2>
+      )}
       <UserNav groupName={groupName} />
       
       <main className={styles.content}>

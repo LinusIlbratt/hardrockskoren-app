@@ -1,10 +1,10 @@
 // src/styles/main.scss
 
-// Importera variablerna FÖRST, så att de definieras.
-@import 'variables';
+// Load variables first (Dart Sass modern syntax; @import is deprecated).
+@use 'variables' as *;
 
-// Importera sedan de grundläggande stilarna som använder variablerna.
-@import 'typography';
+// Then load typography (depends on variables for $tabletBreakpoint).
+@use 'typography';
 
 // I t.ex. main.scss
 
