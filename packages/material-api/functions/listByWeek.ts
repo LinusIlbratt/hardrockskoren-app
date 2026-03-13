@@ -1,6 +1,6 @@
 // functions/practice/listByWeek.ts
 
-import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../core/utils/http";
@@ -8,6 +8,8 @@ import middy from "@middy/core";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
+
+const PK_SJUNGUPP = "SJUNGUPP#MATERIALS";
 
 // Typ för ett enskilt material-objekt efter att det har hämtats och avkodats
 interface Material {
@@ -31,17 +33,27 @@ export const handler = middy().handler(
     }
 
     try {
-      // STEG 1: Hämta allt Sjungupp-material från DynamoDB
-      const scanCommand = new ScanCommand({
-        TableName: MAIN_TABLE,
-        FilterExpression: "PK = :pk",
-        ExpressionAttributeValues: {
-          ":pk": { S: "SJUNGUPP#MATERIALS" },
-        },
-      });
+      // STEG 1: Hämta allt Sjungupp-material via Query (samma partition) med paginering
+      const allItems: Material[] = [];
+      let lastEvaluatedKey: Record<string, unknown> | undefined;
 
-      const response = await dbClient.send(scanCommand);
-      const items = (response.Items || []).map(item => unmarshall(item)) as Material[];
+      do {
+        const queryCommand = new QueryCommand({
+          TableName: MAIN_TABLE,
+          KeyConditionExpression: "PK = :pk",
+          ExpressionAttributeValues: {
+            ":pk": { S: PK_SJUNGUPP },
+          },
+          ExclusiveStartKey: lastEvaluatedKey as Record<string, { S?: string; N?: string }> | undefined,
+        });
+
+        const response = await dbClient.send(queryCommand);
+        const batch = (response.Items || []).map(item => unmarshall(item)) as Material[];
+        allItems.push(...batch);
+        lastEvaluatedKey = response.LastEvaluatedKey as Record<string, unknown> | undefined;
+      } while (lastEvaluatedKey);
+
+      const items = allItems;
 
       // STEG 2: Gruppera materialet per weekId
       const groupedByWeek = items.reduce((acc, material) => {

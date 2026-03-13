@@ -1,6 +1,6 @@
 // functions/listForMembers.ts
 
-import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../core/utils/http";
@@ -9,6 +9,8 @@ import { getISOWeek, getYear } from 'date-fns'; // Importera date-fns
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
+
+const PK_SJUNGUPP = "SJUNGUPP#MATERIALS";
 
 interface Material {
   materialId: string;
@@ -35,22 +37,30 @@ export const handler = middy().handler(
       const currentYear = getYear(now);
       const currentWeekNumber = getISOWeek(now);
       const currentWeekId = `${currentYear}-W${String(currentWeekNumber).padStart(2, '0')}`;
-      
-      console.log(`Current week calculated as: ${currentWeekId}`);
 
-      // STEG 2: Hämta allt material som är från nuvarande eller tidigare veckor
-      const scanCommand = new ScanCommand({
-        TableName: MAIN_TABLE,
-        // FilterExpression letar upp rätt typ OCH ser till att weekId är mindre än eller lika med nuvarande vecka
-        FilterExpression: "PK = :pk AND weekId <= :currentWeekId",
-        ExpressionAttributeValues: {
-          ":pk": { S: "SJUNGUPP#MATERIALS" },
-          ":currentWeekId": { S: currentWeekId },
-        },
-      });
+      // STEG 2: Hämta allt Sjungupp-material via Query med FilterExpression för weekId <= currentWeekId
+      const allItems: Material[] = [];
+      let lastEvaluatedKey: Record<string, unknown> | undefined;
 
-      const response = await dbClient.send(scanCommand);
-      const items = (response.Items || []).map(item => unmarshall(item)) as Material[];
+      do {
+        const queryCommand = new QueryCommand({
+          TableName: MAIN_TABLE,
+          KeyConditionExpression: "PK = :pk",
+          FilterExpression: "weekId <= :currentWeekId",
+          ExpressionAttributeValues: {
+            ":pk": { S: PK_SJUNGUPP },
+            ":currentWeekId": { S: currentWeekId },
+          },
+          ExclusiveStartKey: lastEvaluatedKey as Record<string, { S?: string; N?: string }> | undefined,
+        });
+
+        const response = await dbClient.send(queryCommand);
+        const batch = (response.Items || []).map(item => unmarshall(item)) as Material[];
+        allItems.push(...batch);
+        lastEvaluatedKey = response.LastEvaluatedKey as Record<string, unknown> | undefined;
+      } while (lastEvaluatedKey);
+
+      const items = allItems;
 
       // STEG 3: Gruppera och sortera (samma logik som i listByWeek)
       const groupedByWeek = items.reduce((acc, material) => {
