@@ -1,12 +1,12 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { PageLoader } from '@/components/ui/loader/Loader';
 
 export const ProtectedRoute = () => {
   const { user, isLoading } = useAuth();
 
-  // Om vi fortfarande kollar om användaren är inloggad, visa en laddningstext
   if (isLoading) {
-    return <div>Laddar session...</div>;
+    return <PageLoader />;
   }
   
   // Om vi har laddat klart och ingen användare finns, skicka till /login

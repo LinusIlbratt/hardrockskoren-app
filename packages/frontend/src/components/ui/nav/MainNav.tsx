@@ -198,7 +198,7 @@ interface MainNavProps {
             beforeClose={() => setShowMainNavTour(false)}
           >
             <nav className={`${styles.nav} ${styles.navOpen}`}>
-              <button className={styles.navCloseButton} onClick={() => setIsMenuOpen(false)}>
+              <button className={styles.navCloseButton} onClick={() => setIsMenuOpen(false)} aria-label="Stäng meny">
                 <IoClose size={32} />
               </button>
               

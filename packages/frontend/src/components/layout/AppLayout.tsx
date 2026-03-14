@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { MainNav } from '../ui/nav/MainNav';
+import { PageLoader } from '@/components/ui/loader/Loader';
 import styles from './AppLayout.module.scss';
 
 export const AppLayout = () => {
@@ -9,7 +10,7 @@ export const AppLayout = () => {
   const { isLoading } = useAuth();
 
   if (isLoading) {
-    return <div>Laddar applikationens layout...</div>;
+    return <PageLoader />;
   }
 
   return (

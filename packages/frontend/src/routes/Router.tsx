@@ -27,6 +27,7 @@ import { useAuth } from '@/context/AuthContext';
 import { GroupSelectionPage } from '@/pages/GroupSelectionPage';
 import { MaterialDetailPage } from "@/pages/admin/MaterialDetailPage";
 import { PublicChoirListPage } from "@/pages/PublicChoirListPage";
+import { PageLoader } from "@/components/ui/loader/Loader";
 
 // Denna komponent ersätter din gamla DashboardPage.
 // Dess enda syfte är att omedelbart dirigera användaren till rätt plats.
@@ -57,8 +58,8 @@ const DashboardPage = () => {
     }
   }, [user, isLoading, navigate]);
 
-  // Visa en enkel laddningsindikator medan logiken körs
-  return <div>Laddar...</div>;
+  // Visa en enhetlig laddningsindikator medan logiken körs
+  return <PageLoader />;
 };
 
 
