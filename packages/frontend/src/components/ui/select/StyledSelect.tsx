@@ -10,7 +10,7 @@ export interface SelectOption {
 const customSelectStyles: StylesConfig<SelectOption> = {
   control: (provided, state) => ({
     ...provided,
-    backgroundColor: '#1d1d1d',
+    backgroundColor: 'var(--color-dark-gray)',
     borderColor: state.isFocused ? 'var(--color-primary)' : 'var(--color-border)',
     boxShadow: state.isFocused ? '0 0 0 1px var(--color-primary)' : 'none',
     borderRadius: 'var(--radius-md)',
@@ -30,8 +30,8 @@ const customSelectStyles: StylesConfig<SelectOption> = {
   }),
   option: (provided, state) => ({
     ...provided,
-    backgroundColor: state.isSelected ? 'var(--color-text)' : state.isFocused ? '#3d3d3d' : 'transparent',
-    color: state.isSelected ? 'var(--color-background)' : 'var(--color-text)',
+    backgroundColor: state.isSelected ? 'var(--color-primary)' : state.isFocused ? 'var(--color-background-hover-strong)' : 'transparent',
+    color: state.isSelected ? 'var(--color-text-on-primary)' : 'var(--color-text)',
     cursor: 'pointer',
     ':active': {
       backgroundColor: 'var(--color-primary)',
@@ -40,7 +40,7 @@ const customSelectStyles: StylesConfig<SelectOption> = {
   singleValue: (provided) => ({ ...provided, color: 'var(--color-text)' }),
   input: (provided) => ({ ...provided, color: 'var(--color-text)' }),
   indicatorSeparator: () => ({ display: 'none' }),
-  dropdownIndicator: (provided) => ({ ...provided, color: '#9ca3af', ':hover': { color: 'white' } }),
+  dropdownIndicator: (provided) => ({ ...provided, color: 'var(--color-text-secondary)', ':hover': { color: 'var(--color-text)' } }),
 };
 
 // Vår återanvändbara wrapper-komponent

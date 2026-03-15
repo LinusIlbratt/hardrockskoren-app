@@ -78,15 +78,15 @@
   line-height: 1; // Tar bort eventuellt extra vertikalt utrymme
   
   // Utseende och interaktion
-  color: #9ca3af; // En lite diskretare grå färg
+  color: var(--color-text-secondary);
   cursor: pointer;
   border-radius: var(--radius-round); // Gör knappen helt rund
   transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
 
   // Effekt när användaren för muspekaren över knappen
   &:hover {
-    color: var(--color-text); // Byt till den vanliga, ljusare textfärgen
-    background-color: rgba(255, 255, 255, 0.1); // En subtil highlight
+    color: var(--color-text);
+    background-color: var(--color-background-hover);
     transform: rotate(90deg); // En snygg snurr-effekt!
   }
 }

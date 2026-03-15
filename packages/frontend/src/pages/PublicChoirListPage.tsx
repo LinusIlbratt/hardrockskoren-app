@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import styles from './PublicChoirListPage.module.scss';
 import { FiMapPin, FiMail } from 'react-icons/fi';
+import { PageLoader } from '@/components/ui/loader/Loader';
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
@@ -47,14 +48,17 @@ export const PublicChoirListPage = () => {
     fetchPublicChoirs();
   }, []); // Körs bara en gång när komponenten laddas
 
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
   return (
     <div className={styles.page}>
       <h1 className={styles.title}>Alla körer</h1>
 
-      {isLoading && <p>Laddar körer...</p>}
       {error && <p className={styles.error}>{error}</p>}
       
-      {!isLoading && !error && (
+      {!error && (
         <div className={styles.choirList}>
           {choirs.map(choir => (
             <div key={choir.slug} className={styles.choirCard}>

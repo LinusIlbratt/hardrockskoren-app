@@ -10,13 +10,13 @@
 
 /* Anpassningar för react-datepicker för att passa mörkt tema */
 .react-datepicker {
-  background-color: #282828;
+  background-color: var(--color-dark-gray);
   border-color: var(--color-border);
   font-family: var(--font-body);
 }
 
 .react-datepicker__header {
-  background-color: #181818;
+  background-color: var(--color-panel-darker);
   border-bottom-color: var(--color-border);
 }
 
@@ -27,19 +27,19 @@
 }
 
 .react-datepicker__day:hover {
-  background-color: #3d3d3d;
+  background-color: var(--color-background-hover-strong);
 }
 
 .react-datepicker__day--selected,
 .react-datepicker__day--keyboard-selected {
   background-color: var(--color-primary);
-  color: #121212;
+  color: var(--color-text-on-primary);
   font-weight: bold;
 }
 
 .react-datepicker__time-container .react-datepicker__time .react-datepicker__time-box ul.react-datepicker__time-list li.react-datepicker__time-list-item--selected {
   background-color: var(--color-primary) !important;
-  color: #121212 !important;
+  color: var(--color-text-on-primary) !important;
   font-weight: bold;
 }
 

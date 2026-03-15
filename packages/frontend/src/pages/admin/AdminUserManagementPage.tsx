@@ -91,6 +91,14 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
     });
   }, [allMembers, searchTerm]);
 
+  const { leaders, members: membersOnly } = useMemo(() => {
+    const leaders = filteredMembers.filter(m => m.role === 'leader' || m.role === 'admin');
+    const members = filteredMembers.filter(m => m.role === 'user');
+    return { leaders, members: members };
+  }, [filteredMembers]);
+
+  const hasAnyFiltered = leaders.length > 0 || membersOnly.length > 0;
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -115,13 +123,26 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
 
       {isLoading ? (
         <p>Laddar medlemmar...</p>
-      ) : filteredMembers.length > 0 ? (
+      ) : hasAnyFiltered ? (
         <>
-          <UserList
-            members={filteredMembers}
-            // ✅ KORRIGERING: Skickar bara med onEditUser-funktionen om användaren är admin.
-            onEditUser={viewerRole === 'admin' ? (member) => setSelectedUser(member) : undefined}
-          />
+          {leaders.length > 0 && (
+            <section className={styles.section}>
+              <h3 className={styles.sectionTitle}>Körledare</h3>
+              <UserList
+                members={leaders}
+                onEditUser={viewerRole === 'admin' ? (member) => setSelectedUser(member) : undefined}
+              />
+            </section>
+          )}
+          {membersOnly.length > 0 && (
+            <section className={styles.section}>
+              <h3 className={styles.sectionTitle}>Medlemmar</h3>
+              <UserList
+                members={membersOnly}
+                onEditUser={viewerRole === 'admin' ? (member) => setSelectedUser(member) : undefined}
+              />
+            </section>
+          )}
           {nextToken && !searchTerm && (
             <div className={styles.loadMoreContainer}>
               <Button
