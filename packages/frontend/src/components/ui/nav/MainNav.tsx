@@ -91,6 +91,7 @@ interface MainNavProps {
           <>
             <NavLink to="/admin/groups" className={styles.navLink} onClick={handleLinkClick}>Körer</NavLink>
             <NavLink to="/admin/globalMaterial" className={styles.navLink} onClick={handleLinkClick}>Material</NavLink>
+            <NavLink to="/admin/stammor" className={styles.navLink} onClick={handleLinkClick}>Stämmor</NavLink>
             <NavLink to="/admin/practice" className={styles.navLink} onClick={handleLinkClick}>Sjungupp!</NavLink>
           </>
         )}

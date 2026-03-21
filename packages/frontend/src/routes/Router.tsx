@@ -28,6 +28,8 @@ import { GroupSelectionPage } from '@/pages/GroupSelectionPage';
 import { MaterialDetailPage } from "@/pages/admin/MaterialDetailPage";
 import { PublicChoirListPage } from "@/pages/PublicChoirListPage";
 import { PageLoader } from "@/components/ui/loader/Loader";
+import { AdminStammorPage } from "@/pages/admin/AdminStammorPage";
+import { AdminStammorFormPage } from "@/pages/admin/AdminStammorFormPage";
 
 // Denna komponent ersätter din gamla DashboardPage.
 // Dess enda syfte är att omedelbart dirigera användaren till rätt plats.
@@ -106,6 +108,15 @@ const router = createBrowserRouter([
               {
                 path: "practice",
                 element: <AdminUploadPracticePage />,
+              },
+              {
+                path: "stammor",
+                element: <Outlet />,
+                children: [
+                  { index: true, element: <AdminStammorPage /> },
+                  { path: "new", element: <AdminStammorFormPage /> },
+                  { path: ":playlistId", element: <AdminStammorFormPage /> },
+                ],
               },
               {
                 path: "groups",

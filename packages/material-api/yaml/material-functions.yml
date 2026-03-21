@@ -504,3 +504,103 @@ listPracticeForMembers:
           - dynamodb:Scan
         Resource:
           - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+# === Voice playlists (Stämmor) ===
+listVoicePlaylists:
+  handler: functions/listVoicePlaylists.handler
+  name: hrk-list-voice-playlists-${sls:stage}
+  description: Lists all voice playlists (for members and leaders).
+  events:
+    - httpApi:
+        method: GET
+        path: /voice-playlists
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+getVoicePlaylist:
+  handler: functions/getVoicePlaylist.handler
+  name: hrk-get-voice-playlist-${sls:stage}
+  description: Gets a single voice playlist with track details (admin).
+  events:
+    - httpApi:
+        method: GET
+        path: /voice-playlists/{playlistId}
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:BatchGetItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+createVoicePlaylist:
+  handler: functions/createVoicePlaylist.handler
+  name: hrk-create-voice-playlist-${sls:stage}
+  description: Creates a new voice playlist (admin only).
+  events:
+    - httpApi:
+        method: POST
+        path: /voice-playlists
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:PutItem"
+        - "dynamodb:BatchGetItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+updateVoicePlaylist:
+  handler: functions/updateVoicePlaylist.handler
+  name: hrk-update-voice-playlist-${sls:stage}
+  description: Updates a voice playlist (admin only).
+  events:
+    - httpApi:
+        method: PUT
+        path: /voice-playlists/{playlistId}
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:BatchGetItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+deleteVoicePlaylist:
+  handler: functions/deleteVoicePlaylist.handler
+  name: hrk-delete-voice-playlist-${sls:stage}
+  description: Deletes a voice playlist (admin only).
+  events:
+    - httpApi:
+        method: DELETE
+        path: /voice-playlists/{playlistId}
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:DeleteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"

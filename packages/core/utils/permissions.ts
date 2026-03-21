@@ -70,4 +70,11 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   'POST /groups/{groupName}/repertoires/from-library': RoleGroups.MANAGEMENT,
   'GET /practice/materials-by-week': RoleGroups.ADMIN_ONLY,
   'GET /practice/materials/member-view': RoleGroups.ALL_LOGGED_IN,
+
+  // === Voice playlists (Stämmor) ===
+  'GET /voice-playlists': RoleGroups.ALL_LOGGED_IN,
+  'GET /voice-playlists/{playlistId}': RoleGroups.ADMIN_ONLY,
+  'POST /voice-playlists': RoleGroups.ADMIN_ONLY,
+  'PUT /voice-playlists/{playlistId}': RoleGroups.ADMIN_ONLY,
+  'DELETE /voice-playlists/{playlistId}': RoleGroups.ADMIN_ONLY,
 };
