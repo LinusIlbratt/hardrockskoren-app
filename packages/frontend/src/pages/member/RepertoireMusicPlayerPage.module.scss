@@ -1,0 +1,561 @@
+@use '@/styles/variables' as *;
+
+/* ═══════════════════════════════════════════
+   SPOTIFY-LIKE MUSIC SHELL
+   ═══════════════════════════════════════════ */
+
+.musicShell {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  background: #000;
+  color: #e1e1e1;
+  box-sizing: border-box;
+  font-family: var(--font-body);
+  overflow: hidden;
+}
+
+/* ───────── top bar ───────── */
+.shellTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  height: 56px;
+  padding: 0 var(--spacing-lg);
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  z-index: 2;
+}
+
+.shellTopLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.shellBrand {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: var(--color-primary, #fe160a);
+  text-transform: uppercase;
+}
+
+.shellBrandTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+
+.shellTopRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #a0a0a0;
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.07);
+  }
+}
+
+.closeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  color: #a0a0a0;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+    transform: scale(1.05);
+  }
+}
+
+/* ───────── body grid: sidebar + main ───────── */
+.shellBody {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ───────── sidebar ───────── */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  background: #0d0d0d;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  min-height: 0;
+}
+
+.sidebarTitle {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 20px 20px 12px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #666;
+}
+
+.folderList {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px 12px;
+  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 4px; }
+}
+
+.folderButton {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #b3b3b3;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: inherit;
+  transition: background 0.12s, color 0.12s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+  }
+}
+
+.folderButtonActive {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
+}
+
+.folderIcon {
+  flex-shrink: 0;
+  color: var(--color-primary, #fe160a);
+  opacity: 0.8;
+}
+
+.folderLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+/* ───────── main content area ───────── */
+.shellMain {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* gradient header behind hero */
+.shellMain::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 340px;
+  background: linear-gradient(
+    180deg,
+    rgba(var(--hero-r, 80), var(--hero-g, 10), var(--hero-b, 10), 0.45) 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+  transition: background 0.6s ease;
+}
+
+/* ───────── hero (album header) ───────── */
+.hero {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 24px;
+  flex-shrink: 0;
+  padding: 32px 32px 24px;
+}
+
+.heroArt {
+  width: 180px;
+  height: 180px;
+  border-radius: 4px;
+  background: linear-gradient(
+    145deg,
+    var(--color-primary, #fe160a) 0%,
+    #3d0a0a 60%,
+    #111 100%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4.5rem;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.92);
+  flex-shrink: 0;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.04);
+  user-select: none;
+}
+
+.heroText {
+  min-width: 0;
+  padding-bottom: 4px;
+}
+
+.heroEyebrow {
+  margin: 0 0 6px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ccc;
+}
+
+.heroTitle {
+  margin: 0 0 8px;
+  font-size: clamp(1.5rem, 3.5vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.12;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.heroMeta {
+  margin: 0 0 16px;
+  color: #a0a0a0;
+  font-size: 0.82rem;
+}
+
+.playAllButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 32px;
+  border: none;
+  border-radius: 999px;
+  background: var(--color-primary, #fe160a);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: transform 0.12s, filter 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(254, 22, 10, 0.35);
+
+  &:hover {
+    filter: brightness(1.12);
+    transform: scale(1.03);
+    box-shadow: 0 6px 24px rgba(254, 22, 10, 0.45);
+  }
+
+  &:active {
+    transform: scale(0.97);
+  }
+}
+
+/* ───────── track list ───────── */
+.trackScroll {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 32px 16px;
+
+  &::-webkit-scrollbar { width: 6px; }
+  &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 6px; }
+}
+
+.trackTable {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    text-align: left;
+    padding: 8px 16px;
+    color: #666;
+    font-weight: 600;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    position: sticky;
+    top: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 1;
+  }
+
+  td {
+    padding: 0 16px;
+    height: 56px;
+    vertical-align: middle;
+  }
+}
+
+.trackRow {
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.1s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+
+    .colIndex {
+      .trackNumber { opacity: 0; }
+      .trackPlayIcon { opacity: 1; }
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary, #fe160a);
+    outline-offset: -2px;
+  }
+}
+
+.rowActive {
+  background: rgba(255, 255, 255, 0.04) !important;
+
+  .trackTitleCell {
+    color: var(--color-primary, #fe160a) !important;
+  }
+
+  .colIndex .trackNumber {
+    color: var(--color-primary, #fe160a);
+  }
+}
+
+.trackTitleCell {
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #e8e8e8;
+  transition: color 0.15s;
+}
+
+/* track number / play icon swap */
+.colIndex {
+  width: 48px;
+  color: #666;
+  font-size: 0.85rem;
+  position: relative;
+}
+
+.trackNumber {
+  transition: opacity 0.12s;
+}
+
+.trackPlayIcon {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  opacity: 0;
+  color: #fff;
+  transition: opacity 0.12s;
+}
+
+.colAction {
+  width: 48px;
+  text-align: right;
+}
+
+.playRowButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, transform 0.1s;
+
+  .trackRow:hover & {
+    opacity: 0.85;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.12);
+    opacity: 1 !important;
+    transform: scale(1.08);
+  }
+}
+
+/* ───────── empty / muted states ───────── */
+.muted {
+  color: #555;
+  margin: 0;
+  font-size: 0.85rem;
+  padding: 20px;
+}
+
+.emptyMain {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 240px;
+  text-align: center;
+  padding: 48px 24px;
+  gap: 16px;
+}
+
+.emptyIcon {
+  color: #333;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.emptyDescription {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+/* ───────── error ───────── */
+.errorBanner {
+  color: #ff6b6b;
+  margin: 0;
+  padding: 10px 24px;
+  flex-shrink: 0;
+  background: rgba(255, 80, 80, 0.06);
+  border-top: 1px solid rgba(255, 80, 80, 0.15);
+  font-size: 0.82rem;
+}
+
+/* ───────── player dock ───────── */
+.playerDock {
+  flex-shrink: 0;
+  margin-top: auto;
+}
+
+.emptyPlayerDock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 80px;
+  padding: 0 24px;
+  background: #0d0d0d;
+  color: #444;
+  font-size: 0.82rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+
+  p { margin: 0; }
+}
+
+.emptyPlayerIcon {
+  flex-shrink: 0;
+  color: #333;
+}
+
+/* ───────── mobile ───────── */
+@media (max-width: 767px) {
+  .shellBody {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  .sidebar {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    max-height: 35vh;
+  }
+
+  .hero {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 24px 20px 16px;
+    gap: 16px;
+  }
+
+  .heroArt {
+    width: 140px;
+    height: 140px;
+    font-size: 3.5rem;
+  }
+
+  .heroText {
+    padding-bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .shellMain::before {
+    height: 280px;
+  }
+
+  .shellTop {
+    height: 48px;
+    padding: 0 16px;
+  }
+
+  .trackScroll {
+    padding: 0 16px 12px;
+  }
+
+  .trackTable td {
+    height: 48px;
+    padding: 0 12px;
+  }
+}

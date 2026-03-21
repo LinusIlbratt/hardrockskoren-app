@@ -1,174 +1,294 @@
 @use '@/styles/variables' as *;
 
+/* ═══════════════════════════════════════════
+   MEDIA PLAYER – fixed (global) + embedded
+   ═══════════════════════════════════════════ */
+
 .playerContainer {
   position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
-  height: auto; // Höjden anpassas efter innehållet
-  min-height: 120px; // En bra minsta höjd för den nya layouten
-  background-color: #181818;
+  min-height: 90px;
+  background-color: #0d0d0d;
   color: white;
   z-index: 2000;
   box-sizing: border-box;
-  
-  // Stapla de tre huvudsektionerna vertikalt
-  display: flex;
-  flex-direction: column;
-  justify-content: center; // Centrera innehållet vertikalt
-  align-items: center;    // Centrera innehållet horisontellt
-  
-  padding: var(--spacing-sm) var(--spacing-lg);
-  gap: var(--spacing-xs); // Lite luft mellan raderna
-  transition: bottom 0.4s ease-in-out;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: var(--spacing-sm) var(--spacing-md);
+  padding-top: var(--spacing-md);
+  transition: bottom 0.35s ease-in-out;
 }
 
-// NY KLASS: Appliceras för att gömma spelaren
 .hidden {
-  // Skjut ner spelaren så bara toppen (ca 25px) är synlig
-  bottom: -120px; 
+  bottom: -88px;
 }
 
-.playerContent {
-  width: 100%;
-  height: 100%;
-  padding: 0 1.5rem;
-  display: grid;
-  grid-template-columns: 1fr 2fr 1fr;
-  align-items: center;
-  gap: 2rem;
+.playerEmbedded {
+  position: relative;
+  left: auto;
+  bottom: auto;
+  z-index: 1;
+  flex-shrink: 0;
+  transition: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: #0d0d0d;
 }
 
-// NY KNAPP: För att visa/dölja
 .toggleButton {
   position: absolute;
-  top: -1px; // Placera den precis ovanför spelarens kant
+  top: -1px;
   left: 50%;
   transform: translateX(-50%) translateY(-100%);
-
-  background-color: var(--color-background);
-  border: 1px solid var(--color-border);
+  background-color: var(--color-background, #1a1a1a);
+  border: 1px solid var(--color-border, #333);
   border-bottom: none;
   color: white;
   padding: 4px 16px;
   border-top-left-radius: 8px;
   border-top-right-radius: 8px;
   cursor: pointer;
+  z-index: 1;
 
   &:hover {
-    background-color: var(--color-background);
+    background-color: #252525;
   }
 }
 
-.nowPlayingInfo {
-  position: absolute;
-  top: var(--spacing-sm); // Avstånd från toppen
-  left: var(--spacing-lg); // Avstånd från vänster
-  
-  // Se till att långa titlar inte förstör layouten
-  max-width: 40%;
+/* ───────── three-column bar ───────── */
+.playerBar {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(200px, 2fr) minmax(100px, 1fr);
+  align-items: center;
+  gap: var(--spacing-md);
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ───────── now playing (left) ───────── */
+.sectionNowPlaying {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.artPlaceholder {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: linear-gradient(135deg, var(--color-primary, #fe160a) 0%, #333 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.nowPlayingText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.trackTitle {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  
-  // Styling för texten
-  .nowPlayingLabel {
-    font-size: var(--fs-sm);
-    color: #a0a0a0;
-    margin-right: var(--spacing-sm);
-  }
-  
-  .trackTitle {
-    font-size: var(--fs-sm);
-    font-weight: 500;
-    color: white;
-  }
 }
 
-// Sektion 2: Huvudkontroller (Play/Pause)
-.mainControls {
-  // Denna behållare behövs för att ge play-knappen luft
-  padding: var(--spacing-xs) 0;
+.trackMeta {
+  font-size: 0.68rem;
+  color: #888;
+}
+
+/* ───────── transport (center) ───────── */
+.sectionTransport {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.transportButtons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.iconButton {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s, transform 0.1s;
+
+  &:hover:not(:disabled) {
+    color: #fff;
+    transform: scale(1.1);
+  }
+
+  &:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
 }
 
 .playPauseButton {
-  background: white;
-  color: black;
+  background: #fff;
+  color: #000;
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  
-  // Lite mindre knapp, som du önskade
-  width: 40px;
-  height: 40px;
-  
+  width: 36px;
+  height: 36px;
   display: flex;
   justify-content: center;
   align-items: center;
-  transition: transform 0.1s ease;
+  transition: transform 0.1s, box-shadow 0.15s;
+
   &:hover {
-    transform: scale(1.05);
+    transform: scale(1.08);
+    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
   }
 }
 
-// Sektion 3: Den nedre raden med tidslinje och volym
+/* ───────── seek bar ───────── */
 .seekBarContainer {
   width: 100%;
+  max-width: 480px;
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: 6px;
 }
 
 .time {
-  font-size: 0.75rem;
-  color: #b3b3b3;
+  font-size: 0.65rem;
+  color: #888;
+  flex-shrink: 0;
+  min-width: 2.4rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+
+  &:first-child { text-align: right; }
+  &:last-child  { text-align: left;  }
 }
 
-// Tidslinjen ska växa och ta upp ledigt utrymme
-.timelineSlider {
-  flex-grow: 1; 
-}
-
-// Behållare för volymikon och slider
-.volumeControl {
+/* ───────── volume (right) ───────── */
+.sectionVolume {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  width: 150px;
   justify-content: flex-end;
+  gap: 6px;
+  max-width: 160px;
+  justify-self: end;
+  width: 100%;
 }
 
 .volumeIcon {
-  color: #a0a0a0;
+  color: #888;
+  flex-shrink: 0;
 }
 
+/* ───────── range sliders ───────── */
+.timelineSlider {
+  flex: 1;
+  min-width: 0;
+}
 
-// Generisk styling för sliders
+.volumeSlider {
+  width: 100%;
+  max-width: 100px;
+}
+
 .timelineSlider,
 .volumeSlider {
   -webkit-appearance: none;
   appearance: none;
-  width: 100%;
   height: 4px;
-  background: #4d4d4d;
+  background: #3a3a3a;
   border-radius: 2px;
   outline: none;
   cursor: pointer;
+  transition: background 0.15s;
 
   &::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
     width: 12px;
     height: 12px;
-    background: white;
+    background: #fff;
     border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    transition: opacity 0.12s;
   }
-  
-  &:hover::-webkit-slider-runnable-track {
-    background: var(--color-primary);
+
+  &:hover::-webkit-slider-thumb {
+    opacity: 1;
   }
-  // Stilar för Firefox...
-  &::-moz-range-track { background: #4d4d4d; height: 4px; border-radius: 2px; }
-  &::-moz-range-thumb { width: 12px; height: 12px; background: white; border-radius: 50%; border: none; }
-  &:hover::-moz-range-track { background: var(--color-primary); }
+
+  &:hover {
+    background: linear-gradient(
+      to right,
+      var(--color-primary, #fe160a) 0%,
+      var(--color-primary, #fe160a) var(--slider-progress, 0%),
+      #3a3a3a var(--slider-progress, 0%),
+      #3a3a3a 100%
+    );
+  }
+
+  &::-moz-range-track {
+    background: #3a3a3a;
+    height: 4px;
+    border-radius: 2px;
+  }
+
+  &::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    border: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+
+  &:hover::-moz-range-track {
+    background: var(--color-primary, #fe160a);
+  }
+}
+
+/* ───────── mobile ───────── */
+@media (max-width: 767px) {
+  .playerBar {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xs);
+  }
+
+  .sectionNowPlaying { order: 1; }
+  .sectionTransport  { order: 2; }
+  .sectionVolume     { order: 3; justify-self: stretch; max-width: none; }
+
+  .seekBarContainer { max-width: none; }
+
+  .artPlaceholder {
+    width: 40px;
+    height: 40px;
+    font-size: 1rem;
+  }
 }

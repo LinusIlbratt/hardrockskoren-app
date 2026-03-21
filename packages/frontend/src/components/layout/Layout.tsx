@@ -6,10 +6,5 @@ interface LayoutProps {
 }
 
 export const Layout = ({ children }: LayoutProps) => {
-  // Denna komponent sveper helt enkelt sitt innehåll i den stylade behållaren.
-  return (
-    <div className={styles.container}>
-      {children}
-    </div>
-  );
+  return <div className={styles.container}>{children}</div>;
 };

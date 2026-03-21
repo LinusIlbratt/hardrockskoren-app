@@ -3,14 +3,15 @@
 import { NavLink } from "react-router-dom";
 import styles from './UserNav.module.scss';
 import { useEventNotification } from "@/hooks/useEventNotification";
+import { useMusicPlayerOverlay } from "@/context/MusicPlayerOverlayContext";
 
 interface UserNavProps {
   groupName: string | undefined;
 }
 
 export const UserNav = ({ groupName }: UserNavProps) => {
-  // STEG 1: Förenkla anropet. Vi behöver bara datan här, inga funktioner.
   const { notificationData } = useEventNotification(groupName);
+  const { open: openMusic, isOpen: musicOpen, activeGroupName } = useMusicPlayerOverlay();
 
   if (!groupName) {
     return null;
@@ -26,12 +27,22 @@ export const UserNav = ({ groupName }: UserNavProps) => {
     notificationData.newEventIds.length + 
     Object.keys(notificationData.updatedEvents).length;
 
+  const base = `/user/me/${groupName}`;
+  const musicTabActive = musicOpen && activeGroupName === groupName;
+
   return (
     <nav className={styles.nav}>
-      <NavLink to="repertoires" className={getLinkClassName}>Material</NavLink>
-      <NavLink to="practice" className={getLinkClassName}>Sjung upp</NavLink>
+      <NavLink to={`${base}/repertoires`} className={getLinkClassName}>Material</NavLink>
+      <button
+        type="button"
+        className={musicTabActive ? `${styles.navLink} ${styles.active}` : styles.navLink}
+        onClick={() => openMusic(groupName, 'member')}
+      >
+        Musik
+      </button>
+      <NavLink to={`${base}/practice`} className={getLinkClassName}>Sjung upp</NavLink>
       <NavLink 
-        to="concerts" 
+        to={`${base}/concerts`}
         end 
         className={getLinkClassName}
         // STEG 4: Ta bort onClick. Länkens enda syfte är nu att navigera.

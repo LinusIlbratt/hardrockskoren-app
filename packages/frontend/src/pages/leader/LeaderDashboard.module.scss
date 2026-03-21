@@ -6,6 +6,11 @@
   flex-direction: column;
 }
 
+.content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
   .header {
     border-bottom: 1px solid var(--color-border);
     padding-bottom: var(--spacing-sm);
@@ -15,9 +20,41 @@
     color: var(--color-text-secondary);
   }
 
+  .groupNameRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+  }
+
   .groupName {
-    margin: 0 0 var(--spacing-md) 0;
+    margin: 0;
     font-size: var(--fs-lg, 1.25rem);
     font-weight: 700;
     color: var(--color-text);
+  }
+
+  .musicShortcut {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid var(--color-border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--color-text);
+    text-decoration: none;
+    font-size: var(--fs-sm, 0.9rem);
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--color-primary);
+      color: var(--color-primary);
+    }
   }

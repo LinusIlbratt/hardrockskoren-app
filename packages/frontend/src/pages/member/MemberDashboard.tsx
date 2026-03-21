@@ -1,5 +1,7 @@
 import { Outlet, useParams } from 'react-router-dom';
+import { Music } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useMusicPlayerOverlay } from '@/context/MusicPlayerOverlayContext';
 import { UserNav } from '@/components/ui/nav/UserNav';
 import styles from './MemberDashboard.module.scss';
 import { useState, useEffect } from 'react';
@@ -16,6 +18,7 @@ interface Group {
 export const MemberDashboard = () => {
   const { user } = useAuth();
   const { groupName } = useParams<{ groupName: string }>();
+  const { open: openMusicOverlay } = useMusicPlayerOverlay();
 
   // State för att hålla det korrekta, fullständiga namnet på kören
   const [choirDisplayName, setChoirDisplayName] = useState('');
@@ -70,11 +73,22 @@ export const MemberDashboard = () => {
         </p>
       </header>
 
-      {!isLoadingName && choirDisplayName && (
-        <h2 className={styles.groupName}>{choirDisplayName}</h2>
+      {!isLoadingName && choirDisplayName && groupName && (
+        <div className={styles.groupNameRow}>
+          <h2 className={styles.groupName}>{choirDisplayName}</h2>
+          <button
+            type="button"
+            className={styles.musicShortcut}
+            title="Öppna musikspelaren"
+            onClick={() => openMusicOverlay(groupName, 'member')}
+          >
+            <Music size={20} aria-hidden />
+            <span>Musikspelaren</span>
+          </button>
+        </div>
       )}
       <UserNav groupName={groupName} />
-      
+
       <main className={styles.content}>
         <Outlet />
       </main>

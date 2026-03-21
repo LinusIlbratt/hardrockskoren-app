@@ -18,6 +18,7 @@ import { MemberDashboard } from "@/pages/member/MemberDashboard";
 import { LeaderDashboard } from "@/pages/leader/LeaderDashboard";
 import { MemberListRepertoirePage } from "@/pages/member/MemberListRepertoirePage";
 import { MemberRepertoireMaterialPage } from "@/pages/member/MemberRepertoireMaterialPage";
+import { MusicDeepLinkHandler } from "@/pages/member/MusicDeepLinkHandler";
 import { MemberEventPage } from "@/pages/member/MemberEventPage";
 import { AdminRepertoireMaterialPage } from "@/pages/admin/AdminRepertoireMaterialPage";
 import { PracticePage } from "@/pages/PracticePage";
@@ -161,6 +162,10 @@ const router = createBrowserRouter([
                     element: <PracticePage />,
                   },
                   {
+                    path: "music",
+                    element: <MusicDeepLinkHandler viewer="leader" />,
+                  },
+                  {
                     path: "attendance",
                     element: <LeaderAttendancePage />,
                   },
@@ -198,6 +203,10 @@ const router = createBrowserRouter([
                   {
                     path: "practice",
                     element: <PracticePage />,
+                  },
+                  {
+                    path: "music",
+                    element: <MusicDeepLinkHandler viewer="member" />,
                   },
                   {
                     path: "concerts",
