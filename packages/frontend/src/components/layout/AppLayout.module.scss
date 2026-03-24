@@ -5,6 +5,56 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh; // Se till att layouten alltid fyller minst hela skärmens höjd
+  position: relative;
+}
+
+// Nav + Outlet — aldrig täckt av transparenta lager (overlay är syskon, inte här ovanpå)
+.appBody {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  position: relative;
+  z-index: 0;
+}
+
+/**
+ * Portal-mål för MusicPlayerOverlay (inuti app-layout, inte sist i body).
+ * Minimerat: låg z-index så .appBody (0) och minibar (10050) ligger OVANFÖR — annars ligger
+ * ett osynligt fixed-lager kvar på 10000 och blockerar navigering.
+ * pointer-events: none på förälder räcker inte: barn med auto kan fortfarande ta träffar (CSS-spec).
+ */
+.musicOverlayPortal {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+
+  &[data-music-fullscreen='true'] {
+    z-index: 10000;
+    pointer-events: auto;
+  }
+}
+
+/* Tvinga hela overlay-DOM under minimering — överstyr t.ex. .root { pointer-events: auto } */
+.musicOverlayPortal:not([data-music-fullscreen='true']) * {
+  pointer-events: none !important;
+}
+
+/**
+ * Minispelaren ovanpå overlay-lagret; wrapper tar inga träffar — bara själva baren.
+ */
+.miniPlayerChrome {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10050;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
 }
 
 // Huvudinnehållet (där Outlet renderas)
@@ -25,4 +75,8 @@
     max-width: $maxWidth; // Använder variabeln från _variables.scss
     margin: 0 auto; // Centrerar blocket horisontellt
   }
+}
+
+.mainWithMiniPlayer {
+  padding-bottom: 90px;
 }

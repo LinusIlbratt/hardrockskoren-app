@@ -70,4 +70,13 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   'POST /groups/{groupName}/repertoires/from-library': RoleGroups.MANAGEMENT,
   'GET /practice/materials-by-week': RoleGroups.ADMIN_ONLY,
   'GET /practice/materials/member-view': RoleGroups.ALL_LOGGED_IN,
+
+  // === Personal music library (music-api) ===
+  'GET /favorites': RoleGroups.ALL_LOGGED_IN,
+  'POST /favorites/{materialId}': RoleGroups.ALL_LOGGED_IN,
+  'GET /playlists': RoleGroups.ALL_LOGGED_IN,
+  'POST /playlists': RoleGroups.ALL_LOGGED_IN,
+  'GET /playlists/{playlistId}/items': RoleGroups.ALL_LOGGED_IN,
+  'POST /playlists/{playlistId}/items': RoleGroups.ALL_LOGGED_IN,
+  'DELETE /playlists/{playlistId}/items/{materialId}': RoleGroups.ALL_LOGGED_IN,
 };

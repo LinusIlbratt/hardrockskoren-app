@@ -38,13 +38,6 @@
   }
 }
 
-button.navLink {
-  border: none;
-  cursor: pointer;
-  font: inherit;
-  font-family: inherit;
-}
-
 .active {
   background-color: var(--color-border); // ✅ Lade till den ljusare bakgrundsfärgen
   color: var(--color-text);             // ✅ Säkerställer starkare textfärg

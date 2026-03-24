@@ -10,6 +10,8 @@
   left: 0;
   width: 100%;
   min-height: 90px;
+  display: flex;
+  flex-direction: column;
   background-color: #0d0d0d;
   color: white;
   z-index: 2000;
@@ -30,9 +32,39 @@
   bottom: auto;
   z-index: 1;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
   transition: none;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   background: #0d0d0d;
+}
+
+/* MiniPlayerBar: samma färger som inbäddad spelare + fast dock + blur */
+.miniPlayerBarDock {
+  /* Förälder (.miniPlayerChrome) har pointer-events: none — bara själva baren tar emot klick */
+  pointer-events: auto;
+  z-index: 1;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.expandFullButton {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s, transform 0.1s;
+  flex-shrink: 0;
+
+  &:hover {
+    color: #fff;
+    transform: scale(1.06);
+  }
 }
 
 .toggleButton {
@@ -58,7 +90,7 @@
 /* ───────── three-column bar ───────── */
 .playerBar {
   display: grid;
-  grid-template-columns: minmax(160px, 1fr) minmax(200px, 2fr) minmax(100px, 1fr);
+  grid-template-columns: minmax(160px, 1fr) minmax(200px, 2fr) minmax(120px, 1.2fr);
   align-items: center;
   gap: var(--spacing-md);
   width: 100%;
@@ -89,11 +121,45 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
+.nowPlayingMain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+}
+
 .nowPlayingText {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
+  flex: 1;
+}
+
+.quickActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.quickActionButton {
+  background: none;
+  border: none;
+  color: #a0a0a0;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.12s, transform 0.1s;
+
+  &:hover {
+    color: #fff;
+    transform: scale(1.06);
+  }
 }
 
 .trackTitle {
@@ -149,6 +215,15 @@
   }
 }
 
+.iconButtonAccent {
+  color: var(--color-primary, #fe160a);
+
+  &:hover:not(:disabled) {
+    color: var(--color-primary, #fe160a);
+    filter: brightness(1.12);
+  }
+}
+
 .playPauseButton {
   background: #fff;
   color: #000;
@@ -189,15 +264,82 @@
   &:last-child  { text-align: left;  }
 }
 
-/* ───────── volume (right) ───────── */
+/* ───────── hastighet + volym (höger) ───────── */
+.sectionMeta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+  justify-self: end;
+  width: 100%;
+}
+
+.playbackRateLabel {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.playbackRateSelect {
+  max-width: 4.5rem;
+  padding: 4px 6px;
+  font-size: 0.72rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #1a1a1a;
+  color: #e8e8e8;
+  cursor: pointer;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.errorBanner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  font-size: 0.78rem;
+  color: #ffb4b4;
+  background: rgba(180, 40, 40, 0.25);
+  border: 1px solid rgba(255, 100, 100, 0.25);
+  border-radius: 6px;
+}
+
+.errorNextButton,
+.errorRetryButton {
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+}
+
 .sectionVolume {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 6px;
   max-width: 160px;
-  justify-self: end;
-  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
 .volumeIcon {
@@ -275,20 +417,78 @@
 
 /* ───────── mobile ───────── */
 @media (max-width: 767px) {
-  .playerBar {
-    grid-template-columns: 1fr;
-    gap: var(--spacing-xs);
+  .playerContainer {
+    min-height: auto;
+    padding: 8px 12px;
   }
 
-  .sectionNowPlaying { order: 1; }
-  .sectionTransport  { order: 2; }
-  .sectionVolume     { order: 3; justify-self: stretch; max-width: none; }
+  .playerEmbedded {
+    padding: 8px 12px;
+  }
 
-  .seekBarContainer { max-width: none; }
+  .playerBar {
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 4px 10px;
+  }
+
+  .sectionNowPlaying {
+    grid-column: 1 / -1;
+    order: 1;
+    gap: 8px;
+  }
+
+  .sectionTransport {
+    grid-column: 1 / -1;
+    order: 2;
+    gap: 2px;
+  }
+
+  .sectionMeta {
+    grid-column: 1 / -1;
+    order: 3;
+    justify-content: space-between;
+    flex-wrap: wrap;
+  }
+
+  .sectionVolume {
+    display: none;
+  }
+
+  .playbackRateSelect {
+    max-width: none;
+  }
+
+  .seekBarContainer {
+    max-width: none;
+  }
+
+  .transportButtons {
+    gap: 12px;
+  }
+
+  .playPauseButton {
+    width: 32px;
+    height: 32px;
+  }
 
   .artPlaceholder {
-    width: 40px;
-    height: 40px;
-    font-size: 1rem;
+    width: 36px;
+    height: 36px;
+    font-size: 0.9rem;
+    border-radius: 3px;
+  }
+
+  .trackTitle {
+    font-size: 0.78rem;
+  }
+
+  .trackMeta {
+    font-size: 0.62rem;
+  }
+
+  .time {
+    font-size: 0.6rem;
+    min-width: 2rem;
   }
 }

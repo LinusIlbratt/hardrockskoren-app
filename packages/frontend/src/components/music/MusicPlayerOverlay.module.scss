@@ -3,14 +3,32 @@
 /* ───────── overlay root ───────── */
 .root {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 850;
+  inset: 0;
+  z-index: 10000;
   display: flex;
   flex-direction: column;
   pointer-events: auto;
   animation: fadeIn 0.22s ease-out both;
+}
+
+/* Fullskärm dold men DOM kvar så MediaPlayer/<audio> fortsätter spela (miniplayer).
+   Collapsed to 0×0 so no fixed layer covers the viewport and interferes with
+   page interaction (hit-testing, focus, scroll). */
+.rootMinimized {
+  inset: auto;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  animation: none;
+
+  .scrim,
+  .panel,
+  .panel * {
+    pointer-events: none !important;
+  }
 }
 
 /* ───────── dim behind panel ───────── */
@@ -40,16 +58,9 @@
   max-height: 100%;
   background: #0a0a0a;
   box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.7);
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
   outline: none;
   overflow: hidden;
   animation: slideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@media (min-width: #{$tabletBreakpoint}) {
-  .panel {
-    border-radius: 16px 16px 0 0;
-  }
 }
 
 /* ───────── keyframes ───────── */

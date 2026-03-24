@@ -8,7 +8,8 @@
   width: 100%;
   height: 100%;
   background-color: rgba(0, 0, 0, 0.7);
-  z-index: 1000;
+  // Above full-screen overlays (e.g. music player ~10000); applies to all Modal portals
+  z-index: 99999;
   animation: fadeIn 0.3s ease-out;
 
   // Använd flexbox för att centrera modalen
@@ -42,9 +43,8 @@
   flex-direction: column;
   overflow: hidden;
 
-  // --- HÄR ÄR FIXEN ---
-  position: relative; // VIKTIGT: Krävs för att z-index ska fungera pålitligt här
-  z-index: 1001;      // Sätt ett högre z-index än .backdrop
+  position: relative;
+  z-index: 1; // Stacking inside .backdrop only; outer layer is .backdrop’s z-index
 }
 
 .header {

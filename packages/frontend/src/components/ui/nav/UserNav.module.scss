@@ -9,6 +9,13 @@
   border-radius: var(--radius-sm);
 }
 
+.navLinkRow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
 // Stilen för varje enskild länk/flik
 .navLink {
   position: relative;
@@ -36,13 +43,6 @@
     text-decoration: none;
     color: var(--color-text); // Gör texten ljusare vid hover för tydlighet
   }
-}
-
-button.navLink {
-  border: none;
-  cursor: pointer;
-  font: inherit;
-  font-family: inherit;
 }
 
 .badge {
