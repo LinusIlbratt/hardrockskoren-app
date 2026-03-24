@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -9,6 +10,7 @@ import {
   Disc3,
   Heart,
   ListPlus,
+  MoreHorizontal,
   Plus,
   Trash2,
 } from 'lucide-react';
@@ -26,12 +28,16 @@ import { hashMediaSourcesKey, isPlayableAudioFile } from '@/utils/media';
 import { useFavorites } from '@/hooks/useFavorites';
 import { usePlaylists } from '@/hooks/usePlaylists';
 import { getPlaylistItems, addPlaylistItem, removePlaylistItem } from '@/services/musicService';
+import { Modal } from '@/components/ui/modal/Modal';
 import styles from './RepertoireMusicPlayerPage.module.scss';
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
 const FILE_BASE_URL = import.meta.env.VITE_S3_BUCKET_URL;
 
 const LIBRARY_SELECTED_ID = '__library__';
+
+/** Bredd för spelliste-kebab (portal) — används till positionering */
+const PLAYLIST_MENU_WIDTH_PX = 180;
 
 interface RepertoireItem {
   repertoireId: string;
@@ -76,6 +82,8 @@ export function RepertoireMusicPlayerPanel({
   const {
     playlists,
     createNewPlaylist,
+    renamePlaylist,
+    deletePlaylist,
     isLoading: playlistsLoading,
     fetchPlaylists,
     error: playlistsHookError,
@@ -94,8 +102,37 @@ export function RepertoireMusicPlayerPanel({
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [playlistAddBusyId, setPlaylistAddBusyId] = useState<string | null>(null);
   const [playlistAddError, setPlaylistAddError] = useState<string | null>(null);
+  const [playlistMenuOpenId, setPlaylistMenuOpenId] = useState<string | null>(null);
+  const [playlistMenuCoords, setPlaylistMenuCoords] = useState<{
+    top: number;
+    left: number;
+  } | null>(null);
+  const playlistMenuButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const [playlistRenameTarget, setPlaylistRenameTarget] = useState<{
+    playlistId: string;
+    title: string;
+  } | null>(null);
+  const [renameDraft, setRenameDraft] = useState('');
+  const [renameBusy, setRenameBusy] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmPlaylistId, setDeleteConfirmPlaylistId] = useState<string | null>(null);
+  const [deletePlaylistBusy, setDeletePlaylistBusy] = useState(false);
   const resumeAttemptKeyRef = useRef<string | null>(null);
   const repertoireBootstrapKeyRef = useRef<string | null>(null);
+
+  const closePlaylistMenu = useCallback(() => {
+    setPlaylistMenuOpenId(null);
+    setPlaylistMenuCoords(null);
+  }, []);
+
+  const updatePlaylistMenuPosition = useCallback((playlistId: string) => {
+    const btn = playlistMenuButtonRefs.current[playlistId];
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    let left = r.right - PLAYLIST_MENU_WIDTH_PX;
+    left = Math.max(8, Math.min(left, window.innerWidth - PLAYLIST_MENU_WIDTH_PX - 8));
+    setPlaylistMenuCoords({ top: r.bottom + 4, left });
+  }, []);
 
   const isLibraryMode = Boolean(libraryQueueMaterials?.length);
 
@@ -122,15 +159,16 @@ export function RepertoireMusicPlayerPanel({
       }));
   }, []);
 
+  /** Byt key bara när köns identitet ändras — inte vid spårbyte (samma lista), så MediaPlayer kan följa initialTrackIndex utan remount. */
   const mediaPlayerMountKey = useMemo(() => {
     if (isLibraryMode && playerQueue.length > 0) {
       const sig = hashMediaSourcesKey(playerQueue.map((t) => t.src));
-      return `lib-${groupName}-${playerStartIndex}-${sig}`;
+      return `lib-${groupName}-${sig}`;
     }
     if (!selectedId || playerQueue.length === 0) return 'idle';
     const sig = hashMediaSourcesKey(playerQueue.map((t) => t.src));
-    return `${selectedId}-${playerStartIndex}-${sig}`;
-  }, [isLibraryMode, groupName, selectedId, playerStartIndex, playerQueue]);
+    return `${selectedId}-${sig}`;
+  }, [isLibraryMode, groupName, selectedId, playerQueue]);
 
   const persistProgressKey = useMemo(() => {
     if (isLibraryMode) {
@@ -259,6 +297,7 @@ export function RepertoireMusicPlayerPanel({
   }, [libraryQueueMaterials, libraryPlaybackIntent, buildTracksFromMaterials]);
 
   const handlePlayTrackAt = (index: number) => {
+    setActiveDropdownId(null);
     const tracks = buildTracksFromMaterials(
       materials.filter((m) => m.fileKey && isPlayableAudioFile(m.fileKey))
     );
@@ -267,11 +306,6 @@ export function RepertoireMusicPlayerPanel({
     setPlayerStartIndex(safeIndex);
     setHighlightedTrackIndex(safeIndex);
     setPlayerQueue(tracks);
-  };
-
-  const handlePlayAll = () => {
-    if (audioMaterials.length === 0) return;
-    handlePlayTrackAt(0);
   };
 
   const handleToRepertoires = () => {
@@ -312,6 +346,110 @@ export function RepertoireMusicPlayerPanel({
       setCreatingPlaylist(false);
     }
   };
+
+  useEffect(() => {
+    if (!playlistRenameTarget) {
+      setRenameDraft('');
+      return;
+    }
+    setRenameDraft(playlistRenameTarget.title);
+  }, [playlistRenameTarget]);
+
+  useLayoutEffect(() => {
+    if (!playlistMenuOpenId) return;
+    const onScrollOrResize = () => updatePlaylistMenuPosition(playlistMenuOpenId);
+    onScrollOrResize();
+    window.addEventListener('scroll', onScrollOrResize, true);
+    window.addEventListener('resize', onScrollOrResize);
+    return () => {
+      window.removeEventListener('scroll', onScrollOrResize, true);
+      window.removeEventListener('resize', onScrollOrResize);
+    };
+  }, [playlistMenuOpenId, updatePlaylistMenuPosition]);
+
+  useEffect(() => {
+    if (playlistMenuOpenId === null) return;
+    const onDown = (e: MouseEvent) => {
+      const el = e.target as HTMLElement;
+      if (el.closest(`[data-playlist-row-menu="${playlistMenuOpenId}"]`)) return;
+      if (el.closest('[data-playlist-dropdown-portal]')) return;
+      closePlaylistMenu();
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [playlistMenuOpenId, closePlaylistMenu]);
+
+  useEffect(() => {
+    if (activeDropdownId === null) return;
+    const onDown = (e: MouseEvent) => {
+      const el = e.target as HTMLElement;
+      if (el.closest(`[data-add-playlist-popover="${activeDropdownId}"]`)) return;
+      setActiveDropdownId(null);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [activeDropdownId]);
+
+  const handleConfirmRenamePlaylist = async () => {
+    if (!playlistRenameTarget) return;
+    const t = renameDraft.trim();
+    if (!t) return;
+    setRenameBusy(true);
+    try {
+      await renamePlaylist(playlistRenameTarget.playlistId, t);
+      setPlaylistRenameTarget(null);
+    } catch {
+      /* hook sets error */
+    } finally {
+      setRenameBusy(false);
+    }
+  };
+
+  const closeDeletePlaylistConfirm = useCallback(() => {
+    if (deletePlaylistBusy) return;
+    setShowDeleteConfirm(false);
+    setDeleteConfirmPlaylistId(null);
+  }, [deletePlaylistBusy]);
+
+  const openDeletePlaylistConfirm = useCallback(
+    (playlistId: string) => {
+      setDeleteConfirmPlaylistId(playlistId);
+      setShowDeleteConfirm(true);
+      closePlaylistMenu();
+    },
+    [closePlaylistMenu]
+  );
+
+  const handleConfirmDeletePlaylist = useCallback(async () => {
+    const playlistId = deleteConfirmPlaylistId?.trim();
+    if (!playlistId) return;
+    setDeletePlaylistBusy(true);
+    try {
+      await deletePlaylist(playlistId);
+      setShowDeleteConfirm(false);
+      setDeleteConfirmPlaylistId(null);
+      if (selectedId === playlistId) {
+        setSelectedId(null);
+        setMaterials([]);
+        setPlayerQueue([]);
+        setPlayerStartIndex(0);
+        setHighlightedTrackIndex(0);
+      }
+    } catch {
+      /* hook sets error */
+    } finally {
+      setDeletePlaylistBusy(false);
+    }
+  }, [deleteConfirmPlaylistId, deletePlaylist, selectedId]);
+
+  useEffect(() => {
+    if (!showDeleteConfirm) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeDeletePlaylistConfirm();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showDeleteConfirm, closeDeletePlaylistConfirm]);
 
   const isCurrentViewPlaylist = playlists.some((p) => p.playlistId === selectedId);
 
@@ -584,17 +722,63 @@ export function RepertoireMusicPlayerPanel({
                 <li><p className={styles.muted}>Inga spellistor ännu.</p></li>
               ) : (
                 playlists.map((p) => (
-                  <li key={p.playlistId}>
+                  <li
+                    key={p.playlistId}
+                    className={`${styles.playlistSidebarRow} ${selectedId === p.playlistId ? styles.playlistSidebarRowActive : ''}`}
+                  >
                     <button
                       type="button"
                       className={`${styles.playlistSidebarItem} ${selectedId === p.playlistId ? styles.playlistSidebarItemActive : ''}`}
                       onClick={() => {
+                        closePlaylistMenu();
                         void handleSelectPlaylist(p.playlistId);
                       }}
                     >
                       <ListPlus size={14} className={styles.playlistSidebarItemIcon} aria-hidden />
                       <span className={styles.playlistSidebarItemLabel}>{p.title}</span>
                     </button>
+                    <div
+                      className={`${styles.playlistSidebarRowMenu} ${playlistMenuOpenId === p.playlistId ? styles.playlistSidebarRowMenuOpen : ''}`}
+                      data-playlist-row-menu={p.playlistId}
+                    >
+                      <button
+                        type="button"
+                        ref={(el) => {
+                          playlistMenuButtonRefs.current[p.playlistId] = el;
+                        }}
+                        className={styles.playlistSidebarMenuTrigger}
+                        aria-expanded={playlistMenuOpenId === p.playlistId}
+                        aria-haspopup="menu"
+                        aria-label={`Fler alternativ för ${p.title}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (playlistMenuOpenId === p.playlistId) {
+                            closePlaylistMenu();
+                            return;
+                          }
+                          const btn = playlistMenuButtonRefs.current[p.playlistId];
+                          if (btn) {
+                            const r = btn.getBoundingClientRect();
+                            let left = r.right - PLAYLIST_MENU_WIDTH_PX;
+                            left = Math.max(
+                              8,
+                              Math.min(left, window.innerWidth - PLAYLIST_MENU_WIDTH_PX - 8)
+                            );
+                            setPlaylistMenuCoords({ top: r.bottom + 4, left });
+                          } else {
+                            setPlaylistMenuCoords(null);
+                          }
+                          setPlaylistMenuOpenId(p.playlistId);
+                        }}
+                      >
+                        <MoreHorizontal
+                          size={16}
+                          strokeWidth={2}
+                          className={styles.playlistSidebarMenuIcon}
+                          aria-hidden
+                        />
+                      </button>
+                    </div>
                   </li>
                 ))
               )}
@@ -626,6 +810,104 @@ export function RepertoireMusicPlayerPanel({
             </div>
           </div>
         </aside>
+
+        {playlistMenuOpenId &&
+          playlistMenuCoords &&
+          (() => {
+            const menuPl = playlists.find((x) => x.playlistId === playlistMenuOpenId);
+            if (!menuPl) return null;
+            return createPortal(
+              <div
+                data-playlist-dropdown-portal
+                role="menu"
+                className={styles.playlistSidebarDropdownPortal}
+                style={{
+                  position: 'fixed',
+                  top: playlistMenuCoords.top,
+                  left: playlistMenuCoords.left,
+                  zIndex: 10000,
+                  minWidth: PLAYLIST_MENU_WIDTH_PX,
+                }}
+              >
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={styles.playlistSidebarDropdownPortalItem}
+                  onClick={() => {
+                    setPlaylistRenameTarget({
+                      playlistId: menuPl.playlistId,
+                      title: menuPl.title,
+                    });
+                    closePlaylistMenu();
+                  }}
+                >
+                  Byt namn
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={`${styles.playlistSidebarDropdownPortalItem} ${styles.playlistSidebarDropdownPortalItemDanger}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openDeletePlaylistConfirm(menuPl.playlistId);
+                  }}
+                >
+                  Ta bort spellista
+                </button>
+              </div>,
+              document.body
+            );
+          })()}
+
+        {showDeleteConfirm &&
+          deleteConfirmPlaylistId &&
+          createPortal(
+            <div
+              className={styles.deleteConfirmOverlay}
+              role="presentation"
+              onClick={closeDeletePlaylistConfirm}
+            >
+              <div
+                className={styles.deleteConfirmCard}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="delete-playlist-confirm-title"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2 id="delete-playlist-confirm-title" className={styles.deleteConfirmTitle}>
+                  Ta bort spellistan?
+                </h2>
+                <p className={styles.deleteConfirmBody}>
+                  Är du säker på att du vill ta bort spellistan? Detta går inte att ångra.
+                </p>
+                <div className={styles.deleteConfirmActions}>
+                  <button
+                    type="button"
+                    className={styles.deleteConfirmButtonCancel}
+                    disabled={deletePlaylistBusy}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      closeDeletePlaylistConfirm();
+                    }}
+                  >
+                    Avbryt
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.deleteConfirmButtonDelete}
+                    disabled={deletePlaylistBusy}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleConfirmDeletePlaylist();
+                    }}
+                  >
+                    {deletePlaylistBusy ? 'Tar bort…' : 'Ta bort'}
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )}
 
         {/* ── main ── */}
         <section className={styles.shellMain} aria-label="Spår och uppspelning">
@@ -662,16 +944,6 @@ export function RepertoireMusicPlayerPanel({
                     {audioMaterials.length}{' '}
                     {audioMaterials.length === 1 ? 'ljudfil' : 'ljudfiler'}
                   </p>
-                  {audioMaterials.length > 0 && (
-                    <button
-                      type="button"
-                      className={styles.playAllButton}
-                      onClick={handlePlayAll}
-                    >
-                      <Play size={20} fill="currentColor" aria-hidden />
-                      Spela alla
-                    </button>
-                  )}
                 </div>
               </div>
 
@@ -696,8 +968,7 @@ export function RepertoireMusicPlayerPanel({
                     <thead>
                       <tr>
                         <th className={styles.colIndex}>#</th>
-                        <th>Titel</th>
-                        <th className={styles.colAction} />
+                        <th className={styles.colTitleHead}>Titel</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -730,176 +1001,133 @@ export function RepertoireMusicPlayerPanel({
                                 aria-hidden
                               />
                             </td>
-                            <td>
-                              <span className={styles.trackTitleCell}>{label}</span>
-                            </td>
-                            <td className={styles.colAction}>
-                              <span
-                                style={{
-                                  position: 'relative',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: 6,
-                                }}
-                              >
-                                <button
-                                  type="button"
-                                  className={styles.playRowButton}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleFavoriteOptimistic(m.materialId);
-                                  }}
-                                  aria-label={
-                                    favoriteMaterialIds.includes(m.materialId)
-                                      ? `Ta bort ${label} från favoriter`
-                                      : `Lägg till ${label} i favoriter`
-                                  }
-                                  aria-pressed={favoriteMaterialIds.includes(m.materialId)}
-                                >
-                                  <Heart
-                                    size={18}
-                                    fill={
-                                      favoriteMaterialIds.includes(m.materialId)
-                                        ? 'currentColor'
-                                        : 'none'
-                                    }
-                                  />
-                                </button>
-                                <button
-                                  type="button"
-                                  className={styles.playRowButton}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setActiveDropdownId((prev) =>
-                                      prev === m.materialId ? null : m.materialId
-                                    );
-                                  }}
-                                  aria-expanded={activeDropdownId === m.materialId}
-                                  aria-haspopup="menu"
-                                  aria-label={`Lägg till ${label} i spellista`}
-                                >
-                                  <ListPlus size={18} aria-hidden />
-                                </button>
-                                {activeDropdownId === m.materialId && (
-                                  <div
-                                    role="menu"
-                                    style={{
-                                      position: 'absolute',
-                                      right: 0,
-                                      top: '100%',
-                                      zIndex: 50,
-                                      backgroundColor: '#222',
-                                      border: '1px solid #444',
-                                      borderRadius: '6px',
-                                      padding: '8px',
-                                      minWidth: '180px',
-                                      boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                  >
-                                    {(playlistAddError || playlistsHookError) && (
-                                      <p
-                                        role="alert"
-                                        style={{
-                                          margin: '0 0 8px',
-                                          color: '#f87171',
-                                          fontSize: '0.8rem',
-                                        }}
-                                      >
-                                        {playlistAddError ?? playlistsHookError}
-                                      </p>
-                                    )}
-                                    {playlistsLoading ? (
-                                      <p style={{ margin: 0, color: '#aaa', fontSize: '0.85rem' }}>
-                                        Laddar…
-                                      </p>
-                                    ) : playlists.length === 0 ? (
-                                      <p style={{ margin: 0, color: '#aaa', fontSize: '0.85rem' }}>
-                                        Inga spellistor.
-                                      </p>
-                                    ) : (
-                                      <ul
-                                        style={{
-                                          margin: 0,
-                                          padding: 0,
-                                          listStyle: 'none',
-                                          display: 'flex',
-                                          flexDirection: 'column',
-                                          gap: 4,
-                                        }}
-                                      >
-                                        {playlists.map((p) => (
-                                          <li key={p.playlistId}>
-                                            <button
-                                              type="button"
-                                              role="menuitem"
-                                              disabled={playlistAddBusyId === p.playlistId}
-                                              style={{
-                                                width: '100%',
-                                                textAlign: 'left',
-                                                padding: '6px 8px',
-                                                border: 'none',
-                                                borderRadius: 4,
-                                                background: 'transparent',
-                                                color: '#eee',
-                                                cursor:
-                                                  playlistAddBusyId === p.playlistId
-                                                    ? 'wait'
-                                                    : 'pointer',
-                                                fontSize: '0.875rem',
-                                              }}
-                                              onClick={async (e) => {
-                                                e.stopPropagation();
-                                                setPlaylistAddError(null);
-                                                setPlaylistAddBusyId(p.playlistId);
-                                                try {
-                                                  await addPlaylistItem(p.playlistId, m.materialId);
-                                                  setActiveDropdownId(null);
-                                                } catch (err) {
-                                                  console.error(err);
-                                                  setPlaylistAddError(
-                                                    err instanceof Error && err.message.trim()
-                                                      ? err.message
-                                                      : 'Något gick fel. Försök igen.'
-                                                  );
-                                                } finally {
-                                                  setPlaylistAddBusyId(null);
-                                                }
-                                              }}
-                                            >
-                                              {p.title}
-                                            </button>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    )}
-                                  </div>
-                                )}
-                                <button
-                                  type="button"
-                                  className={styles.playRowButton}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handlePlayTrackAt(index);
-                                  }}
-                                  aria-label={`Spela ${label}`}
-                                >
-                                  <Play size={18} />
-                                </button>
-                                {isCurrentViewPlaylist && (
+                            <td className={styles.colTitleBlock}>
+                              <div className={styles.trackRowFlex}>
+                                <span className={styles.trackTitleCell}>{label}</span>
+                                <div className={styles.trackRowActions}>
                                   <button
                                     type="button"
                                     className={styles.playRowButton}
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      void handleRemoveFromPlaylist(m.materialId);
+                                      setActiveDropdownId(null);
+                                      toggleFavoriteOptimistic(m.materialId);
                                     }}
-                                    aria-label={`Ta bort ${label} från spellistan`}
+                                    aria-label={
+                                      favoriteMaterialIds.includes(m.materialId)
+                                        ? `Ta bort ${label} från favoriter`
+                                        : `Lägg till ${label} i favoriter`
+                                    }
+                                    aria-pressed={favoriteMaterialIds.includes(m.materialId)}
                                   >
-                                    <Trash2 size={18} aria-hidden />
+                                    <Heart
+                                      size={18}
+                                      fill={
+                                        favoriteMaterialIds.includes(m.materialId)
+                                          ? 'currentColor'
+                                          : 'none'
+                                      }
+                                    />
                                   </button>
-                                )}
-                              </span>
+                                  <span
+                                    data-add-playlist-popover={m.materialId}
+                                    className={styles.trackRowPopoverAnchor}
+                                  >
+                                    <button
+                                      type="button"
+                                      className={styles.playRowButton}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveDropdownId((prev) =>
+                                          prev === m.materialId ? null : m.materialId
+                                        );
+                                      }}
+                                      aria-expanded={activeDropdownId === m.materialId}
+                                      aria-haspopup="menu"
+                                      aria-label={`Lägg till ${label} i spellista`}
+                                    >
+                                      <ListPlus size={18} aria-hidden />
+                                    </button>
+                                    {activeDropdownId === m.materialId && (
+                                      <div
+                                        role="menu"
+                                        className={styles.trackRowPlaylistMenu}
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        {(playlistAddError || playlistsHookError) && (
+                                          <p className={styles.trackRowPlaylistMenuError} role="alert">
+                                            {playlistAddError ?? playlistsHookError}
+                                          </p>
+                                        )}
+                                        {playlistsLoading ? (
+                                          <p className={styles.trackRowPlaylistMenuMuted}>Laddar…</p>
+                                        ) : playlists.length === 0 ? (
+                                          <p className={styles.trackRowPlaylistMenuMuted}>
+                                            Inga spellistor.
+                                          </p>
+                                        ) : (
+                                          <ul className={styles.trackRowPlaylistMenuList}>
+                                            {playlists.map((p) => (
+                                              <li key={p.playlistId}>
+                                                <button
+                                                  type="button"
+                                                  role="menuitem"
+                                                  disabled={playlistAddBusyId === p.playlistId}
+                                                  className={styles.trackRowPlaylistMenuItem}
+                                                  onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    setPlaylistAddError(null);
+                                                    setPlaylistAddBusyId(p.playlistId);
+                                                    try {
+                                                      await addPlaylistItem(p.playlistId, m.materialId);
+                                                      setActiveDropdownId(null);
+                                                    } catch (err) {
+                                                      console.error(err);
+                                                      setPlaylistAddError(
+                                                        err instanceof Error && err.message.trim()
+                                                          ? err.message
+                                                          : 'Något gick fel. Försök igen.'
+                                                      );
+                                                    } finally {
+                                                      setPlaylistAddBusyId(null);
+                                                    }
+                                                  }}
+                                                >
+                                                  {p.title}
+                                                </button>
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        )}
+                                      </div>
+                                    )}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className={`${styles.playRowButton} ${styles.trackRowPlayExplicit}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handlePlayTrackAt(index);
+                                    }}
+                                    aria-label={`Spela ${label}`}
+                                  >
+                                    <Play size={18} aria-hidden />
+                                  </button>
+                                  {isCurrentViewPlaylist && (
+                                    <button
+                                      type="button"
+                                      className={styles.playRowButton}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        void handleRemoveFromPlaylist(m.materialId);
+                                      }}
+                                      aria-label={`Ta bort ${label} från spellistan`}
+                                    >
+                                      <Trash2 size={18} aria-hidden />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -962,6 +1190,49 @@ export function RepertoireMusicPlayerPanel({
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={Boolean(playlistRenameTarget)}
+        onClose={() => {
+          if (!renameBusy) setPlaylistRenameTarget(null);
+        }}
+        title="Byt namn på spellista"
+        footer={
+          <div className={styles.playlistRenameModalFooter}>
+            <button
+              type="button"
+              className={styles.playlistRenameModalButtonSecondary}
+              onClick={() => setPlaylistRenameTarget(null)}
+              disabled={renameBusy}
+            >
+              Avbryt
+            </button>
+            <button
+              type="button"
+              className={styles.playlistRenameModalButtonPrimary}
+              onClick={() => void handleConfirmRenamePlaylist()}
+              disabled={renameBusy || !renameDraft.trim()}
+            >
+              {renameBusy ? 'Sparar…' : 'Spara'}
+            </button>
+          </div>
+        }
+      >
+        <label htmlFor="playlist-rename-input" className={styles.playlistRenameLabel}>
+          Namn
+        </label>
+        <input
+          id="playlist-rename-input"
+          type="text"
+          className={styles.playlistRenameInput}
+          value={renameDraft}
+          onChange={(e) => setRenameDraft(e.target.value)}
+          disabled={renameBusy}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void handleConfirmRenamePlaylist();
+          }}
+        />
+      </Modal>
     </div>
   );
 }

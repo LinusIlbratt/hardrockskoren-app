@@ -52,11 +52,37 @@ export function usePlaylists() {
     []
   );
 
+  const renamePlaylist = useCallback(async (playlistId: string, title: string) => {
+    setError(null);
+    try {
+      const updated = await musicService.updatePlaylist(playlistId, title);
+      setPlaylists((prev) => prev.map((p) => (p.playlistId === playlistId ? updated : p)));
+    } catch (err) {
+      console.error('usePlaylists: renamePlaylist failed', err);
+      setError(errorMessage(err, 'Kunde inte byta namn på spellistan.'));
+      throw err;
+    }
+  }, []);
+
+  const deletePlaylist = useCallback(async (playlistId: string) => {
+    setError(null);
+    try {
+      await musicService.deletePlaylist(playlistId);
+      setPlaylists((prev) => prev.filter((p) => p.playlistId !== playlistId));
+    } catch (err) {
+      console.error('usePlaylists: deletePlaylist failed', err);
+      setError(errorMessage(err, 'Kunde inte ta bort spellistan.'));
+      throw err;
+    }
+  }, []);
+
   return {
     playlists,
     isLoading,
     error,
     fetchPlaylists,
     createNewPlaylist,
+    renamePlaylist,
+    deletePlaylist,
   };
 }

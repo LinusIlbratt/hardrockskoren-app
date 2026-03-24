@@ -13,6 +13,7 @@ import {
 } from '@/context/MusicPlayerOverlayContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { AddToPlaylistModal } from '@/components/music/AddToPlaylistModal';
+import { TrackTitleMarquee } from '@/components/media/TrackTitleMarquee';
 import styles from './MediaPlayer.module.scss';
 
 const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
@@ -80,7 +81,7 @@ export function MiniPlayerBar() {
           </div>
           <div className={styles.nowPlayingMain}>
             <div className={styles.nowPlayingText}>
-              <span className={styles.trackTitle}>{track.title || '—'}</span>
+              <TrackTitleMarquee text={track.title || '—'} />
               {track.artist ? (
                 <span className={styles.trackMeta}>{track.artist}</span>
               ) : showPrevNext && queueMeta ? (
@@ -175,6 +176,21 @@ export function MiniPlayerBar() {
                 <Repeat size={18} strokeWidth={2} />
               )}
             </button>
+            <label className={styles.playbackRateInline}>
+              <span className={styles.srOnly}>Uppspelningshastighet</span>
+              <select
+                className={styles.playbackRateSelectInline}
+                value={playbackRate}
+                onChange={(e) => api()?.setPlaybackRate(Number(e.target.value))}
+                aria-label="Uppspelningshastighet"
+              >
+                {PLAYBACK_RATES.map((r) => (
+                  <option key={r} value={r}>
+                    {r === 1 ? '1×' : `${r}×`}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           <div className={styles.seekBarContainer}>
             <span className={styles.time}>{formatTime(current)}</span>
@@ -192,21 +208,6 @@ export function MiniPlayerBar() {
         </div>
 
         <div className={styles.sectionMeta}>
-          <label className={styles.playbackRateLabel}>
-            <span className={styles.srOnly}>Uppspelningshastighet</span>
-            <select
-              className={styles.playbackRateSelect}
-              value={playbackRate}
-              onChange={(e) => api()?.setPlaybackRate(Number(e.target.value))}
-              aria-label="Uppspelningshastighet"
-            >
-              {PLAYBACK_RATES.map((r) => (
-                <option key={r} value={r}>
-                  {r === 1 ? '1×' : `${r}×`}
-                </option>
-              ))}
-            </select>
-          </label>
           <div className={styles.sectionVolume}>
             <FaVolumeUp size={16} className={styles.volumeIcon} aria-hidden />
             <input

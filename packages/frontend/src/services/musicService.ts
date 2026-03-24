@@ -266,6 +266,57 @@ export async function addPlaylistItem(
   return data;
 }
 
+export type DeletePlaylistResult = {
+  success: boolean;
+  playlistId: string;
+};
+
+/**
+ * Tar bort en spellista och alla dess låtar (DELETE /playlists/{playlistId}).
+ */
+export async function deletePlaylist(playlistId: string): Promise<DeletePlaylistResult> {
+  const pid = playlistId?.trim();
+  if (!pid) {
+    throw new Error('playlistId is required.');
+  }
+
+  const client = getApiClient();
+  const { data } = await client.delete<unknown>(
+    `/playlists/${encodeURIComponent(pid)}`
+  );
+
+  if (
+    !data ||
+    typeof data !== 'object' ||
+    typeof (data as DeletePlaylistResult).success !== 'boolean' ||
+    typeof (data as DeletePlaylistResult).playlistId !== 'string'
+  ) {
+    throw new Error('Unexpected response shape from DELETE /playlists/....');
+  }
+
+  return data as DeletePlaylistResult;
+}
+
+/**
+ * Byter namn på spellista (PATCH /playlists/{playlistId}).
+ */
+export async function updatePlaylist(
+  playlistId: string,
+  title: string
+): Promise<Playlist> {
+  const pid = playlistId?.trim();
+  const t = title?.trim();
+  if (!pid || !t) {
+    throw new Error('playlistId and title are required.');
+  }
+
+  const client = getApiClient();
+  const { data } = await client.patch<unknown>(`/playlists/${encodeURIComponent(pid)}`, {
+    title: t,
+  });
+  return parsePlaylistResponse(data);
+}
+
 export type RemovePlaylistItemResult = { success: boolean };
 
 /**

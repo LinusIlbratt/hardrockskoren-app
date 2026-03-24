@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import styles from './MediaPlayer.module.scss';
 import {
   FaPlay,
@@ -12,6 +12,7 @@ import {
 import { Repeat, Repeat1, Heart, ListPlus } from 'lucide-react';
 import { useFavorites } from '@/hooks/useFavorites';
 import { AddToPlaylistModal } from '@/components/music/AddToPlaylistModal';
+import { TrackTitleMarquee } from '@/components/media/TrackTitleMarquee';
 import {
   useOptionalMusicPlayerOverlay,
   type MusicPlaybackApi,
@@ -117,6 +118,7 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
   const lastUiTickRef = useRef(0);
   const lastSaveRef = useRef(0);
   const pendingSeekRef = useRef<number | null>(null);
+  const prevQueueSigRef = useRef<string | null>(null);
   const togglePlayPauseRef = useRef<() => void>(() => {});
 
   const { favoriteMaterialIds, toggleFavoriteOptimistic } = useFavorites();
@@ -158,15 +160,22 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
 
   const singleSrc = !queueMode && 'src' in props ? props.src : '';
 
-  /** Spårindex + seek från sessionStorage när kön ändras. */
+  /**
+   * Spårindex + seek från sessionStorage endast när kön byts (ny queueSignature).
+   * Om samma kö men nytt initialTrackIndex (t.ex. radklick) ska lagrat index inte skriva över valet.
+   */
   useEffect(() => {
     if (!queueMode || !tracks?.length) {
       setCurrentTrackIndex(0);
+      prevQueueSigRef.current = null;
       return;
     }
+    const queueJustChanged = prevQueueSigRef.current !== queueSignature;
+    prevQueueSigRef.current = queueSignature;
+
     let idx = safeInitial;
     let seek: number | null = null;
-    if (persistProgressKey && queueSigHash) {
+    if (persistProgressKey && queueSigHash && queueJustChanged) {
       const stored = readStoredProgress(persistProgressKey);
       if (stored && stored.qs === queueSigHash) {
         if (typeof stored.trackIndex === 'number') {
@@ -206,6 +215,23 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
       : !queueMode
         ? props.src
         : '';
+
+  const currentTrack = useMemo((): Pick<MediaPlayerTrack, 'title' | 'src'> | null => {
+    if (queueMode && tracks?.length) {
+      const t = tracks[currentTrackIndex];
+      return t ? { title: t.title, src: t.src } : null;
+    }
+    if (!queueMode && 'title' in props && 'src' in props) {
+      return { title: props.title, src: props.src };
+    }
+    return null;
+  }, [
+    queueMode,
+    tracks,
+    currentTrackIndex,
+    !queueMode && 'title' in props ? props.title : '',
+    !queueMode && 'src' in props ? props.src : '',
+  ]);
 
   useEffect(() => {
     setIsPlayerVisible(true);
@@ -329,6 +355,54 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
   useEffect(() => {
     togglePlayPauseRef.current = togglePlayPause;
   }, [togglePlayPause]);
+
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return;
+
+    const ms = navigator.mediaSession;
+
+    ms.metadata = new MediaMetadata({
+      title: currentTrack?.title || (!queueMode && 'title' in props ? props.title : '') || 'Ljudspår',
+      artist: 'Hårdrockskören',
+    });
+
+    ms.playbackState = isPlaying ? 'playing' : 'paused';
+
+    ms.setActionHandler('play', () => {
+      void audioRef.current?.play();
+    });
+    ms.setActionHandler('pause', () => {
+      audioRef.current?.pause();
+    });
+
+    if (queueMode) {
+      ms.setActionHandler('previoustrack', () => {
+        goToPrevious();
+      });
+      ms.setActionHandler('nexttrack', () => {
+        goToNext();
+      });
+    } else {
+      ms.setActionHandler('previoustrack', null);
+      ms.setActionHandler('nexttrack', null);
+    }
+
+    return () => {
+      ms.metadata = null;
+      ms.setActionHandler('play', null);
+      ms.setActionHandler('pause', null);
+      ms.setActionHandler('previoustrack', null);
+      ms.setActionHandler('nexttrack', null);
+    };
+  }, [
+    currentTrack?.title,
+    currentTrack?.src,
+    isPlaying,
+    props.title,
+    queueMode,
+    goToPrevious,
+    goToNext,
+  ]);
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = Number(e.target.value);
@@ -684,7 +758,7 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
           </div>
           <div className={styles.nowPlayingMain}>
             <div className={styles.nowPlayingText}>
-              <span className={styles.trackTitle}>{title || '—'}</span>
+              <TrackTitleMarquee text={title || '—'} />
               {queueMode && tracks && tracks.length > 1 && (
                 <span className={styles.trackMeta}>
                   Spår {currentTrackIndex + 1} av {tracks.length}
@@ -773,6 +847,21 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
                 <Repeat size={18} strokeWidth={2} />
               )}
             </button>
+            <label className={styles.playbackRateInline}>
+              <span className={styles.srOnly}>Uppspelningshastighet</span>
+              <select
+                className={styles.playbackRateSelectInline}
+                value={playbackRate}
+                onChange={handlePlaybackRateChange}
+                aria-label="Uppspelningshastighet"
+              >
+                {PLAYBACK_RATES.map((r) => (
+                  <option key={r} value={r}>
+                    {r === 1 ? '1×' : `${r}×`}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           <div className={styles.seekBarContainer}>
             <span className={styles.time}>{formatTime(currentTime)}</span>
@@ -790,21 +879,6 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
         </div>
 
         <div className={styles.sectionMeta}>
-          <label className={styles.playbackRateLabel}>
-            <span className={styles.srOnly}>Uppspelningshastighet</span>
-            <select
-              className={styles.playbackRateSelect}
-              value={playbackRate}
-              onChange={handlePlaybackRateChange}
-              aria-label="Uppspelningshastighet"
-            >
-              {PLAYBACK_RATES.map((r) => (
-                <option key={r} value={r}>
-                  {r === 1 ? '1×' : `${r}×`}
-                </option>
-              ))}
-            </select>
-          </label>
           <div className={styles.sectionVolume}>
             <FaVolumeUp size={16} className={styles.volumeIcon} aria-hidden />
             <input

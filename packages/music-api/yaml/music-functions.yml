@@ -45,6 +45,50 @@ createPlaylist:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
 
+updatePlaylist:
+  handler: functions/playlists/updatePlaylist.handler
+  name: hrk-update-playlist-${sls:stage}
+  description: Renames a playlist (owner only).
+  events:
+    - httpApi:
+        method: PATCH
+        path: /playlists/{playlistId}
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:Query"
+        - "dynamodb:DeleteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+
+deletePlaylist:
+  handler: functions/playlists/deletePlaylist.handler
+  name: hrk-delete-playlist-${sls:stage}
+  description: Deletes a playlist and its items (owner only).
+  events:
+    - httpApi:
+        method: DELETE
+        path: /playlists/{playlistId}
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:Query"
+        - "dynamodb:DeleteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+
 getPlaylistItems:
   handler: functions/playlists/getPlaylistItems.handler
   name: hrk-get-playlist-items-${sls:stage}

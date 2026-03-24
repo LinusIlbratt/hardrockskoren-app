@@ -1,6 +1,7 @@
 import { memo, useCallback, useState, type RefCallback } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { FavoritesProvider } from '@/context/FavoritesContext';
 import { MusicPlayerOverlayProvider, useMusicPlayerOverlay } from '@/context/MusicPlayerOverlayContext';
 import { MusicPlayerOverlayHost } from '@/components/music/MusicPlayerOverlay';
 import { MiniPlayerBar } from '@/components/media/MiniPlayerBar';
@@ -55,8 +56,10 @@ export const AppLayout = () => {
   }
 
   return (
-    <MusicPlayerOverlayProvider>
-      <AppLayoutContent />
-    </MusicPlayerOverlayProvider>
+    <FavoritesProvider>
+      <MusicPlayerOverlayProvider>
+        <AppLayoutContent />
+      </MusicPlayerOverlayProvider>
+    </FavoritesProvider>
   );
 };
