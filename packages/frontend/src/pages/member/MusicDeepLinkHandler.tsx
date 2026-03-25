@@ -28,7 +28,9 @@ export function MusicDeepLinkHandler({ viewer }: MusicDeepLinkHandlerProps) {
     const dest =
       viewer === 'leader'
         ? `/leader/choir/${g}/repertoires`
-        : `/user/me/${g}/repertoires`;
+        : viewer === 'admin'
+          ? `/admin/groups/${g}/repertoires`
+          : `/user/me/${g}/repertoires`;
     navigate(dest, { replace: true });
   }, [groupName, viewer, navigate, open]);
 

@@ -213,9 +213,9 @@ export function RepertoireMusicPlayerPanel({
 
   const repertoiresHref = useMemo(() => {
     if (!groupName) return "/";
-    return viewer === "leader"
-      ? `/leader/choir/${groupName}/repertoires`
-      : `/user/me/${groupName}/repertoires`;
+    if (viewer === "leader") return `/leader/choir/${groupName}/repertoires`;
+    if (viewer === "admin") return `/admin/groups/${groupName}/repertoires`;
+    return `/user/me/${groupName}/repertoires`;
   }, [groupName, viewer]);
 
   const audioMaterials = useMemo(

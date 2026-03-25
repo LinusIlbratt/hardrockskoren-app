@@ -123,6 +123,7 @@ const router = createBrowserRouter([
                   { path: "practice", element: <PracticePage /> },
                   { path: "users", element: <AdminUserManagementPage viewerRole="admin" /> },
                   { path: "attendance", element: <LeaderAttendancePage /> },
+                  { path: "music", element: <MusicDeepLinkHandler viewer="admin" /> },
                 ],
               },
             ],

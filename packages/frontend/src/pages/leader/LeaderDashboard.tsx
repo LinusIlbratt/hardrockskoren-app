@@ -1,7 +1,6 @@
 import { Outlet, useParams } from 'react-router-dom';
-import { Music } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { useMusicPlayerOverlay } from '@/context/MusicPlayerOverlayContext';
+import { RecentlyPlayedWidget } from '@/components/music/RecentlyPlayedWidget';
 import { LeaderNav } from '@/components/ui/nav/LeaderNav';
 import styles from './LeaderDashboard.module.scss';
 import { useState, useEffect } from 'react';
@@ -17,7 +16,6 @@ interface Group {
 export const LeaderDashboard = () => {
   const { groupName } = useParams<{ groupName: string }>();
   const { user } = useAuth();
-  const { open: openMusicOverlay } = useMusicPlayerOverlay();
   const [choirDisplayName, setChoirDisplayName] = useState('');
   const [isLoadingName, setIsLoadingName] = useState(true);
 
@@ -72,15 +70,7 @@ export const LeaderDashboard = () => {
       {!isLoadingName && choirDisplayName && groupName && (
         <div className={styles.groupNameRow}>
           <h1 className={styles.groupName}>{choirDisplayName}</h1>
-          <button
-            type="button"
-            className={styles.musicShortcut}
-            title="Öppna musikspelaren"
-            onClick={() => openMusicOverlay(groupName, 'leader')}
-          >
-            <Music size={20} aria-hidden />
-            <span>Musikspelaren</span>
-          </button>
+          <RecentlyPlayedWidget groupName={groupName} viewer="leader" />
         </div>
       )}
       <LeaderNav />

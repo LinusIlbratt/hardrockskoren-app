@@ -23,7 +23,7 @@ export type {
   RepertoirePlaybackIntent,
 } from '@/utils/recentPlayback';
 
-export type MusicPlayerViewer = 'member' | 'leader';
+export type MusicPlayerViewer = 'member' | 'leader' | 'admin';
 
 /** Hur spelläget för favoriter/bibliotek ska starta uppspelning */
 export type LibraryPlaybackIntent =

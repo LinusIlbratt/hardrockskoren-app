@@ -1,17 +1,25 @@
 import { Play } from 'lucide-react';
-import { useMusicPlayerOverlay } from '@/context/MusicPlayerOverlayContext';
+import {
+  useMusicPlayerOverlay,
+  type MusicPlayerViewer,
+} from '@/context/MusicPlayerOverlayContext';
 import { useRecentlyPlayed } from '@/hooks/useRecentlyPlayed';
 import { entryToResumePayload } from '@/utils/recentPlayback';
 import styles from './RecentlyPlayedWidget.module.scss';
 
 export interface RecentlyPlayedWidgetProps {
   groupName: string | undefined;
+  /** Vilken vy som öppnar spelaren (styr länkar tillbaka till repertoar m.m.). */
+  viewer?: MusicPlayerViewer;
 }
 
 /**
  * Visar senaste spår för kören (localStorage) eller en "Utforska musik"-CTA.
  */
-export function RecentlyPlayedWidget({ groupName }: RecentlyPlayedWidgetProps) {
+export function RecentlyPlayedWidget({
+  groupName,
+  viewer = 'member',
+}: RecentlyPlayedWidgetProps) {
   const entry = useRecentlyPlayed(groupName);
   const {
     open: openMusicOverlay,
@@ -29,14 +37,14 @@ export function RecentlyPlayedWidget({ groupName }: RecentlyPlayedWidgetProps) {
   const resume = entry ? entryToResumePayload(entry) : null;
 
   const handleCardClick = () => {
-    if (activeGroupName === g && activeViewer === 'member' && !isOpen) {
+    if (activeGroupName === g && activeViewer === viewer && !isOpen) {
       expandOverlay();
       return;
     }
     if (hasRecent && resume) {
-      openMusicOverlay(g, 'member', { playbackIntent: 'browse', resume });
+      openMusicOverlay(g, viewer, { playbackIntent: 'browse', resume });
     } else {
-      openMusicOverlay(g, 'member', { playbackIntent: 'browse' });
+      openMusicOverlay(g, viewer, { playbackIntent: 'browse' });
     }
   };
 
@@ -45,20 +53,20 @@ export function RecentlyPlayedWidget({ groupName }: RecentlyPlayedWidgetProps) {
     e.stopPropagation();
     if (hasRecent && resume) {
       if (resume.source === 'repertoire') {
-        openMusicOverlay(g, 'member', {
+        openMusicOverlay(g, viewer, {
           startMinimized: true,
           initialRepertoireId: resume.repertoireId,
           playbackIntent: { type: 'fromMaterialId', materialId: resume.materialId },
         });
       } else {
-        openMusicOverlay(g, 'member', {
+        openMusicOverlay(g, viewer, {
           startMinimized: true,
           initialPlaylistId: resume.playlistId,
           playbackIntent: { type: 'fromMaterialId', materialId: resume.materialId },
         });
       }
     } else {
-      openMusicOverlay(g, 'member', { startMinimized: true, playbackIntent: 'playAll' });
+      openMusicOverlay(g, viewer, { startMinimized: true, playbackIntent: 'playAll' });
     }
   };
 
