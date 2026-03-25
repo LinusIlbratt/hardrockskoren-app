@@ -74,6 +74,17 @@
   margin-top: var(--spacing-xl);
 }
 
+.loadMoreSentinel {
+  height: 1px;
+  width: 100%;
+}
+
+.loadingMore {
+  margin-top: var(--spacing-md);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
 .emptyState {
   padding: var(--spacing-xl);
   text-align: center;
