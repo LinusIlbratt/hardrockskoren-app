@@ -831,6 +831,15 @@
   user-select: none;
 }
 
+.heroArtIcon {
+  color: rgba(255, 255, 255, 0.95);
+  stroke-width: 2.1;
+}
+
+.heroArtInitial {
+  line-height: 1;
+}
+
 .heroText {
   min-width: 0;
   flex: 1;

@@ -787,9 +787,11 @@ export function RepertoireMusicPlayerPanel({
   const selectedRepertoireTitle = repertoires.find(
     (r) => r.repertoireId === selectedId,
   )?.title;
-  const selectedTitle = isLibraryMode
+  const isFavoritesView = selectedId === LIBRARY_SELECTED_ID || isLibraryMode;
+  const selectedTitle = isFavoritesView
     ? "Mina favoriter"
     : (selectedPlaylistTitle ?? selectedRepertoireTitle);
+  const heroArtworkInitial = (selectedTitle || "?").charAt(0).toUpperCase();
 
   const showMobilePlaylistPicker =
     isMobileShell && mobileBrowseMode === "playlists" && !isPlaylistSelected;
@@ -835,7 +837,7 @@ export function RepertoireMusicPlayerPanel({
             onClick={handleToRepertoires}
           >
             <ChevronLeft size={16} aria-hidden />
-            {isLibraryMode ? "Mitt bibliotek" : "Repertoar"}
+            {isFavoritesView ? "Mitt bibliotek" : "Repertoar"}
           </button>
           <button
             type="button"
@@ -1397,11 +1399,17 @@ export function RepertoireMusicPlayerPanel({
             <>
               <div className={styles.hero}>
                 <div className={styles.heroArt} aria-hidden>
-                  {(selectedTitle || "?").charAt(0).toUpperCase()}
+                  {isFavoritesView ? (
+                    <Heart size={34} className={styles.heroArtIcon} />
+                  ) : selectedPlaylistTitle ? (
+                    <ListMusic size={34} className={styles.heroArtIcon} />
+                  ) : (
+                    <span className={styles.heroArtInitial}>{heroArtworkInitial}</span>
+                  )}
                 </div>
                 <div className={styles.heroText}>
                   <p className={styles.heroEyebrow}>
-                    {isLibraryMode
+                    {isFavoritesView
                       ? "Mitt bibliotek"
                       : selectedPlaylistTitle
                         ? "Spellista"
