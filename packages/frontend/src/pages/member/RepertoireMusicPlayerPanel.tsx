@@ -47,6 +47,8 @@ import {
   removePlaylistItem,
 } from "@/services/musicService";
 import { Modal } from "@/components/ui/modal/Modal";
+/** Watermark asset — replace with e.g. `import tracklistWatermarkLogo from '@/assets/logo.svg'` when added. */
+import tracklistWatermarkLogo from "@/assets/images/hrk-logo.webp";
 import styles from "./RepertoireMusicPlayerPage.module.scss";
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
@@ -1395,8 +1397,17 @@ export function RepertoireMusicPlayerPanel({
                   </p>
                 </div>
               ) : (
-                <div className={styles.trackScroll}>
-                  <table className={styles.trackTable}>
+                <div className={styles.trackListShell}>
+                  <div className={styles.trackWatermark} aria-hidden>
+                    <img
+                      src={tracklistWatermarkLogo}
+                      alt=""
+                      className={styles.trackWatermarkImg}
+                      draggable={false}
+                    />
+                  </div>
+                  <div className={styles.trackScroll}>
+                    <table className={styles.trackTable}>
                     <thead className={styles.trackTableHead}>
                       <tr>
                         <th className={styles.colIndex} scope="col">
@@ -1627,6 +1638,7 @@ export function RepertoireMusicPlayerPanel({
                       })}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               )}
             </>

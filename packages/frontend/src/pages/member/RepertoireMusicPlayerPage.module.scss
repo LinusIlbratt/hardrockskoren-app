@@ -821,6 +821,35 @@ $trackUiFont:
   'Segoe UI',
   sans-serif;
 
+/* Wraps watermark + scroll: logo stays fixed; only the table scrolls */
+.trackListShell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.trackWatermark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 0;
+  width: min(400px, 50%);
+  max-width: min(400px, 50vw);
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.07;
+}
+
+.trackWatermarkImg {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
 .trackScroll {
   position: relative;
   z-index: 1;
@@ -847,6 +876,8 @@ $trackUiFont:
 }
 
 .trackTable {
+  position: relative;
+  z-index: 1;
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
@@ -1709,6 +1740,12 @@ $trackUiFont:
   /* track list — samma Spotify-känsla, kompakt rad med miniatyr */
   .trackScroll {
     padding: 0 12px 20px;
+  }
+
+  .trackWatermark {
+    width: min(280px, 62%);
+    max-width: min(280px, 70vw);
+    opacity: 0.06;
   }
 
   .trackTable {
