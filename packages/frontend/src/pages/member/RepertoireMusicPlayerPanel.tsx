@@ -38,7 +38,11 @@ import {
 } from "@/context/MusicPlayerOverlayContext";
 import { useAuth } from "@/context/AuthContext";
 import { saveRecentPlayback } from "@/utils/recentPlayback";
-import { hashMediaSourcesKey, isPlayableAudioFile } from "@/utils/media";
+import {
+  formatDisplayTitle,
+  hashMediaSourcesKey,
+  isPlayableAudioFile,
+} from "@/utils/media";
 import { useFavorites } from "@/hooks/useFavorites";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import {
@@ -47,6 +51,7 @@ import {
   removePlaylistItem,
 } from "@/services/musicService";
 import { Modal } from "@/components/ui/modal/Modal";
+import { Loader, LoaderSize } from "@/components/ui/loader/Loader";
 /** Watermark asset — replace with e.g. `import tracklistWatermarkLogo from '@/assets/logo.svg'` when added. */
 import tracklistWatermarkLogo from "@/assets/images/hrk-logo.webp";
 import styles from "./RepertoireMusicPlayerPage.module.scss";
@@ -227,7 +232,10 @@ export function RepertoireMusicPlayerPanel({
         .filter((m) => m.fileKey && isPlayableAudioFile(m.fileKey))
         .map((m) => ({
           src: `${FILE_BASE_URL}/${m.fileKey}`,
-          title: m.title || m.fileKey?.split("/").pop() || "Okänd",
+          title:
+            formatDisplayTitle(
+              m.title || m.fileKey?.split("/").pop() || "",
+            ) || "Okänd",
           materialId: m.materialId,
         }));
     },
@@ -578,9 +586,11 @@ export function RepertoireMusicPlayerPanel({
     const m = audioMaterials[highlightedTrackIndex];
     if (!m?.materialId) return;
     const title =
-      (m.title && String(m.title).trim()) ||
-      (m.fileKey && m.fileKey.split("/").pop()) ||
-      "Okänt spår";
+      formatDisplayTitle(
+        (m.title && String(m.title).trim()) ||
+          (m.fileKey && m.fileKey.split("/").pop()) ||
+          "",
+      ) || "Okänt spår";
     if (isPlaylist) {
       saveRecentPlayback({
         groupSlug: groupName.trim(),
@@ -792,6 +802,12 @@ export function RepertoireMusicPlayerPanel({
     isMobileShell &&
     ((mobileBrowseMode === "playlists" && isPlaylistSelected) ||
       (mobileBrowseMode === "repertoires" && isRepertoireSelected));
+
+  /** Bakgrundsvattenstämpel i mittenpanelen (inte välkomstvy / mobilväljare). */
+  const showShellMainWatermark =
+    !showMobilePlaylistPicker &&
+    !showMobileRepertoirePicker &&
+    (Boolean(selectedId) || isLibraryMode);
 
   const shellBodyClass = [
     styles.shellBody,
@@ -1194,6 +1210,16 @@ export function RepertoireMusicPlayerPanel({
 
         {/* ── main ── */}
         <section className={styles.shellMain} aria-label="Spår och uppspelning">
+          {showShellMainWatermark ? (
+            <div className={styles.shellMainWatermark} aria-hidden>
+              <img
+                src={tracklistWatermarkLogo}
+                alt=""
+                className={styles.shellMainWatermarkImg}
+                draggable={false}
+              />
+            </div>
+          ) : null}
           {showMobileBackBar && (
             <div className={styles.mobileMainNavBar}>
               <button
@@ -1355,12 +1381,20 @@ export function RepertoireMusicPlayerPanel({
               </p>
             </div>
           ) : !selectedId && isLibraryMode ? (
-            <p className={styles.muted}>Laddar bibliotek…</p>
-          ) : loadingTracks ? (
-            <p className={styles.muted}>Laddar spår...</p>
+            <div className={styles.trackMainSurface}>
+              <div
+                className={styles.trackSurfaceLoading}
+                role="status"
+                aria-live="polite"
+              >
+                <Loader size={LoaderSize.MEDIUM} />
+                <p className={styles.trackSurfaceLoadingText}>
+                  Laddar bibliotek…
+                </p>
+              </div>
+            </div>
           ) : (
             <>
-              {/* hero */}
               <div className={styles.hero}>
                 <div className={styles.heroArt} aria-hidden>
                   {(selectedTitle || "?").charAt(0).toUpperCase()}
@@ -1375,37 +1409,44 @@ export function RepertoireMusicPlayerPanel({
                   </p>
                   <h1 className={styles.heroTitle}>{selectedTitle}</h1>
                   <p className={styles.heroMeta}>
-                    {audioMaterials.length}{" "}
-                    {audioMaterials.length === 1 ? "ljudfil" : "ljudfiler"}
+                    {loadingTracks
+                      ? "Hämtar spår…"
+                      : `${audioMaterials.length} ${audioMaterials.length === 1 ? "ljudfil" : "ljudfiler"}`}
                   </p>
                 </div>
               </div>
 
-              {/* tracks */}
-              {audioMaterials.length === 0 ? (
-                <div className={styles.emptyMain}>
-                  <Music size={48} className={styles.emptyIcon} aria-hidden />
-                  <h2 className={styles.emptyTitle}>
-                    {selectedId === LIBRARY_SELECTED_ID || isLibraryMode
-                      ? "Inga favoriter ännu"
-                      : "Inga ljudfiler"}
-                  </h2>
-                  <p className={styles.emptyDescription}>
-                    {selectedId === LIBRARY_SELECTED_ID || isLibraryMode
-                      ? "Du har inga favoriter ännu. Markera låtar med hjärtat för att samla dem här."
-                      : "Det finns inga uppspelbara ljudfiler i den här låtlistan ännu."}
-                  </p>
+              {loadingTracks ? (
+                <div className={styles.trackMainSurface}>
+                  <div
+                    className={styles.trackSurfaceLoading}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    <Loader size={LoaderSize.MEDIUM} />
+                    <p className={styles.trackSurfaceLoadingText}>
+                      Laddar spår…
+                    </p>
+                  </div>
+                </div>
+              ) : audioMaterials.length === 0 ? (
+                <div className={styles.trackMainSurface}>
+                  <div className={styles.emptyMain}>
+                    <Music size={48} className={styles.emptyIcon} aria-hidden />
+                    <h2 className={styles.emptyTitle}>
+                      {selectedId === LIBRARY_SELECTED_ID || isLibraryMode
+                        ? "Inga favoriter ännu"
+                        : "Inga ljudfiler"}
+                    </h2>
+                    <p className={styles.emptyDescription}>
+                      {selectedId === LIBRARY_SELECTED_ID || isLibraryMode
+                        ? "Du har inga favoriter ännu. Markera låtar med hjärtat för att samla dem här."
+                        : "Det finns inga uppspelbara ljudfiler i den här låtlistan ännu."}
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <div className={styles.trackListShell}>
-                  <div className={styles.trackWatermark} aria-hidden>
-                    <img
-                      src={tracklistWatermarkLogo}
-                      alt=""
-                      className={styles.trackWatermarkImg}
-                      draggable={false}
-                    />
-                  </div>
                   <div className={styles.trackScroll}>
                     <table className={styles.trackTable}>
                     <thead className={styles.trackTableHead}>
@@ -1421,7 +1462,9 @@ export function RepertoireMusicPlayerPanel({
                     <tbody>
                       {audioMaterials.map((m, index) => {
                         const label =
-                          m.title || m.fileKey?.split("/").pop() || "Okänd";
+                          formatDisplayTitle(
+                            m.title || m.fileKey?.split("/").pop() || "",
+                          ) || "Okänd";
                         const isRowActive =
                           playerQueue.length > 0 &&
                           !!selectedId &&

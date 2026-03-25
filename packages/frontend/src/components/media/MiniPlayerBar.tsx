@@ -15,6 +15,7 @@ import { useFavorites } from '@/hooks/useFavorites';
 import { AddToPlaylistModal } from '@/components/music/AddToPlaylistModal';
 import { TrackTitleMarquee } from '@/components/media/TrackTitleMarquee';
 import type { Material } from '@/types';
+import { formatDisplayTitle } from '@/utils/media';
 import styles from './MediaPlayer.module.scss';
 
 const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
@@ -59,6 +60,8 @@ export function MiniPlayerBar() {
   }
 
   const track = activeTrack;
+  const displayTitle =
+    formatDisplayTitle(track.title || '') || track.title?.trim() || '—';
   const { current, duration } = playbackProgress;
 
   const timelineProgressPct =
@@ -87,11 +90,11 @@ export function MiniPlayerBar() {
         <div className={styles.playerMainRow}>
           <div className={styles.sectionNowPlaying}>
             <div className={styles.artPlaceholder} aria-hidden>
-              {(track.title || '?').charAt(0).toUpperCase()}
+              {(displayTitle || '?').charAt(0).toUpperCase()}
             </div>
             <div className={styles.nowPlayingMain}>
               <div className={styles.nowPlayingText}>
-                <TrackTitleMarquee text={track.title || '—'} />
+                <TrackTitleMarquee text={displayTitle} />
                 {track.artist ? (
                   <span className={styles.trackMeta}>{track.artist}</span>
                 ) : showPrevNext && queueMeta ? (
@@ -110,10 +113,13 @@ export function MiniPlayerBar() {
                       const adding = !favoriteMaterialIds.includes(activeMaterialId);
                       let hint: Material | undefined;
                       if (adding && track.fileKey) {
+                        const t =
+                          formatDisplayTitle(track.title || '') ||
+                          track.title?.trim();
                         hint = {
                           materialId: activeMaterialId,
                           fileKey: track.fileKey,
-                          ...(track.title.trim() ? { title: track.title.trim() } : {}),
+                          ...(t ? { title: t } : {}),
                         };
                       }
                       toggleFavoriteOptimistic(activeMaterialId, hint);

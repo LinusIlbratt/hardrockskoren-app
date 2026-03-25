@@ -19,6 +19,7 @@ import type { Material } from '@/types/index';
 import { useAuth } from '@/context/AuthContext';
 import { useMusicPlayerOverlay } from '@/context/MusicPlayerOverlayContext';
 import {
+  formatDisplayTitle,
   getMaterialFileCategory,
   isModalPreviewableFile,
   isPlayableAudioFile,
@@ -71,7 +72,10 @@ const MaterialSection: React.FC<MaterialSectionProps> = ({
       <div className={styles.materialList}>
         {files.map(material => {
           if (!material.fileKey) return null;
-          const displayName = material.title || material.fileKey.split('/').pop() || 'Okänd titel';
+          const displayName =
+            formatDisplayTitle(
+              material.title || material.fileKey.split('/').pop() || '',
+            ) || 'Okänd titel';
 
           return (
             <div key={material.materialId} className={styles.materialItem}>

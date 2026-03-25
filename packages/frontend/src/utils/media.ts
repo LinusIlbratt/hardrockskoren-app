@@ -70,3 +70,15 @@ export function extractFileKeyFromMediaUrl(src: string | undefined): string | un
     return undefined;
   }
 }
+
+/**
+ * Formats a raw filename or basename for UI: strips common audio extensions,
+ * uses the last path segment, replaces underscores with spaces.
+ */
+export function formatDisplayTitle(filename: string): string {
+  const s = filename.trim();
+  if (!s) return '';
+  const base = s.includes('/') ? (s.split('/').pop() ?? s) : s;
+  const withoutExt = base.replace(AUDIO_EXT_REGEX, '');
+  return withoutExt.replace(/_/g, ' ').trim();
+}

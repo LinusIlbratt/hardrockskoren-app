@@ -19,7 +19,7 @@ import {
 } from 'react-icons/fa';
 import { Repeat, Repeat1, Heart, ListPlus } from 'lucide-react';
 import { useFavorites } from '@/hooks/useFavorites';
-import { extractFileKeyFromMediaUrl } from '@/utils/media';
+import { extractFileKeyFromMediaUrl, formatDisplayTitle } from '@/utils/media';
 import type { Material } from '@/types';
 import { AddToPlaylistModal } from '@/components/music/AddToPlaylistModal';
 import { TrackTitleMarquee } from '@/components/media/TrackTitleMarquee';
@@ -243,6 +243,26 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
     !queueMode && 'src' in props ? props.src : '',
   ]);
 
+  const rawTrackTitle = useMemo(() => {
+    if (queueMode && tracks?.length) {
+      return tracks[currentTrackIndex]?.title ?? '';
+    }
+    if (!queueMode && 'title' in props) {
+      return props.title;
+    }
+    return '';
+  }, [
+    queueMode,
+    tracks,
+    currentTrackIndex,
+    !queueMode && 'title' in props ? props.title : '',
+  ]);
+
+  const displayTitle = useMemo(
+    () => formatDisplayTitle(rawTrackTitle) || rawTrackTitle.trim(),
+    [rawTrackTitle],
+  );
+
   useEffect(() => {
     setIsPlayerVisible(true);
     setLoadError(null);
@@ -372,7 +392,7 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
     const ms = navigator.mediaSession;
 
     ms.metadata = new MediaMetadata({
-      title: currentTrack?.title || (!queueMode && 'title' in props ? props.title : '') || 'Ljudspår',
+      title: displayTitle || 'Ljudspår',
       artist: 'Hårdrockskören',
     });
 
@@ -405,10 +425,9 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
       ms.setActionHandler('nexttrack', null);
     };
   }, [
-    currentTrack?.title,
+    displayTitle,
     currentTrack?.src,
     isPlaying,
-    props.title,
     queueMode,
     goToPrevious,
     goToNext,
@@ -588,8 +607,6 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
     .filter(Boolean)
     .join(' ');
   const showPrevNext = queueMode && tracks && tracks.length > 1;
-  const title =
-    queueMode && tracks?.length ? tracks[currentTrackIndex]?.title ?? '' : !queueMode ? props.title : '';
 
   const currentMaterialId =
     queueMode && tracks?.length
@@ -626,21 +643,21 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
 
   const materialHintForFavorite = useMemo((): Material | undefined => {
     if (!currentMaterialId || !activeTrackFileKey) return undefined;
-    const t = title.trim();
+    const t = displayTitle.trim();
     return {
       materialId: currentMaterialId,
       fileKey: activeTrackFileKey,
       ...(t ? { title: t } : {}),
     };
-  }, [currentMaterialId, activeTrackFileKey, title]);
+  }, [currentMaterialId, activeTrackFileKey, displayTitle]);
 
   useEffect(() => {
     if (!syncPlayback || !overlayPlayback) return;
-    const t = title || '';
+    const t = displayTitle || '';
     overlayPlayback.setActiveTrack(
       t ? { title: t, ...(activeTrackFileKey ? { fileKey: activeTrackFileKey } : {}) } : null,
     );
-  }, [syncPlayback, overlayPlayback, title, activeTrackFileKey]);
+  }, [syncPlayback, overlayPlayback, displayTitle, activeTrackFileKey]);
 
   useEffect(() => {
     if (!syncPlayback || !overlayPlayback) return;
@@ -793,11 +810,11 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
         <div className={styles.playerMainRow}>
           <div className={styles.sectionNowPlaying}>
             <div className={styles.artPlaceholder} aria-hidden>
-              {(title || '?').charAt(0).toUpperCase()}
+              {(displayTitle || '?').charAt(0).toUpperCase()}
             </div>
             <div className={styles.nowPlayingMain}>
               <div className={styles.nowPlayingText}>
-                <TrackTitleMarquee text={title || '—'} />
+                <TrackTitleMarquee text={displayTitle || '—'} />
                 {queueMode && tracks && tracks.length > 1 && (
                   <span className={styles.trackMeta}>
                     Spår {currentTrackIndex + 1} av {tracks.length}
