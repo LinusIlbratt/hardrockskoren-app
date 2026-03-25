@@ -14,6 +14,7 @@ import {
 import { useFavorites } from '@/hooks/useFavorites';
 import { AddToPlaylistModal } from '@/components/music/AddToPlaylistModal';
 import { TrackTitleMarquee } from '@/components/media/TrackTitleMarquee';
+import type { Material } from '@/types';
 import styles from './MediaPlayer.module.scss';
 
 const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
@@ -104,7 +105,19 @@ export function MiniPlayerBar() {
                   <button
                     type="button"
                     className={styles.quickActionButton}
-                    onClick={() => toggleFavoriteOptimistic(activeMaterialId)}
+                    onClick={() => {
+                      if (!activeMaterialId) return;
+                      const adding = !favoriteMaterialIds.includes(activeMaterialId);
+                      let hint: Material | undefined;
+                      if (adding && track.fileKey) {
+                        hint = {
+                          materialId: activeMaterialId,
+                          fileKey: track.fileKey,
+                          ...(track.title.trim() ? { title: track.title.trim() } : {}),
+                        };
+                      }
+                      toggleFavoriteOptimistic(activeMaterialId, hint);
+                    }}
                     aria-label={
                       favoriteMaterialIds.includes(activeMaterialId)
                         ? 'Ta bort från favoriter'

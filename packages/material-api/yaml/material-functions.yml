@@ -245,6 +245,11 @@ listRepertoires:
         - "dynamodb:Query"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 
 listMaterialsInRepertoire:
   handler: functions/listMaterialsInRepertoire.handler
@@ -265,6 +270,11 @@ listMaterialsInRepertoire:
         - "dynamodb:BatchGetItem" # FÖR ATT HÄMTA DETALJERNA FÖR MATERIALET
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 
 deleteRepertoire:
   handler: functions/deleteRepertoire.handler

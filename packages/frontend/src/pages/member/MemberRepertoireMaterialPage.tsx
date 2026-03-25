@@ -39,7 +39,7 @@ interface MaterialSectionProps {
   isPlaying?: boolean;
   /** När satt: visar favorit-knapp för spelbara ljudfiler i listan */
   favoriteMaterialIds?: string[];
-  onToggleFavorite?: (materialId: string) => void;
+  onToggleFavorite?: (materialId: string, materialHint?: Material) => void;
   /** Öppnar "lägg till i spellista" för spelbara ljudfiler */
   onOpenAddToPlaylist?: (materialId: string) => void;
 }
@@ -89,7 +89,7 @@ const MaterialSection: React.FC<MaterialSectionProps> = ({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onToggleFavorite(material.materialId);
+                          onToggleFavorite(material.materialId, material);
                         }}
                         className={`${styles.actionButton} ${styles.playButton}`}
                         aria-label={

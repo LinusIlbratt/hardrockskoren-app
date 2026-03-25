@@ -19,6 +19,8 @@ import {
 } from 'react-icons/fa';
 import { Repeat, Repeat1, Heart, ListPlus } from 'lucide-react';
 import { useFavorites } from '@/hooks/useFavorites';
+import { extractFileKeyFromMediaUrl } from '@/utils/media';
+import type { Material } from '@/types';
 import { AddToPlaylistModal } from '@/components/music/AddToPlaylistModal';
 import { TrackTitleMarquee } from '@/components/media/TrackTitleMarquee';
 import {
@@ -614,11 +616,31 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
     };
   }, [syncPlayback, overlayPlayback, togglePlayPause]);
 
+  const singleSrcForFileKey = !queueMode && 'src' in props ? props.src : '';
+  const activeTrackFileKey = useMemo(() => {
+    if (queueMode && tracks?.length) {
+      return extractFileKeyFromMediaUrl(tracks[currentTrackIndex]?.src);
+    }
+    return extractFileKeyFromMediaUrl(singleSrcForFileKey);
+  }, [queueMode, tracks, currentTrackIndex, singleSrcForFileKey]);
+
+  const materialHintForFavorite = useMemo((): Material | undefined => {
+    if (!currentMaterialId || !activeTrackFileKey) return undefined;
+    const t = title.trim();
+    return {
+      materialId: currentMaterialId,
+      fileKey: activeTrackFileKey,
+      ...(t ? { title: t } : {}),
+    };
+  }, [currentMaterialId, activeTrackFileKey, title]);
+
   useEffect(() => {
     if (!syncPlayback || !overlayPlayback) return;
     const t = title || '';
-    overlayPlayback.setActiveTrack(t ? { title: t } : null);
-  }, [syncPlayback, overlayPlayback, title]);
+    overlayPlayback.setActiveTrack(
+      t ? { title: t, ...(activeTrackFileKey ? { fileKey: activeTrackFileKey } : {}) } : null,
+    );
+  }, [syncPlayback, overlayPlayback, title, activeTrackFileKey]);
 
   useEffect(() => {
     if (!syncPlayback || !overlayPlayback) return;
@@ -787,7 +809,13 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
                   <button
                     type="button"
                     className={styles.quickActionButton}
-                    onClick={() => toggleFavoriteOptimistic(currentMaterialId)}
+                    onClick={() => {
+                      const adding = !favoriteMaterialIds.includes(currentMaterialId);
+                      toggleFavoriteOptimistic(
+                        currentMaterialId,
+                        adding ? materialHintForFavorite : undefined,
+                      );
+                    }}
                     aria-label={
                       favoriteMaterialIds.includes(currentMaterialId)
                         ? 'Ta bort från favoriter'

@@ -34,6 +34,8 @@ export type LibraryPlaybackIntent =
 export interface ActiveTrackMeta {
   title: string;
   artist?: string;
+  /** S3 fileKey for the current track — used e.g. when favoriting from the mini player. */
+  fileKey?: string;
 }
 
 /** För "Spår X av Y" i miniplayer (samma som inbäddad MediaPlayer). */

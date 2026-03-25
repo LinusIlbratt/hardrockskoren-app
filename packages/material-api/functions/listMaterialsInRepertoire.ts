@@ -2,6 +2,7 @@ import { DynamoDBClient, QueryCommand, BatchGetItemCommand } from "@aws-sdk/clie
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../core/utils/http";
+import { requireGroupAccessResponse } from "./lib/requireGroupAccess";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
@@ -12,7 +13,16 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   }
 
   try {
-    const { repertoireId } = event.pathParameters || {};
+    const { groupName, repertoireId } = event.pathParameters || {};
+
+    const authDenied = await requireGroupAccessResponse(
+      event.requestContext.authorizer?.lambda,
+      groupName
+    );
+    if (authDenied) {
+      return authDenied;
+    }
+
     if (!repertoireId) {
       return sendError(400, "Repertoire ID is required.");
     }

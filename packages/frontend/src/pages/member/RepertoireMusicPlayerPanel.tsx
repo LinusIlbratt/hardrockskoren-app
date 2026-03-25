@@ -962,114 +962,126 @@ export function RepertoireMusicPlayerPanel({
             </ul>
           </div>
 
-          <div className={styles.playlistSidebarSection}>
+          <div className={styles.playlistSidebarPlaylistsStack}>
             <p className={styles.playlistSidebarSectionLabel}>Spellistor</p>
-            <ul className={styles.playlistSidebarList}>
-              {playlistsLoading ? (
-                <li>
-                  <p className={styles.muted}>Laddar…</p>
-                </li>
-              ) : playlists.length === 0 ? (
-                <li>
-                  <p className={styles.muted}>Inga spellistor ännu.</p>
-                </li>
-              ) : (
-                playlists.map((p) => (
-                  <li
-                    key={p.playlistId}
-                    className={`${styles.playlistSidebarRow} ${selectedId === p.playlistId ? styles.playlistSidebarRowActive : ""}`}
-                  >
-                    <button
-                      type="button"
-                      className={`${styles.playlistSidebarItem} ${selectedId === p.playlistId ? styles.playlistSidebarItemActive : ""}`}
-                      onClick={() => {
-                        closePlaylistMenu();
-                        void handleSelectPlaylist(p.playlistId);
-                      }}
-                    >
-                      <ListPlus
-                        size={14}
-                        className={styles.playlistSidebarItemIcon}
-                        aria-hidden
-                      />
-                      <span className={styles.playlistSidebarItemLabel}>
-                        {p.title}
-                      </span>
-                    </button>
-                    <div
-                      className={`${styles.playlistSidebarRowMenu} ${playlistMenuOpenId === p.playlistId ? styles.playlistSidebarRowMenuOpen : ""}`}
-                      data-playlist-row-menu={p.playlistId}
+
+            <div className={styles.playlistSidebarCreate}>
+              <div className={styles.playlistSidebarCreateRow}>
+                <input
+                  type="text"
+                  className={styles.playlistSidebarInput}
+                  placeholder="Ny spellista…"
+                  value={newPlaylistTitle}
+                  onChange={(e) => setNewPlaylistTitle(e.target.value)}
+                  disabled={creatingPlaylist}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") void handleCreatePlaylistInSidebar();
+                  }}
+                />
+                <button
+                  type="button"
+                  className={styles.playlistSidebarCreateButton}
+                  onClick={() => void handleCreatePlaylistInSidebar()}
+                  disabled={creatingPlaylist || !newPlaylistTitle.trim()}
+                  aria-label="Skapa spellista"
+                >
+                  <Plus size={16} aria-hidden />
+                </button>
+              </div>
+            </div>
+
+            <div
+              className={styles.playlistSidebarPlaylistScroll}
+              role="region"
+              aria-label="Lista över spellistor"
+            >
+              <ul className={styles.playlistSidebarList}>
+                {playlistsLoading ? (
+                  <li>
+                    <p className={styles.muted}>Laddar…</p>
+                  </li>
+                ) : playlists.length === 0 ? (
+                  <li>
+                    <p className={styles.muted}>Inga spellistor ännu.</p>
+                  </li>
+                ) : (
+                  playlists.map((p) => (
+                    <li
+                      key={p.playlistId}
+                      className={`${styles.playlistSidebarRow} ${selectedId === p.playlistId ? styles.playlistSidebarRowActive : ""}`}
                     >
                       <button
                         type="button"
-                        ref={(el) => {
-                          playlistMenuButtonRefs.current[p.playlistId] = el;
-                        }}
-                        className={styles.playlistSidebarMenuTrigger}
-                        aria-expanded={playlistMenuOpenId === p.playlistId}
-                        aria-haspopup="menu"
-                        aria-label={`Fler alternativ för ${p.title}`}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (playlistMenuOpenId === p.playlistId) {
-                            closePlaylistMenu();
-                            return;
-                          }
-                          const btn =
-                            playlistMenuButtonRefs.current[p.playlistId];
-                          if (btn) {
-                            const r = btn.getBoundingClientRect();
-                            let left = r.right - PLAYLIST_MENU_WIDTH_PX;
-                            left = Math.max(
-                              8,
-                              Math.min(
-                                left,
-                                window.innerWidth - PLAYLIST_MENU_WIDTH_PX - 8,
-                              ),
-                            );
-                            setPlaylistMenuCoords({ top: r.bottom + 4, left });
-                          } else {
-                            setPlaylistMenuCoords(null);
-                          }
-                          setPlaylistMenuOpenId(p.playlistId);
+                        className={`${styles.playlistSidebarItem} ${selectedId === p.playlistId ? styles.playlistSidebarItemActive : ""}`}
+                        onClick={() => {
+                          closePlaylistMenu();
+                          void handleSelectPlaylist(p.playlistId);
                         }}
                       >
-                        <MoreHorizontal
-                          size={16}
-                          strokeWidth={2}
-                          className={styles.playlistSidebarMenuIcon}
+                        <ListPlus
+                          size={14}
+                          className={styles.playlistSidebarItemIcon}
                           aria-hidden
                         />
+                        <span className={styles.playlistSidebarItemLabel}>
+                          {p.title}
+                        </span>
                       </button>
-                    </div>
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
-
-          <div className={styles.playlistSidebarCreate}>
-            <div className={styles.playlistSidebarCreateRow}>
-              <input
-                type="text"
-                className={styles.playlistSidebarInput}
-                placeholder="Ny spellista…"
-                value={newPlaylistTitle}
-                onChange={(e) => setNewPlaylistTitle(e.target.value)}
-                disabled={creatingPlaylist}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void handleCreatePlaylistInSidebar();
-                }}
-              />
-              <button
-                type="button"
-                className={styles.playlistSidebarCreateButton}
-                onClick={() => void handleCreatePlaylistInSidebar()}
-                disabled={creatingPlaylist || !newPlaylistTitle.trim()}
-                aria-label="Skapa spellista"
-              >
-                <Plus size={16} aria-hidden />
-              </button>
+                      <div
+                        className={`${styles.playlistSidebarRowMenu} ${playlistMenuOpenId === p.playlistId ? styles.playlistSidebarRowMenuOpen : ""}`}
+                        data-playlist-row-menu={p.playlistId}
+                      >
+                        <button
+                          type="button"
+                          ref={(el) => {
+                            playlistMenuButtonRefs.current[p.playlistId] = el;
+                          }}
+                          className={styles.playlistSidebarMenuTrigger}
+                          aria-expanded={playlistMenuOpenId === p.playlistId}
+                          aria-haspopup="menu"
+                          aria-label={`Fler alternativ för ${p.title}`}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (playlistMenuOpenId === p.playlistId) {
+                              closePlaylistMenu();
+                              return;
+                            }
+                            const btn =
+                              playlistMenuButtonRefs.current[p.playlistId];
+                            if (btn) {
+                              const r = btn.getBoundingClientRect();
+                              let left = r.right - PLAYLIST_MENU_WIDTH_PX;
+                              left = Math.max(
+                                8,
+                                Math.min(
+                                  left,
+                                  window.innerWidth -
+                                    PLAYLIST_MENU_WIDTH_PX -
+                                    8,
+                                ),
+                              );
+                              setPlaylistMenuCoords({
+                                top: r.bottom + 4,
+                                left,
+                              });
+                            } else {
+                              setPlaylistMenuCoords(null);
+                            }
+                            setPlaylistMenuOpenId(p.playlistId);
+                          }}
+                        >
+                          <MoreHorizontal
+                            size={16}
+                            strokeWidth={2}
+                            className={styles.playlistSidebarMenuIcon}
+                            aria-hidden
+                          />
+                        </button>
+                      </div>
+                    </li>
+                  ))
+                )}
+              </ul>
             </div>
           </div>
         </aside>
@@ -1379,7 +1391,7 @@ export function RepertoireMusicPlayerPanel({
                   <p className={styles.emptyDescription}>
                     {selectedId === LIBRARY_SELECTED_ID || isLibraryMode
                       ? "Du har inga favoriter ännu. Markera låtar med hjärtat för att samla dem här."
-                      : "Det finns inga uppspelbara ljudfiler i den här låten ännu."}
+                      : "Det finns inga uppspelbara ljudfiler i den här låtlistan ännu."}
                   </p>
                 </div>
               ) : (
@@ -1448,7 +1460,7 @@ export function RepertoireMusicPlayerPanel({
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setActiveDropdownId(null);
-                                      toggleFavoriteOptimistic(m.materialId);
+                                      toggleFavoriteOptimistic(m.materialId, m);
                                     }}
                                     aria-label={
                                       favoriteMaterialIds.includes(m.materialId)
