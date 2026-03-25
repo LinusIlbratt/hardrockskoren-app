@@ -9,6 +9,13 @@
   border-radius: var(--radius-sm);
 }
 
+.navLinkRow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
 // Stilen för varje enskild länk/flik
 .navLink {
   position: relative;

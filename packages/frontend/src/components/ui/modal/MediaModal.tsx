@@ -83,6 +83,12 @@ export const MediaModal = ({ isOpen, onClose, material }: MediaModalProps) => {
     return <p>Filtypen kan inte förhandsvisas. <a href={fullUrl} target="_blank" rel="noopener noreferrer">Öppna i ny flik</a></p>;
   };
 
+  const mount =
+    typeof document !== 'undefined'
+      ? document.getElementById('modal-root') ?? document.body
+      : null;
+  if (!mount) return null;
+
   return ReactDOM.createPortal(
     <div className={styles.backdrop} onClick={onClose}>
       <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
@@ -97,6 +103,6 @@ export const MediaModal = ({ isOpen, onClose, material }: MediaModalProps) => {
         </div>
       </div>
     </div>,
-    document.getElementById('modal-root')!
+    mount
   );
 };

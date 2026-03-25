@@ -1,0 +1,81 @@
+@use '@/styles/variables' as *;
+
+/* ───────── overlay root ───────── */
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  animation: fadeIn 0.22s ease-out both;
+}
+
+/* Fullskärm dold men DOM kvar så MediaPlayer/<audio> fortsätter spela (miniplayer).
+   Collapsed to 0×0 so no fixed layer covers the viewport and interferes with
+   page interaction (hit-testing, focus, scroll). */
+.rootMinimized {
+  inset: auto;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  animation: none;
+
+  .scrim,
+  .panel,
+  .panel * {
+    pointer-events: none !important;
+  }
+}
+
+/* ───────── dim behind panel ───────── */
+.scrim {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  cursor: pointer;
+  z-index: 0;
+  animation: fadeIn 0.18s ease-out both;
+}
+
+/* ───────── main panel (slides up) ───────── */
+.panel {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  margin-top: auto;
+  max-height: 100%;
+  background: #0a0a0a;
+  box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.7);
+  outline: none;
+  overflow: hidden;
+  animation: slideUp 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ───────── keyframes ───────── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
