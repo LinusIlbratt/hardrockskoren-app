@@ -77,7 +77,7 @@ export const MemberDashboard = () => {
       {!isLoadingName && choirDisplayName && groupName && (
         <div className={styles.groupNameRow}>
           <h2 className={styles.groupName}>{choirDisplayName}</h2>
-          <RecentlyPlayedWidget groupName={groupName} />
+          <RecentlyPlayedWidget groupName={groupName} viewer="member" />
         </div>
       )}
       <UserNav groupName={groupName} />
