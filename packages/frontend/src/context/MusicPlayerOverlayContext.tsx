@@ -76,7 +76,7 @@ export interface MusicPlayerOverlayContextValue {
   open: (groupName: string, viewer: MusicPlayerViewer, options?: OpenMusicOptions) => void;
   /**
    * Öppnar musikspelaren med en fast lista material (hydrerade favoriter m.m.).
-   * @param intent browse = bara lista; playAll = spela från början; fromIndex = spela från visst spår
+   * @param intent Standard browse (ingen auto-play). Sätt playAll / fromIndex för att starta uppspelning direkt.
    */
   openLibraryPlayer: (
     groupName: string,
@@ -304,7 +304,7 @@ export function MusicPlayerOverlayProvider({ children }: { children: ReactNode }
       groupName: string,
       viewer: MusicPlayerViewer,
       materials: Material[],
-      intent: LibraryPlaybackIntent = 'playAll'
+      intent: LibraryPlaybackIntent = 'browse'
     ) => {
       const g = groupName.trim();
       if (!g) return;

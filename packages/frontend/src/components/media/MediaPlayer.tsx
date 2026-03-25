@@ -1,4 +1,12 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
+import {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useMemo,
+  type CSSProperties,
+} from 'react';
 import styles from './MediaPlayer.module.scss';
 import {
   FaPlay,
@@ -426,6 +434,14 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
     return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
   };
 
+  const timelineProgressPct =
+    duration > 0 && Number.isFinite(duration)
+      ? Math.min(100, Math.max(0, (currentTime / duration) * 100))
+      : 0;
+  const timelineSliderStyle = {
+    ['--slider-progress' as string]: `${timelineProgressPct}%`,
+  } as CSSProperties;
+
   const durationRef = useRef(0);
   useEffect(() => {
     durationRef.current = duration;
@@ -752,117 +768,146 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
       )}
 
       <div className={styles.playerBar}>
-        <div className={styles.sectionNowPlaying}>
-          <div className={styles.artPlaceholder} aria-hidden>
-            {(title || '?').charAt(0).toUpperCase()}
-          </div>
-          <div className={styles.nowPlayingMain}>
-            <div className={styles.nowPlayingText}>
-              <TrackTitleMarquee text={title || '—'} />
-              {queueMode && tracks && tracks.length > 1 && (
-                <span className={styles.trackMeta}>
-                  Spår {currentTrackIndex + 1} av {tracks.length}
-                </span>
-              )}
+        <div className={styles.playerMainRow}>
+          <div className={styles.sectionNowPlaying}>
+            <div className={styles.artPlaceholder} aria-hidden>
+              {(title || '?').charAt(0).toUpperCase()}
             </div>
-            {currentMaterialId ? (
-              <div className={styles.quickActions}>
-                <button
-                  type="button"
-                  className={styles.quickActionButton}
-                  onClick={() => toggleFavoriteOptimistic(currentMaterialId)}
-                  aria-label={
-                    favoriteMaterialIds.includes(currentMaterialId)
-                      ? 'Ta bort från favoriter'
-                      : 'Lägg till i favoriter'
-                  }
-                  aria-pressed={favoriteMaterialIds.includes(currentMaterialId)}
-                >
-                  <Heart
-                    size={18}
-                    fill={
-                      favoriteMaterialIds.includes(currentMaterialId)
-                        ? 'currentColor'
-                        : 'none'
-                    }
-                  />
-                </button>
-                <button
-                  type="button"
-                  className={styles.quickActionButton}
-                  onClick={() => setShowPlaylistModal(true)}
-                  aria-label="Lägg till i spellista"
-                >
-                  <ListPlus size={18} aria-hidden />
-                </button>
+            <div className={styles.nowPlayingMain}>
+              <div className={styles.nowPlayingText}>
+                <TrackTitleMarquee text={title || '—'} />
+                {queueMode && tracks && tracks.length > 1 && (
+                  <span className={styles.trackMeta}>
+                    Spår {currentTrackIndex + 1} av {tracks.length}
+                  </span>
+                )}
               </div>
-            ) : null}
+              {currentMaterialId ? (
+                <div className={styles.quickActions}>
+                  <button
+                    type="button"
+                    className={styles.quickActionButton}
+                    onClick={() => toggleFavoriteOptimistic(currentMaterialId)}
+                    aria-label={
+                      favoriteMaterialIds.includes(currentMaterialId)
+                        ? 'Ta bort från favoriter'
+                        : 'Lägg till i favoriter'
+                    }
+                    aria-pressed={favoriteMaterialIds.includes(currentMaterialId)}
+                  >
+                    <Heart
+                      size={18}
+                      fill={
+                        favoriteMaterialIds.includes(currentMaterialId)
+                          ? 'currentColor'
+                          : 'none'
+                      }
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.quickActionButton}
+                    onClick={() => setShowPlaylistModal(true)}
+                    aria-label="Lägg till i spellista"
+                  >
+                    <ListPlus size={18} aria-hidden />
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div className={styles.sectionTransport}>
+            <div className={styles.transportCluster}>
+              <div className={styles.transportSideStart}>
+                {showPrevNext ? (
+                  <button
+                    type="button"
+                    className={styles.iconButton}
+                    onClick={goToPrevious}
+                    disabled={currentTrackIndex <= 0}
+                    aria-label="Föregående spår"
+                  >
+                    <FaStepBackward size={15} />
+                  </button>
+                ) : null}
+              </div>
+              <button
+                type="button"
+                onClick={togglePlayPause}
+                className={styles.playPauseButton}
+                aria-label={isPlaying ? 'Paus' : 'Spela'}
+              >
+                {isPlaying ? (
+                  <FaPause size={18} />
+                ) : (
+                  <FaPlay size={18} style={{ marginLeft: 2 }} />
+                )}
+              </button>
+              <div className={styles.transportSideEnd}>
+                {showPrevNext ? (
+                  <button
+                    type="button"
+                    className={styles.iconButton}
+                    onClick={goToNext}
+                    disabled={
+                      repeatMode !== 'all' &&
+                      currentTrackIndex >= (tracks?.length ?? 0) - 1
+                    }
+                    aria-label="Nästa spår"
+                  >
+                    <FaStepForward size={15} />
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  className={`${styles.iconButton} ${repeatMode !== 'off' ? styles.iconButtonAccent : ''}`}
+                  onClick={cycleRepeatMode}
+                  aria-label={repeatAriaLabel}
+                >
+                  {repeatMode === 'one' ? (
+                    <Repeat1 size={18} strokeWidth={2} />
+                  ) : (
+                    <Repeat size={18} strokeWidth={2} />
+                  )}
+                </button>
+                <label className={styles.playbackRateInline}>
+                  <span className={styles.srOnly}>Uppspelningshastighet</span>
+                  <select
+                    className={styles.playbackRateSelectInline}
+                    value={playbackRate}
+                    onChange={handlePlaybackRateChange}
+                    aria-label="Uppspelningshastighet"
+                  >
+                    {PLAYBACK_RATES.map((r) => (
+                      <option key={r} value={r}>
+                        {r === 1 ? '1×' : `${r}×`}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.sectionMeta}>
+            <div className={styles.sectionVolume}>
+              <FaVolumeUp size={16} className={styles.volumeIcon} aria-hidden />
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={volume}
+                onChange={handleVolumeChange}
+                className={styles.volumeSlider}
+                aria-label="Volym"
+              />
+            </div>
           </div>
         </div>
 
-        <div className={styles.sectionTransport}>
-          <div className={styles.transportButtons}>
-            {showPrevNext && (
-              <button
-                type="button"
-                className={styles.iconButton}
-                onClick={goToPrevious}
-                disabled={currentTrackIndex <= 0}
-                aria-label="Föregående spår"
-              >
-                <FaStepBackward size={14} />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={togglePlayPause}
-              className={styles.playPauseButton}
-              aria-label={isPlaying ? 'Paus' : 'Spela'}
-            >
-              {isPlaying ? <FaPause size={16} /> : <FaPlay size={16} style={{ marginLeft: 2 }} />}
-            </button>
-            {showPrevNext && (
-              <button
-                type="button"
-                className={styles.iconButton}
-                onClick={goToNext}
-                disabled={
-                  repeatMode !== 'all' &&
-                  currentTrackIndex >= (tracks?.length ?? 0) - 1
-                }
-                aria-label="Nästa spår"
-              >
-                <FaStepForward size={14} />
-              </button>
-            )}
-            <button
-              type="button"
-              className={`${styles.iconButton} ${repeatMode !== 'off' ? styles.iconButtonAccent : ''}`}
-              onClick={cycleRepeatMode}
-              aria-label={repeatAriaLabel}
-            >
-              {repeatMode === 'one' ? (
-                <Repeat1 size={18} strokeWidth={2} />
-              ) : (
-                <Repeat size={18} strokeWidth={2} />
-              )}
-            </button>
-            <label className={styles.playbackRateInline}>
-              <span className={styles.srOnly}>Uppspelningshastighet</span>
-              <select
-                className={styles.playbackRateSelectInline}
-                value={playbackRate}
-                onChange={handlePlaybackRateChange}
-                aria-label="Uppspelningshastighet"
-              >
-                {PLAYBACK_RATES.map((r) => (
-                  <option key={r} value={r}>
-                    {r === 1 ? '1×' : `${r}×`}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+        <div className={styles.playerProgressRow}>
           <div className={styles.seekBarContainer}>
             <span className={styles.time}>{formatTime(currentTime)}</span>
             <input
@@ -872,25 +917,10 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
               value={currentTime}
               onChange={handleTimeSliderChange}
               className={styles.timelineSlider}
+              style={timelineSliderStyle}
               aria-label="Tidslinje"
             />
             <span className={styles.time}>{formatTime(duration)}</span>
-          </div>
-        </div>
-
-        <div className={styles.sectionMeta}>
-          <div className={styles.sectionVolume}>
-            <FaVolumeUp size={16} className={styles.volumeIcon} aria-hidden />
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.01}
-              value={volume}
-              onChange={handleVolumeChange}
-              className={styles.volumeSlider}
-              aria-label="Volym"
-            />
           </div>
         </div>
       </div>

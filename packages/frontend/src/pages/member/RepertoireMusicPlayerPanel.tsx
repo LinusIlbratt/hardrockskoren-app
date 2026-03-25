@@ -1,40 +1,58 @@
-import { useState, useEffect, useLayoutEffect, useCallback, useMemo, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
+import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
   Music,
   Play,
   ChevronLeft,
+  ChevronRight,
   X,
   Disc3,
   Heart,
   ListPlus,
+  ListMusic,
+  FolderOpen,
+  PlusSquare,
   MoreHorizontal,
   Plus,
   Trash2,
-} from 'lucide-react';
-import { MediaPlayer, type MediaPlayerTrack } from '@/components/media/MediaPlayer';
-import type { Material } from '@/types';
+} from "lucide-react";
+import {
+  MediaPlayer,
+  type MediaPlayerTrack,
+} from "@/components/media/MediaPlayer";
+import type { Material } from "@/types";
 import {
   useMusicPlayerOverlay,
   type LibraryPlaybackIntent,
   type MusicPlayerViewer,
   type RepertoirePlaybackIntent,
-} from '@/context/MusicPlayerOverlayContext';
-import { useAuth } from '@/context/AuthContext';
-import { saveRecentPlayback } from '@/utils/recentPlayback';
-import { hashMediaSourcesKey, isPlayableAudioFile } from '@/utils/media';
-import { useFavorites } from '@/hooks/useFavorites';
-import { usePlaylists } from '@/hooks/usePlaylists';
-import { getPlaylistItems, addPlaylistItem, removePlaylistItem } from '@/services/musicService';
-import { Modal } from '@/components/ui/modal/Modal';
-import styles from './RepertoireMusicPlayerPage.module.scss';
+} from "@/context/MusicPlayerOverlayContext";
+import { useAuth } from "@/context/AuthContext";
+import { saveRecentPlayback } from "@/utils/recentPlayback";
+import { hashMediaSourcesKey, isPlayableAudioFile } from "@/utils/media";
+import { useFavorites } from "@/hooks/useFavorites";
+import { usePlaylists } from "@/hooks/usePlaylists";
+import {
+  getPlaylistItems,
+  addPlaylistItem,
+  removePlaylistItem,
+} from "@/services/musicService";
+import { Modal } from "@/components/ui/modal/Modal";
+import styles from "./RepertoireMusicPlayerPage.module.scss";
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
 const FILE_BASE_URL = import.meta.env.VITE_S3_BUCKET_URL;
 
-const LIBRARY_SELECTED_ID = '__library__';
+const LIBRARY_SELECTED_ID = "__library__";
 
 /** Bredd för spelliste-kebab (portal) — används till positionering */
 const PLAYLIST_MENU_WIDTH_PX = 180;
@@ -78,7 +96,8 @@ export function RepertoireMusicPlayerPanel({
   const { getAuthHeaders } = useAuth();
   const { pendingResume, clearPendingResume, clearInitialRepertoireLaunch } =
     useMusicPlayerOverlay();
-  const { favoriteMaterialIds, favoriteMaterials, toggleFavoriteOptimistic } = useFavorites();
+  const { favoriteMaterialIds, favoriteMaterials, toggleFavoriteOptimistic } =
+    useFavorites();
   const {
     playlists,
     createNewPlaylist,
@@ -88,7 +107,7 @@ export function RepertoireMusicPlayerPanel({
     fetchPlaylists,
     error: playlistsHookError,
   } = usePlaylists();
-  const [newPlaylistTitle, setNewPlaylistTitle] = useState('');
+  const [newPlaylistTitle, setNewPlaylistTitle] = useState("");
   const [creatingPlaylist, setCreatingPlaylist] = useState(false);
   const [repertoires, setRepertoires] = useState<RepertoireItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -100,23 +119,71 @@ export function RepertoireMusicPlayerPanel({
   const [playerStartIndex, setPlayerStartIndex] = useState(0);
   const [highlightedTrackIndex, setHighlightedTrackIndex] = useState(0);
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
-  const [playlistAddBusyId, setPlaylistAddBusyId] = useState<string | null>(null);
+  const [playlistAddBusyId, setPlaylistAddBusyId] = useState<string | null>(
+    null,
+  );
   const [playlistAddError, setPlaylistAddError] = useState<string | null>(null);
-  const [playlistMenuOpenId, setPlaylistMenuOpenId] = useState<string | null>(null);
+  const [playlistMenuOpenId, setPlaylistMenuOpenId] = useState<string | null>(
+    null,
+  );
   const [playlistMenuCoords, setPlaylistMenuCoords] = useState<{
     top: number;
     left: number;
   } | null>(null);
-  const playlistMenuButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const playlistMenuButtonRefs = useRef<
+    Record<string, HTMLButtonElement | null>
+  >({});
   const [playlistRenameTarget, setPlaylistRenameTarget] = useState<{
     playlistId: string;
     title: string;
   } | null>(null);
-  const [renameDraft, setRenameDraft] = useState('');
+  const [renameDraft, setRenameDraft] = useState("");
   const [renameBusy, setRenameBusy] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [deleteConfirmPlaylistId, setDeleteConfirmPlaylistId] = useState<string | null>(null);
+  const [deleteConfirmPlaylistId, setDeleteConfirmPlaylistId] = useState<
+    string | null
+  >(null);
   const [deletePlaylistBusy, setDeletePlaylistBusy] = useState(false);
+  /** Mobil (max 767px): spellistor/repertoar i mitten utan modal */
+  const [mobileBrowseMode, setMobileBrowseMode] = useState<
+    null | "playlists" | "repertoires"
+  >(null);
+  const [mobileCreatePlaylistOpen, setMobileCreatePlaylistOpen] =
+    useState(false);
+  const [isMobileShell, setIsMobileShell] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(max-width: 767px)").matches,
+  );
+
+  const isLibraryMode = Boolean(libraryQueueMaterials?.length);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const onChange = () => setIsMobileShell(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileShell) {
+      setMobileBrowseMode(null);
+    }
+  }, [isMobileShell]);
+
+  const isPlaylistSelected = playlists.some((p) => p.playlistId === selectedId);
+  const isRepertoireSelected = repertoires.some(
+    (r) => r.repertoireId === selectedId,
+  );
+
+  useEffect(() => {
+    if (!isMobileShell) return;
+    if (isPlaylistSelected) {
+      setMobileBrowseMode("playlists");
+    } else if (!isLibraryMode && isRepertoireSelected) {
+      setMobileBrowseMode("repertoires");
+    }
+  }, [isMobileShell, isLibraryMode, isPlaylistSelected, isRepertoireSelected]);
   const resumeAttemptKeyRef = useRef<string | null>(null);
   const repertoireBootstrapKeyRef = useRef<string | null>(null);
 
@@ -130,34 +197,40 @@ export function RepertoireMusicPlayerPanel({
     if (!btn) return;
     const r = btn.getBoundingClientRect();
     let left = r.right - PLAYLIST_MENU_WIDTH_PX;
-    left = Math.max(8, Math.min(left, window.innerWidth - PLAYLIST_MENU_WIDTH_PX - 8));
+    left = Math.max(
+      8,
+      Math.min(left, window.innerWidth - PLAYLIST_MENU_WIDTH_PX - 8),
+    );
     setPlaylistMenuCoords({ top: r.bottom + 4, left });
   }, []);
 
-  const isLibraryMode = Boolean(libraryQueueMaterials?.length);
-
   const repertoiresHref = useMemo(() => {
-    if (!groupName) return '/';
-    return viewer === 'leader'
+    if (!groupName) return "/";
+    return viewer === "leader"
       ? `/leader/choir/${groupName}/repertoires`
       : `/user/me/${groupName}/repertoires`;
   }, [groupName, viewer]);
 
   const audioMaterials = useMemo(
     () =>
-      (materials || []).filter((m) => m.fileKey && isPlayableAudioFile(m.fileKey)),
-    [materials]
+      (materials || []).filter(
+        (m) => m.fileKey && isPlayableAudioFile(m.fileKey),
+      ),
+    [materials],
   );
 
-  const buildTracksFromMaterials = useCallback((items: Material[]): MediaPlayerTrack[] => {
-    return items
-      .filter((m) => m.fileKey && isPlayableAudioFile(m.fileKey))
-      .map((m) => ({
-        src: `${FILE_BASE_URL}/${m.fileKey}`,
-        title: m.title || m.fileKey?.split('/').pop() || 'Okänd',
-        materialId: m.materialId,
-      }));
-  }, []);
+  const buildTracksFromMaterials = useCallback(
+    (items: Material[]): MediaPlayerTrack[] => {
+      return items
+        .filter((m) => m.fileKey && isPlayableAudioFile(m.fileKey))
+        .map((m) => ({
+          src: `${FILE_BASE_URL}/${m.fileKey}`,
+          title: m.title || m.fileKey?.split("/").pop() || "Okänd",
+          materialId: m.materialId,
+        }));
+    },
+    [],
+  );
 
   /** Byt key bara när köns identitet ändras — inte vid spårbyte (samma lista), så MediaPlayer kan följa initialTrackIndex utan remount. */
   const mediaPlayerMountKey = useMemo(() => {
@@ -165,7 +238,7 @@ export function RepertoireMusicPlayerPanel({
       const sig = hashMediaSourcesKey(playerQueue.map((t) => t.src));
       return `lib-${groupName}-${sig}`;
     }
-    if (!selectedId || playerQueue.length === 0) return 'idle';
+    if (!selectedId || playerQueue.length === 0) return "idle";
     const sig = hashMediaSourcesKey(playerQueue.map((t) => t.src));
     return `${selectedId}-${sig}`;
   }, [isLibraryMode, groupName, selectedId, playerQueue]);
@@ -175,7 +248,9 @@ export function RepertoireMusicPlayerPanel({
       return `library-favorites-${groupName}`;
     }
     if (selectedId && selectedId !== LIBRARY_SELECTED_ID) {
-      const isPlaylistSelection = playlists.some((p) => p.playlistId === selectedId);
+      const isPlaylistSelection = playlists.some(
+        (p) => p.playlistId === selectedId,
+      );
       if (isPlaylistSelection) {
         return `grp-${groupName}-pl-${selectedId}`;
       }
@@ -191,12 +266,12 @@ export function RepertoireMusicPlayerPanel({
     try {
       const res = await axios.get<RepertoireItem[]>(
         `${API_BASE_URL}/groups/${groupName}/repertoires`,
-        { headers: { ...getAuthHeaders() } }
+        { headers: { ...getAuthHeaders() } },
       );
       setRepertoires(res.data ?? []);
     } catch (e) {
       console.error(e);
-      setError('Kunde inte hämta repertoaren.');
+      setError("Kunde inte hämta repertoaren.");
     } finally {
       setLoadingList(false);
     }
@@ -215,18 +290,18 @@ export function RepertoireMusicPlayerPanel({
       try {
         const res = await axios.get<Material[]>(
           `${API_BASE_URL}/groups/${groupName}/repertoires/${repertoireId}/materials`,
-          { headers: { ...getAuthHeaders() } }
+          { headers: { ...getAuthHeaders() } },
         );
         setMaterials(res.data ?? []);
       } catch (e) {
         console.error(e);
-        setError('Kunde inte hämta ljudfiler för låten.');
+        setError("Kunde inte hämta ljudfiler för låten.");
         setMaterials([]);
       } finally {
         setLoadingTracks(false);
       }
     },
-    [groupName, getAuthHeaders]
+    [groupName, getAuthHeaders],
   );
 
   /** Hydrerade material för en spellista (music-api GET /playlists/{id}/items). */
@@ -248,13 +323,13 @@ export function RepertoireMusicPlayerPanel({
         setMaterials(mats);
       } catch (e) {
         console.error(e);
-        setError('Kunde inte hämta spellistan.');
+        setError("Kunde inte hämta spellistan.");
         setMaterials([]);
       } finally {
         setLoadingTracks(false);
       }
     },
-    [fetchPlaylistMaterials]
+    [fetchPlaylistMaterials],
   );
 
   const handleSelectRepertoire = (id: string) => {
@@ -274,21 +349,21 @@ export function RepertoireMusicPlayerPanel({
     setRepertoires([]);
 
     const tracks = buildTracksFromMaterials(libraryQueueMaterials);
-    const intent: LibraryPlaybackIntent = libraryPlaybackIntent ?? 'playAll';
+    const intent: LibraryPlaybackIntent = libraryPlaybackIntent ?? "browse";
 
-    if (tracks.length === 0 || intent === 'browse') {
+    if (tracks.length === 0 || intent === "browse") {
       setPlayerQueue([]);
       return;
     }
 
-    if (intent === 'playAll') {
+    if (intent === "playAll") {
       setPlayerStartIndex(0);
       setHighlightedTrackIndex(0);
       setPlayerQueue(tracks);
       return;
     }
 
-    if (intent.type === 'fromIndex') {
+    if (intent.type === "fromIndex") {
       const safe = Math.min(Math.max(0, intent.index), tracks.length - 1);
       setPlayerStartIndex(safe);
       setHighlightedTrackIndex(safe);
@@ -299,7 +374,7 @@ export function RepertoireMusicPlayerPanel({
   const handlePlayTrackAt = (index: number) => {
     setActiveDropdownId(null);
     const tracks = buildTracksFromMaterials(
-      materials.filter((m) => m.fileKey && isPlayableAudioFile(m.fileKey))
+      materials.filter((m) => m.fileKey && isPlayableAudioFile(m.fileKey)),
     );
     if (tracks.length === 0) return;
     const safeIndex = Math.min(Math.max(0, index), tracks.length - 1);
@@ -309,7 +384,7 @@ export function RepertoireMusicPlayerPanel({
   };
 
   const handleToRepertoires = () => {
-    if (isLibraryMode && viewer === 'member') {
+    if (isLibraryMode && viewer === "member") {
       navigate(`/user/me/${groupName}/library`);
     } else {
       navigate(repertoiresHref);
@@ -319,18 +394,13 @@ export function RepertoireMusicPlayerPanel({
 
   const handlePlayFavorites = () => {
     const playable = favoriteMaterials.filter(
-      (m) => m.fileKey && isPlayableAudioFile(m.fileKey)
+      (m) => m.fileKey && isPlayableAudioFile(m.fileKey),
     );
     setSelectedId(LIBRARY_SELECTED_ID);
     setMaterials(playable);
-    if (playable.length === 0) {
-      setPlayerQueue([]);
-      return;
-    }
-    const tracks = buildTracksFromMaterials(playable);
+    setPlayerQueue([]);
     setPlayerStartIndex(0);
     setHighlightedTrackIndex(0);
-    setPlayerQueue(tracks);
   };
 
   const handleCreatePlaylistInSidebar = async () => {
@@ -339,7 +409,7 @@ export function RepertoireMusicPlayerPanel({
     setCreatingPlaylist(true);
     try {
       await createNewPlaylist(title);
-      setNewPlaylistTitle('');
+      setNewPlaylistTitle("");
     } catch {
       // error handled in hook
     } finally {
@@ -347,9 +417,53 @@ export function RepertoireMusicPlayerPanel({
     }
   };
 
+  const handleCreatePlaylistMobile = async () => {
+    const title = newPlaylistTitle.trim();
+    if (!title) return;
+    setCreatingPlaylist(true);
+    try {
+      await createNewPlaylist(title);
+      setNewPlaylistTitle("");
+      setMobileCreatePlaylistOpen(false);
+    } catch {
+      // error handled in hook
+    } finally {
+      setCreatingPlaylist(false);
+    }
+  };
+
+  const openMobilePlaylistBrowse = useCallback(() => {
+    setMobileBrowseMode("playlists");
+    setSelectedId(null);
+    setMaterials([]);
+    setPlayerQueue([]);
+    setPlayerStartIndex(0);
+    setHighlightedTrackIndex(0);
+    closePlaylistMenu();
+  }, [closePlaylistMenu]);
+
+  const openMobileRepertoireBrowse = useCallback(() => {
+    setMobileBrowseMode("repertoires");
+    setSelectedId(null);
+    setMaterials([]);
+    setPlayerQueue([]);
+    setPlayerStartIndex(0);
+    setHighlightedTrackIndex(0);
+    closePlaylistMenu();
+  }, [closePlaylistMenu]);
+
+  const handleMobileBackFromTracks = useCallback(() => {
+    setSelectedId(null);
+    setMaterials([]);
+    setPlayerQueue([]);
+    setPlayerStartIndex(0);
+    setHighlightedTrackIndex(0);
+    closePlaylistMenu();
+  }, [closePlaylistMenu]);
+
   useEffect(() => {
     if (!playlistRenameTarget) {
-      setRenameDraft('');
+      setRenameDraft("");
       return;
     }
     setRenameDraft(playlistRenameTarget.title);
@@ -357,13 +471,14 @@ export function RepertoireMusicPlayerPanel({
 
   useLayoutEffect(() => {
     if (!playlistMenuOpenId) return;
-    const onScrollOrResize = () => updatePlaylistMenuPosition(playlistMenuOpenId);
+    const onScrollOrResize = () =>
+      updatePlaylistMenuPosition(playlistMenuOpenId);
     onScrollOrResize();
-    window.addEventListener('scroll', onScrollOrResize, true);
-    window.addEventListener('resize', onScrollOrResize);
+    window.addEventListener("scroll", onScrollOrResize, true);
+    window.addEventListener("resize", onScrollOrResize);
     return () => {
-      window.removeEventListener('scroll', onScrollOrResize, true);
-      window.removeEventListener('resize', onScrollOrResize);
+      window.removeEventListener("scroll", onScrollOrResize, true);
+      window.removeEventListener("resize", onScrollOrResize);
     };
   }, [playlistMenuOpenId, updatePlaylistMenuPosition]);
 
@@ -371,23 +486,25 @@ export function RepertoireMusicPlayerPanel({
     if (playlistMenuOpenId === null) return;
     const onDown = (e: MouseEvent) => {
       const el = e.target as HTMLElement;
-      if (el.closest(`[data-playlist-row-menu="${playlistMenuOpenId}"]`)) return;
-      if (el.closest('[data-playlist-dropdown-portal]')) return;
+      if (el.closest(`[data-playlist-row-menu="${playlistMenuOpenId}"]`))
+        return;
+      if (el.closest("[data-playlist-dropdown-portal]")) return;
       closePlaylistMenu();
     };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
   }, [playlistMenuOpenId, closePlaylistMenu]);
 
   useEffect(() => {
     if (activeDropdownId === null) return;
     const onDown = (e: MouseEvent) => {
       const el = e.target as HTMLElement;
-      if (el.closest(`[data-add-playlist-popover="${activeDropdownId}"]`)) return;
+      if (el.closest(`[data-add-playlist-popover="${activeDropdownId}"]`))
+        return;
       setActiveDropdownId(null);
     };
-    document.addEventListener('mousedown', onDown);
-    return () => document.removeEventListener('mousedown', onDown);
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
   }, [activeDropdownId]);
 
   const handleConfirmRenamePlaylist = async () => {
@@ -417,7 +534,7 @@ export function RepertoireMusicPlayerPanel({
       setShowDeleteConfirm(true);
       closePlaylistMenu();
     },
-    [closePlaylistMenu]
+    [closePlaylistMenu],
   );
 
   const handleConfirmDeletePlaylist = useCallback(async () => {
@@ -445,13 +562,11 @@ export function RepertoireMusicPlayerPanel({
   useEffect(() => {
     if (!showDeleteConfirm) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') closeDeletePlaylistConfirm();
+      if (e.key === "Escape") closeDeletePlaylistConfirm();
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [showDeleteConfirm, closeDeletePlaylistConfirm]);
-
-  const isCurrentViewPlaylist = playlists.some((p) => p.playlistId === selectedId);
 
   useEffect(() => {
     if (!groupName?.trim() || isLibraryMode) return;
@@ -462,12 +577,12 @@ export function RepertoireMusicPlayerPanel({
     if (!m?.materialId) return;
     const title =
       (m.title && String(m.title).trim()) ||
-      (m.fileKey && m.fileKey.split('/').pop()) ||
-      'Okänt spår';
+      (m.fileKey && m.fileKey.split("/").pop()) ||
+      "Okänt spår";
     if (isPlaylist) {
       saveRecentPlayback({
         groupSlug: groupName.trim(),
-        kind: 'playlist',
+        kind: "playlist",
         playlistId: selectedId,
         materialId: m.materialId,
         title,
@@ -475,7 +590,7 @@ export function RepertoireMusicPlayerPanel({
     } else {
       saveRecentPlayback({
         groupSlug: groupName.trim(),
-        kind: 'repertoire',
+        kind: "repertoire",
         repertoireId: selectedId,
         materialId: m.materialId,
         title,
@@ -501,13 +616,13 @@ export function RepertoireMusicPlayerPanel({
     if (!pendingResume || isLibraryMode) return;
 
     const key =
-      pendingResume.source === 'repertoire'
+      pendingResume.source === "repertoire"
         ? `rep:${pendingResume.repertoireId}:${pendingResume.materialId}`
         : `pl:${pendingResume.playlistId}:${pendingResume.materialId}`;
 
     if (resumeAttemptKeyRef.current === key) return;
 
-    if (pendingResume.source === 'repertoire') {
+    if (pendingResume.source === "repertoire") {
       const { repertoireId, materialId } = pendingResume;
       if (selectedId !== repertoireId) {
         handleSelectRepertoire(repertoireId);
@@ -571,12 +686,12 @@ export function RepertoireMusicPlayerPanel({
     const targetId = isPlaylistBootstrap ? plid! : rid!;
 
     const keyBase = repertoirePlaybackIntent
-      ? `${targetId}:${isPlaylistBootstrap ? 'pl' : 'rep'}:${repertoirePlaybackIntent.type}:${
-          repertoirePlaybackIntent.type === 'fromMaterialId'
+      ? `${targetId}:${isPlaylistBootstrap ? "pl" : "rep"}:${repertoirePlaybackIntent.type}:${
+          repertoirePlaybackIntent.type === "fromMaterialId"
             ? repertoirePlaybackIntent.materialId
             : String(repertoirePlaybackIntent.index)
         }`
-      : `${targetId}:${isPlaylistBootstrap ? 'pl' : 'rep'}:browse`;
+      : `${targetId}:${isPlaylistBootstrap ? "pl" : "rep"}:browse`;
 
     if (selectedId !== targetId) {
       if (isPlaylistBootstrap) void handleSelectPlaylist(targetId);
@@ -602,9 +717,9 @@ export function RepertoireMusicPlayerPanel({
       return;
     }
 
-    if (repertoirePlaybackIntent.type === 'fromMaterialId') {
+    if (repertoirePlaybackIntent.type === "fromMaterialId") {
       const idx = audioMaterials.findIndex(
-        (m) => m.materialId === repertoirePlaybackIntent.materialId
+        (m) => m.materialId === repertoirePlaybackIntent.materialId,
       );
       if (idx >= 0) {
         handlePlayTrackAt(idx);
@@ -612,7 +727,7 @@ export function RepertoireMusicPlayerPanel({
     } else {
       const safe = Math.min(
         Math.max(0, repertoirePlaybackIntent.index),
-        audioMaterials.length - 1
+        audioMaterials.length - 1,
       );
       handlePlayTrackAt(safe);
     }
@@ -638,12 +753,14 @@ export function RepertoireMusicPlayerPanel({
       try {
         await removePlaylistItem(sid, materialId);
         setMaterials((prev) => prev.filter((m) => m.materialId !== materialId));
-        setPlayerQueue((prev) => prev.filter((t) => t.materialId !== materialId));
+        setPlayerQueue((prev) =>
+          prev.filter((t) => t.materialId !== materialId),
+        );
       } catch (e) {
-        console.error('handleRemoveFromPlaylist failed', e);
+        console.error("handleRemoveFromPlaylist failed", e);
       }
     },
-    [selectedId]
+    [selectedId],
   );
 
   useEffect(() => {
@@ -652,31 +769,55 @@ export function RepertoireMusicPlayerPanel({
     void fetchPlaylists();
   }, [activeDropdownId, fetchPlaylists]);
 
-  const selectedPlaylistTitle = playlists.find((p) => p.playlistId === selectedId)?.title;
-  const selectedRepertoireTitle = repertoires.find((r) => r.repertoireId === selectedId)?.title;
+  const selectedPlaylistTitle = playlists.find(
+    (p) => p.playlistId === selectedId,
+  )?.title;
+  const selectedRepertoireTitle = repertoires.find(
+    (r) => r.repertoireId === selectedId,
+  )?.title;
   const selectedTitle = isLibraryMode
-    ? 'Mina favoriter'
-    : selectedPlaylistTitle ?? selectedRepertoireTitle;
+    ? "Mina favoriter"
+    : (selectedPlaylistTitle ?? selectedRepertoireTitle);
+
+  const showMobilePlaylistPicker =
+    isMobileShell && mobileBrowseMode === "playlists" && !isPlaylistSelected;
+  const showMobileRepertoirePicker =
+    isMobileShell &&
+    !isLibraryMode &&
+    mobileBrowseMode === "repertoires" &&
+    !isRepertoireSelected;
+  const showMobileBackBar =
+    isMobileShell &&
+    ((mobileBrowseMode === "playlists" && isPlaylistSelected) ||
+      (mobileBrowseMode === "repertoires" && isRepertoireSelected));
 
   const shellBodyClass = [
     styles.shellBody,
-    isLibraryMode ? styles.shellBodyLibrary : '',
+    isLibraryMode ? styles.shellBodyLibrary : "",
   ]
     .filter(Boolean)
-    .join(' ');
+    .join(" ");
 
   return (
     <div className={styles.musicShell}>
       {/* ── top bar ── */}
       <header className={styles.shellTop}>
         <div className={styles.shellTopLeft}>
-          <span className={styles.shellBrand} aria-hidden>HRK</span>
-          <span id={shellTitleId} className={styles.shellBrandTitle}>Musik</span>
+          <span className={styles.shellBrand} aria-hidden>
+            HRK
+          </span>
+          <span id={shellTitleId} className={styles.shellBrandTitle}>
+            Musik
+          </span>
         </div>
         <div className={styles.shellTopRight}>
-          <button type="button" className={styles.backLink} onClick={handleToRepertoires}>
+          <button
+            type="button"
+            className={styles.backLink}
+            onClick={handleToRepertoires}
+          >
             <ChevronLeft size={16} aria-hidden />
-            {isLibraryMode ? 'Mitt bibliotek' : 'Repertoar'}
+            {isLibraryMode ? "Mitt bibliotek" : "Repertoar"}
           </button>
           <button
             type="button"
@@ -691,6 +832,104 @@ export function RepertoireMusicPlayerPanel({
 
       {/* ── body ── */}
       <div className={shellBodyClass}>
+        {/* Mobil: ikonrad — spellistor/repertoar öppnar listor i huvudytan */}
+        <div
+          className={styles.shellMobileIconRail}
+          role="toolbar"
+          aria-label="Bibliotek och repertoar"
+        >
+          <button
+            type="button"
+            className={`${styles.shellMobileIconBtn} ${
+              selectedId === LIBRARY_SELECTED_ID || isLibraryMode
+                ? `${styles.shellMobileIconBtnActive} ${styles.shellMobileIconFavoritesActive}`
+                : ""
+            }`}
+            onClick={() => {
+              setMobileCreatePlaylistOpen(false);
+              setMobileBrowseMode(null);
+              handlePlayFavorites();
+            }}
+            aria-label={`Favoriter (${favoriteMaterials.filter((m) => m.fileKey && isPlayableAudioFile(m.fileKey)).length} spår)`}
+          >
+            <span className={styles.shellMobileIconBtnInner}>
+              <span className={styles.shellMobileIconGlyph}>
+                <Heart
+                  size={24}
+                  strokeWidth={1.75}
+                  fill={
+                    selectedId === LIBRARY_SELECTED_ID || isLibraryMode
+                      ? "currentColor"
+                      : "none"
+                  }
+                  aria-hidden
+                />
+              </span>
+              <span className={styles.shellMobileIconLabel}>Favoriter</span>
+            </span>
+          </button>
+          <button
+            type="button"
+            className={`${styles.shellMobileIconBtn} ${
+              isPlaylistSelected || showMobilePlaylistPicker
+                ? styles.shellMobileIconBtnActive
+                : ""
+            }`}
+            onClick={() => {
+              setMobileCreatePlaylistOpen(false);
+              openMobilePlaylistBrowse();
+            }}
+            aria-label="Spellistor"
+            aria-expanded={showMobilePlaylistPicker}
+          >
+            <span className={styles.shellMobileIconBtnInner}>
+              <span className={styles.shellMobileIconGlyph}>
+                <ListMusic size={24} strokeWidth={1.75} aria-hidden />
+              </span>
+              <span className={styles.shellMobileIconLabel}>Spellistor</span>
+            </span>
+          </button>
+          {!isLibraryMode && (
+            <button
+              type="button"
+              className={`${styles.shellMobileIconBtn} ${
+                isRepertoireSelected || showMobileRepertoirePicker
+                  ? styles.shellMobileIconBtnActive
+                  : ""
+              }`}
+              onClick={() => {
+                setMobileCreatePlaylistOpen(false);
+                openMobileRepertoireBrowse();
+              }}
+              aria-label="Repertoar"
+              aria-expanded={showMobileRepertoirePicker}
+            >
+              <span className={styles.shellMobileIconBtnInner}>
+                <span className={styles.shellMobileIconGlyph}>
+                  <FolderOpen size={24} strokeWidth={1.75} aria-hidden />
+                </span>
+                <span className={styles.shellMobileIconLabel}>Repertoar</span>
+              </span>
+            </button>
+          )}
+          <button
+            type="button"
+            className={`${styles.shellMobileIconBtn} ${mobileCreatePlaylistOpen ? styles.shellMobileIconBtnActive : ""}`}
+            onClick={() => {
+              setMobileBrowseMode(null);
+              setMobileCreatePlaylistOpen(true);
+            }}
+            aria-label="Ny spellista"
+          >
+            <span className={styles.shellMobileIconBtnInner}>
+              <span className={styles.shellMobileIconGlyph}>
+                <PlusSquare size={24} strokeWidth={1.75} aria-hidden />
+              </span>
+              <span className={styles.shellMobileIconLabel}>Skapa</span>
+            </span>
+          </button>
+        </div>
+
         {/* ── playlist sidebar (left) ── */}
         <aside className={styles.playlistSidebar} aria-label="Dina spellistor">
           <h2 className={styles.playlistSidebarTitle}>Mitt bibliotek</h2>
@@ -701,12 +940,22 @@ export function RepertoireMusicPlayerPanel({
               <li>
                 <button
                   type="button"
-                  className={`${styles.playlistSidebarItem} ${isLibraryMode ? styles.playlistSidebarItemActive : ''}`}
+                  className={`${styles.playlistSidebarItem} ${isLibraryMode ? styles.playlistSidebarItemActive : ""}`}
                   onClick={handlePlayFavorites}
                 >
-                  <Heart size={14} className={styles.playlistSidebarItemIcon} aria-hidden />
+                  <Heart
+                    size={14}
+                    className={styles.playlistSidebarItemIcon}
+                    aria-hidden
+                  />
                   <span className={styles.playlistSidebarItemLabel}>
-                    Favoriter ({favoriteMaterials.filter(m => m.fileKey && isPlayableAudioFile(m.fileKey)).length})
+                    Favoriter (
+                    {
+                      favoriteMaterials.filter(
+                        (m) => m.fileKey && isPlayableAudioFile(m.fileKey),
+                      ).length
+                    }
+                    )
                   </span>
                 </button>
               </li>
@@ -717,28 +966,38 @@ export function RepertoireMusicPlayerPanel({
             <p className={styles.playlistSidebarSectionLabel}>Spellistor</p>
             <ul className={styles.playlistSidebarList}>
               {playlistsLoading ? (
-                <li><p className={styles.muted}>Laddar…</p></li>
+                <li>
+                  <p className={styles.muted}>Laddar…</p>
+                </li>
               ) : playlists.length === 0 ? (
-                <li><p className={styles.muted}>Inga spellistor ännu.</p></li>
+                <li>
+                  <p className={styles.muted}>Inga spellistor ännu.</p>
+                </li>
               ) : (
                 playlists.map((p) => (
                   <li
                     key={p.playlistId}
-                    className={`${styles.playlistSidebarRow} ${selectedId === p.playlistId ? styles.playlistSidebarRowActive : ''}`}
+                    className={`${styles.playlistSidebarRow} ${selectedId === p.playlistId ? styles.playlistSidebarRowActive : ""}`}
                   >
                     <button
                       type="button"
-                      className={`${styles.playlistSidebarItem} ${selectedId === p.playlistId ? styles.playlistSidebarItemActive : ''}`}
+                      className={`${styles.playlistSidebarItem} ${selectedId === p.playlistId ? styles.playlistSidebarItemActive : ""}`}
                       onClick={() => {
                         closePlaylistMenu();
                         void handleSelectPlaylist(p.playlistId);
                       }}
                     >
-                      <ListPlus size={14} className={styles.playlistSidebarItemIcon} aria-hidden />
-                      <span className={styles.playlistSidebarItemLabel}>{p.title}</span>
+                      <ListPlus
+                        size={14}
+                        className={styles.playlistSidebarItemIcon}
+                        aria-hidden
+                      />
+                      <span className={styles.playlistSidebarItemLabel}>
+                        {p.title}
+                      </span>
                     </button>
                     <div
-                      className={`${styles.playlistSidebarRowMenu} ${playlistMenuOpenId === p.playlistId ? styles.playlistSidebarRowMenuOpen : ''}`}
+                      className={`${styles.playlistSidebarRowMenu} ${playlistMenuOpenId === p.playlistId ? styles.playlistSidebarRowMenuOpen : ""}`}
                       data-playlist-row-menu={p.playlistId}
                     >
                       <button
@@ -756,13 +1015,17 @@ export function RepertoireMusicPlayerPanel({
                             closePlaylistMenu();
                             return;
                           }
-                          const btn = playlistMenuButtonRefs.current[p.playlistId];
+                          const btn =
+                            playlistMenuButtonRefs.current[p.playlistId];
                           if (btn) {
                             const r = btn.getBoundingClientRect();
                             let left = r.right - PLAYLIST_MENU_WIDTH_PX;
                             left = Math.max(
                               8,
-                              Math.min(left, window.innerWidth - PLAYLIST_MENU_WIDTH_PX - 8)
+                              Math.min(
+                                left,
+                                window.innerWidth - PLAYLIST_MENU_WIDTH_PX - 8,
+                              ),
                             );
                             setPlaylistMenuCoords({ top: r.bottom + 4, left });
                           } else {
@@ -795,7 +1058,7 @@ export function RepertoireMusicPlayerPanel({
                 onChange={(e) => setNewPlaylistTitle(e.target.value)}
                 disabled={creatingPlaylist}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') void handleCreatePlaylistInSidebar();
+                  if (e.key === "Enter") void handleCreatePlaylistInSidebar();
                 }}
               />
               <button
@@ -814,7 +1077,9 @@ export function RepertoireMusicPlayerPanel({
         {playlistMenuOpenId &&
           playlistMenuCoords &&
           (() => {
-            const menuPl = playlists.find((x) => x.playlistId === playlistMenuOpenId);
+            const menuPl = playlists.find(
+              (x) => x.playlistId === playlistMenuOpenId,
+            );
             if (!menuPl) return null;
             return createPortal(
               <div
@@ -822,7 +1087,7 @@ export function RepertoireMusicPlayerPanel({
                 role="menu"
                 className={styles.playlistSidebarDropdownPortal}
                 style={{
-                  position: 'fixed',
+                  position: "fixed",
                   top: playlistMenuCoords.top,
                   left: playlistMenuCoords.left,
                   zIndex: 10000,
@@ -855,7 +1120,7 @@ export function RepertoireMusicPlayerPanel({
                   Ta bort spellista
                 </button>
               </div>,
-              document.body
+              document.body,
             );
           })()}
 
@@ -874,11 +1139,15 @@ export function RepertoireMusicPlayerPanel({
                 aria-labelledby="delete-playlist-confirm-title"
                 onClick={(e) => e.stopPropagation()}
               >
-                <h2 id="delete-playlist-confirm-title" className={styles.deleteConfirmTitle}>
+                <h2
+                  id="delete-playlist-confirm-title"
+                  className={styles.deleteConfirmTitle}
+                >
                   Ta bort spellistan?
                 </h2>
                 <p className={styles.deleteConfirmBody}>
-                  Är du säker på att du vill ta bort spellistan? Detta går inte att ångra.
+                  Är du säker på att du vill ta bort spellistan? Detta går inte
+                  att ångra.
                 </p>
                 <div className={styles.deleteConfirmActions}>
                   <button
@@ -901,23 +1170,174 @@ export function RepertoireMusicPlayerPanel({
                       void handleConfirmDeletePlaylist();
                     }}
                   >
-                    {deletePlaylistBusy ? 'Tar bort…' : 'Ta bort'}
+                    {deletePlaylistBusy ? "Tar bort…" : "Ta bort"}
                   </button>
                 </div>
               </div>
             </div>,
-            document.body
+            document.body,
           )}
 
         {/* ── main ── */}
         <section className={styles.shellMain} aria-label="Spår och uppspelning">
-          {!selectedId && !isLibraryMode ? (
+          {showMobileBackBar && (
+            <div className={styles.mobileMainNavBar}>
+              <button
+                type="button"
+                className={styles.mobileMainBackButton}
+                onClick={handleMobileBackFromTracks}
+                aria-label={
+                  mobileBrowseMode === "playlists"
+                    ? "Tillbaka till spellistor"
+                    : "Tillbaka till repertoar"
+                }
+              >
+                <ChevronLeft size={20} strokeWidth={2} aria-hidden />
+                <span>
+                  {mobileBrowseMode === "playlists"
+                    ? "Spellistor"
+                    : "Repertoar"}
+                </span>
+              </button>
+            </div>
+          )}
+
+          {showMobilePlaylistPicker ? (
+            <div className={styles.mobileMainPicker}>
+              <header className={styles.mobileMainPickerHead}>
+                <p className={styles.mobileMainPickerEyebrow}>Mitt bibliotek</p>
+                <h2 className={styles.mobileMainPickerTitle}>Spellistor</h2>
+                <p className={styles.mobileMainPickerSub}>
+                  {playlistsLoading
+                    ? "Hämtar dina spellistor…"
+                    : `${playlists.length} ${playlists.length === 1 ? "spellista" : "spellistor"}`}
+                </p>
+              </header>
+              {playlistsHookError ? (
+                <p className={styles.mobilePickerEmpty} role="alert">
+                  {playlistsHookError}
+                </p>
+              ) : playlistsLoading ? (
+                <p className={styles.mobilePickerEmpty}>Laddar…</p>
+              ) : playlists.length === 0 ? (
+                <p className={styles.mobilePickerEmpty}>
+                  Inga spellistor ännu. Tryck på Skapa för att lägga till en.
+                </p>
+              ) : (
+                <ul
+                  className={`${styles.mobilePickerList} ${styles.mobilePickerListInMain}`}
+                >
+                  {playlists.map((p) => (
+                    <li
+                      key={p.playlistId}
+                      className={styles.mobilePickerListItem}
+                    >
+                      <button
+                        type="button"
+                        className={styles.mobilePickerRow}
+                        onClick={() => {
+                          closePlaylistMenu();
+                          void handleSelectPlaylist(p.playlistId);
+                        }}
+                      >
+                        <span
+                          className={`${styles.mobilePickerRowArt} ${styles.mobilePickerRowArtPlaylist}`}
+                          aria-hidden
+                        >
+                          <ListMusic size={22} strokeWidth={1.75} />
+                        </span>
+                        <span className={styles.mobilePickerRowText}>
+                          <span className={styles.mobilePickerRowTitle}>
+                            {p.title}
+                          </span>
+                          <span className={styles.mobilePickerRowMeta}>
+                            Spellista
+                          </span>
+                        </span>
+                        <ChevronRight
+                          size={20}
+                          strokeWidth={2}
+                          className={styles.mobilePickerRowChevron}
+                          aria-hidden
+                        />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : showMobileRepertoirePicker ? (
+            <div
+              className={`${styles.mobileMainPicker} ${styles.mobileMainPickerRepertoire}`}
+            >
+              <header className={styles.mobileMainPickerHead}>
+                <p className={styles.mobileMainPickerEyebrow}>Kören</p>
+                <h2 className={styles.mobileMainPickerTitle}>Repertoar</h2>
+                <p className={styles.mobileMainPickerSub}>
+                  {loadingList
+                    ? "Hämtar repertoar…"
+                    : `${repertoires.length} ${repertoires.length === 1 ? "mapp" : "mappar"}`}
+                </p>
+              </header>
+              {loadingList ? (
+                <p className={styles.mobilePickerEmpty}>Laddar…</p>
+              ) : repertoires.length === 0 ? (
+                <p className={styles.mobilePickerEmpty}>
+                  Ingen repertoar för denna kör.
+                </p>
+              ) : (
+                <ul
+                  className={`${styles.mobilePickerList} ${styles.mobilePickerListInMain}`}
+                >
+                  {repertoires.map((item) => (
+                    <li
+                      key={item.repertoireId}
+                      className={styles.mobilePickerListItem}
+                    >
+                      <button
+                        type="button"
+                        className={styles.mobilePickerRow}
+                        onClick={() =>
+                          handleSelectRepertoire(item.repertoireId)
+                        }
+                      >
+                        <span
+                          className={`${styles.mobilePickerRowArt} ${styles.mobilePickerRowArtRepertoire}`}
+                          aria-hidden
+                        >
+                          <Music size={22} strokeWidth={1.75} />
+                        </span>
+                        <span className={styles.mobilePickerRowText}>
+                          <span className={styles.mobilePickerRowTitle}>
+                            {item.title}
+                          </span>
+                          <span className={styles.mobilePickerRowMeta}>
+                            Repertoarmapp
+                          </span>
+                        </span>
+                        <ChevronRight
+                          size={20}
+                          strokeWidth={2}
+                          className={styles.mobilePickerRowChevron}
+                          aria-hidden
+                        />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : !selectedId && !isLibraryMode ? (
             /* ── welcome state ── */
             <div className={styles.emptyMain}>
               <Disc3 size={64} className={styles.emptyIcon} aria-hidden />
-              <h2 className={styles.emptyTitle}>Välkommen till musikspelaren</h2>
+              <h2 className={styles.emptyTitle}>
+                Välkommen till musikspelaren
+              </h2>
               <p className={styles.emptyDescription}>
-                Välj en låt i biblioteket till vänster för att lyssna på körens ljudfiler.
+                {isMobileShell
+                  ? "Välj spellista eller repertoar med ikonerna ovan."
+                  : "Välj en låt i biblioteket till höger för att lyssna eller spara i en egen låtlista."}
               </p>
             </div>
           ) : !selectedId && isLibraryMode ? (
@@ -929,20 +1349,20 @@ export function RepertoireMusicPlayerPanel({
               {/* hero */}
               <div className={styles.hero}>
                 <div className={styles.heroArt} aria-hidden>
-                  {(selectedTitle || '?').charAt(0).toUpperCase()}
+                  {(selectedTitle || "?").charAt(0).toUpperCase()}
                 </div>
                 <div className={styles.heroText}>
                   <p className={styles.heroEyebrow}>
                     {isLibraryMode
-                      ? 'Mitt bibliotek'
+                      ? "Mitt bibliotek"
                       : selectedPlaylistTitle
-                        ? 'Spellista'
-                        : 'Repertoar'}
+                        ? "Spellista"
+                        : "Repertoar"}
                   </p>
                   <h1 className={styles.heroTitle}>{selectedTitle}</h1>
                   <p className={styles.heroMeta}>
-                    {audioMaterials.length}{' '}
-                    {audioMaterials.length === 1 ? 'ljudfil' : 'ljudfiler'}
+                    {audioMaterials.length}{" "}
+                    {audioMaterials.length === 1 ? "ljudfil" : "ljudfiler"}
                   </p>
                 </div>
               </div>
@@ -953,27 +1373,32 @@ export function RepertoireMusicPlayerPanel({
                   <Music size={48} className={styles.emptyIcon} aria-hidden />
                   <h2 className={styles.emptyTitle}>
                     {selectedId === LIBRARY_SELECTED_ID || isLibraryMode
-                      ? 'Inga favoriter ännu'
-                      : 'Inga ljudfiler'}
+                      ? "Inga favoriter ännu"
+                      : "Inga ljudfiler"}
                   </h2>
                   <p className={styles.emptyDescription}>
                     {selectedId === LIBRARY_SELECTED_ID || isLibraryMode
-                      ? 'Du har inga favoriter ännu. Markera låtar med hjärtat för att samla dem här.'
-                      : 'Det finns inga uppspelbara ljudfiler i den här låten ännu.'}
+                      ? "Du har inga favoriter ännu. Markera låtar med hjärtat för att samla dem här."
+                      : "Det finns inga uppspelbara ljudfiler i den här låten ännu."}
                   </p>
                 </div>
               ) : (
                 <div className={styles.trackScroll}>
                   <table className={styles.trackTable}>
-                    <thead>
+                    <thead className={styles.trackTableHead}>
                       <tr>
-                        <th className={styles.colIndex}>#</th>
-                        <th className={styles.colTitleHead}>Titel</th>
+                        <th className={styles.colIndex} scope="col">
+                          #
+                        </th>
+                        <th className={styles.colTitleHead} scope="col">
+                          Titel
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {audioMaterials.map((m, index) => {
-                        const label = m.title || m.fileKey?.split('/').pop() || 'Okänd';
+                        const label =
+                          m.title || m.fileKey?.split("/").pop() || "Okänd";
                         const isRowActive =
                           playerQueue.length > 0 &&
                           !!selectedId &&
@@ -981,10 +1406,10 @@ export function RepertoireMusicPlayerPanel({
                         return (
                           <tr
                             key={m.materialId}
-                            className={`${styles.trackRow} ${isRowActive ? styles.rowActive : ''}`}
+                            className={`${styles.trackRow} ${isRowActive ? styles.rowActive : ""}`}
                             onClick={() => handlePlayTrackAt(index)}
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
+                              if (e.key === "Enter" || e.key === " ") {
                                 e.preventDefault();
                                 handlePlayTrackAt(index);
                               }
@@ -993,7 +1418,9 @@ export function RepertoireMusicPlayerPanel({
                             aria-label={`Spela ${label}`}
                           >
                             <td className={styles.colIndex}>
-                              <span className={styles.trackNumber}>{index + 1}</span>
+                              <span className={styles.trackNumber}>
+                                {index + 1}
+                              </span>
                               <Play
                                 size={14}
                                 fill="currentColor"
@@ -1003,7 +1430,17 @@ export function RepertoireMusicPlayerPanel({
                             </td>
                             <td className={styles.colTitleBlock}>
                               <div className={styles.trackRowFlex}>
-                                <span className={styles.trackTitleCell}>{label}</span>
+                                <span
+                                  className={styles.trackRowMiniArt}
+                                  aria-hidden
+                                >
+                                  {(label || "?").charAt(0).toUpperCase()}
+                                </span>
+                                <div className={styles.trackRowTextBlock}>
+                                  <span className={styles.trackTitleCell}>
+                                    {label}
+                                  </span>
+                                </div>
                                 <div className={styles.trackRowActions}>
                                   <button
                                     type="button"
@@ -1018,14 +1455,18 @@ export function RepertoireMusicPlayerPanel({
                                         ? `Ta bort ${label} från favoriter`
                                         : `Lägg till ${label} i favoriter`
                                     }
-                                    aria-pressed={favoriteMaterialIds.includes(m.materialId)}
+                                    aria-pressed={favoriteMaterialIds.includes(
+                                      m.materialId,
+                                    )}
                                   >
                                     <Heart
                                       size={18}
                                       fill={
-                                        favoriteMaterialIds.includes(m.materialId)
-                                          ? 'currentColor'
-                                          : 'none'
+                                        favoriteMaterialIds.includes(
+                                          m.materialId,
+                                        )
+                                          ? "currentColor"
+                                          : "none"
                                       }
                                     />
                                   </button>
@@ -1039,10 +1480,14 @@ export function RepertoireMusicPlayerPanel({
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setActiveDropdownId((prev) =>
-                                          prev === m.materialId ? null : m.materialId
+                                          prev === m.materialId
+                                            ? null
+                                            : m.materialId,
                                         );
                                       }}
-                                      aria-expanded={activeDropdownId === m.materialId}
+                                      aria-expanded={
+                                        activeDropdownId === m.materialId
+                                      }
                                       aria-haspopup="menu"
                                       aria-label={`Lägg till ${label} i spellista`}
                                     >
@@ -1054,42 +1499,76 @@ export function RepertoireMusicPlayerPanel({
                                         className={styles.trackRowPlaylistMenu}
                                         onClick={(e) => e.stopPropagation()}
                                       >
-                                        {(playlistAddError || playlistsHookError) && (
-                                          <p className={styles.trackRowPlaylistMenuError} role="alert">
-                                            {playlistAddError ?? playlistsHookError}
+                                        {(playlistAddError ||
+                                          playlistsHookError) && (
+                                          <p
+                                            className={
+                                              styles.trackRowPlaylistMenuError
+                                            }
+                                            role="alert"
+                                          >
+                                            {playlistAddError ??
+                                              playlistsHookError}
                                           </p>
                                         )}
                                         {playlistsLoading ? (
-                                          <p className={styles.trackRowPlaylistMenuMuted}>Laddar…</p>
+                                          <p
+                                            className={
+                                              styles.trackRowPlaylistMenuMuted
+                                            }
+                                          >
+                                            Laddar…
+                                          </p>
                                         ) : playlists.length === 0 ? (
-                                          <p className={styles.trackRowPlaylistMenuMuted}>
+                                          <p
+                                            className={
+                                              styles.trackRowPlaylistMenuMuted
+                                            }
+                                          >
                                             Inga spellistor.
                                           </p>
                                         ) : (
-                                          <ul className={styles.trackRowPlaylistMenuList}>
+                                          <ul
+                                            className={
+                                              styles.trackRowPlaylistMenuList
+                                            }
+                                          >
                                             {playlists.map((p) => (
                                               <li key={p.playlistId}>
                                                 <button
                                                   type="button"
                                                   role="menuitem"
-                                                  disabled={playlistAddBusyId === p.playlistId}
-                                                  className={styles.trackRowPlaylistMenuItem}
+                                                  disabled={
+                                                    playlistAddBusyId ===
+                                                    p.playlistId
+                                                  }
+                                                  className={
+                                                    styles.trackRowPlaylistMenuItem
+                                                  }
                                                   onClick={async (e) => {
                                                     e.stopPropagation();
                                                     setPlaylistAddError(null);
-                                                    setPlaylistAddBusyId(p.playlistId);
+                                                    setPlaylistAddBusyId(
+                                                      p.playlistId,
+                                                    );
                                                     try {
-                                                      await addPlaylistItem(p.playlistId, m.materialId);
+                                                      await addPlaylistItem(
+                                                        p.playlistId,
+                                                        m.materialId,
+                                                      );
                                                       setActiveDropdownId(null);
                                                     } catch (err) {
                                                       console.error(err);
                                                       setPlaylistAddError(
-                                                        err instanceof Error && err.message.trim()
+                                                        err instanceof Error &&
+                                                          err.message.trim()
                                                           ? err.message
-                                                          : 'Något gick fel. Försök igen.'
+                                                          : "Något gick fel. Försök igen.",
                                                       );
                                                     } finally {
-                                                      setPlaylistAddBusyId(null);
+                                                      setPlaylistAddBusyId(
+                                                        null,
+                                                      );
                                                     }
                                                   }}
                                                 >
@@ -1113,13 +1592,15 @@ export function RepertoireMusicPlayerPanel({
                                   >
                                     <Play size={18} aria-hidden />
                                   </button>
-                                  {isCurrentViewPlaylist && (
+                                  {isPlaylistSelected && (
                                     <button
                                       type="button"
                                       className={styles.playRowButton}
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        void handleRemoveFromPlaylist(m.materialId);
+                                        void handleRemoveFromPlaylist(
+                                          m.materialId,
+                                        );
                                       }}
                                       aria-label={`Ta bort ${label} från spellistan`}
                                     >
@@ -1154,10 +1635,14 @@ export function RepertoireMusicPlayerPanel({
                   <li key={item.repertoireId}>
                     <button
                       type="button"
-                      className={`${styles.folderButton} ${selectedId === item.repertoireId ? styles.folderButtonActive : ''}`}
+                      className={`${styles.folderButton} ${selectedId === item.repertoireId ? styles.folderButtonActive : ""}`}
                       onClick={() => handleSelectRepertoire(item.repertoireId)}
                     >
-                      <Music size={16} className={styles.folderIcon} aria-hidden />
+                      <Music
+                        size={16}
+                        className={styles.folderIcon}
+                        aria-hidden
+                      />
                       <span className={styles.folderLabel}>{item.title}</span>
                     </button>
                   </li>
@@ -1192,6 +1677,59 @@ export function RepertoireMusicPlayerPanel({
       </div>
 
       <Modal
+        isOpen={mobileCreatePlaylistOpen}
+        onClose={() => {
+          if (!creatingPlaylist) {
+            setMobileCreatePlaylistOpen(false);
+            setNewPlaylistTitle("");
+          }
+        }}
+        title="Ny spellista"
+        footer={
+          <div className={styles.playlistRenameModalFooter}>
+            <button
+              type="button"
+              className={styles.playlistRenameModalButtonSecondary}
+              onClick={() => {
+                setMobileCreatePlaylistOpen(false);
+                setNewPlaylistTitle("");
+              }}
+              disabled={creatingPlaylist}
+            >
+              Avbryt
+            </button>
+            <button
+              type="button"
+              className={styles.playlistRenameModalButtonPrimary}
+              onClick={() => void handleCreatePlaylistMobile()}
+              disabled={creatingPlaylist || !newPlaylistTitle.trim()}
+            >
+              {creatingPlaylist ? "Skapar…" : "Skapa"}
+            </button>
+          </div>
+        }
+      >
+        <label
+          htmlFor="mobile-new-playlist-title"
+          className={styles.playlistRenameLabel}
+        >
+          Namn
+        </label>
+        <input
+          id="mobile-new-playlist-title"
+          type="text"
+          className={styles.playlistRenameInput}
+          placeholder="Min spellista"
+          value={newPlaylistTitle}
+          onChange={(e) => setNewPlaylistTitle(e.target.value)}
+          disabled={creatingPlaylist}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void handleCreatePlaylistMobile();
+          }}
+        />
+      </Modal>
+
+      <Modal
         isOpen={Boolean(playlistRenameTarget)}
         onClose={() => {
           if (!renameBusy) setPlaylistRenameTarget(null);
@@ -1213,12 +1751,15 @@ export function RepertoireMusicPlayerPanel({
               onClick={() => void handleConfirmRenamePlaylist()}
               disabled={renameBusy || !renameDraft.trim()}
             >
-              {renameBusy ? 'Sparar…' : 'Spara'}
+              {renameBusy ? "Sparar…" : "Spara"}
             </button>
           </div>
         }
       >
-        <label htmlFor="playlist-rename-input" className={styles.playlistRenameLabel}>
+        <label
+          htmlFor="playlist-rename-input"
+          className={styles.playlistRenameLabel}
+        >
           Namn
         </label>
         <input
@@ -1229,7 +1770,7 @@ export function RepertoireMusicPlayerPanel({
           onChange={(e) => setRenameDraft(e.target.value)}
           disabled={renameBusy}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') void handleConfirmRenamePlaylist();
+            if (e.key === "Enter") void handleConfirmRenamePlaylist();
           }}
         />
       </Modal>
