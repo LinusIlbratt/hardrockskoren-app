@@ -1,5 +1,5 @@
-import { memo, useCallback, useState, type RefCallback } from 'react';
-import { Outlet } from 'react-router-dom';
+import { memo, useCallback, useEffect, useState, type RefCallback } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { FavoritesProvider } from '@/context/FavoritesContext';
 import { MusicPlayerOverlayProvider, useMusicPlayerOverlay } from '@/context/MusicPlayerOverlayContext';
@@ -12,10 +12,28 @@ import styles from './AppLayout.module.scss';
 const AppLayoutContent = memo(function AppLayoutContent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [musicOverlayMount, setMusicOverlayMount] = useState<HTMLDivElement | null>(null);
-  const { activeTrack, isOpen, activeGroupName, activeViewer } = useMusicPlayerOverlay();
+  const { activeTrack, isOpen, activeGroupName, activeViewer, closeSession } = useMusicPlayerOverlay();
+  const location = useLocation();
 
   const hasSession = Boolean(activeGroupName) && Boolean(activeViewer);
   const showMiniBar = Boolean(activeTrack) && !isOpen && hasSession;
+
+  useEffect(() => {
+    if (!activeGroupName || !activeViewer) return;
+
+    const expectedPrefix =
+      activeViewer === 'leader'
+        ? `/leader/choir/${activeGroupName}`
+        : activeViewer === 'admin'
+          ? `/admin/groups/${activeGroupName}`
+          : `/user/me/${activeGroupName}`;
+
+    // Om användaren navigerar utanför körens vy (t.ex. tillbaka till översikt),
+    // stäng musiksessionen för att undvika inkonsistent overlay-state.
+    if (!location.pathname.startsWith(expectedPrefix)) {
+      closeSession();
+    }
+  }, [activeGroupName, activeViewer, closeSession, location.pathname]);
 
   /** Måste vara stabil — annars tror React att ref byts varje render → detach/attach → setState i loop. */
   const setOverlayPortalRef = useCallback<RefCallback<HTMLDivElement>>((el) => {
