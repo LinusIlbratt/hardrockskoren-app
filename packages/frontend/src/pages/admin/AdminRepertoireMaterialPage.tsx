@@ -34,6 +34,54 @@ const isAudioFile = (fileKey: string = '') => /\.(mp3|wav|m4a|ogg)$/i.test(fileK
 const isVideoFile = (fileKey: string = '') => /\.(mp4|mov|webm|avi)$/i.test(fileKey);
 const isDocumentFile = (fileKey: string = '') => /\.(pdf|txt|doc|docx)$/i.test(fileKey);
 
+const STEM_PRIORITY = [
+  'sopran',
+  'alt',
+  'tenor',
+  'bas',
+  'kor',
+  'backtrack',
+] as const;
+
+const STEM_ALIASES: Record<(typeof STEM_PRIORITY)[number], string[]> = {
+  sopran: ['sopran', 'soprano', 'sop', 'sop1', 'sop2'],
+  alt: ['alt', 'alto', 'alt1', 'alt2'],
+  tenor: ['tenor', 'ten', 'ten1', 'ten2'],
+  bas: ['bas', 'bass', 'bariton'],
+  kor: ['kor', 'kör', 'choir', 'alla'],
+  backtrack: ['backtrack', 'backingtrack', 'instrumental', 'karaoke', 'bt'],
+};
+
+function normalizeForStemSort(raw: string): string {
+  return raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\.(mp3|wav|m4a|ogg|pdf|txt|doc|docx|mp4|mov|webm|avi)$/i, '')
+    .replace(/[_-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getStemPriority(rawName: string): number {
+  const normalized = normalizeForStemSort(rawName);
+  if (!normalized) return 999;
+
+  for (let i = 0; i < STEM_PRIORITY.length; i += 1) {
+    const key = STEM_PRIORITY[i];
+    const aliases = STEM_ALIASES[key];
+    if (aliases.some((alias) => normalized.includes(alias))) {
+      return i;
+    }
+  }
+  return 999;
+}
+
+function getItemSortName(item: DirectoryItem): string {
+  if (item.type === 'folder') return item.displayName || item.name;
+  return item.material.title || item.material.filePath || item.material.fileKey || '';
+}
+
 // FIX: Uppdaterad funktion för att skapa och sortera på 'displayName'.
 const parseRepertoireContents = (
   materials: Material[],
@@ -58,6 +106,9 @@ const parseRepertoireContents = (
 
     if (pathParts.length > 1) {
       const subFolderName = pathParts[0];
+      if (subFolderName === '.DS_Store') {
+        return;
+      }
       if (!directoryMap.has(subFolderName)) {
         
         let displayName = subFolderName;
@@ -77,6 +128,9 @@ const parseRepertoireContents = (
       }
     } else {
       const fileName = pathParts[0];
+      if (fileName === '.DS_Store') {
+        return;
+      }
       if (!directoryMap.has(fileName)) {
         directoryMap.set(fileName, { type: 'file', material });
       }
@@ -84,14 +138,18 @@ const parseRepertoireContents = (
   });
 
   return Array.from(directoryMap.values()).sort((a, b) => {
-    const aPath = a.type === 'file' ? (a.material.filePath || a.material.fileKey || '') : '';
-    const bPath = b.type === 'file' ? (b.material.filePath || b.material.fileKey || '') : '';
-    
-    const aName = a.type === 'folder' ? a.displayName : (a.material.title || aPath);
-    const bName = b.type === 'folder' ? b.displayName : (b.material.title || bPath);
-
     if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
-    return aName.localeCompare(bName);
+
+    const aName = getItemSortName(a);
+    const bName = getItemSortName(b);
+    const aPriority = getStemPriority(aName);
+    const bPriority = getStemPriority(bName);
+
+    if (aPriority !== bPriority) {
+      return aPriority - bPriority;
+    }
+
+    return aName.localeCompare(bName, 'sv', { sensitivity: 'base' });
   });
 };
 
