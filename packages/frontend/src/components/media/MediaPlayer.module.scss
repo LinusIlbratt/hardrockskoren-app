@@ -47,7 +47,11 @@
 
 /* MiniPlayerBar: samma färger som inbäddad spelare + fast dock + blur */
 .miniPlayerBarDock {
-  /* Förälder (.miniPlayerChrome) har pointer-events: none — bara själva baren tar emot klick */
+  position: relative;
+  left: auto;
+  bottom: auto;
+  width: 100%;
+  /* MiniPlayer ska ligga i layoutflödet (inte flyta ovanpå innehåll). */
   pointer-events: auto;
   z-index: 1;
   backdrop-filter: blur(10px);

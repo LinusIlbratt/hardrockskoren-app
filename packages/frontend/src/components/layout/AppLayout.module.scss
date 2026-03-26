@@ -45,12 +45,10 @@
  * Minispelaren ovanpå overlay-lagret; wrapper tar inga träffar — bara själva baren.
  */
 .miniPlayerChrome {
-  position: fixed;
-  left: 0;
-  right: 0;
+  position: sticky;
   bottom: 0;
-  z-index: 10050;
-  pointer-events: none;
+  z-index: 5;
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   align-items: stretch;
@@ -78,5 +76,5 @@
 }
 
 .mainWithMiniPlayer {
-  padding-bottom: 90px;
+  padding-bottom: 0;
 }

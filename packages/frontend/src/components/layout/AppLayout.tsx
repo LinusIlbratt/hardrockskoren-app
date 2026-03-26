@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useState, type RefCallback } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, type RefCallback } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { FavoritesProvider } from '@/context/FavoritesContext';
@@ -12,11 +12,39 @@ import styles from './AppLayout.module.scss';
 const AppLayoutContent = memo(function AppLayoutContent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [musicOverlayMount, setMusicOverlayMount] = useState<HTMLDivElement | null>(null);
-  const { activeTrack, isOpen, activeGroupName, activeViewer, closeSession } = useMusicPlayerOverlay();
+  const { activeTrack, isOpen, activeGroupName, activeViewer, closeOverlay, closeSession } = useMusicPlayerOverlay();
   const location = useLocation();
+  const isOpenRef = useRef(isOpen);
+  const pushedMusicHistoryRef = useRef(false);
 
   const hasSession = Boolean(activeGroupName) && Boolean(activeViewer);
   const showMiniBar = Boolean(activeTrack) && !isOpen && hasSession;
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen && !pushedMusicHistoryRef.current) {
+      window.history.pushState({ __hrkMusicOverlay: true }, '', window.location.href);
+      pushedMusicHistoryRef.current = true;
+      return;
+    }
+
+    if (!isOpen) {
+      pushedMusicHistoryRef.current = false;
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const onPopState = () => {
+      if (!isOpenRef.current) return;
+      closeOverlay();
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [closeOverlay]);
 
   useEffect(() => {
     if (!activeGroupName || !activeViewer) return;
