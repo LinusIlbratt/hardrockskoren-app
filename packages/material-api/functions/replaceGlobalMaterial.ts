@@ -19,6 +19,29 @@ interface ReplaceMaterialBody {
   deleteOldFile?: boolean;
 }
 
+/** S3-nyckel från getUploadUrl: materials/{uuid}-{originalFileName} */
+function basenameFromMaterialsUploadKey(key: string): string | null {
+  const prefix = "materials/";
+  if (!key.startsWith(prefix)) return null;
+  const rest = key.slice(prefix.length);
+  const uuidLen = 36;
+  if (rest.length < uuidLen + 2 || rest[uuidLen] !== "-") return null;
+  const uuidPart = rest.slice(0, uuidLen);
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(uuidPart)
+  ) {
+    return null;
+  }
+  const name = rest.slice(uuidLen + 1);
+  return name.length > 0 ? name : null;
+}
+
+function replacePathBasename(filePath: string, newBasename: string): string {
+  const i = filePath.lastIndexOf("/");
+  if (i === -1) return newBasename;
+  return filePath.slice(0, i + 1) + newBasename;
+}
+
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResultV2> => {
@@ -86,10 +109,19 @@ export const handler = async (
     if (!before.Item) {
       return sendError(404, "Material not found.");
     }
-    const existing = unmarshall(before.Item) as { fileKey?: string; title?: string; type?: string };
+    const existing = unmarshall(before.Item) as {
+      fileKey?: string;
+      title?: string;
+      filePath?: string;
+      type?: string;
+    };
     if (existing.type !== "GlobalMaterial") {
       return sendError(400, "Only global materials can be replaced.");
     }
+
+    const parsedBasename = basenameFromMaterialsUploadKey(nextFileKey);
+    const displayName = nextTitle || parsedBasename || null;
+    const existingPath = existing.filePath?.trim();
 
     const nowIso = new Date().toISOString();
     const names: Record<string, string> = {
@@ -102,10 +134,19 @@ export const handler = async (
     };
     const updates: string[] = ["#fileKey = :fileKey", "#updatedAt = :updatedAt"];
 
-    if (nextTitle) {
+    if (displayName) {
       names["#title"] = "title";
-      values[":title"] = { S: nextTitle };
+      values[":title"] = { S: displayName };
       updates.push("#title = :title");
+    }
+
+    if (existingPath && displayName) {
+      const nextPath = replacePathBasename(existingPath, displayName);
+      if (nextPath !== existingPath) {
+        names["#filePath"] = "filePath";
+        values[":filePath"] = { S: nextPath };
+        updates.push("#filePath = :filePath");
+      }
     }
 
     await dbClient.send(
@@ -146,7 +187,8 @@ export const handler = async (
         message: "Material replaced successfully.",
         materialId,
         fileKey: nextFileKey,
-        title: nextTitle || existing.title || null,
+        title: displayName || existing.title || null,
+        filePath: existingPath && displayName ? replacePathBasename(existingPath, displayName) : existingPath || null,
         oldFileDeleted,
         warning: oldFileDeleteWarning,
       },
