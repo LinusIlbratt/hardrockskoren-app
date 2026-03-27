@@ -20,6 +20,8 @@ interface MusicPlayerOverlayProps {
   onExitSession: () => void;
   libraryQueueMaterials?: Material[] | null;
   libraryPlaybackIntent?: LibraryPlaybackIntent | null;
+  /** Sjung upp m.m.: bibliotekskö men repertoar-sidebar ska visas. */
+  libraryPlaybackWithRepertoire?: boolean;
   initialRepertoireId?: string | null;
   initialPlaylistId?: string | null;
   repertoirePlaybackIntent?: RepertoirePlaybackIntent | null;
@@ -41,6 +43,7 @@ export function MusicPlayerOverlay({
   onExitSession,
   libraryQueueMaterials,
   libraryPlaybackIntent,
+  libraryPlaybackWithRepertoire = false,
   initialRepertoireId,
   initialPlaylistId,
   repertoirePlaybackIntent,
@@ -144,6 +147,7 @@ export function MusicPlayerOverlay({
           shellTitleId={titleId}
           libraryQueueMaterials={libraryQueueMaterials ?? null}
           libraryPlaybackIntent={libraryPlaybackIntent ?? null}
+          libraryPlaybackWithRepertoire={libraryPlaybackWithRepertoire}
           initialRepertoireId={initialRepertoireId ?? null}
           initialPlaylistId={initialPlaylistId ?? null}
           repertoirePlaybackIntent={repertoirePlaybackIntent ?? null}
@@ -165,6 +169,7 @@ export function MusicPlayerOverlayHost({ mountEl }: { mountEl?: HTMLElement | nu
     closeSession,
     libraryMaterials,
     libraryPlayback,
+    libraryPlaybackWithRepertoire,
     initialRepertoireId,
     initialPlaylistId,
     repertoirePlaybackIntent,
@@ -183,6 +188,7 @@ export function MusicPlayerOverlayHost({ mountEl }: { mountEl?: HTMLElement | nu
       onExitSession={closeSession}
       libraryQueueMaterials={libraryMaterials ?? undefined}
       libraryPlaybackIntent={libraryPlayback ?? undefined}
+      libraryPlaybackWithRepertoire={libraryPlaybackWithRepertoire}
       initialRepertoireId={initialRepertoireId ?? undefined}
       initialPlaylistId={initialPlaylistId ?? undefined}
       repertoirePlaybackIntent={repertoirePlaybackIntent ?? undefined}

@@ -68,6 +68,11 @@ interface MusicPlayerOverlayState {
   /** Globala material (t.ex. favoriter) – när satt körs spelläget utan repertoar-sidebar */
   libraryMaterials: Material[] | null;
   libraryPlayback: LibraryPlaybackIntent | null;
+  /**
+   * När true (t.ex. Sjung upp): samma bibliotekskö men repertoar-sidebar och hämtning av repertoarer ska vara kvar.
+   * När false och libraryMaterials finns: klassiskt "Mitt bibliotek"-läge utan höger-sidebar.
+   */
+  libraryPlaybackWithRepertoire: boolean;
   /** Direktval av repertoar (normalt läge, sidebar kvar). */
   initialRepertoireId: string | null;
   initialPlaylistId: string | null;
@@ -84,7 +89,8 @@ export interface MusicPlayerOverlayContextValue {
     groupName: string,
     viewer: MusicPlayerViewer,
     materials: Material[],
-    intent?: LibraryPlaybackIntent
+    intent?: LibraryPlaybackIntent,
+    options?: { startMinimized?: boolean; withRepertoireBrowser?: boolean }
   ) => void;
   /** Stänger fullskärms-UI men behåller session + uppspelning (miniplayer). */
   closeOverlay: () => void;
@@ -97,6 +103,7 @@ export interface MusicPlayerOverlayContextValue {
   activeViewer: MusicPlayerViewer | null;
   libraryMaterials: Material[] | null;
   libraryPlayback: LibraryPlaybackIntent | null;
+  libraryPlaybackWithRepertoire: boolean;
   initialRepertoireId: string | null;
   initialPlaylistId: string | null;
   repertoirePlaybackIntent: RepertoirePlaybackIntent | null;
@@ -147,6 +154,7 @@ const initialState: MusicPlayerOverlayState = {
   viewer: null,
   libraryMaterials: null,
   libraryPlayback: null,
+  libraryPlaybackWithRepertoire: false,
   initialRepertoireId: null,
   initialPlaylistId: null,
   repertoirePlaybackIntent: null,
@@ -244,6 +252,7 @@ export function MusicPlayerOverlayProvider({ children }: { children: ReactNode }
               viewer,
               libraryMaterials: null,
               libraryPlayback: null,
+              libraryPlaybackWithRepertoire: false,
               initialRepertoireId: r.repertoireId,
               initialPlaylistId: null,
               repertoirePlaybackIntent: null,
@@ -255,6 +264,7 @@ export function MusicPlayerOverlayProvider({ children }: { children: ReactNode }
               viewer,
               libraryMaterials: null,
               libraryPlayback: null,
+              libraryPlaybackWithRepertoire: false,
               initialRepertoireId: null,
               initialPlaylistId: r.playlistId,
               repertoirePlaybackIntent: null,
@@ -268,6 +278,7 @@ export function MusicPlayerOverlayProvider({ children }: { children: ReactNode }
           viewer,
           libraryMaterials: null,
           libraryPlayback: null,
+          libraryPlaybackWithRepertoire: false,
           initialRepertoireId: bootPlId ? null : bootRepId,
           initialPlaylistId: bootPlId,
           repertoirePlaybackIntent: null,
@@ -293,6 +304,7 @@ export function MusicPlayerOverlayProvider({ children }: { children: ReactNode }
         viewer,
         libraryMaterials: null,
         libraryPlayback: null,
+        libraryPlaybackWithRepertoire: false,
         initialRepertoireId: hasResume ? null : bootPlId ? null : bootRepId,
         initialPlaylistId: hasResume ? null : bootPlId,
         repertoirePlaybackIntent: repPlayback,
@@ -306,7 +318,8 @@ export function MusicPlayerOverlayProvider({ children }: { children: ReactNode }
       groupName: string,
       viewer: MusicPlayerViewer,
       materials: Material[],
-      intent: LibraryPlaybackIntent = 'browse'
+      intent: LibraryPlaybackIntent = 'browse',
+      options?: { startMinimized?: boolean; withRepertoireBrowser?: boolean }
     ) => {
       const g = groupName.trim();
       if (!g) return;
@@ -315,11 +328,12 @@ export function MusicPlayerOverlayProvider({ children }: { children: ReactNode }
       resetPlaybackMeta();
       setPendingResume(null);
       setState({
-        isOpen: true,
+        isOpen: options?.startMinimized ? false : true,
         groupName: g,
         viewer,
         libraryMaterials: list,
         libraryPlayback: intent,
+        libraryPlaybackWithRepertoire: options?.withRepertoireBrowser === true,
         initialRepertoireId: null,
         initialPlaylistId: null,
         repertoirePlaybackIntent: null,
@@ -360,6 +374,7 @@ export function MusicPlayerOverlayProvider({ children }: { children: ReactNode }
       activeViewer: state.viewer,
       libraryMaterials: state.libraryMaterials,
       libraryPlayback: state.libraryPlayback,
+      libraryPlaybackWithRepertoire: state.libraryPlaybackWithRepertoire,
       initialRepertoireId: state.initialRepertoireId,
       initialPlaylistId: state.initialPlaylistId,
       repertoirePlaybackIntent: state.repertoirePlaybackIntent,
@@ -397,6 +412,7 @@ export function MusicPlayerOverlayProvider({ children }: { children: ReactNode }
       state.viewer,
       state.libraryMaterials,
       state.libraryPlayback,
+      state.libraryPlaybackWithRepertoire,
       state.initialRepertoireId,
       state.initialPlaylistId,
       state.repertoirePlaybackIntent,

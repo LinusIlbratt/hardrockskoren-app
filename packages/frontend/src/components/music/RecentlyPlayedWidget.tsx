@@ -1,10 +1,8 @@
-import { Play } from 'lucide-react';
+import { ChevronRight, Music } from 'lucide-react';
 import {
   useMusicPlayerOverlay,
   type MusicPlayerViewer,
 } from '@/context/MusicPlayerOverlayContext';
-import { useRecentlyPlayed } from '@/hooks/useRecentlyPlayed';
-import { entryToResumePayload } from '@/utils/recentPlayback';
 import styles from './RecentlyPlayedWidget.module.scss';
 
 export interface RecentlyPlayedWidgetProps {
@@ -14,13 +12,12 @@ export interface RecentlyPlayedWidgetProps {
 }
 
 /**
- * Visar senaste spår för kören (localStorage) eller en "Utforska musik"-CTA.
+ * Kompakt CTA till musikspelaren (browse) — Spotify-lik rad med ikon-tile.
  */
 export function RecentlyPlayedWidget({
   groupName,
   viewer = 'member',
 }: RecentlyPlayedWidgetProps) {
-  const entry = useRecentlyPlayed(groupName);
   const {
     open: openMusicOverlay,
     expandOverlay,
@@ -32,95 +29,38 @@ export function RecentlyPlayedWidget({
   const g = groupName?.trim();
   if (!g) return null;
 
-  const hasRecent = Boolean(entry && entryToResumePayload(entry));
-
-  const resume = entry ? entryToResumePayload(entry) : null;
-
-  const handleCardClick = () => {
+  const handleOpen = () => {
     if (activeGroupName === g && activeViewer === viewer && !isOpen) {
       expandOverlay();
       return;
     }
-    if (hasRecent && resume) {
-      openMusicOverlay(g, viewer, { playbackIntent: 'browse', resume });
-    } else {
-      openMusicOverlay(g, viewer, { playbackIntent: 'browse' });
-    }
-  };
-
-  const handlePlayClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (hasRecent && resume) {
-      if (resume.source === 'repertoire') {
-        openMusicOverlay(g, viewer, {
-          startMinimized: true,
-          initialRepertoireId: resume.repertoireId,
-          playbackIntent: { type: 'fromMaterialId', materialId: resume.materialId },
-        });
-      } else {
-        openMusicOverlay(g, viewer, {
-          startMinimized: true,
-          initialPlaylistId: resume.playlistId,
-          playbackIntent: { type: 'fromMaterialId', materialId: resume.materialId },
-        });
-      }
-    } else {
-      openMusicOverlay(g, viewer, { startMinimized: true, playbackIntent: 'playAll' });
-    }
+    openMusicOverlay(g, viewer, { playbackIntent: 'browse' });
   };
 
   return (
     <div className={styles.container}>
-      <div className={`${styles.card} ${!hasRecent ? styles.discover : ''}`}>
-        <div
-          role="button"
-          tabIndex={0}
-          className={styles.body}
-          onClick={handleCardClick}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              handleCardClick();
-            }
-          }}
-          aria-label={
-            hasRecent
-              ? `Visa spårlista och repertoar för: ${entry?.title ?? ''}`
-              : 'Visa musikspelaren och repertoar'
-          }
-        >
-          <p className={styles.kicker}>
-            {hasRecent ? 'Senast spelat' : 'Musik'}
-          </p>
-          <h3 className={styles.title}>
-            {hasRecent ? (entry?.title ?? '') : 'Utforska musik'}
-          </h3>
-          <p className={styles.subtitle}>
-            {hasRecent
-              ? entry?.kind === 'playlist'
-                ? 'Spellista · tryck här för att visa listan'
-                : 'Repertoar · tryck här för att visa listan'
-              : 'Tryck här för att öppna och bläddra i repertoaren'}
-          </p>
+      <button
+        type="button"
+        className={styles.card}
+        onClick={handleOpen}
+        aria-label="Öppna musikspelaren och bläddra i repertoaren"
+      >
+        <div className={styles.art} aria-hidden>
+          <Music className={styles.artIcon} size={26} strokeWidth={1.75} />
         </div>
-        <div className={styles.playWrap}>
-          <span className={styles.playLabel}>Lyssna</span>
-          <button
-            type="button"
-            className={styles.playBtn}
-            onClick={handlePlayClick}
-            title={hasRecent ? 'Spela upp ljud' : 'Öppna spelaren för uppspelning'}
-            aria-label={
-              hasRecent
-                ? `Spela upp: ${entry?.title ?? ''} (minimerad spelare)`
-                : 'Öppna musikspelaren för uppspelning (minimerad vy)'
-            }
-          >
-            <Play size={22} strokeWidth={2} aria-hidden />
-          </button>
+        <div className={styles.cardText}>
+          <span className={styles.title}>Musikspelaren</span>
+          <span className={styles.subtitle}>
+            Här kan du göra din egen spellista att repa till.
+          </span>
         </div>
-      </div>
+        <ChevronRight
+          className={styles.chevron}
+          size={20}
+          strokeWidth={2}
+          aria-hidden
+        />
+      </button>
     </div>
   );
 }
