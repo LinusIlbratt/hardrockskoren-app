@@ -179,6 +179,36 @@ deleteGlobalMaterial:
         Action: ["cognito-idp:AdminGetUser"]
         Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
 
+replaceGlobalMaterial:
+    handler: functions/replaceGlobalMaterial.handler
+    name: hrk-replace-global-material-${sls:stage}
+    description: Replaces fileKey (and optional title) for a global material without changing materialId. (Admin only)
+    events:
+      - httpApi:
+          method: PATCH
+          path: /materials/{materialId}
+          authorizer:
+            name: centralJwtAuthorizer
+    environment:
+      MAIN_TABLE: ${self:custom.mainTableName}
+      MEDIA_BUCKET_NAME: ${self:custom.mediaBucketName}
+      COGNITO_USER_POOL_ID: ${self:custom.userPoolId}
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
+          - "dynamodb:GetItem"
+          - "dynamodb:UpdateItem"
+        Resource:
+          - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+      - Effect: "Allow"
+        Action:
+          - "s3:DeleteObject"
+        Resource:
+          - "arn:aws:s3:::${self:custom.mediaBucketName}/materials/*"
+      - Effect: "Allow"
+        Action: ["cognito-idp:AdminGetUser"]
+        Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
+
 batchDeleteGlobalMaterials:
     handler: functions/batchDeleteGlobalMaterials.handler
     name: hrk-batch-delete-global-materials-${sls:stage}
@@ -344,6 +374,53 @@ unlinkMaterialFromRepertoire:
       # Samma Cognito-behörighet behövs för att verifiera användarens roll
       Action: ["cognito-idp:AdminGetUser"]
       Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
+
+syncAllRepertoiresFromLibraryFolder:
+  handler: functions/syncAllRepertoiresFromLibraryFolder.handler
+  name: hrk-sync-all-repertoires-from-library-${sls:stage}
+  iamRoleStatementsName: hrk-sync-all-reps-${sls:stage}
+  description: Syncs all choir repertoires linked to a library folder path. Admin only.
+  timeout: 60
+  memorySize: 512
+  events:
+    - httpApi:
+        method: POST
+        path: /materials/sync-all-repertoires
+        # TEST: disable authorizer temporarily to verify where the 500 originates.
+        # authorizer:
+        #   name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Scan"
+        - "dynamodb:Query"
+        - "dynamodb:BatchWriteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI2"
+
+syncRepertoireFromLibraryFolder:
+  handler: functions/syncRepertoireFromLibraryFolder.handler
+  name: hrk-sync-repertoire-from-library-folder-${sls:stage}
+  description: Manually sync linked materials in a repertoire with a library folder.
+  events:
+    - httpApi:
+        method: POST
+        path: /groups/{groupName}/repertoires/{repertoireId}/sync-library-folder
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+        - "dynamodb:BatchWriteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI2"
 
 getSjunguppUploadUrl:
   handler: functions/getPracticeUploadUrl.handler

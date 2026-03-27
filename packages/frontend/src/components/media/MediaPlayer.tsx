@@ -133,6 +133,16 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
 
   const { favoriteMaterialIds, toggleFavoriteOptimistic } = useFavorites();
   const overlayPlayback = useOptionalMusicPlayerOverlay();
+  const overlayPlaybackToggleRef = overlayPlayback?.playbackToggleRef;
+  const overlayPlaybackApiRef = overlayPlayback?.playbackApiRef;
+  const overlaySetActiveTrack = overlayPlayback?.setActiveTrack;
+  const overlaySetIsPlaying = overlayPlayback?.setIsPlaying;
+  const overlaySetPlaybackProgress = overlayPlayback?.setPlaybackProgress;
+  const overlaySetRepeatMode = overlayPlayback?.setRepeatMode;
+  const overlaySetVolume = overlayPlayback?.setVolume;
+  const overlaySetPlaybackRate = overlayPlayback?.setPlaybackRate;
+  const overlaySetQueueMeta = overlayPlayback?.setQueueMeta;
+  const overlaySetActiveMaterialId = overlayPlayback?.setActiveMaterialId;
 
   const [isPlaying, setIsPlaying] = useState(true);
   const [duration, setDuration] = useState(0);
@@ -622,16 +632,16 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
         ? 'Upprepa alla (på)'
         : 'Upprepa av';
 
-  const syncPlayback = syncPlaybackToContextFlag && overlayPlayback;
+  const syncPlayback = syncPlaybackToContextFlag && Boolean(overlayPlayback);
 
   useEffect(() => {
-    if (!syncPlayback || !overlayPlayback) return;
-    const ref = overlayPlayback.playbackToggleRef;
+    if (!syncPlayback || !overlayPlaybackToggleRef) return;
+    const ref = overlayPlaybackToggleRef;
     ref.current = togglePlayPause;
     return () => {
       ref.current = null;
     };
-  }, [syncPlayback, overlayPlayback, togglePlayPause]);
+  }, [syncPlayback, overlayPlaybackToggleRef, togglePlayPause]);
 
   const singleSrcForFileKey = !queueMode && 'src' in props ? props.src : '';
   const activeTrackFileKey = useMemo(() => {
@@ -652,60 +662,60 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
   }, [currentMaterialId, activeTrackFileKey, displayTitle]);
 
   useEffect(() => {
-    if (!syncPlayback || !overlayPlayback) return;
+    if (!syncPlayback || !overlaySetActiveTrack) return;
     const t = displayTitle || '';
-    overlayPlayback.setActiveTrack(
+    overlaySetActiveTrack(
       t ? { title: t, ...(activeTrackFileKey ? { fileKey: activeTrackFileKey } : {}) } : null,
     );
-  }, [syncPlayback, overlayPlayback, displayTitle, activeTrackFileKey]);
+  }, [syncPlayback, overlaySetActiveTrack, displayTitle, activeTrackFileKey]);
 
   useEffect(() => {
-    if (!syncPlayback || !overlayPlayback) return;
-    overlayPlayback.setIsPlaying(isPlaying);
-  }, [syncPlayback, overlayPlayback, isPlaying]);
+    if (!syncPlayback || !overlaySetIsPlaying) return;
+    overlaySetIsPlaying(isPlaying);
+  }, [syncPlayback, overlaySetIsPlaying, isPlaying]);
 
   useEffect(() => {
-    if (!syncPlayback || !overlayPlayback) return;
-    overlayPlayback.setPlaybackProgress({
+    if (!syncPlayback || !overlaySetPlaybackProgress) return;
+    overlaySetPlaybackProgress({
       current: currentTime,
       duration: Number.isFinite(duration) ? duration : 0,
     });
-  }, [syncPlayback, overlayPlayback, currentTime, duration]);
+  }, [syncPlayback, overlaySetPlaybackProgress, currentTime, duration]);
 
   useEffect(() => {
-    if (!syncPlayback || !overlayPlayback) return;
-    overlayPlayback.setRepeatMode(repeatMode);
-  }, [syncPlayback, overlayPlayback, repeatMode]);
+    if (!syncPlayback || !overlaySetRepeatMode) return;
+    overlaySetRepeatMode(repeatMode);
+  }, [syncPlayback, overlaySetRepeatMode, repeatMode]);
 
   useEffect(() => {
-    if (!syncPlayback || !overlayPlayback) return;
-    overlayPlayback.setVolume(volume);
-  }, [syncPlayback, overlayPlayback, volume]);
+    if (!syncPlayback || !overlaySetVolume) return;
+    overlaySetVolume(volume);
+  }, [syncPlayback, overlaySetVolume, volume]);
 
   useEffect(() => {
-    if (!syncPlayback || !overlayPlayback) return;
-    overlayPlayback.setPlaybackRate(playbackRate);
-  }, [syncPlayback, overlayPlayback, playbackRate]);
+    if (!syncPlayback || !overlaySetPlaybackRate) return;
+    overlaySetPlaybackRate(playbackRate);
+  }, [syncPlayback, overlaySetPlaybackRate, playbackRate]);
 
   useEffect(() => {
-    if (!syncPlayback || !overlayPlayback) return;
+    if (!syncPlayback || !overlaySetQueueMeta) return;
     if (!queueMode || !tracks?.length) {
-      overlayPlayback.setQueueMeta(null);
+      overlaySetQueueMeta(null);
       return;
     }
-    overlayPlayback.setQueueMeta({
+    overlaySetQueueMeta({
       currentIndex: currentTrackIndex,
       total: tracks.length,
     });
-  }, [syncPlayback, overlayPlayback, queueMode, tracks, currentTrackIndex]);
+  }, [syncPlayback, overlaySetQueueMeta, queueMode, tracks, currentTrackIndex]);
 
   useEffect(() => {
-    if (!syncPlayback || !overlayPlayback) return;
-    overlayPlayback.setActiveMaterialId(currentMaterialId ?? null);
-  }, [syncPlayback, overlayPlayback, currentMaterialId]);
+    if (!syncPlayback || !overlaySetActiveMaterialId) return;
+    overlaySetActiveMaterialId(currentMaterialId ?? null);
+  }, [syncPlayback, overlaySetActiveMaterialId, currentMaterialId]);
 
   useLayoutEffect(() => {
-    if (!syncPlayback || !overlayPlayback) return;
+    if (!syncPlayback || !overlayPlaybackApiRef || !overlayPlaybackToggleRef) return;
     const api: MusicPlaybackApi = {
       togglePlayPause,
       goPrevious: goToPrevious,
@@ -731,13 +741,21 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
         if (audioRef.current) audioRef.current.volume = nv;
       },
     };
-    overlayPlayback.playbackApiRef.current = api;
-    overlayPlayback.playbackToggleRef.current = togglePlayPause;
+    overlayPlaybackApiRef.current = api;
+    overlayPlaybackToggleRef.current = togglePlayPause;
     return () => {
-      overlayPlayback.playbackApiRef.current = null;
-      overlayPlayback.playbackToggleRef.current = null;
+      overlayPlaybackApiRef.current = null;
+      overlayPlaybackToggleRef.current = null;
     };
-  }, [syncPlayback, overlayPlayback, togglePlayPause, goToPrevious, goToNext, cycleRepeatMode]);
+  }, [
+    syncPlayback,
+    overlayPlaybackApiRef,
+    overlayPlaybackToggleRef,
+    togglePlayPause,
+    goToPrevious,
+    goToNext,
+    cycleRepeatMode,
+  ]);
 
   const handlePlaybackRateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const r = Number(e.target.value);

@@ -32,7 +32,11 @@
 
 // --- Header ---
 .header {
-  @include column(var(--spacing-xs));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
 }
 
 .legend {
@@ -211,4 +215,43 @@
   background-color: var(--color-accent-transparent);
   padding: var(--spacing-md);
   border-radius: var(--radius-md);
+}
+
+.syncButton {
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text-primary);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background-color: var(--color-background-hover);
+    border-color: var(--color-primary);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.statusMessage {
+  text-align: center;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+
+  &.success {
+    color: #a7f3d0;
+    background-color: #052e16;
+  }
+
+  &.error {
+    color: #fca5a5;
+    background-color: #450a0a;
+  }
 }
