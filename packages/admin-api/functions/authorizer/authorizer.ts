@@ -49,6 +49,12 @@ export const handler = middy()
         // --------------------------------------------------------------------------------
         const routeKey = event.routeKey; // Ex: "DELETE /groups/{groupSlug}/users"
         const requiredRoles = routePermissions[routeKey];
+        console.log("authorizer route check", {
+          routeKey,
+          userRole,
+          hasRequiredRoles: Boolean(requiredRoles),
+          requiredRoles: requiredRoles ? requiredRoles.join(",") : null,
+        });
 
         // Om endpointen inte finns i vår konfiguration, neka åtkomst för säkerhets skull.
         if (!requiredRoles) {

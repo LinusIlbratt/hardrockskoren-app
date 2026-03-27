@@ -54,11 +54,15 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   "GET /materials": RoleGroups.ALL_LOGGED_IN,
   "GET /practice/materials": RoleGroups.ALL_LOGGED_IN,
   "DELETE /materials/{materialId}": RoleGroups.ADMIN_ONLY,
+  "PATCH /materials/{materialId}": RoleGroups.ADMIN_ONLY,
   "POST /materials/batch-delete": RoleGroups.ADMIN_ONLY,
+  "POST /materials/sync-all-repertoires": RoleGroups.ADMIN_ONLY,
   "GET /my-materials": RoleGroups.ALL_LOGGED_IN, // <-- KORRIGERAD
   "POST /groups/{groupName}/repertoires": RoleGroups.MANAGEMENT,
   "GET /groups/{groupName}/repertoires": RoleGroups.ALL_LOGGED_IN,
   "DELETE /groups/{groupName}/repertoires/{repertoireId}":
+    RoleGroups.MANAGEMENT,
+  "POST /groups/{groupName}/repertoires/{repertoireId}/sync-library-folder":
     RoleGroups.MANAGEMENT,
   "GET /groups/{groupName}/repertoires/{repertoireId}/materials":
     RoleGroups.ALL_LOGGED_IN,
