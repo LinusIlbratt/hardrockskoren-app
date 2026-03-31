@@ -81,6 +81,8 @@ export interface RepertoireMusicPlayerPanelProps {
   /** Spelläge: favoriter / bibliotek utan repertoar-sidebar */
   libraryQueueMaterials?: Material[] | null;
   libraryPlaybackIntent?: LibraryPlaybackIntent | null;
+  /** Sjung upp: kö från bibliotek men repertoar ska laddas och visas. */
+  libraryPlaybackWithRepertoire?: boolean;
   /** Direkt öppning av repertoar (normalt läge — sidebar "Repertoar" synlig). */
   initialRepertoireId?: string | null;
   initialPlaylistId?: string | null;
@@ -95,6 +97,7 @@ export function RepertoireMusicPlayerPanel({
   shellTitleId,
   libraryQueueMaterials = null,
   libraryPlaybackIntent = null,
+  libraryPlaybackWithRepertoire = false,
   initialRepertoireId = null,
   initialPlaylistId = null,
   repertoirePlaybackIntent = null,
@@ -163,7 +166,9 @@ export function RepertoireMusicPlayerPanel({
       window.matchMedia("(max-width: 767px)").matches,
   );
 
-  const isLibraryMode = Boolean(libraryQueueMaterials?.length);
+  const hasLibraryPlaybackQueue = Boolean(libraryQueueMaterials?.length);
+  const isStandaloneLibrarySession =
+    hasLibraryPlaybackQueue && !libraryPlaybackWithRepertoire;
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -187,10 +192,10 @@ export function RepertoireMusicPlayerPanel({
     if (!isMobileShell) return;
     if (isPlaylistSelected) {
       setMobileBrowseMode("playlists");
-    } else if (!isLibraryMode && isRepertoireSelected) {
+    } else if (!isStandaloneLibrarySession && isRepertoireSelected) {
       setMobileBrowseMode("repertoires");
     }
-  }, [isMobileShell, isLibraryMode, isPlaylistSelected, isRepertoireSelected]);
+  }, [isMobileShell, isStandaloneLibrarySession, isPlaylistSelected, isRepertoireSelected]);
   const resumeAttemptKeyRef = useRef<string | null>(null);
   const repertoireBootstrapKeyRef = useRef<string | null>(null);
 
@@ -244,17 +249,22 @@ export function RepertoireMusicPlayerPanel({
 
   /** Byt key bara när köns identitet ändras — inte vid spårbyte (samma lista), så MediaPlayer kan följa initialTrackIndex utan remount. */
   const mediaPlayerMountKey = useMemo(() => {
-    if (isLibraryMode && playerQueue.length > 0) {
+    if (hasLibraryPlaybackQueue && playerQueue.length > 0) {
       const sig = hashMediaSourcesKey(playerQueue.map((t) => t.src));
       return `lib-${groupName}-${sig}`;
     }
     if (!selectedId || playerQueue.length === 0) return "idle";
     const sig = hashMediaSourcesKey(playerQueue.map((t) => t.src));
     return `${selectedId}-${sig}`;
-  }, [isLibraryMode, groupName, selectedId, playerQueue]);
+  }, [hasLibraryPlaybackQueue, groupName, selectedId, playerQueue]);
 
   const persistProgressKey = useMemo(() => {
-    if (isLibraryMode) {
+    if (hasLibraryPlaybackQueue) {
+      if (libraryPlaybackWithRepertoire) {
+        const ids =
+          libraryQueueMaterials?.map((m) => m.materialId).join("-") ?? "";
+        return `library-practice-${groupName}-${ids}`;
+      }
       return `library-favorites-${groupName}`;
     }
     if (selectedId && selectedId !== LIBRARY_SELECTED_ID) {
@@ -267,7 +277,14 @@ export function RepertoireMusicPlayerPanel({
       return `grp-${groupName}-rep-${selectedId}`;
     }
     return undefined;
-  }, [isLibraryMode, groupName, selectedId, playlists]);
+  }, [
+    hasLibraryPlaybackQueue,
+    libraryPlaybackWithRepertoire,
+    libraryQueueMaterials,
+    groupName,
+    selectedId,
+    playlists,
+  ]);
 
   const fetchRepertoires = useCallback(async () => {
     if (!groupName) return;
@@ -288,9 +305,9 @@ export function RepertoireMusicPlayerPanel({
   }, [groupName, getAuthHeaders]);
 
   useEffect(() => {
-    if (isLibraryMode) return;
+    if (isStandaloneLibrarySession) return;
     fetchRepertoires();
-  }, [isLibraryMode, fetchRepertoires]);
+  }, [isStandaloneLibrarySession, fetchRepertoires]);
 
   const fetchMaterials = useCallback(
     async (repertoireId: string) => {
@@ -356,7 +373,9 @@ export function RepertoireMusicPlayerPanel({
     setLoadingList(false);
     setLoadingTracks(false);
     setError(null);
-    setRepertoires([]);
+    if (!libraryPlaybackWithRepertoire) {
+      setRepertoires([]);
+    }
 
     const tracks = buildTracksFromMaterials(libraryQueueMaterials);
     const intent: LibraryPlaybackIntent = libraryPlaybackIntent ?? "browse";
@@ -379,7 +398,12 @@ export function RepertoireMusicPlayerPanel({
       setHighlightedTrackIndex(safe);
       setPlayerQueue(tracks);
     }
-  }, [libraryQueueMaterials, libraryPlaybackIntent, buildTracksFromMaterials]);
+  }, [
+    libraryQueueMaterials,
+    libraryPlaybackIntent,
+    libraryPlaybackWithRepertoire,
+    buildTracksFromMaterials,
+  ]);
 
   const handlePlayTrackAt = (index: number) => {
     setActiveDropdownId(null);
@@ -394,11 +418,7 @@ export function RepertoireMusicPlayerPanel({
   };
 
   const handleToRepertoires = () => {
-    if (isLibraryMode && viewer === "member") {
-      navigate(`/user/me/${groupName}/library`);
-    } else {
-      navigate(repertoiresHref);
-    }
+    navigate(repertoiresHref);
     onExitSession();
   };
 
@@ -579,7 +599,7 @@ export function RepertoireMusicPlayerPanel({
   }, [showDeleteConfirm, closeDeletePlaylistConfirm]);
 
   useEffect(() => {
-    if (!groupName?.trim() || isLibraryMode) return;
+    if (!groupName?.trim() || isStandaloneLibrarySession) return;
     if (!selectedId || selectedId === LIBRARY_SELECTED_ID) return;
     if (playerQueue.length === 0) return;
     const isPlaylist = playlists.some((p) => p.playlistId === selectedId);
@@ -610,7 +630,7 @@ export function RepertoireMusicPlayerPanel({
     }
   }, [
     groupName,
-    isLibraryMode,
+    isStandaloneLibrarySession,
     selectedId,
     playlists,
     playerQueue.length,
@@ -625,7 +645,7 @@ export function RepertoireMusicPlayerPanel({
   }, [pendingResume]);
 
   useEffect(() => {
-    if (!pendingResume || isLibraryMode) return;
+    if (!pendingResume || isStandaloneLibrarySession) return;
 
     const key =
       pendingResume.source === "repertoire"
@@ -670,7 +690,7 @@ export function RepertoireMusicPlayerPanel({
     }
   }, [
     pendingResume,
-    isLibraryMode,
+    isStandaloneLibrarySession,
     selectedId,
     loadingTracks,
     audioMaterials,
@@ -689,7 +709,7 @@ export function RepertoireMusicPlayerPanel({
    * Körs inte när pendingResume eller library-läge är aktivt.
    */
   useEffect(() => {
-    if (isLibraryMode || pendingResume) return;
+    if (isStandaloneLibrarySession || pendingResume) return;
     const rid = initialRepertoireId?.trim();
     const plid = initialPlaylistId?.trim();
     if (!rid && !plid) return;
@@ -746,7 +766,7 @@ export function RepertoireMusicPlayerPanel({
     clearInitialRepertoireLaunch();
     repertoireBootstrapKeyRef.current = keyBase;
   }, [
-    isLibraryMode,
+    isStandaloneLibrarySession,
     pendingResume,
     initialRepertoireId,
     initialPlaylistId,
@@ -787,17 +807,29 @@ export function RepertoireMusicPlayerPanel({
   const selectedRepertoireTitle = repertoires.find(
     (r) => r.repertoireId === selectedId,
   )?.title;
-  const isFavoritesView = selectedId === LIBRARY_SELECTED_ID || isLibraryMode;
+  const isFavoritesView =
+    (selectedId === LIBRARY_SELECTED_ID && !libraryPlaybackWithRepertoire) ||
+    isStandaloneLibrarySession;
+  const isPracticeQueueView =
+    libraryPlaybackWithRepertoire &&
+    selectedId === LIBRARY_SELECTED_ID &&
+    hasLibraryPlaybackQueue;
   const selectedTitle = isFavoritesView
     ? "Mina favoriter"
-    : (selectedPlaylistTitle ?? selectedRepertoireTitle);
+    : isPracticeQueueView
+      ? formatDisplayTitle(
+          materials[0]?.title ||
+            materials[0]?.fileKey?.split("/").pop() ||
+            "Sjung upp",
+        ) || "Sjung upp"
+      : (selectedPlaylistTitle ?? selectedRepertoireTitle);
   const heroArtworkInitial = (selectedTitle || "?").charAt(0).toUpperCase();
 
   const showMobilePlaylistPicker =
     isMobileShell && mobileBrowseMode === "playlists" && !isPlaylistSelected;
   const showMobileRepertoirePicker =
     isMobileShell &&
-    !isLibraryMode &&
+    !isStandaloneLibrarySession &&
     mobileBrowseMode === "repertoires" &&
     !isRepertoireSelected;
   const showMobileBackBar =
@@ -809,11 +841,11 @@ export function RepertoireMusicPlayerPanel({
   const showShellMainWatermark =
     !showMobilePlaylistPicker &&
     !showMobileRepertoirePicker &&
-    (Boolean(selectedId) || isLibraryMode);
+    (Boolean(selectedId) || isStandaloneLibrarySession);
 
   const shellBodyClass = [
     styles.shellBody,
-    isLibraryMode ? styles.shellBodyLibrary : "",
+    isStandaloneLibrarySession ? styles.shellBodyLibrary : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -861,7 +893,7 @@ export function RepertoireMusicPlayerPanel({
           <button
             type="button"
             className={`${styles.shellMobileIconBtn} ${
-              selectedId === LIBRARY_SELECTED_ID || isLibraryMode
+              selectedId === LIBRARY_SELECTED_ID || isStandaloneLibrarySession
                 ? `${styles.shellMobileIconBtnActive} ${styles.shellMobileIconFavoritesActive}`
                 : ""
             }`}
@@ -878,7 +910,7 @@ export function RepertoireMusicPlayerPanel({
                   size={24}
                   strokeWidth={1.75}
                   fill={
-                    selectedId === LIBRARY_SELECTED_ID || isLibraryMode
+                    selectedId === LIBRARY_SELECTED_ID || isStandaloneLibrarySession
                       ? "currentColor"
                       : "none"
                   }
@@ -909,7 +941,7 @@ export function RepertoireMusicPlayerPanel({
               <span className={styles.shellMobileIconLabel}>Spellistor</span>
             </span>
           </button>
-          {!isLibraryMode && (
+          {!isStandaloneLibrarySession && (
             <button
               type="button"
               className={`${styles.shellMobileIconBtn} ${
@@ -960,7 +992,7 @@ export function RepertoireMusicPlayerPanel({
               <li>
                 <button
                   type="button"
-                  className={`${styles.playlistSidebarItem} ${isLibraryMode ? styles.playlistSidebarItemActive : ""}`}
+                  className={`${styles.playlistSidebarItem} ${isStandaloneLibrarySession ? styles.playlistSidebarItemActive : ""}`}
                   onClick={handlePlayFavorites}
                 >
                   <Heart
@@ -1369,7 +1401,7 @@ export function RepertoireMusicPlayerPanel({
                 </ul>
               )}
             </div>
-          ) : !selectedId && !isLibraryMode ? (
+          ) : !selectedId && !isStandaloneLibrarySession ? (
             /* ── welcome state ── */
             <div className={styles.emptyMain}>
               <Disc3 size={64} className={styles.emptyIcon} aria-hidden />
@@ -1382,7 +1414,7 @@ export function RepertoireMusicPlayerPanel({
                   : "Välj en låt i biblioteket till höger för att lyssna eller spara i en egen låtlista."}
               </p>
             </div>
-          ) : !selectedId && isLibraryMode ? (
+          ) : !selectedId && isStandaloneLibrarySession ? (
             <div className={styles.trackMainSurface}>
               <div
                 className={styles.trackSurfaceLoading}
@@ -1442,12 +1474,12 @@ export function RepertoireMusicPlayerPanel({
                   <div className={styles.emptyMain}>
                     <Music size={48} className={styles.emptyIcon} aria-hidden />
                     <h2 className={styles.emptyTitle}>
-                      {selectedId === LIBRARY_SELECTED_ID || isLibraryMode
+                      {selectedId === LIBRARY_SELECTED_ID || isStandaloneLibrarySession
                         ? "Inga favoriter ännu"
                         : "Inga ljudfiler"}
                     </h2>
                     <p className={styles.emptyDescription}>
-                      {selectedId === LIBRARY_SELECTED_ID || isLibraryMode
+                      {selectedId === LIBRARY_SELECTED_ID || isStandaloneLibrarySession
                         ? "Du har inga favoriter ännu. Markera låtar med hjärtat för att samla dem här."
                         : "Det finns inga uppspelbara ljudfiler i den här låtlistan ännu."}
                     </p>
@@ -1697,7 +1729,7 @@ export function RepertoireMusicPlayerPanel({
         </section>
 
         {/* ── repertoire sidebar (right) ── */}
-        {!isLibraryMode && (
+        {!isStandaloneLibrarySession && (
           <aside className={styles.sidebar} aria-label="Repertoar">
             <h2 className={styles.sidebarTitle}>Repertoar</h2>
             {loadingList ? (
