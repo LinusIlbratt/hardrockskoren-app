@@ -3,6 +3,7 @@ import {
   ScanCommand,
   QueryCommand,
   BatchWriteItemCommand,
+  type AttributeValue,
   WriteRequest,
 } from "@aws-sdk/client-dynamodb";
 import {
@@ -26,6 +27,46 @@ function toChunks<T>(arr: T[], size: number): T[][] {
     out.push(arr.slice(i, i + size));
   }
   return out;
+}
+
+async function queryAllItems(input: ConstructorParameters<typeof QueryCommand>[0]) {
+  const items: NonNullable<Awaited<ReturnType<typeof dbClient.send>>["Items"]> = [];
+  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
+
+  do {
+    const resp = await dbClient.send(
+      new QueryCommand({
+        ...input,
+        ExclusiveStartKey: lastEvaluatedKey,
+      })
+    );
+    if (resp.Items?.length) {
+      items.push(...resp.Items);
+    }
+    lastEvaluatedKey = resp.LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  return items;
+}
+
+async function scanAllItems(input: ConstructorParameters<typeof ScanCommand>[0]) {
+  const items: NonNullable<Awaited<ReturnType<typeof dbClient.send>>["Items"]> = [];
+  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
+
+  do {
+    const resp = await dbClient.send(
+      new ScanCommand({
+        ...input,
+        ExclusiveStartKey: lastEvaluatedKey,
+      })
+    );
+    if (resp.Items?.length) {
+      items.push(...resp.Items);
+    }
+    lastEvaluatedKey = resp.LastEvaluatedKey;
+  } while (lastEvaluatedKey);
+
+  return items;
 }
 
 export const handler = async (
@@ -124,53 +165,49 @@ export const handler = async (
     const searchPrefix = `${normalizedFolderPath}/`;
 
     // 1) Find all materials currently in the library folder (via GSI2)
-    let folderMaterialsResp;
+    let folderMaterialItems;
     try {
-      folderMaterialsResp = await dbClient.send(
-        new QueryCommand({
-          TableName: MAIN_TABLE,
-          IndexName: "GSI2",
-          KeyConditionExpression: "GSI1PK = :gsi1pk AND begins_with(filePath, :prefix)",
-          ExpressionAttributeValues: {
-            ":gsi1pk": { S: "MATERIALS" },
-            ":prefix": { S: searchPrefix },
-          },
-          ProjectionExpression: "materialId",
-        })
-      );
+      folderMaterialItems = await queryAllItems({
+        TableName: MAIN_TABLE,
+        IndexName: "GSI2",
+        KeyConditionExpression: "GSI1PK = :gsi1pk AND begins_with(filePath, :prefix)",
+        ExpressionAttributeValues: {
+          ":gsi1pk": { S: "MATERIALS" },
+          ":prefix": { S: searchPrefix },
+        },
+        ProjectionExpression: "materialId",
+      });
     } catch (e) {
       console.error("syncAll: query folder materials failed", e);
       return sendError(500, `Failed to query library materials: ${toErrMsg(e)}`);
     }
     const folderMaterialIds = new Set(
-      (folderMaterialsResp.Items || [])
+      (folderMaterialItems || [])
         .map((item) => unmarshall(item) as { materialId?: string })
         .map((m) => (m.materialId || "").trim())
         .filter((id) => id.length > 0)
     );
 
     // 2) Scan for all Repertoire items whose title matches the folder path
-    let scanResp;
+    let scannedRepertoireItems;
     try {
-      scanResp = await dbClient.send(
-        new ScanCommand({
-          TableName: MAIN_TABLE,
-          FilterExpression: "#type = :type AND title = :title",
-          ExpressionAttributeNames: { "#type": "type" },
-          ExpressionAttributeValues: {
-            ":type": { S: "Repertoire" },
-            ":title": { S: normalizedFolderPath },
-          },
-          // groupName is derived from PK (stored as "GROUP#{groupName}") on Repertoire items.
-          ProjectionExpression: "repertoireId, PK",
-        })
-      );
+      scannedRepertoireItems = await scanAllItems({
+        TableName: MAIN_TABLE,
+        FilterExpression: "#type = :type AND title = :title",
+        ExpressionAttributeNames: { "#type": "type" },
+        ExpressionAttributeValues: {
+          ":type": { S: "Repertoire" },
+          ":title": { S: normalizedFolderPath },
+        },
+        // groupName is derived from PK (stored as "GROUP#{groupName}") on Repertoire items.
+        ProjectionExpression: "repertoireId, PK",
+      });
     } catch (e) {
       console.error("syncAll: scan repertoires failed", e);
       return sendError(500, `Failed to scan repertoires: ${toErrMsg(e)}`);
     }
 
-    const matchingRepertoires = (scanResp.Items || []).map(
+    const matchingRepertoires = (scannedRepertoireItems || []).map(
       (item) =>
         unmarshall(item) as { repertoireId?: string; PK?: string }
     );
@@ -202,25 +239,23 @@ export const handler = async (
       const groupName = pk.startsWith("GROUP#") ? pk.slice("GROUP#".length) : "";
 
       if (!repertoireId || !groupName) continue; // defensive: skip malformed items
-      let repertoireLinksResp;
+      let repertoireLinkItems;
       try {
-        repertoireLinksResp = await dbClient.send(
-          new QueryCommand({
-            TableName: MAIN_TABLE,
-            KeyConditionExpression: "PK = :pk AND begins_with(SK, :skPrefix)",
-            ExpressionAttributeValues: {
-              ":pk": { S: `REPERTOIRE#${repertoireId}` },
-              ":skPrefix": { S: "MATERIAL#" },
-            },
-            ProjectionExpression: "materialId",
-          })
-        );
+        repertoireLinkItems = await queryAllItems({
+          TableName: MAIN_TABLE,
+          KeyConditionExpression: "PK = :pk AND begins_with(SK, :skPrefix)",
+          ExpressionAttributeValues: {
+            ":pk": { S: `REPERTOIRE#${repertoireId}` },
+            ":skPrefix": { S: "MATERIAL#" },
+          },
+          ProjectionExpression: "materialId",
+        });
       } catch (e) {
         console.error("syncAll: query repertoire links failed", e);
         return sendError(500, `Failed to query repertoire links for ${repertoireId}: ${toErrMsg(e)}`);
       }
       const linkedMaterialIds = new Set(
-        (repertoireLinksResp.Items || [])
+        (repertoireLinkItems || [])
           .map((item) => unmarshall(item) as { materialId?: string })
           .map((m) => (m.materialId || "").trim())
           .filter((id) => id.length > 0)
