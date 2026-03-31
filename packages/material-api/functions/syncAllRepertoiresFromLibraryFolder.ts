@@ -5,12 +5,20 @@ import {
   BatchWriteItemCommand,
   WriteRequest,
 } from "@aws-sdk/client-dynamodb";
+import {
+  CognitoIdentityProviderClient,
+  AdminGetUserCommand,
+} from "@aws-sdk/client-cognito-identity-provider";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../core/utils/http";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
+const cognitoClient = new CognitoIdentityProviderClient({
+  region: process.env.AWS_REGION,
+});
 const MAIN_TABLE = process.env.MAIN_TABLE;
+const COGNITO_USER_POOL_ID = process.env.COGNITO_USER_POOL_ID;
 
 function toChunks<T>(arr: T[], size: number): T[][] {
   const out: T[][] = [];
@@ -23,8 +31,11 @@ function toChunks<T>(arr: T[], size: number): T[][] {
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResultV2> => {
-  if (!MAIN_TABLE) {
-    console.error("syncAll: MAIN_TABLE env var missing");
+  if (!MAIN_TABLE || !COGNITO_USER_POOL_ID) {
+    console.error("syncAll: missing required env vars", {
+      hasMainTable: Boolean(MAIN_TABLE),
+      hasUserPoolId: Boolean(COGNITO_USER_POOL_ID),
+    });
     return sendError(500, "Server configuration error.");
   }
 
@@ -56,14 +67,40 @@ export const handler = async (
   };
 
   try {
-    const role = event.requestContext.authorizer?.lambda?.role;
+    const roleFromAuthorizer = event.requestContext.authorizer?.lambda?.role;
+    const userId = event.requestContext.authorizer?.lambda?.uuid;
     console.log("syncAll: invoked", {
-      role,
+      roleFromAuthorizer,
+      hasUserId: Boolean(userId),
       routeKey: (event as any).routeKey,
       path: event.rawPath,
     });
-    if (!role || role !== "admin") {
-      console.warn("syncAll: forbidden", { role });
+
+    let resolvedRole = roleFromAuthorizer;
+
+    // Fallback to Cognito so role checks stay correct even if authorizer claims drift.
+    if (userId) {
+      try {
+        const userResponse = await cognitoClient.send(
+          new AdminGetUserCommand({
+            UserPoolId: COGNITO_USER_POOL_ID,
+            Username: userId,
+          })
+        );
+        const roleAttribute = userResponse.UserAttributes?.find(
+          (attr) => attr.Name === "custom:role"
+        );
+        if (roleAttribute?.Value) {
+          resolvedRole = roleAttribute.Value;
+        }
+      } catch (e) {
+        console.error("syncAll: failed to resolve user role from Cognito", e);
+        return sendError(500, `Failed to verify admin role: ${toErrMsg(e)}`);
+      }
+    }
+
+    if (resolvedRole !== "admin") {
+      console.warn("syncAll: forbidden", { roleFromAuthorizer, resolvedRole, hasUserId: Boolean(userId) });
       return sendError(403, "Forbidden: Admin access required.");
     }
 

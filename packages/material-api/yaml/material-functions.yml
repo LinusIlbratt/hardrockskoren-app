@@ -386,11 +386,11 @@ syncAllRepertoiresFromLibraryFolder:
     - httpApi:
         method: POST
         path: /materials/sync-all-repertoires
-        # TEST: disable authorizer temporarily to verify where the 500 originates.
-        # authorizer:
-        #   name: centralJwtAuthorizer
+        authorizer:
+          name: centralJwtAuthorizer
   environment:
     MAIN_TABLE: ${self:custom.mainTableName}
+    COGNITO_USER_POOL_ID: ${self:custom.userPoolId}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
@@ -400,6 +400,9 @@ syncAllRepertoiresFromLibraryFolder:
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI2"
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminGetUser"]
+      Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
 
 syncRepertoireFromLibraryFolder:
   handler: functions/syncRepertoireFromLibraryFolder.handler
