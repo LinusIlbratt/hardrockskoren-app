@@ -9,15 +9,12 @@ import { S3Client, DeleteObjectsCommand, ObjectIdentifier } from "@aws-sdk/clien
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../core/utils/http";
-import { CognitoIdentityProviderClient, AdminGetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
-const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
 
 const MAIN_TABLE = process.env.MAIN_TABLE;
 const BUCKET_NAME = process.env.MEDIA_BUCKET_NAME;
-const COGNITO_USER_POOL_ID = process.env.COGNITO_USER_POOL_ID;
 
 const BATCH_SIZE = 25;
 const MAX_RETRIES = 5;
@@ -95,26 +92,26 @@ async function batchWriteDeletesWithRetry(writeRequests: WriteRequest[]): Promis
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResultV2> => {
-  if (!MAIN_TABLE || !BUCKET_NAME || !COGNITO_USER_POOL_ID) {
+  if (!MAIN_TABLE || !BUCKET_NAME) {
     return sendError(500, "Server configuration error.");
   }
 
   try {
-    const userId = event.requestContext.authorizer?.lambda?.uuid;
-    if (!userId) {
-      return sendError(403, "Forbidden: User not identifiable.");
-    }
-    const userCommand = new AdminGetUserCommand({ UserPoolId: COGNITO_USER_POOL_ID, Username: userId });
-    const userResponse = await cognitoClient.send(userCommand);
-    const roleAttribute = userResponse.UserAttributes?.find((attr) => attr.Name === "custom:role");
-    if (roleAttribute?.Value !== "admin") {
+    const role = event.requestContext.authorizer?.lambda?.role as string | undefined;
+    if (role !== "admin") {
       return sendError(403, "Forbidden: You do not have permission.");
     }
 
     if (!event.body) {
       return sendError(400, "Request body is required.");
     }
-    const { materialIds: rawIds } = JSON.parse(event.body) as { materialIds?: unknown };
+    let parsed: { materialIds?: unknown };
+    try {
+      parsed = JSON.parse(event.body) as { materialIds?: unknown };
+    } catch {
+      return sendError(400, "Invalid JSON body.");
+    }
+    const { materialIds: rawIds } = parsed;
     if (!Array.isArray(rawIds) || rawIds.length === 0) {
       return sendError(400, "An array of materialIds is required.");
     }
@@ -166,10 +163,11 @@ export const handler = async (
         .map((r) => r.materialId)
         .filter((mid): mid is string => typeof mid === "string" && mid.length > 0);
 
-      const keysToDeleteFromS3: ObjectIdentifier[] = globalRows
+      const s3Keys = globalRows
         .map((item) => item.fileKey)
-        .filter((k): k is string => typeof k === "string" && k.length > 0)
-        .map((key) => ({ Key: key }));
+        .filter((k): k is string => typeof k === "string" && k.length > 0);
+      const uniqueKeys = [...new Set(s3Keys)];
+      const keysToDeleteFromS3: ObjectIdentifier[] = uniqueKeys.map((key) => ({ Key: key }));
 
       if (keysToDeleteFromS3.length > 0) {
         const delResult = await s3Client.send(
