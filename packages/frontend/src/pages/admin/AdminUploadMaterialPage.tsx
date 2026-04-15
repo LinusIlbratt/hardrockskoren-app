@@ -47,6 +47,22 @@ const getAllMaterialIdsInFolder = (folderNode: FolderNode): string[] => {
   );
 };
 
+/** Undvik API Gateway/Lambda-timeout vid många filer; backend processar redan i chunk om 25. */
+const BATCH_DELETE_MAX_IDS = 150;
+
+function apiErrorMessage(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null) return undefined;
+  const err = error as { response?: { data?: unknown; status?: number }; code?: string };
+  const data = err.response?.data;
+  if (data && typeof data === 'object' && data !== null && 'message' in data && typeof (data as { message: string }).message === 'string') {
+    return (data as { message: string }).message;
+  }
+  if (err.response?.status === 504 || err.code === 'ECONNABORTED') {
+    return 'Begäran tog för länge. Försök igen; vid många filer raderas de nu i flera omgångar.';
+  }
+  return undefined;
+}
+
 // --- KOMPONENT FÖR MAPP-RADER (Flyttad utanför huvudkomponenten) ---
 interface MaterialFolderItemProps {
   node: FolderNode;
@@ -159,11 +175,22 @@ export const AdminUploadMaterialPage = () => {
     setStatusMessage(null);
     const token = localStorage.getItem('authToken');
     try {
-      await axios.post(`${API_BASE_URL}/materials/batch-delete`, { materialIds: ids }, { headers: { Authorization: `Bearer ${token}` } });
+      for (let i = 0; i < ids.length; i += BATCH_DELETE_MAX_IDS) {
+        const chunk = ids.slice(i, i + BATCH_DELETE_MAX_IDS);
+        await axios.post(
+          `${API_BASE_URL}/materials/batch-delete`,
+          { materialIds: chunk },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
       setStatusMessage({ type: 'success', message: `Mappen "${folderName}" har raderats.` });
       await fetchMaterials(); // Hämta den uppdaterade listan
     } catch (error) {
-      setStatusMessage({ type: 'error', message: 'Kunde inte radera mappen.' });
+      const detail = apiErrorMessage(error);
+      setStatusMessage({
+        type: 'error',
+        message: detail ?? 'Kunde inte radera mappen.',
+      });
     } finally {
       setDeletingFolder(null); // CHANGED: Nollställ oavsett resultat
     }

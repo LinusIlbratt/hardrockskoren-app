@@ -213,6 +213,9 @@ batchDeleteGlobalMaterials:
     handler: functions/batchDeleteGlobalMaterials.handler
     name: hrk-batch-delete-global-materials-${sls:stage}
     description: Deletes multiple global materials from DynamoDB and S3. (Admin only)
+    # HTTP API Lambda-integration max ~30s; default Lambda 6s is too low for large folders.
+    timeout: 29
+    memorySize: 512
     events:
       - httpApi:
           method: POST # Använder POST för att kunna skicka med en body
@@ -222,7 +225,6 @@ batchDeleteGlobalMaterials:
     environment:
       MAIN_TABLE: ${self:custom.mainTableName}
       MEDIA_BUCKET_NAME: ${self:custom.mediaBucketName}
-      COGNITO_USER_POOL_ID: ${self:custom.userPoolId}
     iamRoleStatements:
       - Effect: "Allow"
         Action:
@@ -231,11 +233,8 @@ batchDeleteGlobalMaterials:
         Resource: ["arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"]
       - Effect: "Allow"
         Action:
-          - "s3:DeleteObjects"        # Ny, effektivare behörighet
+          - "s3:DeleteObject"
         Resource: ["arn:aws:s3:::${self:custom.mediaBucketName}/*"]
-      - Effect: "Allow"
-        Action: ["cognito-idp:AdminGetUser"]
-        Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
 
 createRepertoire:
   handler: functions/createRepertoire.handler
@@ -470,7 +469,7 @@ batchDeletePracticeMaterials:
         Resource: ["arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"]
       - Effect: "Allow"
         Action:
-          - "s3:DeleteObjects"        # Ny, effektivare behörighet
+          - "s3:DeleteObject"
         Resource: ["arn:aws:s3:::${self:custom.mediaBucketName}/*"]
       - Effect: "Allow"
         Action: ["cognito-idp:AdminGetUser"]
