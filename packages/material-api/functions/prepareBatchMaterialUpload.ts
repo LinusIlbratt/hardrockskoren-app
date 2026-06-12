@@ -22,6 +22,9 @@ const MAIN_TABLE = process.env.MAIN_TABLE;
 const BUCKET_NAME = process.env.MEDIA_BUCKET_NAME;
 const COGNITO_USER_POOL_ID = process.env.COGNITO_USER_POOL_ID;
 
+/** DynamoDB TransactWriteItems tillåter max 25 items; marginal för framtida utökning. */
+const MAX_FILES_PER_BATCH = 20;
+
 // <-- ÄNDRING: Tydligare interface för vad vi förväntar oss från frontend
 interface FilePayload {
   fileName: string;
@@ -55,6 +58,12 @@ export const handler = async (
     const { files }: { files: FilePayload[] } = JSON.parse(event.body); // <-- ÄNDRING: Använd vårt nya interface
     if (!files || !Array.isArray(files) || files.length === 0) {
       return sendError(400, "Request requires a non-empty 'files' array.");
+    }
+    if (files.length > MAX_FILES_PER_BATCH) {
+      return sendError(
+        400,
+        `Högst ${MAX_FILES_PER_BATCH} filer kan laddas upp åt gången.`
+      );
     }
 
     const dbWriteItems: TransactWriteItem[] = [];

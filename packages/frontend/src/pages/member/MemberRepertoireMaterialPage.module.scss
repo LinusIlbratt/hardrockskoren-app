@@ -151,6 +151,26 @@
   }
 }
 
+.playButtonActive {
+  color: var(--color-primary);
+}
+
+.playIconPulse {
+  animation: hrkPlayPulse 1.1s ease-in-out infinite;
+}
+
+@keyframes hrkPlayPulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.72;
+    transform: scale(0.94);
+  }
+}
+
 // Specifik stil för view-knappen
 .viewButton {
   color: var(--color-icon-view);

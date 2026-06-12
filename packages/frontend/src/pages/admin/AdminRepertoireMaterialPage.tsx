@@ -7,7 +7,11 @@ import { FiFolder, FiMusic, FiFileText, FiFile, FiChevronRight, FiArrowLeft } fr
 import styles from './AdminRepertoireMaterialPage.module.scss';
 import type { Material } from '@/types';
 import { MediaModal } from '@/components/ui/modal/MediaModal';
-import { MediaPlayer } from '@/components/media/MediaPlayer';
+import {
+  useMusicPlayerOverlay,
+  type MusicPlayerViewer,
+} from '@/context/MusicPlayerOverlayContext';
+import { isPlayableAudioFile } from '@/utils/media';
 
 // --- TYPER ---
 // FIX: Lade till 'displayName' för att visa ett städat mappnamn.
@@ -21,7 +25,12 @@ interface FileItem { type: 'file'; material: Material; }
 type DirectoryItem = FolderItem | FileItem;
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
-const FILE_BASE_URL = import.meta.env.VITE_S3_BUCKET_URL;
+
+function musicViewerFromPathname(pathname: string): MusicPlayerViewer {
+  if (pathname.startsWith('/leader/')) return 'leader';
+  if (pathname.startsWith('/admin/')) return 'admin';
+  return 'member';
+}
 
 // --- HJÄLPFUNKTIONER ---
 const getIconForFile = (fileName: string = '') => {
@@ -33,6 +42,54 @@ const getIconForFile = (fileName: string = '') => {
 const isAudioFile = (fileKey: string = '') => /\.(mp3|wav|m4a|ogg)$/i.test(fileKey);
 const isVideoFile = (fileKey: string = '') => /\.(mp4|mov|webm|avi)$/i.test(fileKey);
 const isDocumentFile = (fileKey: string = '') => /\.(pdf|txt|doc|docx)$/i.test(fileKey);
+
+const STEM_PRIORITY = [
+  'sopran',
+  'alt',
+  'tenor',
+  'bas',
+  'kor',
+  'backtrack',
+] as const;
+
+const STEM_ALIASES: Record<(typeof STEM_PRIORITY)[number], string[]> = {
+  sopran: ['sopran', 'soprano', 'sop', 'sop1', 'sop2'],
+  alt: ['alt', 'alto', 'alt1', 'alt2'],
+  tenor: ['tenor', 'ten', 'ten1', 'ten2'],
+  bas: ['bas', 'bass', 'bariton'],
+  kor: ['kor', 'kör', 'choir', 'alla'],
+  backtrack: ['backtrack', 'backingtrack', 'instrumental', 'karaoke', 'bt'],
+};
+
+function normalizeForStemSort(raw: string): string {
+  return raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\.(mp3|wav|m4a|ogg|pdf|txt|doc|docx|mp4|mov|webm|avi)$/i, '')
+    .replace(/[_-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function getStemPriority(rawName: string): number {
+  const normalized = normalizeForStemSort(rawName);
+  if (!normalized) return 999;
+
+  for (let i = 0; i < STEM_PRIORITY.length; i += 1) {
+    const key = STEM_PRIORITY[i];
+    const aliases = STEM_ALIASES[key];
+    if (aliases.some((alias) => normalized.includes(alias))) {
+      return i;
+    }
+  }
+  return 999;
+}
+
+function getItemSortName(item: DirectoryItem): string {
+  if (item.type === 'folder') return item.displayName || item.name;
+  return item.material.title || item.material.filePath || item.material.fileKey || '';
+}
 
 // FIX: Uppdaterad funktion för att skapa och sortera på 'displayName'.
 const parseRepertoireContents = (
@@ -58,6 +115,9 @@ const parseRepertoireContents = (
 
     if (pathParts.length > 1) {
       const subFolderName = pathParts[0];
+      if (subFolderName === '.DS_Store') {
+        return;
+      }
       if (!directoryMap.has(subFolderName)) {
         
         let displayName = subFolderName;
@@ -77,6 +137,9 @@ const parseRepertoireContents = (
       }
     } else {
       const fileName = pathParts[0];
+      if (fileName === '.DS_Store') {
+        return;
+      }
       if (!directoryMap.has(fileName)) {
         directoryMap.set(fileName, { type: 'file', material });
       }
@@ -84,14 +147,18 @@ const parseRepertoireContents = (
   });
 
   return Array.from(directoryMap.values()).sort((a, b) => {
-    const aPath = a.type === 'file' ? (a.material.filePath || a.material.fileKey || '') : '';
-    const bPath = b.type === 'file' ? (b.material.filePath || b.material.fileKey || '') : '';
-    
-    const aName = a.type === 'folder' ? a.displayName : (a.material.title || aPath);
-    const bName = b.type === 'folder' ? b.displayName : (b.material.title || bPath);
-
     if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
-    return aName.localeCompare(bName);
+
+    const aName = getItemSortName(a);
+    const bName = getItemSortName(b);
+    const aPriority = getStemPriority(aName);
+    const bPriority = getStemPriority(bName);
+
+    if (aPriority !== bPriority) {
+      return aPriority - bPriority;
+    }
+
+    return aName.localeCompare(bName, 'sv', { sensitivity: 'base' });
   });
 };
 
@@ -101,14 +168,19 @@ export const AdminRepertoireMaterialPage = () => {
   const splat = useParams()['*'];
   const location = useLocation();
   const navigate = useNavigate();
+  const { open: openMusicOverlay, activeMaterialId, isPlaying, activeGroupName } =
+    useMusicPlayerOverlay();
+  const viewer = musicViewerFromPathname(location.pathname);
   
   const [title, setTitle] = useState(location.state?.repertoireTitle);
   const [linkedMaterials, setLinkedMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [nowPlaying, setNowPlaying] = useState<{ url: string; title: string; } | null>(null);
   const [materialToView, setMaterialToView] = useState<Material | null>(null);
+
+  const sessionMatchesThisGroup =
+    Boolean(groupName?.trim()) && activeGroupName === groupName?.trim();
   
   const fetchLinkedMaterials = useCallback(async () => {
     if (!groupName || !repertoireId) return;
@@ -165,6 +237,21 @@ export const AdminRepertoireMaterialPage = () => {
   
   const breadcrumbs = useMemo(() => decodedSubPath.split('/').filter(p => p), [decodedSubPath]);
   const currentTitle = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1] : title;
+
+  const handlePlayMaterial = useCallback(
+    (material: Material) => {
+      const g = groupName?.trim();
+      const rep = repertoireId?.trim();
+      if (!g || !rep || !material.materialId?.trim()) return;
+      if (!material.fileKey || !isPlayableAudioFile(material.fileKey)) return;
+      openMusicOverlay(g, viewer, {
+        initialRepertoireId: rep,
+        repertoirePlayback: { type: 'fromMaterialId', materialId: material.materialId.trim() },
+        startMinimized: true,
+      });
+    },
+    [groupName, repertoireId, viewer, openMusicOverlay]
+  );
 
   const handleSmartBack = () => {
     if (decodedSubPath) {
@@ -236,13 +323,14 @@ export const AdminRepertoireMaterialPage = () => {
                 <div className={styles.actions}>
                   {isAudioFile(item.material.fileKey) && (
                     <button
-                      onClick={() => setNowPlaying({
-                        url: `${FILE_BASE_URL}/${item.material.fileKey}`,
-                        title: item.material.title || item.material.fileKey || ''
-                      })}
-                      className={styles.iconPlay}
+                      onClick={() => handlePlayMaterial(item.material)}
                       title={`Spela upp ${item.material.title || (item.material.filePath || item.material.fileKey || '').split('/').pop()}`}
                       aria-label={`Spela upp ${item.material.title || (item.material.filePath || item.material.fileKey || '').split('/').pop()}`}
+                      aria-pressed={
+                        sessionMatchesThisGroup &&
+                        activeMaterialId === item.material.materialId &&
+                        isPlaying
+                      }
                     >
                       <FaPlayCircle size={22} />
                     </button>
@@ -266,7 +354,6 @@ export const AdminRepertoireMaterialPage = () => {
         )}
       </div>
 
-      {nowPlaying && <MediaPlayer key={nowPlaying.url} src={nowPlaying.url} title={nowPlaying.title} />}
       {materialToView && <MediaModal isOpen={!!materialToView} onClose={() => setMaterialToView(null)} material={materialToView} />}
     </div>
   );

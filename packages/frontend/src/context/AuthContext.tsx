@@ -11,6 +11,11 @@ interface IAuthContext {
   isLoading: boolean;
   login: (token: string) => Promise<void>; // Ny funktion för att hantera login
   logout: () => void;
+  /**
+   * Centraliserad Authorization-header för API-anrop.
+   * Returnerar tomt objekt om ingen giltig token finns (anropa alltid med spridning: `{ ...getAuthHeaders() }`).
+   */
+  getAuthHeaders: () => Record<string, string>;
 }
 
 const AuthContext = createContext<IAuthContext | undefined>(undefined);
@@ -59,8 +64,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
   };
 
+  const getAuthHeaders = useCallback((): Record<string, string> => {
+    const raw = localStorage.getItem('authToken');
+    const token = typeof raw === 'string' ? raw.trim() : '';
+    if (!token) return {};
+    return { Authorization: `Bearer ${token}` };
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, getAuthHeaders }}>
       {children}
     </AuthContext.Provider>
   );

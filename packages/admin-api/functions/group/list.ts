@@ -6,6 +6,7 @@ import {
 } from "aws-lambda";
 import { DynamoDBClient, ScanCommand } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
+import type { AttributeValue } from "@aws-sdk/client-dynamodb";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 
@@ -14,21 +15,26 @@ export const handler = middy().handler(
     event: APIGatewayProxyEventV2WithLambdaAuthorizer<any>
   ): Promise<APIGatewayProxyResultV2> => {
     try {
-      // Hämta alla grupper från DynamoDB
-      const scanCommand = new ScanCommand({
-        TableName: process.env.MAIN_TABLE as string,
-        FilterExpression: "begins_with(PK, :prefix) AND SK = :metadata",
-        ExpressionAttributeValues: {
-          ":prefix": { S: "GROUP#" },
-          ":metadata": { S: "METADATA" },
-        },
-      });
+      const allItems: Record<string, AttributeValue>[] = [];
+      let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
 
-      const response = await dbClient.send(scanCommand);
-      const items = response.Items || [];
+      do {
+        const scanCommand = new ScanCommand({
+          TableName: process.env.MAIN_TABLE as string,
+          FilterExpression: "begins_with(PK, :prefix) AND SK = :metadata",
+          ExpressionAttributeValues: {
+            ":prefix": { S: "GROUP#" },
+            ":metadata": { S: "METADATA" },
+          },
+          ExclusiveStartKey: lastEvaluatedKey,
+        });
 
-      // Avkodar dynamo-objekten till vanliga JS-objekt
-      const groups = items.map(item => unmarshall(item));
+        const response = await dbClient.send(scanCommand);
+        allItems.push(...(response.Items || []));
+        lastEvaluatedKey = response.LastEvaluatedKey;
+      } while (lastEvaluatedKey);
+
+      const groups = allItems.map(item => unmarshall(item));
 
       return sendResponse(groups, 200);
     } catch (error: any) {

@@ -14,7 +14,7 @@ const S3_PUBLIC_URL = import.meta.env.VITE_S3_BUCKET_URL;
 interface MaterialCategoryProps {
   title: string;
   files: Material[];
-  onPlay: (file: { url: string; title: string }) => void;
+  onPlay: (material: Material) => void;
   onView: (material: Material) => void;
 }
 
@@ -49,7 +49,7 @@ const MaterialCategory: React.FC<MaterialCategoryProps> = ({ title, files, onPla
               </div>
               <div className={styles.actions}>
                 {isPlayableAudio(material.fileKey) && (
-                  <button onClick={() => onPlay({ url: fullUrl, title: displayName })} className={`${styles.actionButton} ${styles.playButton}`} aria-label={`Spela ${displayName}`}>
+                  <button type="button" onClick={() => onPlay(material)} className={`${styles.actionButton} ${styles.playButton}`} aria-label={`Spela ${displayName}`}>
                     <FaPlayCircle size={30} />
                   </button>
                 )}
@@ -77,7 +77,7 @@ interface MemberWeekAccordionProps {
   weekId: string;
   materials: Material[];
   defaultOpen?: boolean;
-  onPlay: (file: { url: string; title: string }) => void;
+  onPlay: (material: Material) => void;
   onView: (material: Material) => void;
 }
 

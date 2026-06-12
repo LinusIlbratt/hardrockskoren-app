@@ -80,7 +80,7 @@
   right: 0;
   height: 100vh;
   width: 280px;
-  background-color: #181818;
+  background-color: var(--color-panel-darker);
   z-index: 10001;
   transform: translateX(100%);
   transition: transform 0.3s ease-in-out;
@@ -180,7 +180,7 @@
   white-space: nowrap;
 
   &:hover {
-    color: var(--color-text-primary);
+    color: var(--color-text);
     background-color: var(--color-background-hover);
   }
 }
@@ -233,11 +233,11 @@
   
   .navLink {
     font-size: var(--fs-sm);
-    color: #a0a0a0;
+    color: var(--color-text-secondary);
     width: auto;
 
     &:hover {
-      color: white;
+      color: var(--color-text);
       background-color: var(--color-background-hover);
     }
 

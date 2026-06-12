@@ -11,7 +11,7 @@ interface SelectOption {
 export const customSelectStyles: StylesConfig<SelectOption> = {
   control: (provided, state) => ({
     ...provided,
-    backgroundColor: '#1d1d1d', // Mörk bakgrund
+    backgroundColor: 'var(--color-dark-gray)',
     borderColor: state.isFocused ? 'var(--color-primary)' : 'var(--color-border)',
     boxShadow: state.isFocused ? '0 0 0 1px var(--color-primary)' : 'none',
     borderRadius: 'var(--radius-md)',
@@ -28,8 +28,8 @@ export const customSelectStyles: StylesConfig<SelectOption> = {
   }),
   option: (provided, state) => ({
     ...provided,
-    backgroundColor: state.isSelected ? 'var(--color-primary)' : state.isFocused ? '#3d3d3d' : 'transparent',
-    color: state.isSelected ? 'var(--color-background)' : 'var(--color-text)',
+    backgroundColor: state.isSelected ? 'var(--color-primary)' : state.isFocused ? 'var(--color-background-hover-strong)' : 'transparent',
+    color: state.isSelected ? 'var(--color-text-on-primary)' : 'var(--color-text)',
     cursor: 'pointer',
     ':active': {
       backgroundColor: 'var(--color-primary)',
@@ -44,13 +44,13 @@ export const customSelectStyles: StylesConfig<SelectOption> = {
     color: 'var(--color-text)',
   }),
   indicatorSeparator: () => ({
-    display: 'none', // Ta bort den fula linjen vid sidan av pilen
+    display: 'none',
   }),
   dropdownIndicator: (provided) => ({
     ...provided,
-    color: '#9ca3af',
+    color: 'var(--color-text-secondary)',
     ':hover': {
-      color: 'white',
+      color: 'var(--color-text)',
     },
   }),
 };

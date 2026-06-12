@@ -179,14 +179,14 @@ deleteGlobalMaterial:
         Action: ["cognito-idp:AdminGetUser"]
         Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
 
-batchDeleteGlobalMaterials:
-    handler: functions/batchDeleteGlobalMaterials.handler
-    name: hrk-batch-delete-global-materials-${sls:stage}
-    description: Deletes multiple global materials from DynamoDB and S3. (Admin only)
+replaceGlobalMaterial:
+    handler: functions/replaceGlobalMaterial.handler
+    name: hrk-replace-global-material-${sls:stage}
+    description: Replaces fileKey (and optional title) for a global material without changing materialId. (Admin only)
     events:
       - httpApi:
-          method: POST # Använder POST för att kunna skicka med en body
-          path: /materials/batch-delete
+          method: PATCH
+          path: /materials/{materialId}
           authorizer:
             name: centralJwtAuthorizer
     environment:
@@ -196,16 +196,45 @@ batchDeleteGlobalMaterials:
     iamRoleStatements:
       - Effect: "Allow"
         Action:
+          - "dynamodb:GetItem"
+          - "dynamodb:UpdateItem"
+        Resource:
+          - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+      - Effect: "Allow"
+        Action:
+          - "s3:DeleteObject"
+        Resource:
+          - "arn:aws:s3:::${self:custom.mediaBucketName}/materials/*"
+      - Effect: "Allow"
+        Action: ["cognito-idp:AdminGetUser"]
+        Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
+
+batchDeleteGlobalMaterials:
+    handler: functions/batchDeleteGlobalMaterials.handler
+    name: hrk-batch-delete-global-materials-${sls:stage}
+    description: Deletes multiple global materials from DynamoDB and S3. (Admin only)
+    # HTTP API Lambda-integration max ~30s; default Lambda 6s is too low for large folders.
+    timeout: 29
+    memorySize: 512
+    events:
+      - httpApi:
+          method: POST # Använder POST för att kunna skicka med en body
+          path: /materials/batch-delete
+          authorizer:
+            name: centralJwtAuthorizer
+    environment:
+      MAIN_TABLE: ${self:custom.mainTableName}
+      MEDIA_BUCKET_NAME: ${self:custom.mediaBucketName}
+    iamRoleStatements:
+      - Effect: "Allow"
+        Action:
           - "dynamodb:BatchGetItem"     # Ny behörighet
           - "dynamodb:BatchWriteItem"   # Ny behörighet
         Resource: ["arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"]
       - Effect: "Allow"
         Action:
-          - "s3:DeleteObjects"        # Ny, effektivare behörighet
+          - "s3:DeleteObject"
         Resource: ["arn:aws:s3:::${self:custom.mediaBucketName}/*"]
-      - Effect: "Allow"
-        Action: ["cognito-idp:AdminGetUser"]
-        Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
 
 createRepertoire:
   handler: functions/createRepertoire.handler
@@ -245,6 +274,11 @@ listRepertoires:
         - "dynamodb:Query"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 
 listMaterialsInRepertoire:
   handler: functions/listMaterialsInRepertoire.handler
@@ -265,6 +299,11 @@ listMaterialsInRepertoire:
         - "dynamodb:BatchGetItem" # FÖR ATT HÄMTA DETALJERNA FÖR MATERIALET
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 
 deleteRepertoire:
   handler: functions/deleteRepertoire.handler
@@ -335,6 +374,56 @@ unlinkMaterialFromRepertoire:
       Action: ["cognito-idp:AdminGetUser"]
       Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
 
+syncAllRepertoiresFromLibraryFolder:
+  handler: functions/syncAllRepertoiresFromLibraryFolder.handler
+  name: hrk-sync-all-repertoires-from-library-${sls:stage}
+  iamRoleStatementsName: hrk-sync-all-reps-${sls:stage}
+  description: Syncs all choir repertoires linked to a library folder path. Admin only.
+  timeout: 60
+  memorySize: 512
+  events:
+    - httpApi:
+        method: POST
+        path: /materials/sync-all-repertoires
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+    COGNITO_USER_POOL_ID: ${self:custom.userPoolId}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Scan"
+        - "dynamodb:Query"
+        - "dynamodb:BatchWriteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI2"
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminGetUser"]
+      Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
+
+syncRepertoireFromLibraryFolder:
+  handler: functions/syncRepertoireFromLibraryFolder.handler
+  name: hrk-sync-repertoire-from-library-folder-${sls:stage}
+  description: Manually sync linked materials in a repertoire with a library folder.
+  events:
+    - httpApi:
+        method: POST
+        path: /groups/{groupName}/repertoires/{repertoireId}/sync-library-folder
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+        - "dynamodb:BatchWriteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI2"
+
 getSjunguppUploadUrl:
   handler: functions/getPracticeUploadUrl.handler
   name: hrk-get-practice-upload-url-${sls:stage}
@@ -380,7 +469,7 @@ batchDeletePracticeMaterials:
         Resource: ["arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"]
       - Effect: "Allow"
         Action:
-          - "s3:DeleteObjects"        # Ny, effektivare behörighet
+          - "s3:DeleteObject"
         Resource: ["arn:aws:s3:::${self:custom.mediaBucketName}/*"]
       - Effect: "Allow"
         Action: ["cognito-idp:AdminGetUser"]
@@ -480,6 +569,7 @@ listPracticeByWeek:
   iamRoleStatements:
     - Effect: "Allow"
       Action:
+        - dynamodb:Query
         - dynamodb:Scan
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
@@ -499,6 +589,7 @@ listPracticeForMembers:
     iamRoleStatements:
       - Effect: "Allow"
         Action:
+          - dynamodb:Query
           - dynamodb:Scan
         Resource:
           - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"

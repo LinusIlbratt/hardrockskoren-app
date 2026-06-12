@@ -1,0 +1,53 @@
+service: hrk-music-api
+configValidationMode: error
+
+frameworkVersion: "4"
+
+build:
+  esbuild:
+    bundle: true
+    minify: false
+    sourcemap: true
+    exclude: ['aws-sdk']
+    target: 'node18'
+    define: { 'require.resolve': undefined }
+    platform: 'node'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: eu-north-1
+  stage: ${opt:stage, 'dev'}
+  # En källa för alla music-api-Lambdas (samma tabell som admin-api / övriga tjänster).
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  httpApi:
+    cors: true
+    authorizers:
+      centralJwtAuthorizer:
+        type: request
+        functionArn: "arn:aws:lambda:eu-north-1:${aws:accountId}:function:hrk-apigateway-admin-authorizer-${sls:stage}"
+        enableSimpleResponses: true
+        identitySource:
+          - $request.header.Authorization
+
+package:
+  individually: true
+
+plugins:
+  - serverless-iam-roles-per-function
+
+custom:
+  mainTableName: HrkMainTable-${self:provider.stage}
+
+functions:
+  - ${file(./yaml/music-functions.yml)}
+
+resources:
+  Resources:
+    ApiGatewayAuthorizerPermission:
+      Type: AWS::Lambda::Permission
+      Properties:
+        FunctionName: "arn:aws:lambda:eu-north-1:${aws:accountId}:function:hrk-apigateway-admin-authorizer-${sls:stage}"
+        Action: lambda:InvokeFunction
+        Principal: apigateway.amazonaws.com

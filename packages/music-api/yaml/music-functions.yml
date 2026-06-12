@@ -1,0 +1,202 @@
+# Lambdorna ärver MAIN_TABLE från provider.environment i ../serverless.yml (HrkMainTable-${stage}).
+# IAM: serverless-iam-roles-per-function ger varje funktion en egen roll med iamRoleStatements nedan.
+
+getPlaylists:
+  handler: functions/playlists/getPlaylists.handler
+  name: hrk-get-playlists-${sls:stage}
+  description: Lists all playlists for the authenticated user.
+  events:
+    - httpApi:
+        method: GET
+        path: /playlists
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:Query"
+        - "dynamodb:DeleteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+
+createPlaylist:
+  handler: functions/playlists/createPlaylist.handler
+  name: hrk-create-playlist-${sls:stage}
+  description: Creates a new personal playlist (metadata only).
+  events:
+    - httpApi:
+        method: POST
+        path: /playlists
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:Query"
+        - "dynamodb:DeleteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+
+updatePlaylist:
+  handler: functions/playlists/updatePlaylist.handler
+  name: hrk-update-playlist-${sls:stage}
+  description: Renames a playlist (owner only).
+  events:
+    - httpApi:
+        method: PATCH
+        path: /playlists/{playlistId}
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:Query"
+        - "dynamodb:DeleteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+
+deletePlaylist:
+  handler: functions/playlists/deletePlaylist.handler
+  name: hrk-delete-playlist-${sls:stage}
+  description: Deletes a playlist and its items (owner only).
+  events:
+    - httpApi:
+        method: DELETE
+        path: /playlists/{playlistId}
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:Query"
+        - "dynamodb:DeleteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+
+getPlaylistItems:
+  handler: functions/playlists/getPlaylistItems.handler
+  name: hrk-get-playlist-items-${sls:stage}
+  description: Lists materials in a playlist (with ownership check).
+  events:
+    - httpApi:
+        method: GET
+        path: /playlists/{playlistId}/items
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:Query"
+        - "dynamodb:DeleteItem"
+        - "dynamodb:BatchGetItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+
+addPlaylistItem:
+  handler: functions/playlists/addPlaylistItem.handler
+  name: hrk-add-playlist-item-${sls:stage}
+  description: Adds a material to a playlist (with ownership check).
+  events:
+    - httpApi:
+        method: POST
+        path: /playlists/{playlistId}/items
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:Query"
+        - "dynamodb:DeleteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+
+removePlaylistItem:
+  handler: functions/playlists/removePlaylistItem.handler
+  name: hrk-remove-playlist-item-${sls:stage}
+  description: Removes a material from a playlist (with ownership check).
+  events:
+    - httpApi:
+        method: DELETE
+        path: /playlists/{playlistId}/items/{materialId}
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:Query"
+        - "dynamodb:DeleteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+
+getFavorites:
+  handler: functions/favorites/getFavorites.handler
+  name: hrk-get-favorites-${sls:stage}
+  description: Lists hydrated global materials for the user's favorites.
+  events:
+    - httpApi:
+        method: GET
+        path: /favorites
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:Query"
+        - "dynamodb:DeleteItem"
+        - "dynamodb:BatchGetItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+
+toggleFavorite:
+  handler: functions/favorites/toggleFavorite.handler
+  name: hrk-toggle-favorite-${sls:stage}
+  description: Toggle favorite for a material (DynamoDB USER#… / FAVORITE#…).
+  events:
+    - httpApi:
+        method: POST
+        path: /favorites/{materialId}
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:Query"
+        - "dynamodb:DeleteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"

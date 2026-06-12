@@ -176,15 +176,3 @@
   }
 }
 
-/* --- Anpassningar för större skärmar (Desktop) --- */
-@media (min-width: #{$tabletBreakpoint}) {
-  .deleteButton {
-    visibility: hidden;
-    opacity: 0;
-  }
-
-  .materialItem:hover .deleteButton {
-    visibility: visible;
-    opacity: 1;
-  }
-}

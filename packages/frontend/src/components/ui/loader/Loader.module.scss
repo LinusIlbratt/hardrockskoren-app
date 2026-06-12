@@ -17,8 +17,7 @@
       border-radius: 50%;
       border-style: solid;
       border-width: $borderWidth;
-      // Färgen hämtas från din --color-primary variabel.
-      border-color: var(--color-background); 
+      border-color: var(--color-primary); 
       animation: prixClipFix 2s linear infinite;
     }
   }

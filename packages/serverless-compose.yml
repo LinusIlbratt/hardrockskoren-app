@@ -21,3 +21,8 @@ services:
     path: material-api
     dependsOn:
       - infra-service
+
+  music-api:
+    path: music-api
+    dependsOn:
+      - infra-service

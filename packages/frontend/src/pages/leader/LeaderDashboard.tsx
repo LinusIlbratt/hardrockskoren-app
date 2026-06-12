@@ -1,5 +1,6 @@
-import { Outlet, useParams } from 'react-router-dom'; // <-- Importera useParams
+import { Outlet, useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { RecentlyPlayedWidget } from '@/components/music/RecentlyPlayedWidget';
 import { LeaderNav } from '@/components/ui/nav/LeaderNav';
 import styles from './LeaderDashboard.module.scss';
 import { useState, useEffect } from 'react';
@@ -13,11 +14,10 @@ interface Group {
 } 
 
 export const LeaderDashboard = () => {
-  
- const { groupName } = useParams<{ groupName: string }>();
-const { user } = useAuth(); 
-const [choirDisplayName, setChoirDisplayName] = useState('');
-const [isLoadingName, setIsLoadingName] = useState(true);
+  const { groupName } = useParams<{ groupName: string }>();
+  const { user } = useAuth();
+  const [choirDisplayName, setChoirDisplayName] = useState('');
+  const [isLoadingName, setIsLoadingName] = useState(true);
 
   if (!user) {
     return <div>Kunde inte ladda användardata.</div>
@@ -60,7 +60,6 @@ const [isLoadingName, setIsLoadingName] = useState(true);
   return (
     <div className={styles.layout}>
       <header className={styles.header}>
-        {/* Användarens namn kommer fortfarande från useAuth */}
         <h2>Välkommen {user.given_name} {user.family_name}</h2>
         <p>
           <span className={styles.subheadingLabel}>Körledare i
@@ -68,11 +67,14 @@ const [isLoadingName, setIsLoadingName] = useState(true);
         </p>
       </header>
 
-      {!isLoadingName && choirDisplayName && (
-        <h1 className={styles.groupName}>{choirDisplayName}</h1>
+      {!isLoadingName && choirDisplayName && groupName && (
+        <div className={styles.groupNameRow}>
+          <h1 className={styles.groupName}>{choirDisplayName}</h1>
+          <RecentlyPlayedWidget groupName={groupName} viewer="leader" />
+        </div>
       )}
       <LeaderNav />
-      
+
       <main className={styles.content}>
         <Outlet />
       </main>

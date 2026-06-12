@@ -1,7 +1,11 @@
-import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
+import {
+  DynamoDBClient,
+  QueryCommand,
+  type AttributeValue,
+} from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyResultV2 } from "aws-lambda";
-import { sendResponse, sendError } from "../../core/utils/http"; 
+import { sendResponse, sendError } from "../../core/utils/http";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
@@ -12,25 +16,31 @@ export const handler = async (): Promise<APIGatewayProxyResultV2> => {
   }
 
   try {
-    
-    // Detta kommando siktar på GSI1 istället för huvudnyckeln.
-    const command = new QueryCommand({
-      TableName: MAIN_TABLE,
-      IndexName: 'GSI1', 
-      KeyConditionExpression: "GSI1PK = :gsi1pk", 
-      ExpressionAttributeValues: {
-        ":gsi1pk": { S: "MATERIALS" }, 
-      },
-      
-      ScanIndexForward: false, 
-    });
+    const materials: Record<string, unknown>[] = [];
+    let exclusiveStartKey: Record<string, AttributeValue> | undefined;
 
-    const { Items } = await dbClient.send(command);
-    
-    const materials = (Items || []).map(item => unmarshall(item));
+    do {
+      const command = new QueryCommand({
+        TableName: MAIN_TABLE,
+        IndexName: "GSI1",
+        KeyConditionExpression: "GSI1PK = :gsi1pk",
+        ExpressionAttributeValues: {
+          ":gsi1pk": { S: "MATERIALS" },
+        },
+        ScanIndexForward: false,
+        ExclusiveStartKey: exclusiveStartKey,
+      });
+
+      const { Items, LastEvaluatedKey } = await dbClient.send(command);
+
+      for (const item of Items ?? []) {
+        materials.push(unmarshall(item));
+      }
+
+      exclusiveStartKey = LastEvaluatedKey;
+    } while (exclusiveStartKey);
 
     return sendResponse(materials, 200);
-
   } catch (error: any) {
     console.error("Error fetching all global materials:", error);
     return sendError(500, error.message || "Internal server error");

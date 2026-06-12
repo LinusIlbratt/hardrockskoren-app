@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import { GroupNav } from '@/components/ui/nav/GroupNav';
+import { RecentlyPlayedWidget } from '@/components/music/RecentlyPlayedWidget';
 import axios from 'axios';
 import styles from './GroupDashboardLayout.module.scss';
 
@@ -63,7 +64,12 @@ export const GroupDashboardLayout = () => {
     >
       <div className={styles.dashboardLayout}>
         <header className={styles.header}>
-          <h1 className={styles.groupName}>{currentGroup.name}</h1>
+          <div className={styles.groupNameRow}>
+            <h1 className={styles.groupName}>{currentGroup.name}</h1>
+            {groupSlug ? (
+              <RecentlyPlayedWidget groupName={groupSlug} viewer="admin" />
+            ) : null}
+          </div>
           <GroupNav />
         </header>
         <main className={styles.content}>

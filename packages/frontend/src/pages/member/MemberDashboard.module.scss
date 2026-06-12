@@ -5,6 +5,11 @@
   gap: 1.5rem; // Justerat gap
 }
 
+.content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
   .header {
     border-bottom: 1px solid var(--color-border);
     padding-bottom: 1.5rem;
@@ -19,8 +24,17 @@
     color: var(--color-text-secondary);
   }
 
+  .groupNameRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-md, 1rem);
+    margin-bottom: 1rem;
+  }
+
   .groupName {
-    margin: 0 0 1rem 0;
+    margin: 0;
     font-size: 1.25rem;
     font-weight: 700;
     color: var(--color-text);
