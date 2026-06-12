@@ -7,7 +7,11 @@ import { FiFolder, FiMusic, FiFileText, FiFile, FiChevronRight, FiArrowLeft } fr
 import styles from './AdminRepertoireMaterialPage.module.scss';
 import type { Material } from '@/types';
 import { MediaModal } from '@/components/ui/modal/MediaModal';
-import { MediaPlayer } from '@/components/media/MediaPlayer';
+import {
+  useMusicPlayerOverlay,
+  type MusicPlayerViewer,
+} from '@/context/MusicPlayerOverlayContext';
+import { isPlayableAudioFile } from '@/utils/media';
 
 // --- TYPER ---
 // FIX: Lade till 'displayName' för att visa ett städat mappnamn.
@@ -21,7 +25,12 @@ interface FileItem { type: 'file'; material: Material; }
 type DirectoryItem = FolderItem | FileItem;
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
-const FILE_BASE_URL = import.meta.env.VITE_S3_BUCKET_URL;
+
+function musicViewerFromPathname(pathname: string): MusicPlayerViewer {
+  if (pathname.startsWith('/leader/')) return 'leader';
+  if (pathname.startsWith('/admin/')) return 'admin';
+  return 'member';
+}
 
 // --- HJÄLPFUNKTIONER ---
 const getIconForFile = (fileName: string = '') => {
@@ -159,14 +168,19 @@ export const AdminRepertoireMaterialPage = () => {
   const splat = useParams()['*'];
   const location = useLocation();
   const navigate = useNavigate();
+  const { open: openMusicOverlay, activeMaterialId, isPlaying, activeGroupName } =
+    useMusicPlayerOverlay();
+  const viewer = musicViewerFromPathname(location.pathname);
   
   const [title, setTitle] = useState(location.state?.repertoireTitle);
   const [linkedMaterials, setLinkedMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [nowPlaying, setNowPlaying] = useState<{ url: string; title: string; } | null>(null);
   const [materialToView, setMaterialToView] = useState<Material | null>(null);
+
+  const sessionMatchesThisGroup =
+    Boolean(groupName?.trim()) && activeGroupName === groupName?.trim();
   
   const fetchLinkedMaterials = useCallback(async () => {
     if (!groupName || !repertoireId) return;
@@ -223,6 +237,21 @@ export const AdminRepertoireMaterialPage = () => {
   
   const breadcrumbs = useMemo(() => decodedSubPath.split('/').filter(p => p), [decodedSubPath]);
   const currentTitle = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1] : title;
+
+  const handlePlayMaterial = useCallback(
+    (material: Material) => {
+      const g = groupName?.trim();
+      const rep = repertoireId?.trim();
+      if (!g || !rep || !material.materialId?.trim()) return;
+      if (!material.fileKey || !isPlayableAudioFile(material.fileKey)) return;
+      openMusicOverlay(g, viewer, {
+        initialRepertoireId: rep,
+        repertoirePlayback: { type: 'fromMaterialId', materialId: material.materialId.trim() },
+        startMinimized: true,
+      });
+    },
+    [groupName, repertoireId, viewer, openMusicOverlay]
+  );
 
   const handleSmartBack = () => {
     if (decodedSubPath) {
@@ -294,13 +323,14 @@ export const AdminRepertoireMaterialPage = () => {
                 <div className={styles.actions}>
                   {isAudioFile(item.material.fileKey) && (
                     <button
-                      onClick={() => setNowPlaying({
-                        url: `${FILE_BASE_URL}/${item.material.fileKey}`,
-                        title: item.material.title || item.material.fileKey || ''
-                      })}
-                      className={styles.iconPlay}
+                      onClick={() => handlePlayMaterial(item.material)}
                       title={`Spela upp ${item.material.title || (item.material.filePath || item.material.fileKey || '').split('/').pop()}`}
                       aria-label={`Spela upp ${item.material.title || (item.material.filePath || item.material.fileKey || '').split('/').pop()}`}
+                      aria-pressed={
+                        sessionMatchesThisGroup &&
+                        activeMaterialId === item.material.materialId &&
+                        isPlaying
+                      }
                     >
                       <FaPlayCircle size={22} />
                     </button>
@@ -324,7 +354,6 @@ export const AdminRepertoireMaterialPage = () => {
         )}
       </div>
 
-      {nowPlaying && <MediaPlayer key={nowPlaying.url} src={nowPlaying.url} title={nowPlaying.title} />}
       {materialToView && <MediaModal isOpen={!!materialToView} onClose={() => setMaterialToView(null)} material={materialToView} />}
     </div>
   );
