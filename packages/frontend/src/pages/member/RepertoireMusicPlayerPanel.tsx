@@ -88,7 +88,6 @@ export interface RepertoireMusicPlayerPanelProps {
 
 export function RepertoireMusicPlayerPanel({
   groupName,
-  viewer,
   onMinimizeOverlay,
   shellTitleId,
   libraryQueueMaterials = null,
