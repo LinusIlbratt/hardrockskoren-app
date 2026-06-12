@@ -194,7 +194,13 @@
     }
   }
 
-  [aria-label^="Spela"] { color: var(--color-icon-play); }
+  [aria-label^="Spela"] {
+    color: var(--color-icon-play);
+
+    &[aria-pressed='true'] {
+      color: var(--color-primary);
+    }
+  }
   [aria-label^="Visa"] { color: var(--color-icon-view); }
   [aria-label^="Ta bort"] { color: var(--color-text-secondary); 
     &:hover {

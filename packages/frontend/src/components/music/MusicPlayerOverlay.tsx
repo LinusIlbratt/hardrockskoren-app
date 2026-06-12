@@ -17,7 +17,6 @@ interface MusicPlayerOverlayProps {
   /** När false: fullskärms-UI döljs men panelen (och MediaPlayer) monteras kvar för miniplayer. */
   overlayUiVisible: boolean;
   onCloseOverlay: () => void;
-  onExitSession: () => void;
   libraryQueueMaterials?: Material[] | null;
   libraryPlaybackIntent?: LibraryPlaybackIntent | null;
   /** Sjung upp m.m.: bibliotekskö men repertoar-sidebar ska visas. */
@@ -40,7 +39,6 @@ export function MusicPlayerOverlay({
   viewer,
   overlayUiVisible,
   onCloseOverlay,
-  onExitSession,
   libraryQueueMaterials,
   libraryPlaybackIntent,
   libraryPlaybackWithRepertoire = false,
@@ -127,7 +125,7 @@ export function MusicPlayerOverlay({
       <button
         type="button"
         className={styles.scrim}
-        aria-label="Stäng musik (samma som Esc)"
+        aria-label="Minimera musikspelare (samma som Esc)"
         onClick={onCloseOverlay}
         tabIndex={overlayUiVisible ? 0 : -1}
       />
@@ -143,7 +141,6 @@ export function MusicPlayerOverlay({
           groupName={groupName}
           viewer={viewer}
           onMinimizeOverlay={onCloseOverlay}
-          onExitSession={onExitSession}
           shellTitleId={titleId}
           libraryQueueMaterials={libraryQueueMaterials ?? null}
           libraryPlaybackIntent={libraryPlaybackIntent ?? null}
@@ -166,7 +163,6 @@ export function MusicPlayerOverlayHost({ mountEl }: { mountEl?: HTMLElement | nu
     activeGroupName,
     activeViewer,
     closeOverlay,
-    closeSession,
     libraryMaterials,
     libraryPlayback,
     libraryPlaybackWithRepertoire,
@@ -185,7 +181,6 @@ export function MusicPlayerOverlayHost({ mountEl }: { mountEl?: HTMLElement | nu
       viewer={activeViewer}
       overlayUiVisible={isOpen}
       onCloseOverlay={closeOverlay}
-      onExitSession={closeSession}
       libraryQueueMaterials={libraryMaterials ?? undefined}
       libraryPlaybackIntent={libraryPlayback ?? undefined}
       libraryPlaybackWithRepertoire={libraryPlaybackWithRepertoire}

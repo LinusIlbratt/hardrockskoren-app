@@ -7,7 +7,6 @@ import {
   useRef,
 } from "react";
 import { createPortal } from "react-dom";
-import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   Music,
@@ -73,10 +72,8 @@ interface RepertoireItem {
 export interface RepertoireMusicPlayerPanelProps {
   groupName: string;
   viewer: MusicPlayerViewer;
-  /** Stänger endast fullskärm (miniplayer fortsätter). */
+  /** Stänger fullskärm (miniplayer fortsätter). */
   onMinimizeOverlay: () => void;
-  /** Avslutar musiksession helt (t.ex. navigera tillbaka till repertoar). */
-  onExitSession: () => void;
   shellTitleId?: string;
   /** Spelläge: favoriter / bibliotek utan repertoar-sidebar */
   libraryQueueMaterials?: Material[] | null;
@@ -93,7 +90,6 @@ export function RepertoireMusicPlayerPanel({
   groupName,
   viewer,
   onMinimizeOverlay,
-  onExitSession,
   shellTitleId,
   libraryQueueMaterials = null,
   libraryPlaybackIntent = null,
@@ -102,7 +98,6 @@ export function RepertoireMusicPlayerPanel({
   initialPlaylistId = null,
   repertoirePlaybackIntent = null,
 }: RepertoireMusicPlayerPanelProps) {
-  const navigate = useNavigate();
   const { getAuthHeaders } = useAuth();
   const { pendingResume, clearPendingResume, clearInitialRepertoireLaunch } =
     useMusicPlayerOverlay();
@@ -215,13 +210,6 @@ export function RepertoireMusicPlayerPanel({
     );
     setPlaylistMenuCoords({ top: r.bottom + 4, left });
   }, []);
-
-  const repertoiresHref = useMemo(() => {
-    if (!groupName) return "/";
-    if (viewer === "leader") return `/leader/choir/${groupName}/repertoires`;
-    if (viewer === "admin") return `/admin/groups/${groupName}/repertoires`;
-    return `/user/me/${groupName}/repertoires`;
-  }, [groupName, viewer]);
 
   const audioMaterials = useMemo(
     () =>
@@ -415,11 +403,6 @@ export function RepertoireMusicPlayerPanel({
     setPlayerStartIndex(safeIndex);
     setHighlightedTrackIndex(safeIndex);
     setPlayerQueue(tracks);
-  };
-
-  const handleToRepertoires = () => {
-    navigate(repertoiresHref);
-    onExitSession();
   };
 
   const handlePlayFavorites = () => {
@@ -865,17 +848,9 @@ export function RepertoireMusicPlayerPanel({
         <div className={styles.shellTopRight}>
           <button
             type="button"
-            className={styles.backLink}
-            onClick={handleToRepertoires}
-          >
-            <ChevronLeft size={16} aria-hidden />
-            {isFavoritesView ? "Mitt bibliotek" : "Repertoar"}
-          </button>
-          <button
-            type="button"
             className={styles.closeButton}
             onClick={onMinimizeOverlay}
-            aria-label="Stäng musik"
+            aria-label="Minimera musikspelare"
           >
             <X size={20} aria-hidden />
           </button>
