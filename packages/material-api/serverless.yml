@@ -18,6 +18,7 @@ provider:
   runtime: nodejs18.x
   region: eu-north-1
   stage: ${opt:stage, 'dev'}
+  logRetentionInDays: 30
   httpApi:
     cors: true
     authorizers:
