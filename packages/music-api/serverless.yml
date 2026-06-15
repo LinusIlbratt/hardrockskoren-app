@@ -18,6 +18,7 @@ provider:
   runtime: nodejs18.x
   region: eu-north-1
   stage: ${opt:stage, 'dev'}
+  logRetentionInDays: 30
   # En källa för alla music-api-Lambdas (samma tabell som admin-api / övriga tjänster).
   environment:
     MAIN_TABLE: ${self:custom.mainTableName}
@@ -48,6 +49,7 @@ resources:
     ApiGatewayAuthorizerPermission:
       Type: AWS::Lambda::Permission
       Properties:
-        FunctionName: "arn:aws:lambda:eu-north-1:${aws:accountId}:function:hrk-apigateway-admin-authorizer-${sls:stage}"
+        FunctionName:
+          Fn::Sub: arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:hrk-apigateway-admin-authorizer-${sls:stage}
         Action: lambda:InvokeFunction
         Principal: apigateway.amazonaws.com
