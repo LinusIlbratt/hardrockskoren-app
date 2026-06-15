@@ -39,9 +39,12 @@ import { useAuth } from "@/context/AuthContext";
 import { saveRecentPlayback } from "@/utils/recentPlayback";
 import {
   formatDisplayTitle,
-  hashMediaSourcesKey,
   isPlayableAudioFile,
 } from "@/utils/media";
+import {
+  buildMediaPlayerTracks,
+  hashTrackQueueKey,
+} from "@/services/mediaUrlService";
 import { useFavorites } from "@/hooks/useFavorites";
 import { usePlaylists } from "@/hooks/usePlaylists";
 import {
@@ -56,7 +59,6 @@ import tracklistWatermarkLogo from "@/assets/images/hrk-logo.webp";
 import styles from "./RepertoireMusicPlayerPage.module.scss";
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
-const FILE_BASE_URL = import.meta.env.VITE_S3_BUCKET_URL;
 
 const LIBRARY_SELECTED_ID = "__library__";
 
@@ -219,29 +221,20 @@ export function RepertoireMusicPlayerPanel({
   );
 
   const buildTracksFromMaterials = useCallback(
-    (items: Material[]): MediaPlayerTrack[] => {
-      return items
-        .filter((m) => m.fileKey && isPlayableAudioFile(m.fileKey))
-        .map((m) => ({
-          src: `${FILE_BASE_URL}/${m.fileKey}`,
-          title:
-            formatDisplayTitle(
-              m.title || m.fileKey?.split("/").pop() || "",
-            ) || "Okänd",
-          materialId: m.materialId,
-        }));
+    async (items: Material[]): Promise<MediaPlayerTrack[]> => {
+      return buildMediaPlayerTracks(items, getAuthHeaders());
     },
-    [],
+    [getAuthHeaders],
   );
 
   /** Byt key bara när köns identitet ändras — inte vid spårbyte (samma lista), så MediaPlayer kan följa initialTrackIndex utan remount. */
   const mediaPlayerMountKey = useMemo(() => {
     if (hasLibraryPlaybackQueue && playerQueue.length > 0) {
-      const sig = hashMediaSourcesKey(playerQueue.map((t) => t.src));
+      const sig = hashTrackQueueKey(playerQueue);
       return `lib-${groupName}-${sig}`;
     }
     if (!selectedId || playerQueue.length === 0) return "idle";
-    const sig = hashMediaSourcesKey(playerQueue.map((t) => t.src));
+    const sig = hashTrackQueueKey(playerQueue);
     return `${selectedId}-${sig}`;
   }, [hasLibraryPlaybackQueue, groupName, selectedId, playerQueue]);
 
@@ -364,27 +357,36 @@ export function RepertoireMusicPlayerPanel({
       setRepertoires([]);
     }
 
-    const tracks = buildTracksFromMaterials(libraryQueueMaterials);
     const intent: LibraryPlaybackIntent = libraryPlaybackIntent ?? "browse";
 
-    if (tracks.length === 0 || intent === "browse") {
-      setPlayerQueue([]);
-      return;
-    }
+    let cancelled = false;
 
-    if (intent === "playAll") {
-      setPlayerStartIndex(0);
-      setHighlightedTrackIndex(0);
-      setPlayerQueue(tracks);
-      return;
-    }
+    void buildTracksFromMaterials(libraryQueueMaterials).then((tracks) => {
+      if (cancelled) return;
 
-    if (intent.type === "fromIndex") {
-      const safe = Math.min(Math.max(0, intent.index), tracks.length - 1);
-      setPlayerStartIndex(safe);
-      setHighlightedTrackIndex(safe);
-      setPlayerQueue(tracks);
-    }
+      if (tracks.length === 0 || intent === "browse") {
+        setPlayerQueue([]);
+        return;
+      }
+
+      if (intent === "playAll") {
+        setPlayerStartIndex(0);
+        setHighlightedTrackIndex(0);
+        setPlayerQueue(tracks);
+        return;
+      }
+
+      if (intent.type === "fromIndex") {
+        const safe = Math.min(Math.max(0, intent.index), tracks.length - 1);
+        setPlayerStartIndex(safe);
+        setHighlightedTrackIndex(safe);
+        setPlayerQueue(tracks);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [
     libraryQueueMaterials,
     libraryPlaybackIntent,
@@ -394,14 +396,15 @@ export function RepertoireMusicPlayerPanel({
 
   const handlePlayTrackAt = (index: number) => {
     setActiveDropdownId(null);
-    const tracks = buildTracksFromMaterials(
+    void buildTracksFromMaterials(
       materials.filter((m) => m.fileKey && isPlayableAudioFile(m.fileKey)),
-    );
-    if (tracks.length === 0) return;
-    const safeIndex = Math.min(Math.max(0, index), tracks.length - 1);
-    setPlayerStartIndex(safeIndex);
-    setHighlightedTrackIndex(safeIndex);
-    setPlayerQueue(tracks);
+    ).then((tracks) => {
+      if (tracks.length === 0) return;
+      const safeIndex = Math.min(Math.max(0, index), tracks.length - 1);
+      setPlayerStartIndex(safeIndex);
+      setHighlightedTrackIndex(safeIndex);
+      setPlayerQueue(tracks);
+    });
   };
 
   const handlePlayFavorites = () => {

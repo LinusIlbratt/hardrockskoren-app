@@ -4,6 +4,7 @@ import axios from 'axios';
 import type { Material } from '@/types/index';
 import styles from './MediaModal.module.scss';
 import { IoClose } from 'react-icons/io5';
+import { useMediaDownloadUrl } from '@/hooks/useMediaDownloadUrl';
 
 interface MediaModalProps {
   isOpen: boolean;
@@ -11,32 +12,31 @@ interface MediaModalProps {
   material: Material | null;
 }
 
-const FILE_BASE_URL = import.meta.env.VITE_S3_BUCKET_URL;
-
 export const MediaModal = ({ isOpen, onClose, material }: MediaModalProps) => {
   const [textContent, setTextContent] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [textLoading, setTextLoading] = useState(false);
+  const { url: mediaUrl, isLoading: urlLoading, error: urlError } = useMediaDownloadUrl(
+    isOpen && material?.fileKey ? material.fileKey : undefined
+  );
 
   useEffect(() => {
-    // Nollställ textinnehåll när materialet ändras
     setTextContent('');
 
-    if (material && material.fileKey.toLowerCase().endsWith('.txt')) {
+    if (material && mediaUrl && material.fileKey.toLowerCase().endsWith('.txt')) {
       const fetchTextContent = async () => {
-        setIsLoading(true);
-        const fullUrl = `${FILE_BASE_URL}/${material.fileKey}`;
+        setTextLoading(true);
         try {
-          const response = await axios.get(fullUrl);
+          const response = await axios.get(mediaUrl);
           setTextContent(response.data);
-        } catch (e) {
-          setTextContent("Kunde inte ladda textfilen.");
+        } catch {
+          setTextContent('Kunde inte ladda textfilen.');
         } finally {
-          setIsLoading(false);
+          setTextLoading(false);
         }
       };
-      fetchTextContent();
+      void fetchTextContent();
     }
-  }, [material]);
+  }, [material, mediaUrl]);
 
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
@@ -49,18 +49,26 @@ export const MediaModal = ({ isOpen, onClose, material }: MediaModalProps) => {
   if (!isOpen || !material) return null;
 
   const displayName = material.title || material.fileKey.split('/').pop() || 'Okänd fil';
+  const normalizedFileKey = material.fileKey.toLowerCase();
 
   const renderContent = () => {
-    const fullUrl = `${FILE_BASE_URL}/${material.fileKey}`;
-    const normalizedFileKey = material.fileKey.toLowerCase();
+    if (urlLoading) {
+      return <p>Laddar media...</p>;
+    }
+    if (urlError || !mediaUrl) {
+      return <p>{urlError ?? 'Kunde inte ladda filen.'}</p>;
+    }
 
-    // NYTT: Logik för att rendera videofiler
-    if (normalizedFileKey.endsWith('.mp4') || normalizedFileKey.endsWith('.webm') || normalizedFileKey.endsWith('.mov')) {
+    if (
+      normalizedFileKey.endsWith('.mp4') ||
+      normalizedFileKey.endsWith('.webm') ||
+      normalizedFileKey.endsWith('.mov')
+    ) {
       return (
-        <video 
-          src={fullUrl} 
-          className={styles.videoPlayer} // Du behöver lägga till denna klass i din .scss-fil
-          controls 
+        <video
+          src={mediaUrl}
+          className={styles.videoPlayer}
+          controls
           autoPlay
           aria-label={`Videospelare för ${displayName}`}
         >
@@ -68,19 +76,25 @@ export const MediaModal = ({ isOpen, onClose, material }: MediaModalProps) => {
         </video>
       );
     }
-    
+
     if (normalizedFileKey.endsWith('.pdf')) {
-  // Använd Google Docs Viewer för bättre kompatibilitet på mobila enheter
-  const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(fullUrl)}&embedded=true`;
-  return <iframe src={viewerUrl} className={styles.pdfViewer} title={displayName} frameBorder="0" />;
-}
-    
+      const viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(mediaUrl)}&embedded=true`;
+      return (
+        <iframe
+          src={viewerUrl}
+          className={styles.pdfViewer}
+          title={displayName}
+          frameBorder="0"
+        />
+      );
+    }
+
     if (normalizedFileKey.endsWith('.txt')) {
-      if (isLoading) return <p>Laddar text...</p>;
+      if (textLoading) return <p>Laddar text...</p>;
       return <pre className={styles.textContent}>{textContent}</pre>;
     }
-    
-    return <p>Filtypen kan inte förhandsvisas. <a href={fullUrl} target="_blank" rel="noopener noreferrer">Öppna i ny flik</a></p>;
+
+    return <p>Den här filtypen kan bara användas i appen och kan inte förhandsvisas här.</p>;
   };
 
   const mount =
@@ -98,9 +112,7 @@ export const MediaModal = ({ isOpen, onClose, material }: MediaModalProps) => {
             <IoClose size={24} />
           </button>
         </header>
-        <div className={styles.content}>
-          {renderContent()}
-        </div>
+        <div className={styles.content}>{renderContent()}</div>
       </div>
     </div>,
     mount
