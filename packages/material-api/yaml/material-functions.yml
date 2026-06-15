@@ -111,6 +111,25 @@ listMaterials:
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
 
+getDownloadUrls:
+  handler: functions/getDownloadUrls.handler
+  name: hrk-get-download-urls-${sls:stage}
+  description: Returns presigned S3 GET URLs for in-app media playback (materials and practice files).
+  events:
+    - httpApi:
+        method: POST
+        path: /materials/download-urls
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MEDIA_BUCKET_NAME: ${self:custom.mediaBucketName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:GetObject"
+      Resource:
+        - "arn:aws:s3:::${self:custom.mediaBucketName}/*"
+
 listAllGlobalMaterials:
   handler: functions/listAllGlobalMaterials.handler
   name: hrk-list-all-global-materials-${sls:stage}
