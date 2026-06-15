@@ -93,13 +93,10 @@ createPracticeMaterial:
       Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
 
 listMaterials:
-  handler: functions/list.handler # Båda endpoints använder samma handler
+  handler: functions/list.handler
   name: hrk-list-materials-${sls:stage}
-  description: Fetches materials for a group, either from URL param or auth context.
+  description: Fetches materials for the logged-in user's choir.
   events:
-    - httpApi:
-        method: GET
-        path: /groups/{groupName}/materials
     - httpApi:
         method: GET
         path: /my-materials
