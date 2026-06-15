@@ -53,18 +53,18 @@ export function hashMediaSourcesKey(sources: string[]): string {
 }
 
 /**
- * Derives S3 object key from a full media URL (matches how tracks use `VITE_S3_BUCKET_URL` + fileKey).
+ * Derives S3 object key from a media URL (public base URL or presigned GET URL).
  */
 export function extractFileKeyFromMediaUrl(src: string | undefined): string | undefined {
   const t = src?.trim();
   if (!t) return undefined;
   const base = (import.meta.env.VITE_S3_BUCKET_URL as string | undefined)?.replace(/\/$/, '') ?? '';
   if (base && t.startsWith(base)) {
-    const key = t.slice(base.length).replace(/^\//, '');
+    const key = t.slice(base.length).replace(/^\//, '').split('?')[0];
     return key || undefined;
   }
   try {
-    const path = new URL(t).pathname.replace(/^\//, '');
+    const path = new URL(t).pathname.replace(/^\//, '').split('?')[0];
     return path || undefined;
   } catch {
     return undefined;

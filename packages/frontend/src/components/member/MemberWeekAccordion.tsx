@@ -6,10 +6,8 @@ import styles from './MemberWeekAccordion.module.scss';
 import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
 
 // MaterialCategory-komponenten från din PracticePage.tsx, nu flyttad hit
-import { FileText, Music, Video, Download, Eye } from 'lucide-react';
+import { FileText, Music, Video, Eye } from 'lucide-react';
 import { FaPlayCircle } from "react-icons/fa";
-
-const S3_PUBLIC_URL = import.meta.env.VITE_S3_BUCKET_URL;
 
 interface MaterialCategoryProps {
   title: string;
@@ -26,7 +24,7 @@ const MaterialCategory: React.FC<MaterialCategoryProps> = ({ title, files, onPla
     if (key.match(/\.(mp3|wav|m4a)$/)) return <Music size={20} className={styles.fileIcon} />;
     if (key.match(/\.(mp4|mov|webm)$/)) return <Video size={20} className={styles.fileIcon} />;
     if (key.match(/\.(pdf|txt)$/)) return <FileText size={20} className={styles.fileIcon} />;
-    return <Download size={20} className={styles.fileIcon} />;
+    return <FileText size={20} className={styles.fileIcon} />;
   };
 
   const isPlayableAudio = (fileKey: string = '') => fileKey.toLowerCase().match(/\.(mp3|wav|m4a)$/);
@@ -39,7 +37,6 @@ const MaterialCategory: React.FC<MaterialCategoryProps> = ({ title, files, onPla
         {files.map(material => {
           if (!material.fileKey) return null;
           const displayName = material.title || material.fileKey.split('/').pop() || 'Okänd titel';
-          const fullUrl = `${S3_PUBLIC_URL}/${material.fileKey}`;
 
           return (
             <div key={material.materialId} className={styles.materialItem}>
@@ -57,11 +54,6 @@ const MaterialCategory: React.FC<MaterialCategoryProps> = ({ title, files, onPla
                   <button onClick={() => onView(material)} className={`${styles.actionButton} ${styles.viewButton}`} aria-label={`Visa ${displayName}`}>
                     <Eye size={30} />
                   </button>
-                )}
-                 {!isPlayableAudio(material.fileKey) && !isViewable(material.fileKey) && (
-                  <a href={fullUrl} target="_blank" rel="noopener noreferrer" className={styles.actionButton} aria-label={`Ladda ner ${displayName}`}>
-                    <Download size={22} />
-                  </a>
                 )}
               </div>
             </div>
