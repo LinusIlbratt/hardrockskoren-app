@@ -3,6 +3,11 @@ Resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: hrk-media-${sls:stage}-${aws:accountId} # Använd ${sls:stage} direkt här
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
         CorsConfiguration:
           CorsRules:
             - AllowedHeaders:
