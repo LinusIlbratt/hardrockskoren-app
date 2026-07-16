@@ -1,8 +1,11 @@
-import React, { useState, useMemo, forwardRef } from 'react';
+import { useState, useMemo, forwardRef } from 'react';
 import { StyledSelect, type SelectOption } from '@/components/ui/select/StyledSelect';
-import { Button } from '@/components/ui/button/Button';
+import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
 import { FormGroup } from '@/components/ui/form/FormGroup';
+import { DiscardChangesConfirm } from '@/components/ui/form/DiscardChangesConfirm';
+import { useModalFormGuard } from '@/hooks/useModalFormGuard';
+import { serializeFormState } from '@/utils/formState';
 import DatePicker, { registerLocale } from "react-datepicker";
 import { sv } from 'date-fns/locale';
 import { format, parse } from 'date-fns';
@@ -28,6 +31,37 @@ const weekdaysMap = [
   { label: 'Torsdag', value: 4 }, { label: 'Fredag', value: 5 }, { label: 'Lördag', value: 6 }, { label: 'Söndag', value: 0 },
 ];
 
+type RecurringFormData = {
+  title: string;
+  eventType: 'CONCERT' | 'REHEARSAL';
+  description: string;
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+  selectedWeekdays: number[];
+  repetitionInterval: number;
+};
+
+const initialFormState: RecurringFormData = {
+  title: '',
+  eventType: 'REHEARSAL',
+  description: '',
+  startDate: '',
+  endDate: '',
+  startTime: '19:00',
+  endTime: '21:00',
+  selectedWeekdays: [],
+  repetitionInterval: 1,
+};
+
+function serializeRecurringFormData(data: RecurringFormData): string {
+  return serializeFormState({
+    ...data,
+    selectedWeekdays: [...data.selectedWeekdays].sort((a, b) => a - b),
+  });
+}
+
 interface CreateRecurringEventFormProps {
   user: ReturnType<typeof useAuth>['user'];
   groupSlug: string;
@@ -35,20 +69,25 @@ interface CreateRecurringEventFormProps {
   onSuccess: () => void;
 }
 
-export const CreateRecurringEventForm = ({ user, groupSlug, authToken, onSuccess }: CreateRecurringEventFormProps) => {
-  const [formData, setFormData] = useState({
-    title: '',
-    eventType: 'REHEARSAL' as 'CONCERT' | 'REHEARSAL',
-    description: '',
-    startDate: '',
-    endDate: '',
-    startTime: '19:00',
-    endTime: '21:00',
-    selectedWeekdays: [] as number[],
-    repetitionInterval: 1,
-  });
+export const CreateRecurringEventForm = ({
+  user,
+  groupSlug,
+  authToken,
+  onSuccess,
+}: CreateRecurringEventFormProps) => {
+  const [formData, setFormData] = useState<RecurringFormData>(initialFormState);
+  const [initialSnapshot] = useState(serializeRecurringFormData(initialFormState));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isDirty = serializeRecurringFormData(formData) !== initialSnapshot;
+
+  const {
+    showDiscardConfirm,
+    requestClose,
+    confirmDiscard,
+    cancelDiscard,
+  } = useModalFormGuard({ isDirty, isBlocked: isSubmitting });
 
   const eventTypeOptions = useMemo((): SelectOption[] => {
     const options: SelectOption[] = [{ value: 'REHEARSAL', label: 'Repetition' }];
@@ -115,7 +154,7 @@ export const CreateRecurringEventForm = ({ user, groupSlug, authToken, onSuccess
       setError("Du måste välja minst en veckodag.");
       return;
     }
-    
+
     if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
       setError("Sluttiden måste vara efter starttiden.");
       return;
@@ -123,8 +162,6 @@ export const CreateRecurringEventForm = ({ user, groupSlug, authToken, onSuccess
 
     setIsSubmitting(true);
     try {
-      // ✅ ÄNDRING: Vi skickar nu `formData` direkt, eftersom dess format
-      // matchar vad din nya backend-funktion förväntar sig.
       await eventService.batchCreateEvents(groupSlug, formData, authToken);
       onSuccess();
     } catch (err: any) {
@@ -150,7 +187,7 @@ export const CreateRecurringEventForm = ({ user, groupSlug, authToken, onSuccess
             required selectsStart
             startDate={formData.startDate ? new Date(formData.startDate) : null}
             endDate={formData.endDate ? new Date(formData.endDate) : null}
-            withPortal
+            popperClassName={styles.datePickerPopper}
             customInput={<CustomDateInput className={styles.input} placeholder="Välj startdatum..." />}
           />
         </FormGroup>
@@ -164,12 +201,12 @@ export const CreateRecurringEventForm = ({ user, groupSlug, authToken, onSuccess
             startDate={formData.startDate ? new Date(formData.startDate) : null}
             endDate={formData.endDate ? new Date(formData.endDate) : null}
             minDate={formData.startDate ? new Date(formData.startDate) : undefined}
-            withPortal
+            popperClassName={styles.datePickerPopper}
             customInput={<CustomDateInput className={styles.input} placeholder="Välj slutdatum..." />}
           />
         </FormGroup>
       </div>
-      
+
       <div className={styles.row}>
         <FormGroup label="Starttid">
           <DatePicker
@@ -182,7 +219,7 @@ export const CreateRecurringEventForm = ({ user, groupSlug, authToken, onSuccess
             dateFormat="HH:mm"
             locale="sv"
             required
-            withPortal
+            popperClassName={styles.datePickerPopper}
             customInput={<CustomDateInput className={styles.input} placeholder="Välj tid..." />}
           />
         </FormGroup>
@@ -197,7 +234,7 @@ export const CreateRecurringEventForm = ({ user, groupSlug, authToken, onSuccess
             dateFormat="HH:mm"
             locale="sv"
             required
-            withPortal
+            popperClassName={styles.datePickerPopper}
             customInput={<CustomDateInput className={styles.input} placeholder="Välj tid..." />}
           />
         </FormGroup>
@@ -232,14 +269,23 @@ export const CreateRecurringEventForm = ({ user, groupSlug, authToken, onSuccess
           placeholder="Välj typ..."
         />
       </FormGroup>
-      
+
       <FormGroup label="Information (valfri)">
         <textarea name="description" value={formData.description} onChange={handleInputChange} className={styles.textarea} />
       </FormGroup>
 
-      <Button type="submit" isLoading={isSubmitting}>
-        Skapa events
-      </Button>
+      {showDiscardConfirm && (
+        <DiscardChangesConfirm onConfirm={confirmDiscard} onCancel={cancelDiscard} />
+      )}
+
+      <div className={styles.buttonGroup}>
+        <Button type="button" variant={ButtonVariant.Ghost} onClick={requestClose} disabled={isSubmitting}>
+          Avbryt
+        </Button>
+        <Button type="submit" isLoading={isSubmitting}>
+          Skapa events
+        </Button>
+      </div>
 
       {error && <p className={styles.error}>{error}</p>}
     </form>

@@ -1,56 +1,65 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button/Button';
+import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
 import { FormGroup } from '@/components/ui/form/FormGroup';
+import { DiscardChangesConfirm } from '@/components/ui/form/DiscardChangesConfirm';
+import { useModalFormGuard } from '@/hooks/useModalFormGuard';
+import { serializeFormState } from '@/utils/formState';
 import axios from 'axios';
 import styles from './CreateGroupForm.module.scss';
 
-// Typ för den data som skickas och tas emot
 interface Group {
   id: string;
   name: string;
   groupSlug: string;
   choirLeader?: string;
-  location: string; // <-- LADE TILL LOCATION
+  location: string;
 }
 
 interface CreateGroupFormProps {
   onSuccess: (newGroup: Group) => void;
 }
 
-// Typ för formulärdatan
 interface FormData {
   name: string;
   groupSlug: string;
   choirLeader: string;
-  location: string; // <-- LADE TILL LOCATION
+  location: string;
 }
 
-// Typ för vårt error-objekt
 interface FormErrors {
   name?: string;
-  location?: string; // <-- LADE TILL LOCATION
+  location?: string;
   general?: string;
 }
+
+const initialFormState: FormData = {
+  name: '',
+  groupSlug: '',
+  choirLeader: '',
+  location: '',
+};
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
 export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
-  // All formulärdata samlas i ett enda state-objekt
-  const [formData, setFormData] = useState<FormData>({
-    name: '',
-    groupSlug: '',
-    choirLeader: '',
-    location: '', // <-- LADE TILL LOCATION
-  });
-
+  const [formData, setFormData] = useState<FormData>(initialFormState);
+  const [initialSnapshot] = useState(serializeFormState(initialFormState));
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
-  // Valideringsfunktion
+  const isDirty = serializeFormState(formData) !== initialSnapshot;
+
+  const {
+    showDiscardConfirm,
+    requestClose,
+    confirmDiscard,
+    cancelDiscard,
+  } = useModalFormGuard({ isDirty, isBlocked: isLoading });
+
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
-    const { name, location } = formData; // <-- LADE TILL LOCATION
+    const { name, location } = formData;
 
     if (!name.trim()) {
       newErrors.name = 'Namn får inte vara tomt.';
@@ -58,7 +67,6 @@ export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
       newErrors.name = 'Namnet måste vara minst 3 tecken långt.';
     }
 
-    // LADE TILL VALIDERING FÖR LOCATION
     if (!location.trim()) {
       newErrors.location = 'Plats får inte vara tomt.';
     } else if (location.length < 2) {
@@ -104,7 +112,6 @@ export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
     }
   };
 
-  // En generell funktion för att hantera ändringar i alla input-fält
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -118,7 +125,7 @@ export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
       .replace(/\s+/g, '-')
       .replace(/[^a-z0-9-]/g, '')
       .slice(0, 50);
-    
+
     setFormData(prev => ({ ...prev, name: newName, groupSlug: newSlug }));
   };
 
@@ -134,7 +141,6 @@ export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
         />
       </FormGroup>
 
-      {/* LADE TILL NYTT FÄLT FÖR LOCATION */}
       <FormGroup label="Plats (stad)" htmlFor="location" error={errors.location}>
         <Input
           id="location"
@@ -155,11 +161,20 @@ export const CreateGroupForm = ({ onSuccess }: CreateGroupFormProps) => {
         />
       </FormGroup>
 
+      {showDiscardConfirm && (
+        <DiscardChangesConfirm onConfirm={confirmDiscard} onCancel={cancelDiscard} />
+      )}
+
       {errors.general && <p className={styles.generalError}>{errors.general}</p>}
 
-      <Button type="submit" isLoading={isLoading} disabled={isLoading}>
-        {isLoading ? 'Skapar...' : 'Skapa Kör'}
-      </Button>
+      <div className={styles.buttonGroup}>
+        <Button type="button" variant={ButtonVariant.Ghost} onClick={requestClose} disabled={isLoading}>
+          Avbryt
+        </Button>
+        <Button type="submit" isLoading={isLoading} disabled={isLoading}>
+          {isLoading ? 'Skapar...' : 'Skapa Kör'}
+        </Button>
+      </div>
     </form>
   );
 };
