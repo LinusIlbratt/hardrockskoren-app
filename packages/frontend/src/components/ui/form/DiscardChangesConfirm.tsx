@@ -22,7 +22,7 @@ export const DiscardChangesConfirm = ({ onConfirm, onCancel }: DiscardChangesCon
     if (!host) {
       return;
     }
-    setDialogEl(host.closest('[role="dialog"]'));
+    setDialogEl(host.closest<HTMLElement>('[role="dialog"]'));
   }, []);
 
   useLayoutEffect(() => {
