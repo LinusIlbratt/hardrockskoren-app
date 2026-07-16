@@ -93,6 +93,7 @@
 
 // Området där ditt formulär (children) renderas
 .content {
+  position: relative; // Anchor for DiscardChangesConfirm overlay
   padding: 0 var(--spacing-lg) var(--spacing-lg); // Justera padding lite
   flex-grow: 1;
   overflow-y: auto; // VIKTIGT: Gör BARA detta område scrollbart

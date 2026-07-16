@@ -31,3 +31,10 @@
     color: var(--color-accent);
     text-align: center;
   }
+
+  .buttonGroup {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+  }

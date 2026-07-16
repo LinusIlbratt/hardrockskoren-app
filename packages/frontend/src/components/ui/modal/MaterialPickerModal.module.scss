@@ -44,3 +44,11 @@
   height: 18px;
   cursor: pointer;
 }
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-lg);
+  flex-wrap: wrap;
+}

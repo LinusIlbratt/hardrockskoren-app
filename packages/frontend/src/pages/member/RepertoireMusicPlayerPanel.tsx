@@ -52,7 +52,7 @@ import {
   addPlaylistItem,
   removePlaylistItem,
 } from "@/services/musicService";
-import { Modal } from "@/components/ui/modal/Modal";
+import { CreatePlaylistModal, RenamePlaylistModal } from '@/components/music/PlaylistTitleModals';
 import { Loader, LoaderSize } from "@/components/ui/loader/Loader";
 /** Watermark asset — replace with e.g. `import tracklistWatermarkLogo from '@/assets/logo.svg'` when added. */
 import tracklistWatermarkLogo from "@/assets/images/hrk-logo.webp";
@@ -1760,104 +1760,27 @@ export function RepertoireMusicPlayerPanel({
         )}
       </div>
 
-      <Modal
+      <CreatePlaylistModal
         isOpen={mobileCreatePlaylistOpen}
+        isBusy={creatingPlaylist}
+        value={newPlaylistTitle}
+        onChange={setNewPlaylistTitle}
         onClose={() => {
-          if (!creatingPlaylist) {
-            setMobileCreatePlaylistOpen(false);
-            setNewPlaylistTitle("");
-          }
+          setMobileCreatePlaylistOpen(false);
+          setNewPlaylistTitle("");
         }}
-        title="Ny spellista"
-        footer={
-          <div className={styles.playlistRenameModalFooter}>
-            <button
-              type="button"
-              className={styles.playlistRenameModalButtonSecondary}
-              onClick={() => {
-                setMobileCreatePlaylistOpen(false);
-                setNewPlaylistTitle("");
-              }}
-              disabled={creatingPlaylist}
-            >
-              Avbryt
-            </button>
-            <button
-              type="button"
-              className={styles.playlistRenameModalButtonPrimary}
-              onClick={() => void handleCreatePlaylistMobile()}
-              disabled={creatingPlaylist || !newPlaylistTitle.trim()}
-            >
-              {creatingPlaylist ? "Skapar…" : "Skapa"}
-            </button>
-          </div>
-        }
-      >
-        <label
-          htmlFor="mobile-new-playlist-title"
-          className={styles.playlistRenameLabel}
-        >
-          Namn
-        </label>
-        <input
-          id="mobile-new-playlist-title"
-          type="text"
-          className={styles.playlistRenameInput}
-          placeholder="Min spellista"
-          value={newPlaylistTitle}
-          onChange={(e) => setNewPlaylistTitle(e.target.value)}
-          disabled={creatingPlaylist}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") void handleCreatePlaylistMobile();
-          }}
-        />
-      </Modal>
+        onSubmit={() => void handleCreatePlaylistMobile()}
+      />
 
-      <Modal
+      <RenamePlaylistModal
         isOpen={Boolean(playlistRenameTarget)}
-        onClose={() => {
-          if (!renameBusy) setPlaylistRenameTarget(null);
-        }}
-        title="Byt namn på spellista"
-        footer={
-          <div className={styles.playlistRenameModalFooter}>
-            <button
-              type="button"
-              className={styles.playlistRenameModalButtonSecondary}
-              onClick={() => setPlaylistRenameTarget(null)}
-              disabled={renameBusy}
-            >
-              Avbryt
-            </button>
-            <button
-              type="button"
-              className={styles.playlistRenameModalButtonPrimary}
-              onClick={() => void handleConfirmRenamePlaylist()}
-              disabled={renameBusy || !renameDraft.trim()}
-            >
-              {renameBusy ? "Sparar…" : "Spara"}
-            </button>
-          </div>
-        }
-      >
-        <label
-          htmlFor="playlist-rename-input"
-          className={styles.playlistRenameLabel}
-        >
-          Namn
-        </label>
-        <input
-          id="playlist-rename-input"
-          type="text"
-          className={styles.playlistRenameInput}
-          value={renameDraft}
-          onChange={(e) => setRenameDraft(e.target.value)}
-          disabled={renameBusy}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") void handleConfirmRenamePlaylist();
-          }}
-        />
-      </Modal>
+        isBusy={renameBusy}
+        value={renameDraft}
+        initialTitle={playlistRenameTarget?.title ?? ""}
+        onChange={setRenameDraft}
+        onClose={() => setPlaylistRenameTarget(null)}
+        onSubmit={() => void handleConfirmRenamePlaylist()}
+      />
     </div>
   );
 }
