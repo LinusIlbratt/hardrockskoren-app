@@ -2,18 +2,18 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal/Modal';
+import { DiscardChangesConfirm } from '@/components/ui/form/DiscardChangesConfirm';
+import { useModalFormGuard } from '@/hooks/useModalFormGuard';
 import { FiFolder } from 'react-icons/fi';
 import styles from './LibraryFolderPickerModal.module.scss';
 import type { Material } from '@/types';
 
-// --- TYPER & HJÄLPFUNKTIONER (Inkluderade här för enkelhetens skull) ---
 interface FolderNode {
   type: 'folder';
   name: string;
-  children: any[]; // Förenklad för detta syfte
+  children: FolderNode[];
 }
 
-// Återanvänd logiken för att bygga mappstrukturen
 const buildFileTree = (materials: Material[]): FolderNode => {
   const root: FolderNode = { type: 'folder', name: 'root', children: [] };
   materials.forEach(material => {
@@ -23,7 +23,7 @@ const buildFileTree = (materials: Material[]): FolderNode => {
     pathParts.slice(0, -1).forEach(part => {
       if (!part) return;
       let nextNode = currentNode.children.find(
-        (child): child is FolderNode => child.type === 'folder' && child.name === part
+        (child) => child.type === 'folder' && child.name === part
       );
       if (!nextNode) {
         nextNode = { type: 'folder', name: part, children: [] };
@@ -35,7 +35,6 @@ const buildFileTree = (materials: Material[]): FolderNode => {
   return root;
 };
 
-// --- KOMPONENTENS PROPS ---
 interface LibraryFolderPickerModalProps {
   onClose: () => void;
   onAdd: (selectedFolder: FolderNode) => void;
@@ -43,11 +42,20 @@ interface LibraryFolderPickerModalProps {
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
 
-export const LibraryFolderPickerModal: React.FC<LibraryFolderPickerModalProps> = ({ onClose, onAdd }) => {
+function LibraryFolderPickerModalBody({ onClose, onAdd }: LibraryFolderPickerModalProps) {
   const [folders, setFolders] = useState<FolderNode[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<FolderNode | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const isDirty = selectedFolder !== null;
+
+  const {
+    showDiscardConfirm,
+    requestClose,
+    confirmDiscard,
+    cancelDiscard,
+  } = useModalFormGuard({ isDirty, onCloseFallback: onClose });
 
   useEffect(() => {
     const fetchFolders = async () => {
@@ -107,16 +115,27 @@ export const LibraryFolderPickerModal: React.FC<LibraryFolderPickerModalProps> =
   };
 
   return (
-    <Modal isOpen={true} onClose={onClose} title="Välj mapp från mediabiblioteket">
+    <>
       <div className={styles.modalContent}>
         {renderContent()}
       </div>
+
+      {showDiscardConfirm && (
+        <DiscardChangesConfirm onConfirm={confirmDiscard} onCancel={cancelDiscard} />
+      )}
+
       <div className={styles.modalFooter}>
-        <Button variant={ButtonVariant.Ghost} onClick={onClose}>Avbryt</Button>
+        <Button variant={ButtonVariant.Ghost} onClick={requestClose}>Avbryt</Button>
         <Button onClick={handleAddClick} disabled={!selectedFolder}>
           Lägg till
         </Button>
       </div>
-    </Modal>
+    </>
   );
-};
+}
+
+export const LibraryFolderPickerModal: React.FC<LibraryFolderPickerModalProps> = (props) => (
+  <Modal formMode isOpen onClose={props.onClose} title="Välj mapp från mediabiblioteket">
+    <LibraryFolderPickerModalBody {...props} />
+  </Modal>
+);

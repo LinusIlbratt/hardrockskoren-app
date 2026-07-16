@@ -13,8 +13,6 @@ import type { Event } from '@/types';
 import styles from './AdminEventPage.module.scss';
 import { useAuth } from '@/context/AuthContext';
 
-// Notifikations-hooks är nu borttagna eftersom de inte behövs för admins/leaders
-
 export const AdminEventPage = () => {
   const { groupName } = useParams<{ groupName: string }>();
   const { user } = useAuth();
@@ -35,7 +33,6 @@ export const AdminEventPage = () => {
     setIsLoading(true);
     try {
       const data = await eventService.listEvents(groupName, token);
-      // Notera: Ändrade sorteringen till fallande (nyast först) vilket ofta är mer logiskt i en admin-vy
       const sortedData = data.sort((a, b) => new Date(b.eventDate).getTime() - new Date(a.eventDate).getTime());
       setEvents(sortedData);
     } catch (error) {
@@ -49,6 +46,15 @@ export const AdminEventPage = () => {
 
   const handleOpenCreateModal = () => { setEventToEdit(null); setIsEventModalOpen(true); };
   const handleOpenEditModal = (event: Event) => { setEventToEdit(event); setIsEventModalOpen(true); };
+
+  const handleCloseEventModal = () => {
+    setIsEventModalOpen(false);
+    setEventToEdit(null);
+  };
+
+  const handleCloseRecurringModal = () => {
+    setIsRecurringModalOpen(false);
+  };
 
   const handleConfirmDelete = async () => {
     const token = localStorage.getItem('authToken');
@@ -148,10 +154,21 @@ export const AdminEventPage = () => {
         )}
       </section>
 
-      {/* --- Modaler --- */}
-      <Modal isOpen={isEventModalOpen} onClose={() => setIsEventModalOpen(false)} title={eventToEdit ? 'Redigera event' : 'Skapa nytt event'}>
-        <CreateEventForm user={user} groupSlug={groupName!} authToken={localStorage.getItem('authToken')!} eventToEdit={eventToEdit} onClose={() => setIsEventModalOpen(false)} onSuccess={() => { setIsEventModalOpen(false); fetchEvents(); }} />
+      <Modal
+        formMode
+        isOpen={isEventModalOpen}
+        onClose={handleCloseEventModal}
+        title={eventToEdit ? 'Redigera event' : 'Skapa nytt event'}
+      >
+        <CreateEventForm
+          user={user}
+          groupSlug={groupName!}
+          authToken={localStorage.getItem('authToken')!}
+          eventToEdit={eventToEdit}
+          onSuccess={() => { handleCloseEventModal(); fetchEvents(); }}
+        />
       </Modal>
+
       <Modal isOpen={!!eventToDelete} onClose={() => setEventToDelete(null)} title="Bekräfta radering">
         <div>
           <p>Är du säker på att du vill radera eventet "{eventToDelete?.title}"?</p>
@@ -161,9 +178,21 @@ export const AdminEventPage = () => {
           </div>
         </div>
       </Modal>
-      <Modal isOpen={isRecurringModalOpen} onClose={() => setIsRecurringModalOpen(false)} title="Skapa återkommande events">
-        <CreateRecurringEventForm user={user} groupSlug={groupName!} authToken={localStorage.getItem('authToken')!} onSuccess={() => { setIsRecurringModalOpen(false); fetchEvents(); }} />
+
+      <Modal
+        formMode
+        isOpen={isRecurringModalOpen}
+        onClose={handleCloseRecurringModal}
+        title="Skapa återkommande events"
+      >
+        <CreateRecurringEventForm
+          user={user}
+          groupSlug={groupName!}
+          authToken={localStorage.getItem('authToken')!}
+          onSuccess={() => { handleCloseRecurringModal(); fetchEvents(); }}
+        />
       </Modal>
+
       <Modal isOpen={!!eventToShowDescription} onClose={() => setEventToShowDescription(null)} title={eventToShowDescription?.title || "Eventbeskrivning"}>
         <div>
           <pre className={styles.descriptionText}>{eventToShowDescription?.description}</pre>

@@ -30,6 +30,19 @@
   color: var(--color-text-secondary);
 }
 
+.buttonGroup {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.generalError {
+  color: var(--color-accent);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+
 
 
 // Just nu behövs ingen specifik styling för knappen eftersom den ärver

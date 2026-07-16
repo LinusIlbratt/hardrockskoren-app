@@ -275,6 +275,7 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
       )}
 
       <Modal
+        formMode
         isOpen={!!roleToInvite}
         onClose={() => setRoleToInvite(null)}
         title={`Bjud in ny ${roleToInvite === 'user' ? 'medlem' : 'körledare'}`}

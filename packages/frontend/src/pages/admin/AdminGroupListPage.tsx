@@ -148,6 +148,7 @@ export const AdminGroupListPage = () => {
 
         {/* Modal för att SKAPA kör */}
         <Modal
+          formMode
           isOpen={isCreateModalOpen}
           onClose={() => setIsCreateModalOpen(false)}
           title="Skapa ny kör"

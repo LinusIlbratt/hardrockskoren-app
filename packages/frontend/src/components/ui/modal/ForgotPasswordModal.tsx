@@ -1,11 +1,13 @@
 // src/components/auth/ForgotPasswordModal.tsx
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import axios from 'axios';
 import { Modal } from '@/components/ui/modal/Modal';
 import { Input } from '@/components/ui/input/Input';
-import { Button } from '@/components/ui/button/Button';
+import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { FormGroup } from '@/components/ui/form/FormGroup';
+import { DiscardChangesConfirm } from '@/components/ui/form/DiscardChangesConfirm';
+import { useModalFormGuard } from '@/hooks/useModalFormGuard';
 import styles from './ForgotPasswordModal.module.scss';
 
 const API_BASE_URL = import.meta.env.VITE_AUTH_API_URL;
@@ -15,19 +17,32 @@ interface ForgotPasswordModalProps {
   onClose: () => void;
 }
 
-export const ForgotPasswordModal = ({ isOpen, onClose }: ForgotPasswordModalProps) => {
-  // State för att hantera de olika stegen i flödet
+function ForgotPasswordModalContent({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState<'enterEmail' | 'enterCode' | 'success'>('enterEmail');
-  
-  // State för formulärdata och felhantering
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+
+  const isDirty = useMemo(() => {
+    if (step === 'success') {
+      return false;
+    }
+    if (step === 'enterEmail') {
+      return email.trim().length > 0;
+    }
+    return code.trim().length > 0 || newPassword.length > 0 || confirmPassword.length > 0;
+  }, [step, email, code, newPassword, confirmPassword]);
+
+  const {
+    showDiscardConfirm,
+    requestClose,
+    confirmDiscard,
+    cancelDiscard,
+  } = useModalFormGuard({ isDirty, isBlocked: isLoading, onCloseFallback: onClose });
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +53,7 @@ export const ForgotPasswordModal = ({ isOpen, onClose }: ForgotPasswordModalProp
     try {
       const response = await axios.post(`${API_BASE_URL}/forgot-password`, { email });
       setMessage(response.data.message);
-      setStep('enterCode'); 
+      setStep('enterCode');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Ett oväntat fel uppstod.');
     } finally {
@@ -46,7 +61,6 @@ export const ForgotPasswordModal = ({ isOpen, onClose }: ForgotPasswordModalProp
     }
   };
 
-  // NYTT: Funktion för att hantera det sista steget
   const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
@@ -71,19 +85,6 @@ export const ForgotPasswordModal = ({ isOpen, onClose }: ForgotPasswordModalProp
     }
   };
 
-  const handleClose = () => {
-    onClose();
-    setTimeout(() => {
-      setStep('enterEmail');
-      setEmail('');
-      setCode('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setError(null);
-      setMessage(null);
-    }, 300);
-  };
-
   const renderContent = () => {
     switch (step) {
       case 'enterEmail':
@@ -96,11 +97,14 @@ export const ForgotPasswordModal = ({ isOpen, onClose }: ForgotPasswordModalProp
               <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="din@epost.se" required autoFocus />
             </FormGroup>
             <div className={styles.buttonGroup}>
-              <Button type="submit" isLoading={isLoading} fullWidth>Skicka kod</Button>
+              <Button type="button" variant={ButtonVariant.Ghost} onClick={requestClose} disabled={isLoading}>
+                Avbryt
+              </Button>
+              <Button type="submit" isLoading={isLoading}>Skicka kod</Button>
             </div>
           </form>
         );
-      
+
       case 'enterCode':
         return (
           <form onSubmit={handleResetSubmit} className={styles.form}>
@@ -115,7 +119,10 @@ export const ForgotPasswordModal = ({ isOpen, onClose }: ForgotPasswordModalProp
               <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••••" required />
             </FormGroup>
             <div className={styles.buttonGroup}>
-              <Button type="submit" isLoading={isLoading} fullWidth>Återställ lösenord</Button>
+              <Button type="button" variant={ButtonVariant.Ghost} onClick={requestClose} disabled={isLoading}>
+                Avbryt
+              </Button>
+              <Button type="submit" isLoading={isLoading}>Återställ lösenord</Button>
             </div>
           </form>
         );
@@ -124,7 +131,7 @@ export const ForgotPasswordModal = ({ isOpen, onClose }: ForgotPasswordModalProp
         return (
           <div className={styles.successContainer}>
             <p>{message}</p>
-            <Button onClick={handleClose} fullWidth>Stäng och logga in</Button>
+            <Button onClick={requestClose} fullWidth>Stäng och logga in</Button>
           </div>
         );
 
@@ -134,8 +141,17 @@ export const ForgotPasswordModal = ({ isOpen, onClose }: ForgotPasswordModalProp
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="Återställ lösenord">
+    <>
       {renderContent()}
-    </Modal>
+      {showDiscardConfirm && (
+        <DiscardChangesConfirm onConfirm={confirmDiscard} onCancel={cancelDiscard} />
+      )}
+    </>
   );
-};
+}
+
+export const ForgotPasswordModal = ({ isOpen, onClose }: ForgotPasswordModalProps) => (
+  <Modal formMode isOpen={isOpen} onClose={onClose} title="Återställ lösenord">
+    {isOpen ? <ForgotPasswordModalContent onClose={onClose} /> : null}
+  </Modal>
+);

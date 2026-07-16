@@ -1,23 +1,21 @@
-// CreateEventForm.tsx - Komplett kod med lösning för mobilvänlig DatePicker
-
-import React, { useState, useEffect, useMemo, forwardRef } from 'react';
+import { useState, useEffect, useMemo, forwardRef } from 'react';
 import { StyledSelect, type SelectOption } from '@/components/ui/select/StyledSelect';
-import DatePicker, { registerLocale } from "react-datepicker"; 
-import "react-datepicker/dist/react-datepicker.css"; // Glöm inte att importera CSS för DatePicker
-import { sv } from 'date-fns/locale'; 
+import DatePicker, { registerLocale } from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { sv } from 'date-fns/locale';
 import { format, parse } from 'date-fns';
-registerLocale('sv', sv); 
+registerLocale('sv', sv);
 import * as eventService from '@/services/eventService';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
 import { FormGroup } from '@/components/ui/form/FormGroup';
+import { DiscardChangesConfirm } from '@/components/ui/form/DiscardChangesConfirm';
+import { useModalFormGuard } from '@/hooks/useModalFormGuard';
+import { serializeFormState } from '@/utils/formState';
 import styles from './CreateEventForm.module.scss';
 import type { Event } from '@/types';
 import { useAuth } from '@/context/AuthContext';
 
-// --- HJÄLPKOMPONENT FÖR DATEPICKER ---
-// Byter ut <input> mot en <button> för att undvika att tangentbordet dyker upp på mobilen.
-// forwardRef är nödvändigt för att react-datepicker ska fungera korrekt.
 const CustomDateInput = forwardRef<HTMLButtonElement, { value?: string; onClick?: () => void; className?: string; placeholder?: string }>(
   ({ value, onClick, className, placeholder }, ref) => (
     <button
@@ -32,14 +30,12 @@ const CustomDateInput = forwardRef<HTMLButtonElement, { value?: string; onClick?
 );
 CustomDateInput.displayName = 'CustomDateInput';
 
-// --- PROPS OCH STATE-TYPER ---
 interface CreateEventFormProps {
   user: ReturnType<typeof useAuth>['user'];
   groupSlug: string;
   authToken: string;
   eventToEdit: Event | null;
   onSuccess: () => void;
-  onClose: () => void;
 }
 
 interface FormErrors {
@@ -51,19 +47,53 @@ interface FormErrors {
   general?: string;
 }
 
-const initialFormState = {
+type FormData = {
+  title: string;
+  eventDate: Date | null;
+  startTime: string;
+  endTime: string;
+  eventType: 'REHEARSAL' | 'CONCERT';
+  description: string;
+};
+
+const initialFormState: FormData = {
   title: '',
-  eventDate: null as Date | null,
+  eventDate: null,
   startTime: '',
   endTime: '',
-  eventType: 'REHEARSAL' as 'REHEARSAL' | 'CONCERT',
+  eventType: 'REHEARSAL',
   description: '',
 };
 
+function formDataFromEvent(event: Event): FormData {
+  const startDate = new Date(event.eventDate);
+  const endDate = event.endDate ? new Date(event.endDate) : startDate;
 
-// --- HUVUDKOMPONENT ---
-export const CreateEventForm = ({ user, groupSlug, authToken, eventToEdit, onSuccess, onClose }: CreateEventFormProps) => {
-  const [formData, setFormData] = useState(initialFormState);
+  return {
+    title: event.title,
+    eventDate: startDate,
+    startTime: format(startDate, 'HH:mm'),
+    endTime: format(endDate, 'HH:mm'),
+    eventType: event.eventType as 'REHEARSAL' | 'CONCERT',
+    description: event.description || '',
+  };
+}
+
+function serializeEventFormData(data: FormData): string {
+  return serializeFormState({
+    title: data.title,
+    // Compare calendar day only — avoids false dirty from timezone/time-of-day on Date.
+    eventDate: data.eventDate ? format(data.eventDate, 'yyyy-MM-dd') : null,
+    startTime: data.startTime,
+    endTime: data.endTime,
+    eventType: data.eventType,
+    description: data.description,
+  });
+}
+
+export const CreateEventForm = ({ user, groupSlug, authToken, eventToEdit, onSuccess }: CreateEventFormProps) => {
+  const [formData, setFormData] = useState<FormData>(initialFormState);
+  const [initialSnapshot, setInitialSnapshot] = useState(serializeEventFormData(initialFormState));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -78,22 +108,20 @@ export const CreateEventForm = ({ user, groupSlug, authToken, eventToEdit, onSuc
   }, [user]);
 
   useEffect(() => {
-    if (eventToEdit) {
-      const startDate = new Date(eventToEdit.eventDate);
-      const endDate = eventToEdit.endDate ? new Date(eventToEdit.endDate) : startDate;
-
-      setFormData({
-        title: eventToEdit.title,
-        eventDate: startDate,
-        startTime: format(startDate, 'HH:mm'),
-        endTime: format(endDate, 'HH:mm'),
-        eventType: eventToEdit.eventType as 'REHEARSAL' | 'CONCERT',
-        description: eventToEdit.description || '',
-      });
-    } else {
-      setFormData(initialFormState);
-    }
+    const nextData = eventToEdit ? formDataFromEvent(eventToEdit) : initialFormState;
+    setFormData(nextData);
+    setInitialSnapshot(serializeEventFormData(nextData));
+    setErrors({});
   }, [eventToEdit]);
+
+  const isDirty = serializeEventFormData(formData) !== initialSnapshot;
+
+  const {
+    showDiscardConfirm,
+    requestClose,
+    confirmDiscard,
+    cancelDiscard,
+  } = useModalFormGuard({ isDirty, isBlocked: isSubmitting });
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -106,7 +134,7 @@ export const CreateEventForm = ({ user, groupSlug, authToken, eventToEdit, onSuc
     if (formData.startTime && formData.endTime && formData.startTime >= formData.endTime) {
       newErrors.endTime = 'Sluttiden måste vara efter starttiden.';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -138,7 +166,7 @@ export const CreateEventForm = ({ user, groupSlug, authToken, eventToEdit, onSuc
 
     setIsSubmitting(true);
     setErrors({});
-    
+
     const dateString = format(formData.eventDate!, 'yyyy-MM-dd');
     const submissionData = {
       title: formData.title,
@@ -183,7 +211,7 @@ export const CreateEventForm = ({ user, groupSlug, authToken, eventToEdit, onSuc
             dateFormat="yyyy-MM-dd"
             locale="sv"
             required
-            withPortal
+            popperClassName={styles.datePickerPopper}
             customInput={
               <CustomDateInput
                 className={styles.input}
@@ -192,7 +220,7 @@ export const CreateEventForm = ({ user, groupSlug, authToken, eventToEdit, onSuc
             }
           />
         </FormGroup>
-        
+
         <div className={styles.timeInputsRow}>
           <FormGroup label="Start" error={errors.startTime} className={styles.timeField}>
             <DatePicker
@@ -205,8 +233,7 @@ export const CreateEventForm = ({ user, groupSlug, authToken, eventToEdit, onSuc
               dateFormat="HH:mm"
               locale="sv"
               required
-              popperClassName="time-picker-popper"
-              withPortal
+              popperClassName={styles.datePickerPopper}
               customInput={
                 <CustomDateInput
                   className={styles.input}
@@ -227,8 +254,7 @@ export const CreateEventForm = ({ user, groupSlug, authToken, eventToEdit, onSuc
               dateFormat="HH:mm"
               locale="sv"
               required
-              popperClassName="time-picker-popper"
-              withPortal
+              popperClassName={styles.datePickerPopper}
               customInput={
                 <CustomDateInput
                   className={styles.input}
@@ -254,8 +280,12 @@ export const CreateEventForm = ({ user, groupSlug, authToken, eventToEdit, onSuc
         <textarea name="description" value={formData.description} onChange={handleInputChange} className={styles.textarea} />
       </FormGroup>
 
+      {showDiscardConfirm && (
+        <DiscardChangesConfirm onConfirm={confirmDiscard} onCancel={cancelDiscard} />
+      )}
+
       <div className={styles.buttonGroup}>
-        <Button type="button" variant={ButtonVariant.Ghost} onClick={onClose}>
+        <Button type="button" variant={ButtonVariant.Ghost} onClick={requestClose} disabled={isSubmitting}>
           Avbryt
         </Button>
         <Button type="submit" isLoading={isSubmitting} disabled={isSubmitting}>

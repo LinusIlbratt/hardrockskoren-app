@@ -120,3 +120,14 @@
     flex-direction: row;
   }
 }
+
+.buttonGroup {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+}
+
+.datePickerPopper {
+  z-index: 2 !important;
+}
