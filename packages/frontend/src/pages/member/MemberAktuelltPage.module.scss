@@ -1,0 +1,94 @@
+@use '@/styles/variables' as *;
+
+.page {
+  @include column(var(--spacing-lg));
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-h2);
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.muted {
+  color: var(--color-text-secondary);
+}
+
+.error {
+  color: var(--color-error, #ff6b6b);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  @include column(var(--spacing-md));
+}
+
+.card {
+  width: 100%;
+  text-align: left;
+  padding: var(--spacing-md);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  color: inherit;
+  cursor: pointer;
+
+  &:hover {
+    background-color: var(--color-background-hover-strong, transparent);
+  }
+}
+
+.unread {
+  /* emphasis via dot + title weight */
+}
+
+.read {
+  opacity: 0.85;
+}
+
+.cardHeader {
+  @include column(var(--spacing-xs));
+  margin-bottom: var(--spacing-sm);
+}
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--fs-md);
+  font-weight: 700;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: var(--color-accent, #e53935);
+  flex-shrink: 0;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+}
+
+.scope {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.body {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}

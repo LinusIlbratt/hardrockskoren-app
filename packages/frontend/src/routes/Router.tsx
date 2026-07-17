@@ -14,7 +14,9 @@ import { AdminUploadPracticePage } from '@/pages/admin/AdminUploadPracticePage';
 import { AdminUserManagementPage } from "@/pages/admin/AdminUserManagementPage";
 import { RegistrationPage } from "@/pages/RegistrationPage";
 import { AdminEventPage } from "@/pages/admin/AdminEventPage";
+import { AdminMessagePage } from "@/pages/admin/AdminMessagePage";
 import { MemberDashboard } from "@/pages/member/MemberDashboard";
+import { MemberAktuelltPage } from "@/pages/member/MemberAktuelltPage";
 import { LeaderDashboard } from "@/pages/leader/LeaderDashboard";
 import { MemberListRepertoirePage } from "@/pages/member/MemberListRepertoirePage";
 import { MemberRepertoireMaterialPage } from "@/pages/member/MemberRepertoireMaterialPage";
@@ -109,6 +111,10 @@ const router = createBrowserRouter([
                 element: <AdminUploadPracticePage />,
               },
               {
+                path: "messages",
+                element: <AdminMessagePage />,
+              },
+              {
                 path: "groups",
                 element: <AdminGroupListPage />,
               },
@@ -119,6 +125,7 @@ const router = createBrowserRouter([
                   { path: "repertoires", element: <AdminRepertoireListPage /> },
                   // ✅ ÄNDRING 1 HÄR:
                   { path: "repertoires/:repertoireId/materials/*", element: <AdminRepertoireMaterialPage /> },
+                  { path: "aktuellt", element: <MemberAktuelltPage /> },
                   { path: "concerts", element: <AdminEventPage /> },
                   { path: "practice", element: <PracticePage /> },
                   { path: "users", element: <AdminUserManagementPage viewerRole="admin" /> },
@@ -153,6 +160,10 @@ const router = createBrowserRouter([
                   {
                     path: "concerts",
                     element: <AdminEventPage />,
+                  },
+                  {
+                    path: "aktuellt",
+                    element: <MemberAktuelltPage />,
                   },
                   {
                     path: "users",
@@ -212,6 +223,10 @@ const router = createBrowserRouter([
                   {
                     path: "concerts",
                     element: <MemberEventPage />,
+                  },
+                  {
+                    path: "aktuellt",
+                    element: <MemberAktuelltPage />,
                   },
                 ]
               },

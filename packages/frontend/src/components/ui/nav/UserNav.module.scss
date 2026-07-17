@@ -66,6 +66,18 @@
   animation: pop-in 0.5s ease-out;
 }
 
+.unreadDot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 10px;
+  height: 10px;
+  background-color: var(--color-accent, #e53935);
+  border-radius: 50%;
+  border: 2px solid var(--color-dark-gray);
+  animation: pop-in 0.5s ease-out;
+}
+
 // Keyframes för animationen
 @keyframes pop-in {
   0% {

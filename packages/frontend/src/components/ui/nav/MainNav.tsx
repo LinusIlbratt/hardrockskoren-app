@@ -90,6 +90,7 @@ interface MainNavProps {
         {user?.role === 'admin' && (
           <>
             <NavLink to="/admin/groups" className={styles.navLink} onClick={handleLinkClick}>Körer</NavLink>
+            <NavLink to="/admin/messages" className={styles.navLink} onClick={handleLinkClick}>Meddelande</NavLink>
             <NavLink to="/admin/globalMaterial" className={styles.navLink} onClick={handleLinkClick}>Material</NavLink>
             <NavLink to="/admin/practice" className={styles.navLink} onClick={handleLinkClick}>Sjungupp!</NavLink>
           </>

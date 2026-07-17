@@ -26,3 +26,8 @@ services:
     path: music-api
     dependsOn:
       - infra-service
+
+  message-api:
+    path: message-api
+    dependsOn:
+      - infra-service

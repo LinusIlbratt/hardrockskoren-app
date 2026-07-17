@@ -89,4 +89,11 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   "DELETE /playlists/{playlistId}/items/{materialId}": RoleGroups.ALL_LOGGED_IN,
   "PATCH /playlists/{playlistId}": RoleGroups.ALL_LOGGED_IN,
   "DELETE /playlists/{playlistId}": RoleGroups.ALL_LOGGED_IN,
+
+  // === Aktuellt / Messages (message-api) ===
+  "POST /messages": RoleGroups.ADMIN_ONLY,
+  "GET /groups/{groupSlug}/messages": RoleGroups.ALL_LOGGED_IN,
+  "GET /groups/{groupSlug}/messages/unread-status": RoleGroups.ALL_LOGGED_IN,
+  "POST /messages/{messageId}/read": RoleGroups.ALL_LOGGED_IN,
+  "DELETE /messages/{messageId}": RoleGroups.ADMIN_ONLY,
 };

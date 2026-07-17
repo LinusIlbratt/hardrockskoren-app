@@ -1,0 +1,110 @@
+createMessage:
+  handler: functions/message/create.handler
+  name: hrk-create-message-${sls:stage}
+  description: Admin creates Aktuellt message(s) for ALL or one/many choirs (fan-out).
+  events:
+    - httpApi:
+        method: POST
+        path: /messages
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:PutItem"
+        - "dynamodb:GetItem"
+        - "dynamodb:BatchGetItem"
+        - "dynamodb:TransactWriteItems"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+listMessages:
+  handler: functions/message/list.handler
+  name: hrk-list-messages-${sls:stage}
+  description: Lists Aktuellt feed for a choir (choir + ALL), with isRead.
+  events:
+    - httpApi:
+        method: GET
+        path: /groups/{groupSlug}/messages
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+        - "dynamodb:BatchGetItem"
+        - "dynamodb:GetItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
+
+unreadStatus:
+  handler: functions/message/unreadStatus.handler
+  name: hrk-messages-unread-status-${sls:stage}
+  description: Returns hasUnread / unreadCount for Aktuellt badge.
+  events:
+    - httpApi:
+        method: GET
+        path: /groups/{groupSlug}/messages/unread-status
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+        - "dynamodb:BatchGetItem"
+        - "dynamodb:GetItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
+
+markMessageRead:
+  handler: functions/message/markRead.handler
+  name: hrk-mark-message-read-${sls:stage}
+  description: Marks a message as read for the authenticated user.
+  events:
+    - httpApi:
+        method: POST
+        path: /messages/{messageId}/read
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
+
+deleteMessage:
+  handler: functions/message/delete.handler
+  name: hrk-delete-message-${sls:stage}
+  description: Admin hard-deletes a message (and its meta pointer).
+  events:
+    - httpApi:
+        method: DELETE
+        path: /messages/{messageId}
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:DeleteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"

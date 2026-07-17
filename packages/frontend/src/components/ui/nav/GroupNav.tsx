@@ -1,8 +1,11 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useParams } from "react-router-dom";
 import styles from './GroupNav.module.scss';
+import { useMessageUnread } from "@/hooks/useMessageUnread";
 
 export const GroupNav = () => {
-  // Hjälpfunktion för att dynamiskt sätta klassnamn
+  const { groupName } = useParams<{ groupName: string }>();
+  const { unreadStatus } = useMessageUnread(groupName);
+
   const getLinkClassName = ({ isActive }: { isActive: boolean }) => 
     isActive ? `${styles.navLink} ${styles.active}` : styles.navLink;
 
@@ -23,6 +26,16 @@ export const GroupNav = () => {
         data-tour="group-nav-practice"
       >
         Sjungupp!
+      </NavLink>
+      <NavLink
+        to="aktuellt"
+        className={getLinkClassName}
+        data-tour="group-nav-aktuellt"
+      >
+        Aktuellt
+        {unreadStatus.hasUnread && (
+          <span className={styles.badge} aria-label="Olästa meddelanden" />
+        )}
       </NavLink>
       <NavLink
         to="concerts"

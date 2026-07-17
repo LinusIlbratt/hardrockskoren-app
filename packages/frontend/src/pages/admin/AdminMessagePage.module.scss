@@ -1,0 +1,87 @@
+@use '@/styles/variables' as *;
+
+.page {
+  @include column(var(--spacing-xl));
+}
+
+.title {
+  margin: 0;
+  font-size: var(--fs-h2);
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+  max-width: 60ch;
+}
+
+.form {
+  @include column(var(--spacing-lg));
+  width: 100%;
+  max-width: 800px;
+}
+
+.audienceFieldset {
+  margin: 0;
+  padding: 0;
+  border: none;
+  @include column(var(--spacing-sm));
+}
+
+.audienceLegend {
+  padding: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.audienceOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.radioLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  cursor: pointer;
+  color: var(--color-text);
+  font-size: var(--fs-sm);
+
+  input {
+    accent-color: var(--color-primary);
+  }
+}
+
+.hint {
+  margin: var(--spacing-xs) 0 0;
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+}
+
+.textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: var(--spacing-md);
+  background-color: var(--color-dark-gray);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  resize: vertical;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+}
+
+.success {
+  color: var(--color-success, #6fdf8a);
+}
+
+.error {
+  color: var(--color-error, #ff6b6b);
+}
