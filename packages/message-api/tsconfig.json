@@ -1,5 +1,5 @@
 {
-  "display": "Node 18",
+  "display": "Node 20",
   "compilerOptions": {
     "lib": ["es2022"],
     "module": "commonjs",

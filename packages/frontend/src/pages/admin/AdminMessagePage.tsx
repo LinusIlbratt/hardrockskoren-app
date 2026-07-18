@@ -1,16 +1,28 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
-import { Button, ButtonVariant } from "@/components/ui/button/Button";
+import {
+  Button,
+  ButtonSize,
+  ButtonVariant,
+} from "@/components/ui/button/Button";
 import { FormGroup } from "@/components/ui/form/FormGroup";
 import { Input } from "@/components/ui/input/Input";
+import { Modal } from "@/components/ui/modal/Modal";
 import { StyledSelect, type SelectOption } from "@/components/ui/select/StyledSelect";
 import {
   createMessage,
+  listSentMessages,
   type CreateMessageResponse,
+  type SentMessage,
 } from "@/services/messageService";
+import {
+  formatMessageListTime,
+  formatMessageSender,
+} from "@/utils/messagePreview";
 import styles from "./AdminMessagePage.module.scss";
 
 const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL;
+const HISTORY_PAGE_SIZE = 20;
 
 type AudienceMode = "all" | "selected";
 
@@ -23,11 +35,39 @@ function formatCreateSuccess(result: CreateMessageResponse): string {
   if (result.scope === "all") {
     return "Meddelandet har skickats till alla körer.";
   }
-  const n = result.count;
-  if (n === 1) {
+  const n = result.targets?.length ?? 0;
+  if (n <= 1) {
     return "Meddelandet har skickats till 1 kör.";
   }
   return `Meddelandet har skickats till ${n} körer.`;
+}
+
+function formatTargetsLabel(
+  message: SentMessage,
+  groupsBySlug: Map<string, string>
+): string {
+  if (message.scope === "all" || message.targets.includes("ALL")) {
+    return "Alla körer";
+  }
+  return message.targets
+    .map((slug) => groupsBySlug.get(slug) ?? slug)
+    .join(", ");
+}
+
+/** Compact list label: avoid wrapping long multi-choir strings. */
+function formatTargetsShort(
+  message: SentMessage,
+  groupsBySlug: Map<string, string>
+): string {
+  if (message.scope === "all" || message.targets.includes("ALL")) {
+    return "Alla körer";
+  }
+  const names = message.targets.map(
+    (slug) => groupsBySlug.get(slug) ?? slug
+  );
+  if (names.length <= 1) return names[0] ?? "—";
+  if (names.length === 2) return `${names[0]}, ${names[1]}`;
+  return `${names[0]} +${names.length - 1}`;
 }
 
 function extractApiErrorMessage(error: unknown): string {
@@ -71,6 +111,13 @@ export const AdminMessagePage = () => {
     message: string;
   } | null>(null);
 
+  const [sentMessages, setSentMessages] = useState<SentMessage[]>([]);
+  const [sentHasMore, setSentHasMore] = useState(false);
+  const [sentError, setSentError] = useState<string | null>(null);
+  const [isLoadingSent, setIsLoadingSent] = useState(true);
+  const [isLoadingMoreSent, setIsLoadingMoreSent] = useState(false);
+  const [selectedSent, setSelectedSent] = useState<SentMessage | null>(null);
+
   const fetchGroups = useCallback(async () => {
     setIsLoadingGroups(true);
     setGroupsError(null);
@@ -99,7 +146,9 @@ export const AdminMessagePage = () => {
       );
       setGroups(valid);
       if (valid.length === 0) {
-        setGroupsError("Inga körer hittades. Skapa en kör innan du skickar till valda.");
+        setGroupsError(
+          "Inga körer hittades. Skapa en kör innan du skickar till valda."
+        );
       }
     } catch (error) {
       console.error("Failed to fetch groups for message target", error);
@@ -114,9 +163,58 @@ export const AdminMessagePage = () => {
     }
   }, []);
 
+  const fetchSent = useCallback(async () => {
+    setIsLoadingSent(true);
+    setSentError(null);
+    try {
+      const result = await listSentMessages({ limit: HISTORY_PAGE_SIZE });
+      setSentMessages(result.messages);
+      setSentHasMore(result.hasMore);
+    } catch (error) {
+      console.error("Failed to fetch sent messages", error);
+      setSentMessages([]);
+      setSentHasMore(false);
+      setSentError(
+        axios.isAxiosError(error) && error.response?.status === 403
+          ? "Du har inte behörighet att se skickade meddelanden."
+          : "Kunde inte hämta skickade meddelanden."
+      );
+    } finally {
+      setIsLoadingSent(false);
+    }
+  }, []);
+
+  const loadOlderSent = async () => {
+    if (isLoadingMoreSent || !sentHasMore || sentMessages.length === 0) return;
+    const oldest = sentMessages[sentMessages.length - 1];
+    const before = `${oldest.createdAt}#${oldest.messageId}`;
+    setIsLoadingMoreSent(true);
+    try {
+      const result = await listSentMessages({
+        limit: HISTORY_PAGE_SIZE,
+        before,
+      });
+      setSentMessages((prev) => {
+        const seen = new Set(prev.map((m) => m.messageId));
+        const next = [...prev];
+        for (const m of result.messages) {
+          if (!seen.has(m.messageId)) next.push(m);
+        }
+        return next;
+      });
+      setSentHasMore(result.hasMore);
+    } catch (error) {
+      console.error("Failed to fetch older sent messages", error);
+      setSentError("Kunde inte ladda äldre meddelanden.");
+    } finally {
+      setIsLoadingMoreSent(false);
+    }
+  };
+
   useEffect(() => {
     fetchGroups();
-  }, [fetchGroups]);
+    fetchSent();
+  }, [fetchGroups, fetchSent]);
 
   useEffect(() => {
     if (!statusMessage) return;
@@ -132,6 +230,14 @@ export const AdminMessagePage = () => {
       })),
     [groups]
   );
+
+  const groupsBySlug = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const g of groups) {
+      map.set(g.slug, g.name?.trim() ? g.name : g.slug);
+    }
+    return map;
+  }, [groups]);
 
   const resolveTargets = (): string[] | null => {
     if (audienceMode === "all") {
@@ -149,7 +255,6 @@ export const AdminMessagePage = () => {
       return null;
     }
 
-    // Cost optimization: selecting every choir ≡ ALL (one DynamoDB write).
     if (groups.length > 0 && slugs.length === groups.length) {
       const selectedSet = new Set(slugs);
       const allMatch = groups.every((g) => selectedSet.has(g.slug));
@@ -214,6 +319,7 @@ export const AdminMessagePage = () => {
         type: "success",
         message: formatCreateSuccess(result),
       });
+      await fetchSent();
     } catch (error) {
       console.error("Failed to create message", error);
       setStatusMessage({
@@ -241,7 +347,11 @@ export const AdminMessagePage = () => {
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         <fieldset className={styles.audienceFieldset}>
           <legend className={styles.audienceLegend}>Mottagare</legend>
-          <div className={styles.audienceOptions} role="radiogroup" aria-label="Mottagare">
+          <div
+            className={styles.audienceOptions}
+            role="radiogroup"
+            aria-label="Mottagare"
+          >
             <label className={styles.radioLabel}>
               <input
                 type="radio"
@@ -282,7 +392,9 @@ export const AdminMessagePage = () => {
               placeholder={
                 isLoadingGroups ? "Laddar körer…" : "Välj en eller flera körer…"
               }
-              isDisabled={isSubmitting || isLoadingGroups || groupOptions.length === 0}
+              isDisabled={
+                isSubmitting || isLoadingGroups || groupOptions.length === 0
+              }
               isLoading={isLoadingGroups}
               closeMenuOnSelect={false}
               noOptionsMessage={() => "Inga körer att välja"}
@@ -341,6 +453,86 @@ export const AdminMessagePage = () => {
           {statusMessage.message}
         </p>
       )}
+
+      <section className={styles.history} aria-labelledby="sent-history-heading">
+        <header className={styles.historySticky}>
+          <h2 id="sent-history-heading" className={styles.historyTitle}>
+            Skickade meddelanden
+          </h2>
+          <p className={styles.historySubtitle}>
+            {sentMessages.length > 0
+              ? `${sentMessages.length} utskick · tryck för att läsa`
+              : "Klicka för att läsa hela meddelandet"}
+          </p>
+        </header>
+
+        {isLoadingSent && <p className={styles.muted}>Laddar historik…</p>}
+        {sentError && <p className={styles.error}>{sentError}</p>}
+        {!isLoadingSent && !sentError && sentMessages.length === 0 && (
+          <p className={styles.muted}>Inga skickade meddelanden ännu.</p>
+        )}
+
+        <ul className={styles.historyList}>
+          {sentMessages.map((msg) => (
+            <li key={msg.messageId}>
+              <button
+                type="button"
+                className={styles.historyRow}
+                onClick={() => setSelectedSent(msg)}
+                aria-label={`Öppna ${msg.title}`}
+              >
+                <div className={styles.historyRowMain}>
+                  <h3 className={styles.historyItemTitle}>{msg.title}</h3>
+                  <span className={styles.historyTargets}>
+                    {formatTargetsShort(msg, groupsBySlug)}
+                  </span>
+                </div>
+                <div className={styles.historyRowMeta}>
+                  <span className={styles.historySender}>
+                    {formatMessageSender(msg.createdByName)}
+                  </span>
+                  <time dateTime={msg.createdAt}>
+                    {formatMessageListTime(msg.createdAt)}
+                  </time>
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        {sentHasMore && (
+          <div className={styles.loadMore}>
+            <Button
+              type="button"
+              variant={ButtonVariant.Ghost}
+              size={ButtonSize.Small}
+              disabled={isLoadingMoreSent}
+              onClick={loadOlderSent}
+            >
+              {isLoadingMoreSent ? "Laddar…" : "Ladda äldre meddelanden"}
+            </Button>
+          </div>
+        )}
+      </section>
+
+      <Modal
+        isOpen={!!selectedSent}
+        onClose={() => setSelectedSent(null)}
+        title={selectedSent?.title ?? "Meddelande"}
+      >
+        {selectedSent && (
+          <div className={styles.modalBody}>
+            <p className={styles.modalMeta}>
+              <span>{formatMessageSender(selectedSent.createdByName)}</span>
+              <span>Till: {formatTargetsLabel(selectedSent, groupsBySlug)}</span>
+              <time dateTime={selectedSent.createdAt}>
+                {new Date(selectedSent.createdAt).toLocaleString("sv-SE")}
+              </time>
+            </p>
+            <p className={styles.modalContent}>{selectedSent.body}</p>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 };

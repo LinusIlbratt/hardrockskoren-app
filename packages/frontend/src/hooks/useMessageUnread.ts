@@ -22,8 +22,9 @@ export const useMessageUnread = (groupSlug: string | undefined) => {
       const data = await getUnreadStatus(groupSlug);
       setStatus(data);
     } catch (error) {
+      // Keep last known status — clearing on network errors hides the red
+      // dot and makes users think there is nothing new to read.
       console.error("Failed to fetch message unread status:", error);
-      setStatus(initial);
     }
   }, [groupSlug, user, token]);
 

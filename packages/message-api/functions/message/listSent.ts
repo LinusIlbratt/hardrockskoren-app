@@ -6,13 +6,12 @@ import {
 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
 import type { AuthContext } from "../../../core/types";
-import { requireGroupAccessResponse } from "../../../core/utils/requireGroupAccess";
 import {
   clampMessageFeedLimit,
   parseMessageFeedCursor,
   MESSAGE_FEED_PAGE_SIZE,
 } from "../../../core/utils/messageFeed";
-import { loadFeedForGroup, loadReadIds, toFeedResponse } from "../lib/feed";
+import { listSentMessages } from "../lib/feed";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
@@ -25,23 +24,6 @@ export const handler = async (
   const tableName = process.env.MAIN_TABLE;
   if (!tableName) {
     return sendError(500, "Server configuration error.");
-  }
-
-  const groupSlug = event.pathParameters?.groupSlug;
-  const authDenied = await requireGroupAccessResponse(
-    event.requestContext.authorizer?.lambda,
-    groupSlug
-  );
-  if (authDenied) return authDenied;
-
-  const uuid = event.requestContext.authorizer?.lambda?.uuid?.trim();
-  if (!uuid) {
-    return sendError(401, "User identity is missing from the request context.");
-  }
-
-  const slug = decodeURIComponent(groupSlug!).trim();
-  if (slug.toUpperCase() === "ALL") {
-    return sendError(400, 'Use a choir slug in the path; "ALL" is not a feed path.');
   }
 
   const qs = event.queryStringParameters ?? {};
@@ -63,22 +45,25 @@ export const handler = async (
   }
 
   try {
-    const page = await loadFeedForGroup(docClient, tableName, slug, {
+    const page = await listSentMessages(docClient, tableName, {
       limit,
       before,
     });
-    const readIds = await loadReadIds(
-      docClient,
-      tableName,
-      uuid,
-      page.items.map((m) => m.messageId)
-    );
     return sendResponse({
-      messages: toFeedResponse(page.items, readIds),
+      messages: page.items.map((m) => ({
+        messageId: m.messageId,
+        title: m.title,
+        body: m.body,
+        createdAt: m.createdAt,
+        createdByUuid: m.createdByUuid,
+        createdByName: m.createdByName,
+        scope: m.scope,
+        targets: m.targets,
+      })),
       hasMore: page.hasMore,
     });
   } catch (err) {
-    console.error("listMessages failed", err);
-    return sendError(500, "Failed to list messages.");
+    console.error("listSentMessages failed", err);
+    return sendError(500, "Failed to list sent messages.");
   }
 };

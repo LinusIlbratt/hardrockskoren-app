@@ -7,6 +7,7 @@ import {
 import { sendResponse, sendError } from "../../../core/utils/http";
 import type { AuthContext } from "../../../core/types";
 import { requireGroupAccessResponse } from "../../../core/utils/requireGroupAccess";
+import { MESSAGE_FEED_LIMIT } from "../../../core/utils/messageFeed";
 import {
   loadFeedForGroup,
   loadReadIds,
@@ -44,7 +45,12 @@ export const handler = async (
   }
 
   try {
-    const messages = await loadFeedForGroup(docClient, tableName, slug);
+    const { items: messages } = await loadFeedForGroup(
+      docClient,
+      tableName,
+      slug,
+      { limit: MESSAGE_FEED_LIMIT }
+    );
     const readIds = await loadReadIds(
       docClient,
       tableName,

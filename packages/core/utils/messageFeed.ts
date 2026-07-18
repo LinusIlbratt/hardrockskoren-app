@@ -7,9 +7,43 @@ export type MessageFeedItem = {
   body: string;
   createdAt: string;
   createdByUuid?: string;
+  createdByName?: string;
+  createdByGivenName?: string;
 };
 
+/** Hard cap per request (and unread window). */
 export const MESSAGE_FEED_LIMIT = 50;
+
+/** Default page size for list endpoints / “Ladda äldre”. */
+export const MESSAGE_FEED_PAGE_SIZE = 20;
+
+export function clampMessageFeedLimit(
+  raw: number | undefined,
+  fallback: number = MESSAGE_FEED_PAGE_SIZE
+): number {
+  if (raw === undefined || !Number.isFinite(raw)) return fallback;
+  const n = Math.floor(raw);
+  if (n < 1) return 1;
+  if (n > MESSAGE_FEED_LIMIT) return MESSAGE_FEED_LIMIT;
+  return n;
+}
+
+/** Cursor for paging older items: `{createdAt}#{messageId}`. */
+export function messageFeedCursor(
+  createdAt: string,
+  messageId: string
+): string {
+  return `${createdAt}#${messageId}`;
+}
+
+export function parseMessageFeedCursor(
+  raw: string | undefined | null
+): string | null {
+  if (typeof raw !== "string") return null;
+  const t = raw.trim();
+  if (!t || !t.includes("#")) return null;
+  return t;
+}
 
 /**
  * Merge choir-specific and ALL-scope messages, newest first, capped at limit.

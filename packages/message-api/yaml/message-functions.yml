@@ -1,7 +1,7 @@
 createMessage:
   handler: functions/message/create.handler
   name: hrk-create-message-${sls:stage}
-  description: Admin creates Aktuellt message(s) for ALL or one/many choirs (fan-out).
+  description: Admin creates one canonical Aktuellt message + thin choir refs.
   events:
     - httpApi:
         method: POST
@@ -17,6 +17,25 @@ createMessage:
         - "dynamodb:TransactWriteItems"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+
+listSentMessages:
+  handler: functions/message/listSent.handler
+  name: hrk-list-sent-messages-${sls:stage}
+  description: Admin lists sent Aktuellt messages (GSI1 MSG#SENT).
+  events:
+    - httpApi:
+        method: GET
+        path: /messages/sent
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
 
 listMessages:
   handler: functions/message/list.handler
@@ -94,7 +113,7 @@ markMessageRead:
 deleteMessage:
   handler: functions/message/delete.handler
   name: hrk-delete-message-${sls:stage}
-  description: Admin hard-deletes a message (and its meta pointer).
+  description: Admin hard-deletes canonical message and choir refs.
   events:
     - httpApi:
         method: DELETE
@@ -106,5 +125,7 @@ deleteMessage:
       Action:
         - "dynamodb:GetItem"
         - "dynamodb:DeleteItem"
+        - "dynamodb:TransactWriteItems"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"

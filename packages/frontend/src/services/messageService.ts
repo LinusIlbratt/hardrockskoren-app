@@ -25,6 +25,8 @@ export type FeedMessage = {
   title: string;
   body: string;
   createdAt: string;
+  createdByName?: string;
+  createdByGivenName?: string;
   isRead: boolean;
   scope: "all" | "group";
 };
@@ -46,10 +48,31 @@ export type CreateMessageResponse = {
   body: string;
   createdAt: string;
   scope: "all" | "groups";
+  targets: string[];
   count: number;
+  messageId: string;
   messages: Array<{ messageId: string; groupSlug: string }>;
-  messageId?: string;
-  groupSlug?: string;
+};
+
+export type SentMessage = {
+  messageId: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  createdByUuid: string;
+  createdByName?: string;
+  scope: "all" | "groups";
+  targets: string[];
+};
+
+export type ListMessagesResult = {
+  messages: FeedMessage[];
+  hasMore: boolean;
+};
+
+export type ListSentResult = {
+  messages: SentMessage[];
+  hasMore: boolean;
 };
 
 export async function createMessage(
@@ -80,13 +103,55 @@ export async function createMessage(
   return response.data;
 }
 
-export async function listMessages(groupSlug: string): Promise<FeedMessage[]> {
+export async function listSentMessages(options?: {
+  limit?: number;
+  before?: string;
+}): Promise<ListSentResult> {
   const base = requireBaseUrl();
-  const response = await axios.get<{ messages: FeedMessage[] }>(
-    `${base}/groups/${encodeURIComponent(groupSlug)}/messages`,
+  const params = new URLSearchParams();
+  if (options?.limit !== undefined) {
+    params.set("limit", String(options.limit));
+  }
+  if (options?.before) {
+    params.set("before", options.before);
+  }
+  const qs = params.toString();
+  const response = await axios.get<{ messages: SentMessage[]; hasMore?: boolean }>(
+    `${base}/messages/sent${qs ? `?${qs}` : ""}`,
     { headers: authHeaders() }
   );
-  return response.data.messages ?? [];
+  return {
+    messages: Array.isArray(response.data?.messages)
+      ? response.data.messages
+      : [],
+    hasMore: Boolean(response.data?.hasMore),
+  };
+}
+
+export async function listMessages(
+  groupSlug: string,
+  options?: { limit?: number; before?: string }
+): Promise<ListMessagesResult> {
+  const base = requireBaseUrl();
+  const params = new URLSearchParams();
+  if (options?.limit !== undefined) {
+    params.set("limit", String(options.limit));
+  }
+  if (options?.before) {
+    params.set("before", options.before);
+  }
+  const qs = params.toString();
+  const response = await axios.get<{
+    messages: FeedMessage[];
+    hasMore?: boolean;
+  }>(
+    `${base}/groups/${encodeURIComponent(groupSlug)}/messages${qs ? `?${qs}` : ""}`,
+    { headers: authHeaders() }
+  );
+  return {
+    messages: response.data.messages ?? [],
+    hasMore: Boolean(response.data?.hasMore),
+  };
 }
 
 export async function getUnreadStatus(groupSlug: string): Promise<UnreadStatus> {

@@ -7,11 +7,11 @@ import {
 import { sendResponse, sendError } from "../../../core/utils/http";
 import type { AuthContext } from "../../../core/types";
 import {
-  requireGroupAccessResponse,
   requireAnyChoirMembershipResponse,
+  requireAccessToAnyGroupSlug,
 } from "../../../core/utils/requireGroupAccess";
 import { ALL_TARGET, messageReadSk } from "../lib/keys";
-import { getMessageMeta } from "../lib/feed";
+import { getCanonicalMessage } from "../lib/feed";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
@@ -37,17 +37,20 @@ export const handler = async (
   }
 
   try {
-    const meta = await getMessageMeta(docClient, tableName, messageId);
-    if (!meta) {
+    const message = await getCanonicalMessage(docClient, tableName, messageId);
+    if (!message) {
       return sendError(404, "Message not found.");
     }
 
     const lambdaCtx = event.requestContext.authorizer?.lambda;
-    if (meta.groupSlug === ALL_TARGET) {
+    if (message.targets.includes(ALL_TARGET) || message.scope === "all") {
       const denied = await requireAnyChoirMembershipResponse(lambdaCtx);
       if (denied) return denied;
     } else {
-      const denied = await requireGroupAccessResponse(lambdaCtx, meta.groupSlug);
+      const denied = await requireAccessToAnyGroupSlug(
+        lambdaCtx,
+        message.targets
+      );
       if (denied) return denied;
     }
 

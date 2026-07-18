@@ -1,21 +1,57 @@
 import type { MessageFeedItem } from "../../../core/utils/messageFeed";
-import { MESSAGE_FEED_LIMIT } from "../../../core/utils/messageFeed";
+import {
+  MESSAGE_FEED_LIMIT,
+  MESSAGE_FEED_PAGE_SIZE,
+} from "../../../core/utils/messageFeed";
 
-export { MESSAGE_FEED_LIMIT };
+export { MESSAGE_FEED_LIMIT, MESSAGE_FEED_PAGE_SIZE };
 export type { MessageFeedItem };
 
 export const ALL_TARGET = "ALL";
 
-/** Max choir targets per request (Message+Meta = 2 TransactWrite items each; DynamoDB cap 100). */
+/** GSI1 partition for admin sent-history (Query, newest first). */
+export const SENT_GSI1_PK = "MSG#SENT";
+
+/**
+ * Max choir targets per request.
+ * TransactWrite: 1 canonical + N MessageRefs ≤ 100 items.
+ */
 export const MAX_MESSAGE_TARGETS = 50;
 
-export type MessageRecord = MessageFeedItem & {
+export type MessageScope = "all" | "groups";
+
+/** Canonical message body — one per send. */
+export type MessageCanonicalRecord = {
   PK: string;
-  SK: string;
-  type: "Message";
+  SK: "META";
+  type: "MessageCanonical";
+  messageId: string;
+  title: string;
+  body: string;
+  createdAt: string;
   createdByUuid: string;
+  /** Full display name at send time. */
+  createdByName?: string;
+  /** Given name only — preferred for member UI. */
+  createdByGivenName?: string;
+  scope: MessageScope;
+  /** ["ALL"] or choir slugs. */
+  targets: string[];
+  GSI1PK: typeof SENT_GSI1_PK;
+  GSI1SK: string;
 };
 
+/** Thin visibility pointer under a choir (or GROUP#ALL). */
+export type MessageRefRecord = {
+  PK: string;
+  SK: string;
+  type: "MessageRef";
+  messageId: string;
+  groupSlug: string;
+  createdAt: string;
+};
+
+/** @deprecated Legacy fan-out meta — still readable for mark/delete of old items. */
 export type MessageMetaRecord = {
   PK: string;
   SK: string;
@@ -38,16 +74,29 @@ export type MessageReadRecord = {
   readAt: string;
 };
 
-export function messagePk(groupSlug: string): string {
+export function groupPk(groupSlug: string): string {
   return `GROUP#${groupSlug}`;
 }
 
-export function messageSk(createdAt: string, messageId: string): string {
+/** @deprecated Use groupPk */
+export const messagePk = groupPk;
+
+export function messageRefSk(createdAt: string, messageId: string): string {
   return `MSG#${createdAt}#${messageId}`;
 }
 
-export function messageMetaPk(messageId: string): string {
+/** @deprecated Use messageRefSk */
+export const messageSk = messageRefSk;
+
+export function messageCanonicalPk(messageId: string): string {
   return `MSG#${messageId}`;
+}
+
+/** @deprecated Use messageCanonicalPk */
+export const messageMetaPk = messageCanonicalPk;
+
+export function sentGsi1Sk(createdAt: string, messageId: string): string {
+  return `${createdAt}#${messageId}`;
 }
 
 export function messageReadSk(messageId: string): string {
@@ -73,9 +122,6 @@ export type ParseCreateTargetsResult =
 /**
  * Resolves create-message destinations from request body.
  * Accepts either `targets: string[]` or legacy `target: string` (not both).
- * - ALL alone → single GROUP#ALL write (no fan-out)
- * - One or more choir slugs → fan-out writes (caller validates choirs exist)
- * - ALL mixed with choir slugs → error
  */
 export function parseCreateTargets(
   body: Record<string, unknown>
@@ -105,7 +151,6 @@ export function parseCreateTargets(
     }
     rawList = body.targets;
   } else {
-    // Legacy single target
     rawList = [body.target];
   }
 
@@ -146,7 +191,8 @@ export function parseCreateTargets(
   if (hasAll && choirSlugs.length > 0) {
     return {
       ok: false,
-      message: 'Cannot combine "ALL" with specific choir slugs. Use either ALL or a list of choirs.',
+      message:
+        'Cannot combine "ALL" with specific choir slugs. Use either ALL or a list of choirs.',
     };
   }
 
@@ -159,4 +205,13 @@ export function parseCreateTargets(
   }
 
   return { ok: true, value: { mode: "groups", groupSlugs: choirSlugs } };
+}
+
+export function targetsFromResolved(
+  resolved: ResolvedCreateTargets
+): { scope: MessageScope; targets: string[] } {
+  if (resolved.mode === "all") {
+    return { scope: "all", targets: [ALL_TARGET] };
+  }
+  return { scope: "groups", targets: resolved.groupSlugs };
 }

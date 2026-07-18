@@ -4,6 +4,7 @@ import { routePermissions, RoleGroups } from "./permissions";
 describe("message-api routePermissions", () => {
   it("registers all Aktuellt routes with expected roles", () => {
     expect(routePermissions["POST /messages"]).toEqual(RoleGroups.ADMIN_ONLY);
+    expect(routePermissions["GET /messages/sent"]).toEqual(RoleGroups.ADMIN_ONLY);
     expect(routePermissions["GET /groups/{groupSlug}/messages"]).toEqual(
       RoleGroups.ALL_LOGGED_IN
     );

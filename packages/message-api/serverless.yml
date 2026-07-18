@@ -9,13 +9,13 @@ build:
     minify: false
     sourcemap: true
     exclude: ['aws-sdk']
-    target: 'node18'
+    target: 'node20'
     define: { 'require.resolve': undefined }
     platform: 'node'
 
 provider:
   name: aws
-  runtime: nodejs18.x
+  runtime: nodejs20.x
   region: eu-north-1
   stage: ${opt:stage, 'dev'}
   logRetentionInDays: 30

@@ -3,7 +3,11 @@ import {
   mergeMessageFeeds,
   computeUnread,
   scopeFromGroupSlug,
+  clampMessageFeedLimit,
+  parseMessageFeedCursor,
+  messageFeedCursor,
   MESSAGE_FEED_LIMIT,
+  MESSAGE_FEED_PAGE_SIZE,
   type MessageFeedItem,
 } from "./messageFeed";
 
@@ -46,6 +50,24 @@ describe("mergeMessageFeeds", () => {
 
   it("defaults to MESSAGE_FEED_LIMIT", () => {
     expect(MESSAGE_FEED_LIMIT).toBe(50);
+    expect(MESSAGE_FEED_PAGE_SIZE).toBe(20);
+  });
+});
+
+describe("clampMessageFeedLimit / cursors", () => {
+  it("clamps to 1..MESSAGE_FEED_LIMIT", () => {
+    expect(clampMessageFeedLimit(undefined)).toBe(MESSAGE_FEED_PAGE_SIZE);
+    expect(clampMessageFeedLimit(0)).toBe(1);
+    expect(clampMessageFeedLimit(999)).toBe(MESSAGE_FEED_LIMIT);
+    expect(clampMessageFeedLimit(12)).toBe(12);
+  });
+
+  it("builds and parses feed cursors", () => {
+    const c = messageFeedCursor("2026-07-18T10:00:00.000Z", "abc");
+    expect(c).toBe("2026-07-18T10:00:00.000Z#abc");
+    expect(parseMessageFeedCursor(c)).toBe(c);
+    expect(parseMessageFeedCursor("nope")).toBeNull();
+    expect(parseMessageFeedCursor("")).toBeNull();
   });
 });
 

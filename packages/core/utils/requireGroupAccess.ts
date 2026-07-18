@@ -113,3 +113,57 @@ export async function requireAnyChoirMembershipResponse(
 
   return null;
 }
+
+/**
+ * Ensures the caller may access at least one of `groupSlugs`.
+ * Admin bypasses. Others: one Cognito ListGroups + set intersection.
+ */
+export async function requireAccessToAnyGroupSlug(
+  lambdaContext: LambdaAuthorizerContext | undefined,
+  groupSlugs: string[]
+): Promise<APIGatewayProxyStructuredResultV2 | null> {
+  const slugs = (groupSlugs ?? [])
+    .map((s) => (typeof s === "string" ? s.trim() : ""))
+    .filter((s) => s.length > 0);
+
+  if (slugs.length === 0) {
+    return sendError(400, "At least one group slug is required.");
+  }
+
+  const uuid = typeof lambdaContext?.uuid === "string" ? lambdaContext.uuid.trim() : "";
+  const userPoolId =
+    typeof lambdaContext?.userPoolId === "string" ? lambdaContext.userPoolId.trim() : "";
+
+  if (!uuid || !userPoolId) {
+    return sendError(403, "Forbidden: User identity could not be verified.");
+  }
+
+  const role =
+    typeof lambdaContext?.role === "string" ? lambdaContext.role.trim().toLowerCase() : "";
+  if (role === "admin") {
+    return null;
+  }
+
+  try {
+    const { Groups } = await cognito.adminListGroupsForUser({
+      UserPoolId: userPoolId,
+      Username: uuid,
+    });
+
+    const memberOf = new Set(
+      (Groups ?? [])
+        .map((g) => g.GroupName)
+        .filter((n): n is string => typeof n === "string" && n.trim().length > 0)
+        .map((n) => n.trim())
+    );
+
+    if (!slugs.some((slug) => memberOf.has(slug))) {
+      return sendError(403, "Forbidden: You do not have access to this message.");
+    }
+  } catch (err) {
+    console.error("requireAccessToAnyGroupSlug: AdminListGroupsForUser failed", err);
+    return sendError(403, "Forbidden: Could not verify access to this message.");
+  }
+
+  return null;
+}

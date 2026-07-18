@@ -13,10 +13,13 @@ import { sendResponse, sendError } from "../../../core/utils/http";
 import type { AuthContext } from "../../../core/types";
 import {
   ALL_TARGET,
-  messagePk,
-  messageSk,
-  messageMetaPk,
+  SENT_GSI1_PK,
+  groupPk,
+  messageCanonicalPk,
+  messageRefSk,
   parseCreateTargets,
+  sentGsi1Sk,
+  targetsFromResolved,
 } from "../lib/keys";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
@@ -27,14 +30,11 @@ const docClient = DynamoDBDocumentClient.from(dynamoClient);
 const TITLE_MAX = 120;
 const BODY_MAX = 4000;
 
-type CreatedMessageRef = {
-  messageId: string;
-  groupSlug: string;
-};
-
 function parseTitleAndBody(
   body: Record<string, unknown>
-): { ok: true; title: string; messageBody: string } | { ok: false; message: string } {
+):
+  | { ok: true; title: string; messageBody: string }
+  | { ok: false; message: string } {
   const titleRaw = body.title;
   if (typeof titleRaw !== "string" || titleRaw.trim() === "") {
     return { ok: false, message: "title is required and must be a non-empty string." };
@@ -61,12 +61,11 @@ async function assertChoirsExist(
   groupSlugs: string[]
 ): Promise<{ ok: true } | { ok: false; missing: string[] }> {
   let pendingKeys = groupSlugs.map((slug) => ({
-    PK: messagePk(slug),
+    PK: groupPk(slug),
     SK: "METADATA",
   }));
   const found = new Set<string>();
 
-  // BatchGet can return UnprocessedKeys; retry once.
   for (let attempt = 0; attempt < 2 && pendingKeys.length > 0; attempt++) {
     const result = await docClient.send(
       new BatchGetCommand({
@@ -103,52 +102,6 @@ async function assertChoirsExist(
   return { ok: true };
 }
 
-function buildMessageItems(params: {
-  groupSlug: string;
-  title: string;
-  messageBody: string;
-  createdAt: string;
-  createdByUuid: string;
-}): { messageItem: Record<string, unknown>; metaItem: Record<string, unknown>; ref: CreatedMessageRef } {
-  const messageId = nanoid();
-  const pk = messagePk(params.groupSlug);
-  const sk = messageSk(params.createdAt, messageId);
-
-  const messageItem = {
-    PK: pk,
-    SK: sk,
-    messageId,
-    groupSlug: params.groupSlug,
-    title: params.title,
-    body: params.messageBody,
-    createdAt: params.createdAt,
-    createdByUuid: params.createdByUuid,
-    type: "Message",
-    GSI1PK: pk,
-    GSI1SK: sk,
-  };
-
-  const metaItem = {
-    PK: messageMetaPk(messageId),
-    SK: "META",
-    type: "MessageMeta",
-    messageId,
-    groupSlug: params.groupSlug,
-    targetPk: pk,
-    targetSk: sk,
-    title: params.title,
-    body: params.messageBody,
-    createdAt: params.createdAt,
-    createdByUuid: params.createdByUuid,
-  };
-
-  return {
-    messageItem,
-    metaItem,
-    ref: { messageId, groupSlug: params.groupSlug },
-  };
-}
-
 export const handler = async (
   event: AuthorizedEvent
 ): Promise<APIGatewayProxyResultV2> => {
@@ -161,6 +114,18 @@ export const handler = async (
   if (!uuid) {
     return sendError(401, "User identity is missing from the request context.");
   }
+
+  const given =
+    typeof event.requestContext.authorizer?.lambda?.given_name === "string"
+      ? event.requestContext.authorizer.lambda.given_name.trim()
+      : "";
+  const family =
+    typeof event.requestContext.authorizer?.lambda?.family_name === "string"
+      ? event.requestContext.authorizer.lambda.family_name.trim()
+      : "";
+  const createdByGivenName = given || undefined;
+  const createdByName =
+    [given, family].filter(Boolean).join(" ").trim() || undefined;
 
   if (!event.body?.trim()) {
     return sendError(400, "Request body is required.");
@@ -185,12 +150,11 @@ export const handler = async (
 
   const { title, messageBody } = content;
   const resolved = targetsResult.value;
+  const { scope, targets } = targetsFromResolved(resolved);
   const createdAt = new Date().toISOString();
+  const messageId = nanoid();
 
   try {
-    const destinationSlugs =
-      resolved.mode === "all" ? [ALL_TARGET] : resolved.groupSlugs;
-
     if (resolved.mode === "groups") {
       const existence = await assertChoirsExist(tableName, resolved.groupSlugs);
       if (!existence.ok) {
@@ -201,40 +165,58 @@ export const handler = async (
       }
     }
 
-    const built = destinationSlugs.map((groupSlug) =>
-      buildMessageItems({
-        groupSlug,
-        title,
-        messageBody,
-        createdAt,
-        createdByUuid: uuid,
-      })
-    );
+    const canonical = {
+      PK: messageCanonicalPk(messageId),
+      SK: "META",
+      type: "MessageCanonical",
+      messageId,
+      title,
+      body: messageBody,
+      createdAt,
+      createdByUuid: uuid,
+      ...(createdByName ? { createdByName } : {}),
+      ...(createdByGivenName ? { createdByGivenName } : {}),
+      scope,
+      targets,
+      GSI1PK: SENT_GSI1_PK,
+      GSI1SK: sentGsi1Sk(createdAt, messageId),
+    };
 
-    // Atomic fan-out: all Message+Meta puts succeed or none do (no partial sends).
+    const refPuts = targets.map((groupSlug) => {
+      const pk = groupPk(groupSlug);
+      const sk = messageRefSk(createdAt, messageId);
+      return {
+        Put: {
+          TableName: tableName,
+          Item: {
+            PK: pk,
+            SK: sk,
+            type: "MessageRef",
+            messageId,
+            groupSlug,
+            createdAt,
+          },
+        },
+      };
+    });
+
+    // 1 canonical + N thin refs — atomic, no body duplication.
     await docClient.send(
       new TransactWriteCommand({
-        TransactItems: built.flatMap(({ messageItem, metaItem }) => [
-          { Put: { TableName: tableName, Item: messageItem } },
-          { Put: { TableName: tableName, Item: metaItem } },
-        ]),
+        TransactItems: [{ Put: { TableName: tableName, Item: canonical } }, ...refPuts],
       })
     );
-
-    const messages = built.map((b) => b.ref);
-    const scope = resolved.mode === "all" ? "all" : "groups";
 
     return sendResponse(
       {
+        messageId,
         title,
         body: messageBody,
         createdAt,
         scope,
-        count: messages.length,
-        messages,
-        // Convenience for single-target clients
-        messageId: messages[0]?.messageId,
-        groupSlug: messages[0]?.groupSlug,
+        targets,
+        count: 1,
+        messages: [{ messageId, groupSlug: targets[0] }],
       },
       201
     );
@@ -247,7 +229,7 @@ export const handler = async (
     if (name === "TransactionCanceledException") {
       return sendError(
         409,
-        "Could not create message(s) due to a write conflict. Please try again."
+        "Could not create message due to a write conflict. Please try again."
       );
     }
     if (

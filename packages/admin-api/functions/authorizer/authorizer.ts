@@ -41,7 +41,8 @@ export const handler = middy()
           Username: payload.sub,
         });
 
-        const { role } = getUserDetailsFromAttributes(UserAttributes);
+        const { role, given_name, family_name } =
+          getUserDetailsFromAttributes(UserAttributes);
         const userRole: RoleTypes = (role as RoleTypes) || "user"; // Sätt 'user' som standardroll
 
         
@@ -69,11 +70,14 @@ export const handler = middy()
         }
         
         // Om vi kommer hit är användaren både autentiserad OCH auktoriserad.
+        // API Gateway authorizer context values must be strings.
         const context: AuthContext = {
           uuid: payload.sub,
           role: userRole,
           clientId,
           userPoolId,
+          ...(given_name ? { given_name } : {}),
+          ...(family_name ? { family_name } : {}),
         };
 
         return {
