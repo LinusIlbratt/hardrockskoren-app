@@ -31,3 +31,8 @@ services:
     path: message-api
     dependsOn:
       - infra-service
+
+  concert-api:
+    path: concert-api
+    dependsOn:
+      - infra-service

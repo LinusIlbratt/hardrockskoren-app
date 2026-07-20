@@ -12,6 +12,7 @@ import { IoTrashOutline, IoEyeOutline, IoInformationCircleOutline } from 'react-
 import type { Event } from '@/types';
 import styles from './AdminEventPage.module.scss';
 import { useAuth } from '@/context/AuthContext';
+import { SharedConcertSignupPanel } from '@/components/concert/SharedConcertSignupPanel';
 
 export const AdminEventPage = () => {
   const { groupName } = useParams<{ groupName: string }>();
@@ -19,7 +20,7 @@ export const AdminEventPage = () => {
 
   const [events, setEvents] = useState<Event[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'REHEARSAL' | 'CONCERT' | 'OTHER'>('REHEARSAL');
+  const [activeTab, setActiveTab] = useState<'REHEARSAL' | 'CONCERT' | 'SHARED'>('REHEARSAL');
   const [isEventModalOpen, setIsEventModalOpen] = useState(false);
   const [eventToEdit, setEventToEdit] = useState<Event | null>(null);
   const [eventToDelete, setEventToDelete] = useState<Event | null>(null);
@@ -73,7 +74,6 @@ export const AdminEventPage = () => {
 
   const rehearsals = events.filter(e => e.eventType === 'REHEARSAL');
   const concerts = events.filter(e => e.eventType === 'CONCERT');
-  const others = events.filter(e => e.eventType !== 'REHEARSAL' && e.eventType !== 'CONCERT');
 
   const renderEventItem = (event: Event) => {
     const startDate = new Date(event.eventDate);
@@ -120,12 +120,15 @@ export const AdminEventPage = () => {
     <div className={styles.page}>
       <div className={styles.header}>
         <h2>Hantera Events</h2>
+        {activeTab !== 'SHARED' && (
         <div className={styles.buttonGroup}>
           <Button onClick={handleOpenCreateModal}>Skapa enstaka event</Button>
           <Button onClick={() => setIsRecurringModalOpen(true)}>Skapa återkommande</Button>
         </div>
+        )}
       </div>
 
+      {activeTab !== 'SHARED' && (
       <div className={styles.legend}>
         <IoInformationCircleOutline size={20} className={styles.legendIcon} />
         <p className={styles.legendText}>
@@ -137,22 +140,31 @@ export const AdminEventPage = () => {
            ta bort ett event.
         </p>
       </div>
+      )}
 
       <div className={styles.tabs}>
         <button className={`${styles.tabButton} ${activeTab === 'REHEARSAL' ? styles.activeTab : ''}`} onClick={() => setActiveTab('REHEARSAL')}>Repetitioner</button>
         {(user?.role === 'admin' || user?.role === 'leader') && (<button className={`${styles.tabButton} ${activeTab === 'CONCERT' ? styles.activeTab : ''}`} onClick={() => setActiveTab('CONCERT')}>Konserter</button>)}
-        {others.length > 0 && (<button className={`${styles.tabButton} ${activeTab === 'OTHER' ? styles.activeTab : ''}`} onClick={() => setActiveTab('OTHER')}>Övrigt</button>)}
+        <button className={`${styles.tabButton} ${activeTab === 'SHARED' ? styles.activeTab : ''}`} onClick={() => setActiveTab('SHARED')}>Gemensamma konserter</button>
       </div>
 
+      {activeTab === 'SHARED' ? (
+        <SharedConcertSignupPanel
+          preferredChoirSlug={groupName}
+          userGroups={user?.groups ?? []}
+          givenName={user?.given_name}
+          familyName={user?.family_name}
+        />
+      ) : (
       <section className={styles.listSection}>
         {isLoading ? ( <p>Laddar events...</p> ) : (
           <>
             {activeTab === 'REHEARSAL' && (<ul className={styles.eventList}>{rehearsals.length > 0 ? rehearsals.map(renderEventItem) : <p>Inga repetitioner planerade.</p>}</ul>)}
             {activeTab === 'CONCERT' && (<ul className={styles.eventList}>{concerts.length > 0 ? concerts.map(renderEventItem) : <p>Inga konserter planerade.</p>}</ul>)}
-            {activeTab === 'OTHER' && (<ul className={styles.eventList}>{others.length > 0 ? others.map(renderEventItem) : <p>Inga övriga events planerade.</p>}</ul>)}
           </>
         )}
       </section>
+      )}
 
       <Modal
         formMode

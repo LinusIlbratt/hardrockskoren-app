@@ -19,3 +19,26 @@ describe("message-api routePermissions", () => {
     );
   });
 });
+
+describe("concert-api routePermissions", () => {
+  it("registers shared concert routes with expected roles", () => {
+    expect(routePermissions["POST /shared-concerts"]).toEqual(
+      RoleGroups.ADMIN_ONLY
+    );
+    expect(routePermissions["PATCH /shared-concerts/{id}"]).toEqual(
+      RoleGroups.ADMIN_ONLY
+    );
+    expect(routePermissions["DELETE /shared-concerts/{id}"]).toEqual(
+      RoleGroups.ADMIN_ONLY
+    );
+    expect(routePermissions["GET /shared-concerts"]).toEqual(
+      RoleGroups.ALL_LOGGED_IN
+    );
+    expect(routePermissions["POST /shared-concerts/{id}/signups"]).toEqual(
+      RoleGroups.ALL_LOGGED_IN
+    );
+    expect(routePermissions["GET /shared-concerts/{id}/signups"]).toEqual(
+      RoleGroups.ADMIN_ONLY
+    );
+  });
+});

@@ -97,4 +97,13 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   "GET /groups/{groupSlug}/messages/unread-status": RoleGroups.ALL_LOGGED_IN,
   "POST /messages/{messageId}/read": RoleGroups.ALL_LOGGED_IN,
   "DELETE /messages/{messageId}": RoleGroups.ADMIN_ONLY,
+
+  // === Gemensamma konserter / Konsertanmälan (concert-api) ===
+  "POST /shared-concerts": RoleGroups.ADMIN_ONLY,
+  "GET /shared-concerts": RoleGroups.ALL_LOGGED_IN,
+  "GET /shared-concerts/{id}": RoleGroups.ALL_LOGGED_IN,
+  "PATCH /shared-concerts/{id}": RoleGroups.ADMIN_ONLY,
+  "DELETE /shared-concerts/{id}": RoleGroups.ADMIN_ONLY,
+  "POST /shared-concerts/{id}/signups": RoleGroups.ALL_LOGGED_IN,
+  "GET /shared-concerts/{id}/signups": RoleGroups.ADMIN_ONLY,
 };

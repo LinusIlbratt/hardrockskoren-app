@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { LoginPage } from "@/pages/LoginPage";
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { RequireRole } from '@/components/auth/RequireRole';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { LeaderLayout } from "@/components/layout/LeaderLayout";
 import { UserLayout } from "@/components/layout/UserLayout";
@@ -15,6 +16,7 @@ import { AdminUserManagementPage } from "@/pages/admin/AdminUserManagementPage";
 import { RegistrationPage } from "@/pages/RegistrationPage";
 import { AdminEventPage } from "@/pages/admin/AdminEventPage";
 import { AdminMessagePage } from "@/pages/admin/AdminMessagePage";
+import { AdminSharedConcertPage } from "@/pages/admin/AdminSharedConcertPage";
 import { MemberDashboard } from "@/pages/member/MemberDashboard";
 import { MemberAktuelltPage } from "@/pages/member/MemberAktuelltPage";
 import { LeaderDashboard } from "@/pages/leader/LeaderDashboard";
@@ -96,8 +98,11 @@ const router = createBrowserRouter([
           },
           {
             path: "admin",
-            element: <AdminLayout />,
+            element: <RequireRole roles={["admin"]} />,
             children: [
+              {
+                element: <AdminLayout />,
+                children: [
               {
                 path: "globalMaterial",
                 element: <AdminUploadMaterialPage />,
@@ -113,6 +118,10 @@ const router = createBrowserRouter([
               {
                 path: "messages",
                 element: <AdminMessagePage />,
+              },
+              {
+                path: "shared-concerts",
+                element: <AdminSharedConcertPage />,
               },
               {
                 path: "groups",
@@ -131,6 +140,8 @@ const router = createBrowserRouter([
                   { path: "users", element: <AdminUserManagementPage viewerRole="admin" /> },
                   { path: "attendance", element: <LeaderAttendancePage /> },
                   { path: "music", element: <MusicDeepLinkHandler viewer="admin" /> },
+                ],
+              },
                 ],
               },
             ],
