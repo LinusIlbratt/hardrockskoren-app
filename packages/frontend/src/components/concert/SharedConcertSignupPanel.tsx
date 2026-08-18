@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, type FormEvent } from "react";
 import axios from "axios";
+import { FiMapPin, FiUsers } from "react-icons/fi";
 import {
   Button,
   ButtonSize,
@@ -22,6 +23,23 @@ import styles from "./SharedConcertSignupPanel.module.scss";
 
 const LIST_PAGE_SIZE = 20;
 
+const WEEKDAY_LABELS = ["må", "ti", "on", "to", "fr", "lö", "sö"] as const;
+
+const MONTH_NAMES_SV = [
+  "januari",
+  "februari",
+  "mars",
+  "april",
+  "maj",
+  "juni",
+  "juli",
+  "augusti",
+  "september",
+  "oktober",
+  "november",
+  "december",
+] as const;
+
 type SharedConcertSignupPanelProps = {
   /** Route choir slug — preselected when user belongs to that choir. */
   preferredChoirSlug?: string;
@@ -43,6 +61,62 @@ function formatConcertDate(isoDate: string): string {
   } catch {
     return isoDate;
   }
+}
+
+function parseConcertDateParts(
+  isoDate: string
+): { year: number; monthIndex: number; day: number } | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return null;
+  const [year, month, day] = isoDate.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return { year, monthIndex: month - 1, day };
+}
+
+function ConcertEventCalendar({ isoDate }: { isoDate: string }) {
+  const parts = parseConcertDateParts(isoDate);
+  if (!parts) {
+    return <div className={styles.calendarFallback}>{isoDate}</div>;
+  }
+
+  const { year, monthIndex, day } = parts;
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  // Monday-first pad (Swedish week).
+  const startPad = (new Date(year, monthIndex, 1).getDay() + 6) % 7;
+  const cells: Array<number | null> = [
+    ...Array.from({ length: startPad }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+
+  return (
+    <div className={styles.calendar} aria-label={formatConcertDate(isoDate)}>
+      <div className={styles.calendarHeader}>
+        {MONTH_NAMES_SV[monthIndex]} {year}
+      </div>
+      <div className={styles.calendarWeekdays}>
+        {WEEKDAY_LABELS.map((label) => (
+          <span key={label} className={styles.calendarWeekday}>
+            {label}
+          </span>
+        ))}
+      </div>
+      <div className={styles.calendarGrid}>
+        {cells.map((cellDay, index) =>
+          cellDay === null ? (
+            <span key={`pad-${index}`} className={styles.calendarEmpty} />
+          ) : (
+            <span
+              key={cellDay}
+              className={`${styles.calendarDay} ${
+                cellDay === day ? styles.calendarDayActive : ""
+              }`}
+            >
+              {cellDay}
+            </span>
+          )
+        )}
+      </div>
+    </div>
+  );
 }
 
 function extractApiErrorMessage(error: unknown, fallback: string): string {
@@ -349,18 +423,46 @@ export const SharedConcertSignupPanel = ({
       >
         {selected && (
           <div className={styles.modalBody}>
-            <p className={styles.modalMeta}>
-              <span>{formatConcertDate(selected.concertDate)}</span>
-              <span>{selected.location}</span>
-              <span>
-                {selected.signupCount}{" "}
-                {selected.signupCount === 1 ? "anmäld" : "anmälda"}
-              </span>
-            </p>
+            <article className={styles.eventCard}>
+              <div className={styles.eventCardTop}>
+                <ConcertEventCalendar isoDate={selected.concertDate} />
+                <div className={styles.eventCardMeta}>
+                  <div className={styles.metaItem}>
+                    <FiMapPin
+                      className={styles.metaIcon}
+                      aria-hidden
+                      size={18}
+                    />
+                    <span className={styles.metaText}>
+                      {selected.location || "Plats saknas"}
+                    </span>
+                  </div>
+                  <div className={styles.metaItem}>
+                    <FiUsers
+                      className={styles.metaIcon}
+                      aria-hidden
+                      size={18}
+                    />
+                    <span className={styles.metaText}>
+                      {selected.signupCount}{" "}
+                      {selected.signupCount === 1 ? "anmäld" : "anmälda"}
+                    </span>
+                  </div>
+                  {!selected.signupOpen && (
+                    <p className={styles.metaClosedHint}>Anmälan stängd</p>
+                  )}
+                </div>
+              </div>
 
-            {selected.description && (
-              <p className={styles.modalDescription}>{selected.description}</p>
-            )}
+              {selected.description ? (
+                <div className={styles.eventDescription}>
+                  <h3 className={styles.eventDescriptionLabel}>Om konserten</h3>
+                  <p className={styles.eventDescriptionText}>
+                    {selected.description}
+                  </p>
+                </div>
+              ) : null}
+            </article>
 
             {isLoadingDetail && (
               <p className={styles.muted}>Laddar…</p>
@@ -375,14 +477,22 @@ export const SharedConcertSignupPanel = ({
               </p>
             )}
 
-            {!isLoadingDetail && !selected.signupOpen && !selected.viewerIsSignedUp && (
-              <p className={styles.closedBanner}>
-                Anmälan är stängd för denna konsert.
-              </p>
-            )}
+            {!isLoadingDetail &&
+              !selected.signupOpen &&
+              !selected.viewerIsSignedUp && (
+                <p className={styles.closedBanner}>
+                  Anmälan är stängd för denna konsert.
+                </p>
+              )}
 
             {!isLoadingDetail && canSignUp && (
-              <form className={styles.signupForm} onSubmit={handleSignup} noValidate>
+              <form
+                className={styles.signupForm}
+                onSubmit={handleSignup}
+                noValidate
+              >
+                <p className={styles.signupFormLead}>Anmäl dig</p>
+
                 {userGroups.length === 0 && (
                   <p className={styles.error}>
                     Du måste tillhöra minst en kör för att anmäla dig.

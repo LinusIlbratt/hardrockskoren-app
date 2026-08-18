@@ -92,29 +92,162 @@
 }
 
 .modalBody {
-  @include column(var(--spacing-md));
+  @include column(var(--spacing-lg));
 }
 
-.modalMeta {
+.eventCard {
+  @include column(var(--spacing-md));
+  padding: var(--spacing-md);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--color-primary) 8%, transparent) 0%,
+      transparent 42%
+    ),
+    rgba(255, 255, 255, 0.03);
+}
+
+.eventCardTop {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
+  align-items: flex-start;
+  gap: var(--spacing-md);
+}
+
+.calendar {
+  flex-shrink: 0;
+  width: 11.5rem;
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-background);
+}
+
+.calendarFallback {
+  flex-shrink: 0;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  font-size: var(--fs-sm);
+}
+
+.calendarHeader {
+  margin-bottom: var(--spacing-xs);
+  text-align: center;
+  font-family: var(--font-heading);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: capitalize;
+  letter-spacing: 0.02em;
+  color: var(--color-text);
+}
+
+.calendarWeekdays,
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.calendarWeekday {
+  text-align: center;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-secondary);
+  padding-bottom: 2px;
+}
+
+.calendarEmpty {
+  aspect-ratio: 1;
+}
+
+.calendarDay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  line-height: 1;
+  color: var(--color-text-secondary);
+}
+
+.calendarDayActive {
+  color: var(--color-text);
+  font-weight: 700;
+  border: 2px solid var(--color-primary);
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+.eventCardMeta {
+  @include column(var(--spacing-sm));
+  min-width: 0;
+  flex: 1;
+  padding-top: 2px;
+}
+
+.metaItem {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-xs);
+}
+
+.metaIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--color-primary);
+}
+
+.metaText {
+  font-size: var(--fs-sm);
+  line-height: 1.4;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.metaClosedHint {
   margin: 0;
   font-size: var(--fs-xs);
   color: var(--color-text-secondary);
 }
 
-.modalDescription {
+.eventDescription {
+  @include column(var(--spacing-xs));
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid var(--color-border);
+}
+
+.eventDescriptionLabel {
+  margin: 0;
+  font-size: var(--fs-xs);
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-text-secondary);
+}
+
+.eventDescriptionText {
   margin: 0;
   white-space: pre-wrap;
   line-height: 1.55;
   font-size: var(--fs-sm);
+  color: var(--color-text);
 }
 
 .signupForm {
   @include column(var(--spacing-md));
-  padding-top: var(--spacing-sm);
-  border-top: 1px solid var(--color-border);
+}
+
+.signupFormLead {
+  margin: 0;
+  font-size: var(--fs-sm);
+  font-family: var(--font-heading);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--color-text-secondary);
 }
 
 .signedUpBanner {
@@ -124,6 +257,7 @@
   background: color-mix(in srgb, var(--color-success, #6fdf8a) 12%, transparent);
   color: var(--color-text);
   font-size: var(--fs-sm);
+  text-align: center;
 }
 
 .closedBanner {
@@ -133,4 +267,18 @@
   background: rgba(255, 255, 255, 0.04);
   color: var(--color-text-secondary);
   font-size: var(--fs-sm);
+  text-align: center;
+}
+
+@media (max-width: 480px) {
+  .eventCardTop {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .calendar {
+    width: 100%;
+    max-width: 16rem;
+    margin-inline: auto;
+  }
 }

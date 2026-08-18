@@ -2,6 +2,7 @@ import {
   useState,
   useEffect,
   useCallback,
+  useMemo,
   forwardRef,
   type FormEvent,
 } from "react";
@@ -50,9 +51,28 @@ const CustomDateInput = forwardRef<
 ));
 CustomDateInput.displayName = "CustomDateInput";
 
-
 const LIST_PAGE_SIZE = 20;
 const SIGNUPS_PAGE_SIZE = 50;
+
+/** YYYY-MM-DD for "today" in Europe/Stockholm (same rule as signupOpen). */
+function todayInStockholm(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Stockholm",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+}
+
+function compareConcertDateAsc(a: SharedConcert, b: SharedConcert): number {
+  const byDate = a.concertDate.localeCompare(b.concertDate);
+  if (byDate !== 0) return byDate;
+  return a.concertId.localeCompare(b.concertId);
+}
+
+function compareConcertDateDesc(a: SharedConcert, b: SharedConcert): number {
+  return compareConcertDateAsc(b, a);
+}
 
 function formatConcertDate(isoDate: string): string {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return isoDate;
@@ -265,6 +285,22 @@ export const AdminSharedConcertPage = () => {
     return () => clearTimeout(timer);
   }, [statusMessage]);
 
+  const { upcomingConcerts, pastConcerts } = useMemo(() => {
+    const today = todayInStockholm();
+    const upcoming: SharedConcert[] = [];
+    const past: SharedConcert[] = [];
+    for (const c of concerts) {
+      if (c.concertDate >= today) {
+        upcoming.push(c);
+      } else {
+        past.push(c);
+      }
+    }
+    upcoming.sort(compareConcertDateAsc);
+    past.sort(compareConcertDateDesc);
+    return { upcomingConcerts: upcoming, pastConcerts: past };
+  }, [concerts]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (isSubmitting) return;
@@ -315,6 +351,31 @@ export const AdminSharedConcertPage = () => {
       setIsSubmitting(false);
     }
   };
+
+  const renderConcertRow = (c: SharedConcert) => (
+    <li key={c.concertId}>
+      <button
+        type="button"
+        className={styles.historyRow}
+        onClick={() => openDetail(c)}
+      >
+        <span className={styles.historyRowMain}>
+          <span className={styles.historyItemTitle}>{c.title}</span>
+          <span className={styles.historyMetaLine}>
+            {formatConcertDate(c.concertDate)}
+            {c.location ? ` · ${c.location}` : ""}
+            {!c.signupOpen ? " · stängd" : ""}
+          </span>
+        </span>
+        <span className={styles.historyRowMeta}>
+          <span className={styles.countBadge}>
+            {c.signupCount}{" "}
+            {c.signupCount === 1 ? "anmäld" : "anmälda"}
+          </span>
+        </span>
+      </button>
+    </li>
+  );
 
   return (
     <div className={styles.page}>
@@ -471,32 +532,47 @@ export const AdminSharedConcertPage = () => {
             )}
 
             {!isLoadingList && concerts.length > 0 && (
-              <ul className={styles.historyList}>
-                {concerts.map((c) => (
-                  <li key={c.concertId}>
-                    <button
-                      type="button"
-                      className={styles.historyRow}
-                      onClick={() => openDetail(c)}
-                    >
-                      <span className={styles.historyRowMain}>
-                        <span className={styles.historyItemTitle}>{c.title}</span>
-                        <span className={styles.historyMetaLine}>
-                          {formatConcertDate(c.concertDate)}
-                          {c.location ? ` · ${c.location}` : ""}
-                          {!c.signupOpen ? " · stängd" : ""}
-                        </span>
-                      </span>
-                      <span className={styles.historyRowMeta}>
-                        <span className={styles.countBadge}>
-                          {c.signupCount}{" "}
-                          {c.signupCount === 1 ? "anmäld" : "anmälda"}
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <div className={styles.concertSections}>
+                <section
+                  className={styles.concertSection}
+                  aria-labelledby="upcoming-concerts-heading"
+                >
+                  <h3
+                    id="upcoming-concerts-heading"
+                    className={styles.sectionHeading}
+                  >
+                    Aktuella / kommande
+                  </h3>
+                  {upcomingConcerts.length > 0 ? (
+                    <ul className={styles.historyList}>
+                      {upcomingConcerts.map(renderConcertRow)}
+                    </ul>
+                  ) : (
+                    <p className={styles.muted}>Inga kommande konserter.</p>
+                  )}
+                </section>
+
+                <hr className={styles.sectionDivider} />
+
+                <section
+                  className={styles.concertSection}
+                  aria-labelledby="past-concerts-heading"
+                >
+                  <h3
+                    id="past-concerts-heading"
+                    className={styles.sectionHeading}
+                  >
+                    Tidigare konserter
+                  </h3>
+                  {pastConcerts.length > 0 ? (
+                    <ul className={styles.historyList}>
+                      {pastConcerts.map(renderConcertRow)}
+                    </ul>
+                  ) : (
+                    <p className={styles.muted}>Inga tidigare konserter.</p>
+                  )}
+                </section>
+              </div>
             )}
 
             {listHasMore && (
