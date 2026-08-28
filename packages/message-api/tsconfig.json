@@ -2,12 +2,13 @@
   "display": "Node 20",
   "compilerOptions": {
     "lib": ["es2022"],
-    "module": "commonjs",
+    "module": "esnext",
     "target": "es2022",
     "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "moduleResolution": "node"
+    "moduleResolution": "bundler",
+    "noEmit": true
   }
 }
