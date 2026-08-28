@@ -12,6 +12,7 @@ import {
   MESSAGE_FEED_PAGE_SIZE,
 } from "../../../core/utils/messageFeed";
 import { listSentMessages } from "../lib/feed";
+import { enrichItemsWithSenderNames } from "../lib/senderNames";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
@@ -22,7 +23,8 @@ export const handler = async (
   event: AuthorizedEvent
 ): Promise<APIGatewayProxyResultV2> => {
   const tableName = process.env.MAIN_TABLE;
-  if (!tableName) {
+  const userPoolId = process.env.COGNITO_USER_POOL_ID;
+  if (!tableName || !userPoolId) {
     return sendError(500, "Server configuration error.");
   }
 
@@ -49,14 +51,20 @@ export const handler = async (
       limit,
       before,
     });
+    const itemsWithSender = await enrichItemsWithSenderNames(page.items, {
+      userPoolId,
+      docClient,
+      tableName,
+    });
     return sendResponse({
-      messages: page.items.map((m) => ({
+      messages: itemsWithSender.map((m) => ({
         messageId: m.messageId,
         title: m.title,
         body: m.body,
         createdAt: m.createdAt,
         createdByUuid: m.createdByUuid,
         createdByName: m.createdByName,
+        createdByGivenName: m.createdByGivenName,
         scope: m.scope,
         targets: m.targets,
       })),

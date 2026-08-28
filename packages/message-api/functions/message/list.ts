@@ -13,6 +13,7 @@ import {
   MESSAGE_FEED_PAGE_SIZE,
 } from "../../../core/utils/messageFeed";
 import { loadFeedForGroup, loadReadIds, toFeedResponse } from "../lib/feed";
+import { enrichItemsWithSenderNames } from "../lib/senderNames";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
@@ -23,7 +24,8 @@ export const handler = async (
   event: AuthorizedEvent
 ): Promise<APIGatewayProxyResultV2> => {
   const tableName = process.env.MAIN_TABLE;
-  if (!tableName) {
+  const userPoolId = process.env.COGNITO_USER_POOL_ID;
+  if (!tableName || !userPoolId) {
     return sendError(500, "Server configuration error.");
   }
 
@@ -67,14 +69,19 @@ export const handler = async (
       limit,
       before,
     });
+    const itemsWithSender = await enrichItemsWithSenderNames(page.items, {
+      userPoolId,
+      docClient,
+      tableName,
+    });
     const readIds = await loadReadIds(
       docClient,
       tableName,
       uuid,
-      page.items.map((m) => m.messageId)
+      itemsWithSender.map((m) => m.messageId)
     );
     return sendResponse({
-      messages: toFeedResponse(page.items, readIds),
+      messages: toFeedResponse(itemsWithSender, readIds),
       hasMore: page.hasMore,
     });
   } catch (err) {

@@ -4,7 +4,8 @@ import axios from 'axios';
 import { FiFolder, FiMusic, FiFileText, FiFile, FiTrash2, FiUpload, FiInbox } from 'react-icons/fi';
 import { Modal } from '@/components/ui/modal/Modal';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
-import styles from './MaterialDetailPage.module.scss'; // Antag att du skapar en stilfil för denna sida
+import { AddLibraryFolderToChoirsModal } from '@/components/media/AddLibraryFolderToChoirsModal';
+import styles from './MaterialDetailPage.module.scss';
 
 // --- TYPER ---
 interface MaterialFile {
@@ -123,6 +124,7 @@ export const MaterialDetailPage = () => {
   const [deletingMaterialId, setDeletingMaterialId] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncConfirmOpen, setSyncConfirmOpen] = useState(false);
+  const [addToChoirsOpen, setAddToChoirsOpen] = useState(false);
   const [materialPendingDelete, setMaterialPendingDelete] = useState<MaterialFile | null>(null);
   const [selectedMaterialIds, setSelectedMaterialIds] = useState<string[]>([]);
   const [batchDeleteTargets, setBatchDeleteTargets] = useState<MaterialFile[]>([]);
@@ -583,14 +585,23 @@ export const MaterialDetailPage = () => {
           </div>
           <div className={styles.headerActions}>
             {breadcrumbs.length === 1 && (
-              <button
-                type="button"
-                className={styles.syncButton}
-                disabled={isSyncing}
-                onClick={() => setSyncConfirmOpen(true)}
-              >
-                <span>{isSyncing ? 'Uppdaterar...' : 'Uppdatera i alla körer'}</span>
-              </button>
+              <>
+                <button
+                  type="button"
+                  className={styles.addToChoirsButton}
+                  onClick={() => setAddToChoirsOpen(true)}
+                >
+                  <span>Lägg till i körer</span>
+                </button>
+                <button
+                  type="button"
+                  className={styles.syncButton}
+                  disabled={isSyncing}
+                  onClick={() => setSyncConfirmOpen(true)}
+                >
+                  <span>{isSyncing ? 'Uppdaterar...' : 'Uppdatera i alla körer'}</span>
+                </button>
+              </>
             )}
             <input
               ref={addFileInputRef}
@@ -677,6 +688,17 @@ export const MaterialDetailPage = () => {
         <div className={`${styles.statusMessage} ${styles[replaceStatus.type]}`} role="status">
           {replaceStatus.message}
         </div>
+      ) : null}
+
+      {breadcrumbs.length === 1 && decodedPath ? (
+        <AddLibraryFolderToChoirsModal
+          folderPath={decodedPath}
+          isOpen={addToChoirsOpen}
+          onClose={() => setAddToChoirsOpen(false)}
+          onSuccess={(message) =>
+            setReplaceStatus({ type: 'success', message })
+          }
+        />
       ) : null}
 
       <Modal

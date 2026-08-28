@@ -61,6 +61,7 @@ export type SentMessage = {
   createdAt: string;
   createdByUuid: string;
   createdByName?: string;
+  createdByGivenName?: string;
   scope: "all" | "groups";
   targets: string[];
 };

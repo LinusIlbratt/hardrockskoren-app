@@ -47,7 +47,8 @@ export const MemberAktuelltPage = () => {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<FeedMessage | null>(null);
-  const { unreadStatus, refetchUnread } = useMessageUnread(groupName);
+  const { unreadStatus, refetchUnread, decrementUnreadOptimistic } =
+    useMessageUnread();
 
   const fetchMessages = useCallback(async () => {
     if (!groupName) return;
@@ -99,6 +100,7 @@ export const MemberAktuelltPage = () => {
         m.messageId === message.messageId ? { ...m, isRead: true } : m
       )
     );
+    decrementUnreadOptimistic();
     try {
       await markMessageRead(message.messageId);
       await refetchUnread();
@@ -109,6 +111,7 @@ export const MemberAktuelltPage = () => {
           m.messageId === message.messageId ? { ...m, isRead: false } : m
         )
       );
+      await refetchUnread();
     }
   };
 

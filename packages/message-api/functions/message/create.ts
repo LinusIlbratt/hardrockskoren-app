@@ -21,6 +21,7 @@ import {
   sentGsi1Sk,
   targetsFromResolved,
 } from "../lib/keys";
+import { resolveCreatorNames } from "../lib/senderNames";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
@@ -106,7 +107,8 @@ export const handler = async (
   event: AuthorizedEvent
 ): Promise<APIGatewayProxyResultV2> => {
   const tableName = process.env.MAIN_TABLE;
-  if (!tableName) {
+  const userPoolId = process.env.COGNITO_USER_POOL_ID;
+  if (!tableName || !userPoolId) {
     return sendError(500, "Server configuration error.");
   }
 
@@ -115,17 +117,11 @@ export const handler = async (
     return sendError(401, "User identity is missing from the request context.");
   }
 
-  const given =
-    typeof event.requestContext.authorizer?.lambda?.given_name === "string"
-      ? event.requestContext.authorizer.lambda.given_name.trim()
-      : "";
-  const family =
-    typeof event.requestContext.authorizer?.lambda?.family_name === "string"
-      ? event.requestContext.authorizer.lambda.family_name.trim()
-      : "";
-  const createdByGivenName = given || undefined;
-  const createdByName =
-    [given, family].filter(Boolean).join(" ").trim() || undefined;
+  const { createdByGivenName, createdByName } = await resolveCreatorNames(
+    event.requestContext.authorizer?.lambda,
+    uuid,
+    userPoolId
+  );
 
   if (!event.body?.trim()) {
     return sendError(400, "Request body is required.");

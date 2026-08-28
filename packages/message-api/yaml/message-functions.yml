@@ -18,6 +18,11 @@ createMessage:
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminGetUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 
 listSentMessages:
   handler: functions/message/listSent.handler
@@ -33,9 +38,15 @@ listSentMessages:
     - Effect: "Allow"
       Action:
         - "dynamodb:Query"
+        - "dynamodb:UpdateItem"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminGetUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 
 listMessages:
   handler: functions/message/list.handler
@@ -53,12 +64,14 @@ listMessages:
         - "dynamodb:Query"
         - "dynamodb:BatchGetItem"
         - "dynamodb:GetItem"
+        - "dynamodb:UpdateItem"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
     - Effect: "Allow"
       Action:
         - "cognito-idp:AdminListGroupsForUser"
+        - "cognito-idp:AdminGetUser"
       Resource:
         - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 

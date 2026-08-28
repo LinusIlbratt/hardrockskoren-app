@@ -8,7 +8,7 @@ import { useMessageUnread } from "@/hooks/useMessageUnread";
 export const LeaderNav = () => {
   const { user } = useAuth();
   const { groupName } = useParams<{ groupName: string }>();
-  const { unreadStatus } = useMessageUnread(groupName);
+  const { unreadStatus } = useMessageUnread();
 
   const getLinkClassName = ({ isActive }: { isActive: boolean }) => 
     isActive ? `${styles.navLink} ${styles.active}` : styles.navLink;

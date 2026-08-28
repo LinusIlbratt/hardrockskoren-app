@@ -21,6 +21,7 @@ provider:
   logRetentionInDays: 30
   environment:
     MAIN_TABLE: ${self:custom.mainTableName}
+    COGNITO_USER_POOL_ID: ${self:custom.userPoolId}
   httpApi:
     cors: true
     authorizers:

@@ -57,6 +57,8 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   "PATCH /materials/{materialId}": RoleGroups.ADMIN_ONLY,
   "POST /materials/batch-delete": RoleGroups.ADMIN_ONLY,
   "POST /materials/sync-all-repertoires": RoleGroups.ADMIN_ONLY,
+  "POST /materials/library-folder-choir-status": RoleGroups.ADMIN_ONLY,
+  "POST /materials/add-to-choirs": RoleGroups.ADMIN_ONLY,
   "GET /my-materials": RoleGroups.ALL_LOGGED_IN, // <-- KORRIGERAD
   "POST /materials/download-urls": RoleGroups.ALL_LOGGED_IN,
   "POST /groups/{groupName}/repertoires": RoleGroups.MANAGEMENT,

@@ -1,0 +1,109 @@
+@use '@/styles/variables' as *;
+
+// Matchar MaterialDetailPage sync/delete-modaler
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+
+  > p {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--color-text);
+  }
+
+  strong {
+    color: #fff;
+    font-weight: 700;
+  }
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+.linkedList {
+  margin: 0;
+  padding: var(--spacing-sm) var(--spacing-md);
+  max-height: 8rem;
+  overflow-y: auto;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: var(--color-text);
+  list-style: none;
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+
+  li {
+    margin: 0;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(254, 22, 10, 0.25);
+    border-radius: 3px;
+  }
+}
+
+.audienceFieldset {
+  margin: 0;
+  padding: 0;
+  border: none;
+  @include column(var(--spacing-sm));
+}
+
+.audienceLegend {
+  padding: 0;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.audienceOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.radioLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  cursor: pointer;
+  color: var(--color-text);
+  font-size: var(--fs-sm);
+
+  input {
+    accent-color: var(--color-primary);
+  }
+}
+
+.error {
+  margin: 0;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+  color: #ffb4ae;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-md);
+  flex-wrap: wrap;
+  padding-top: var(--spacing-sm);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}

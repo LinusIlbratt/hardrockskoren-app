@@ -26,7 +26,7 @@ export const MemberEventPage = () => {
   const { groupName } = useParams<{ groupName: string }>();
   const { user } = useAuth();
 
-  const { notificationData, markNewEventAsRead, markGeneralUpdateAsSeen, markDescriptionUpdateAsSeen } = useEventNotification(groupName);
+  const { notificationData, markNewEventAsRead, markGeneralUpdateAsSeen, markDescriptionUpdateAsSeen } = useEventNotification();
 
   const fetchEvents = useCallback(async () => {
     if (!groupName) {

@@ -1,10 +1,9 @@
-import { NavLink, useParams } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import styles from './GroupNav.module.scss';
 import { useMessageUnread } from "@/hooks/useMessageUnread";
 
 export const GroupNav = () => {
-  const { groupName } = useParams<{ groupName: string }>();
-  const { unreadStatus } = useMessageUnread(groupName);
+  const { unreadStatus } = useMessageUnread();
 
   const getLinkClassName = ({ isActive }: { isActive: boolean }) => 
     isActive ? `${styles.navLink} ${styles.active}` : styles.navLink;

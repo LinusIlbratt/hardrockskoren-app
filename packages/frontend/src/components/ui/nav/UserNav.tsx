@@ -10,8 +10,8 @@ interface UserNavProps {
 }
 
 export const UserNav = ({ groupName }: UserNavProps) => {
-  const { notificationData } = useEventNotification(groupName);
-  const { unreadStatus } = useMessageUnread(groupName);
+  const { notificationData } = useEventNotification();
+  const { unreadStatus } = useMessageUnread();
 
   if (!groupName) {
     return null;
