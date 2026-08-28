@@ -54,7 +54,7 @@ export const groupDashboardSteps: StepType[] = [
             <b>Körens Events</b><br />
             <br />
 
-            Planera och se kommande konserter och repdatum.
+            Planera och se kommande gig och repdatum.
         </>
     },
 
@@ -64,6 +64,6 @@ export const groupDashboardSteps: StepType[] = [
     },
     {
         selector: '[data-tour="group-nav-attendance"]',
-        content: 'Här kan du se och hantera närvaron för körens repetitioner.'
+        content: 'Här kan du se och hantera närvaron för körens rep.'
     }
 ];

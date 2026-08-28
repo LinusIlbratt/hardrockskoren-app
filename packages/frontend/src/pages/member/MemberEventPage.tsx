@@ -26,7 +26,6 @@ export const MemberEventPage = () => {
   const { groupName } = useParams<{ groupName: string }>();
   const { user } = useAuth();
 
-  // STEG 1: Hämta de nya, specifika funktionerna från din hook
   const { notificationData, markNewEventAsRead, markGeneralUpdateAsSeen, markDescriptionUpdateAsSeen } = useEventNotification(groupName);
 
   const fetchEvents = useCallback(async () => {
@@ -49,6 +48,8 @@ export const MemberEventPage = () => {
       const nextEvent = sortedEvents.find((event: Event) => !isPast(new Date(event.endDate)));
       if (nextEvent) {
         setNextUpcomingEventId(nextEvent.eventId);
+      } else {
+        setNextUpcomingEventId(null);
       }
 
     } catch (err) {
@@ -83,30 +84,24 @@ export const MemberEventPage = () => {
     const updatedFields = notificationData.updatedEvents[event.eventId];
     const hasUnreadUpdate = !!updatedFields;
 
-    // STEG 2: Skapa två separata flaggor för de olika uppdateringstyperna
     const hasUnreadDescription = hasUnreadUpdate && updatedFields.includes('description');
     const hasOtherUnreadUpdates = hasUnreadUpdate && updatedFields.some(field => field !== 'description');
 
-    // STEG 3: Skapa två separata klick-hanterare med specifik logik
     const handleItemClick = () => {
       if (isNew) {
         markNewEventAsRead(event.eventId);
       } else if (hasOtherUnreadUpdates) {
-        // Denna rensar BARA de allmänna uppdateringarna
         markGeneralUpdateAsSeen(event.eventId, event.updatedAt);
       }
     };
 
     const handleEyeClick = (e: React.MouseEvent) => {
-      e.stopPropagation(); // Mycket viktig: förhindrar att handleItemClick också körs
+      e.stopPropagation();
 
-      // Denna rensar BARA beskrivnings-uppdateringen
       if (hasUnreadDescription) {
         markDescriptionUpdateAsSeen(event.eventId, event.descriptionUpdatedAt);
       }
 
-      // Om det fanns andra uppdateringar också, rensa dem samtidigt
-      // eftersom användaren nu har interagerat med eventet.
       if (hasOtherUnreadUpdates) {
         markGeneralUpdateAsSeen(event.eventId, event.updatedAt);
       }
@@ -170,18 +165,18 @@ export const MemberEventPage = () => {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h2>Konsert & Repdatum</h2>
+        <h2>Gig & Repdatum</h2>
         <div className={styles.tabs}>
           <button className={`${styles.tabButton} ${activeTab === 'REHEARSAL' ? styles.activeTab : ''}`} onClick={() => setActiveTab('REHEARSAL')}>
-            Repetitioner
+            Rep
             {hasRehearsalNotification && <span className={styles.tabBadge} />}
           </button>
           <button className={`${styles.tabButton} ${activeTab === 'CONCERT' ? styles.activeTab : ''}`} onClick={() => setActiveTab('CONCERT')}>
-            Konserter
+            Gig
             {hasConcertNotification && <span className={styles.tabBadge} />}
           </button>
           <button className={`${styles.tabButton} ${activeTab === 'SHARED' ? styles.activeTab : ''}`} onClick={() => setActiveTab('SHARED')}>
-            Gemensamma konserter
+            Gemensamma Gig
           </button>
         </div>
       </div>

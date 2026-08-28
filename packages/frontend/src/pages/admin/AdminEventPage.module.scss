@@ -261,3 +261,14 @@
     align-items: center;
   }
 }
+
+.error {
+  color: var(--color-accent);
+}
+
+.descriptionText {
+  white-space: pre-wrap;
+  font-family: var(--font-body);
+  color: var(--color-text-secondary);
+  font-size: var(--fs-sm);
+}

@@ -143,9 +143,9 @@ export const AdminEventPage = () => {
       )}
 
       <div className={styles.tabs}>
-        <button className={`${styles.tabButton} ${activeTab === 'REHEARSAL' ? styles.activeTab : ''}`} onClick={() => setActiveTab('REHEARSAL')}>Repetitioner</button>
-        {(user?.role === 'admin' || user?.role === 'leader') && (<button className={`${styles.tabButton} ${activeTab === 'CONCERT' ? styles.activeTab : ''}`} onClick={() => setActiveTab('CONCERT')}>Konserter</button>)}
-        <button className={`${styles.tabButton} ${activeTab === 'SHARED' ? styles.activeTab : ''}`} onClick={() => setActiveTab('SHARED')}>Gemensamma konserter</button>
+        <button className={`${styles.tabButton} ${activeTab === 'REHEARSAL' ? styles.activeTab : ''}`} onClick={() => setActiveTab('REHEARSAL')}>Rep</button>
+        {(user?.role === 'admin' || user?.role === 'leader') && (<button className={`${styles.tabButton} ${activeTab === 'CONCERT' ? styles.activeTab : ''}`} onClick={() => setActiveTab('CONCERT')}>Gig</button>)}
+        <button className={`${styles.tabButton} ${activeTab === 'SHARED' ? styles.activeTab : ''}`} onClick={() => setActiveTab('SHARED')}>Gemensamma Gig</button>
       </div>
 
       {activeTab === 'SHARED' ? (
@@ -159,8 +159,8 @@ export const AdminEventPage = () => {
       <section className={styles.listSection}>
         {isLoading ? ( <p>Laddar events...</p> ) : (
           <>
-            {activeTab === 'REHEARSAL' && (<ul className={styles.eventList}>{rehearsals.length > 0 ? rehearsals.map(renderEventItem) : <p>Inga repetitioner planerade.</p>}</ul>)}
-            {activeTab === 'CONCERT' && (<ul className={styles.eventList}>{concerts.length > 0 ? concerts.map(renderEventItem) : <p>Inga konserter planerade.</p>}</ul>)}
+            {activeTab === 'REHEARSAL' && (<ul className={styles.eventList}>{rehearsals.length > 0 ? rehearsals.map(renderEventItem) : <p>Inga rep planerade.</p>}</ul>)}
+            {activeTab === 'CONCERT' && (<ul className={styles.eventList}>{concerts.length > 0 ? concerts.map(renderEventItem) : <p>Inga gig planerade.</p>}</ul>)}
           </>
         )}
       </section>

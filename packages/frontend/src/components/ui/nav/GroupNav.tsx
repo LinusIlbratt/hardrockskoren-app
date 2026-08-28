@@ -42,7 +42,7 @@ export const GroupNav = () => {
         className={getLinkClassName}
         data-tour="group-nav-concerts"
       >
-        Konserter & repdatum
+        Gig & Repdatum
       </NavLink>
       <NavLink
         to="users"

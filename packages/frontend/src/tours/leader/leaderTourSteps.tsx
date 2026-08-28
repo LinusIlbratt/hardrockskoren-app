@@ -8,7 +8,7 @@ export const leaderTourSteps: StepType[] = [
   },
   {
     selector: '[data-tour="leader-concerts-link"]', // Matchar NavLink till "concerts" i LeaderNav
-    content: 'Skapa och se översikten över kommande konserter och viktiga repdatum.',
+    content: 'Skapa och se översikten över kommande gig och viktiga repdatum.',
   },
   {
     selector: '[data-tour="leader-practice-link"]', // Matchar NavLink till "practice" i LeaderNav

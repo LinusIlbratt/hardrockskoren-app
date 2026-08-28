@@ -295,4 +295,11 @@
     color: var(--color-text-secondary);
     font-size: var(--fs-xs);
   }
+
+  .colNr {
+    width: 2.5rem;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-secondary);
+  }
 }

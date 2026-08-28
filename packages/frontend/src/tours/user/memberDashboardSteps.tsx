@@ -58,7 +58,7 @@ export const memberDashboardSteps: StepType [] = [
     content: <> 
             <b>Körens Events</b><br />
             <br></br>
-            Här hittar du körens alla datum för repetioner och konserter
+            Här hittar du körens alla datum för rep och gig
             <p style={{
                     fontSize: '0.875rem',
                     color: '#A0A0A0',

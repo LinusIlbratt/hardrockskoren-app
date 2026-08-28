@@ -45,7 +45,7 @@ export const UserNav = ({ groupName }: UserNavProps) => {
         end
         className={getLinkClassName}
       >
-        Konsert & Repdatum
+        Gig & Repdatum
         {notificationData.hasNotification && totalNotifications > 0 && (
           <span className={styles.badge}>{totalNotifications}</span>
         )}

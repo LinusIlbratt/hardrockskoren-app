@@ -90,9 +90,9 @@ export const CreateRecurringEventForm = ({
   } = useModalFormGuard({ isDirty, isBlocked: isSubmitting });
 
   const eventTypeOptions = useMemo((): SelectOption[] => {
-    const options: SelectOption[] = [{ value: 'REHEARSAL', label: 'Repetition' }];
+    const options: SelectOption[] = [{ value: 'REHEARSAL', label: 'Rep' }];
     if (user?.role === 'admin') {
-      options.push({ value: 'CONCERT', label: 'Konsert' });
+      options.push({ value: 'CONCERT', label: 'Gig' });
     }
     return options;
   }, [user]);

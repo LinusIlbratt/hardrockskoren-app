@@ -29,7 +29,7 @@ export const LeaderNav = () => {
         )}
       </NavLink>
       <NavLink to={`${base}/concerts`} className={getLinkClassName}>
-        Konserter & Repdatum
+        Gig & Repdatum
       </NavLink>
 
       <NavLink to={`${base}/practice`} className={getLinkClassName}>Sjungupp!</NavLink>

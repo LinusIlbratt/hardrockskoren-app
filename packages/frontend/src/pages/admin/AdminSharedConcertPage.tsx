@@ -167,7 +167,7 @@ export const AdminSharedConcertPage = () => {
       setListHasMore(false);
       setListNextBefore(null);
       setListError(
-        extractApiErrorMessage(error, "Kunde inte hämta gemensamma konserter.")
+        extractApiErrorMessage(error, "Kunde inte hämta gemensamma gig.")
       );
     } finally {
       setIsLoadingList(false);
@@ -194,7 +194,7 @@ export const AdminSharedConcertPage = () => {
       setListNextBefore(result.nextBefore);
     } catch (error) {
       console.error("Failed to load more concerts", error);
-      setListError("Kunde inte ladda fler konserter.");
+      setListError("Kunde inte ladda fler gig.");
     } finally {
       setIsLoadingMore(false);
     }
@@ -337,7 +337,7 @@ export const AdminSharedConcertPage = () => {
       setDescription("");
       setStatusMessage({
         type: "success",
-        message: "Konserten har skapats.",
+        message: "Giget har skapats.",
       });
       await fetchList();
       setActiveTab("list");
@@ -345,7 +345,7 @@ export const AdminSharedConcertPage = () => {
       console.error("Failed to create shared concert", error);
       setStatusMessage({
         type: "error",
-        message: extractApiErrorMessage(error, "Kunde inte skapa konserten."),
+        message: extractApiErrorMessage(error, "Kunde inte skapa giget."),
       });
     } finally {
       setIsSubmitting(false);
@@ -379,12 +379,12 @@ export const AdminSharedConcertPage = () => {
 
   return (
     <div className={styles.page}>
-      <h1 className={styles.title}>Gemensamma konserter</h1>
+      <h1 className={styles.title}>Gemensamma Gig</h1>
       <p className={styles.subtitle}>
-        Skapa gemensamma konserter och se vilka som anmält sig.
+        Skapa gemensamma gig och se vilka som anmält sig.
       </p>
 
-      <div className={styles.tabs} role="tablist" aria-label="Gemensamma konserter">
+      <div className={styles.tabs} role="tablist" aria-label="Gemensamma Gig">
         <button
           type="button"
           role="tab"
@@ -405,7 +405,7 @@ export const AdminSharedConcertPage = () => {
           className={`${styles.tabButton} ${activeTab === "list" ? styles.activeTab : ""}`}
           onClick={() => setActiveTab("list")}
         >
-          Konserter
+          Gig
         </button>
       </div>
 
@@ -417,7 +417,7 @@ export const AdminSharedConcertPage = () => {
           className={styles.tabPanel}
         >
           <p className={styles.panelIntro}>
-            Fyll i uppgifterna och publicera en konsert som medlemmar från alla
+            Fyll i uppgifterna och publicera ett gig som medlemmar från alla
             körer kan anmäla sig till.
           </p>
 
@@ -485,7 +485,7 @@ export const AdminSharedConcertPage = () => {
               size={ButtonSize.Default}
               disabled={isSubmitting}
             >
-              {isSubmitting ? "Skapar…" : "Skapa konsert"}
+              {isSubmitting ? "Skapar…" : "Skapa gig"}
             </Button>
 
             {statusMessage && (
@@ -514,10 +514,10 @@ export const AdminSharedConcertPage = () => {
           <div className={styles.history}>
             <div className={styles.historySticky}>
               <h2 id="concert-list-heading" className={styles.historyTitle}>
-                Konserter och anmälningar
+                Gig och anmälningar
               </h2>
               <p className={styles.historySubtitle}>
-                Klicka på en konsert för att se vem som anmält sig.
+                Klicka på ett gig för att se vem som anmält sig.
               </p>
             </div>
 
@@ -527,7 +527,7 @@ export const AdminSharedConcertPage = () => {
             )}
             {!isLoadingList && !listError && concerts.length === 0 && (
               <p className={styles.muted}>
-                Inga konserter ännu. Skapa en under fliken Skapa.
+                Inga gig ännu. Skapa ett under fliken Skapa.
               </p>
             )}
 
@@ -548,7 +548,7 @@ export const AdminSharedConcertPage = () => {
                       {upcomingConcerts.map(renderConcertRow)}
                     </ul>
                   ) : (
-                    <p className={styles.muted}>Inga kommande konserter.</p>
+                    <p className={styles.muted}>Inga kommande gig.</p>
                   )}
                 </section>
 
@@ -562,14 +562,14 @@ export const AdminSharedConcertPage = () => {
                     id="past-concerts-heading"
                     className={styles.sectionHeading}
                   >
-                    Tidigare konserter
+                    Tidigare gig
                   </h3>
                   {pastConcerts.length > 0 ? (
                     <ul className={styles.historyList}>
                       {pastConcerts.map(renderConcertRow)}
                     </ul>
                   ) : (
-                    <p className={styles.muted}>Inga tidigare konserter.</p>
+                    <p className={styles.muted}>Inga tidigare gig.</p>
                   )}
                 </section>
               </div>
@@ -595,7 +595,7 @@ export const AdminSharedConcertPage = () => {
       <Modal
         isOpen={Boolean(selected)}
         onClose={() => setSelected(null)}
-        title={selected?.title ?? "Konsert"}
+        title={selected?.title ?? "Gig"}
       >
         {selected && (
           <div className={styles.modalBody}>
@@ -625,6 +625,9 @@ export const AdminSharedConcertPage = () => {
                 <table className={styles.signupTable}>
                   <thead>
                     <tr>
+                      <th className={styles.colNr} scope="col">
+                        Nr
+                      </th>
                       <th>Förnamn</th>
                       <th>Efternamn</th>
                       <th>Kör</th>
@@ -632,8 +635,9 @@ export const AdminSharedConcertPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {signups.map((s) => (
+                    {signups.map((s, index) => (
                       <tr key={s.userUuid}>
+                        <td className={styles.colNr}>{index + 1}</td>
                         <td>{s.firstName}</td>
                         <td>{s.lastName}</td>
                         <td>{s.choirName || s.choirSlug}</td>
