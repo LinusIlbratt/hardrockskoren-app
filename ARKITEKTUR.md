@@ -137,11 +137,11 @@ Returnerar `null` vid OK, annars ett färdigt felsvar.
 
 **Används idag av:** `message-api` (list, markRead, unreadStatus),
 `concert-api` (createSignup), `material-api` (listRepertoires,
-listMaterialsInRepertoire).
+listMaterialsInRepertoire), `event-api` (list, create, update, batch,
+delete, getNotificationStatus), `admin-api` (user delete/update).
 
-**Används INTE av:** hela `event-api`, `admin-api`, samt
-skriv-endpointsen i `material-api` (`linkMaterialToRepertoire`,
-`createRepertoire`, `deleteRepertoire`).
+**Används INTE av:** skriv-endpointsen i `material-api`
+(`linkMaterialToRepertoire`, `createRepertoire`, `deleteRepertoire`).
 
 ### Kända säkerhetsbrister (verifierade, ej åtgärdade)
 
@@ -149,7 +149,7 @@ skriv-endpointsen i `material-api` (`linkMaterialToRepertoire`,
 |---|---|---|
 | 1 | `admin-api/functions/user/delete.ts` | ✅ **Åtgärdat 2026-09-26.** Kör nu `AdminRemoveUserFromGroup` mot `groupSlug` i sökvägen i stället för `AdminDeleteUser`. |
 | 2 | `admin-api/functions/user/update.ts` | ✅ **Åtgärdat 2026-09-26.** Allowlist på `leader`/`user`; `admin` kan inte sättas via API:et. |
-| 3 | `event-api/functions/event/*` | Ingen `requireGroupAccess`. En `leader` i kör A kan skapa, ändra och radera event i kör B genom att byta `groupSlug` i sökvägen. |
+| 3 | `event-api/functions/event/*` | ✅ **Åtgärdat 2026-09-26.** `requireGroupAccessResponse` på alla kör-skopade event-endpoints (list, create, update, batch, delete, getNotificationStatus). Admin passerar; leader/user begränsas till sina Cognito-grupper. |
 | 4 | `material-api/functions/getUploadUrl.ts` | Ingen validering av filnamn, filtyp eller storlek. Presigned PUT binder inte `ContentType`. |
 | 5 | Alla `serverless.yml` | `httpApi.cors: true` = alla origins. S3-bucketens CORS är däremot låst till frontend-URL:en. |
 | 6 | `infra-service/iam/cognito.yml` | `custom:role` finns inte i Schema-blocket. Hela auktoriseringen hänger på manuell konsolkonfiguration. |
