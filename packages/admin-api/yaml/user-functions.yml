@@ -27,7 +27,7 @@ deleteUserFromGroup:
     - Effect: "Allow"
       Action: 
         - "cognito-idp:AdminRemoveUserFromGroup"
-        - "cognito-idp:AdminDeleteUser"
+        - "cognito-idp:AdminListGroupsForUser"
       Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
 
@@ -43,7 +43,10 @@ updateUserRole:
     USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
   iamRoleStatements:
     - Effect: "Allow"
-      Action: ["cognito-idp:AdminUpdateUserAttributes"]
+      Action:
+        - "cognito-idp:AdminUpdateUserAttributes"
+        - "cognito-idp:AdminGetUser"
+        - "cognito-idp:AdminListGroupsForUser"
       Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
 adminCreateUser:
