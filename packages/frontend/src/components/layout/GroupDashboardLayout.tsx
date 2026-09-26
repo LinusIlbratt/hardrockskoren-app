@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import { GroupNav } from '@/components/ui/nav/GroupNav';
 import { RecentlyPlayedWidget } from '@/components/music/RecentlyPlayedWidget';
+import { GroupNotificationProviders } from '@/context/GroupNotificationProviders';
 import axios from 'axios';
 import styles from './GroupDashboardLayout.module.scss';
 
-// ÄNDRING: Importera det vi behöver för guiden
 import { AppTourProvider } from '@/tours/AppTourProvider';
 import { groupDashboardSteps } from '@/tours/admin/groupDashboardSteps';
 
@@ -23,12 +23,11 @@ export const GroupDashboardLayout = () => {
   const [currentGroup, setCurrentGroup] = useState<Group | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-
   useEffect(() => {
     if (!groupSlug) {
       setIsLoading(false);
       return;
-    };
+    }
 
     const fetchGroupDetails = async () => {
       const token = localStorage.getItem('authToken');
@@ -56,26 +55,27 @@ export const GroupDashboardLayout = () => {
   }
 
   return (
-    // ÄNDRING: Här wrappar vi allt i AppTourProvider
-    <AppTourProvider
-      steps={groupDashboardSteps} // <-- Korrigerat namn här
-      tourKey="group_dashboard_main"
-      onClickMask={() => { }}
-    >
-      <div className={styles.dashboardLayout}>
-        <header className={styles.header}>
-          <div className={styles.groupNameRow}>
-            <h1 className={styles.groupName}>{currentGroup.name}</h1>
-            {groupSlug ? (
-              <RecentlyPlayedWidget groupName={groupSlug} viewer="admin" />
-            ) : null}
-          </div>
-          <GroupNav />
-        </header>
-        <main className={styles.content}>
-          <Outlet />
-        </main>
-      </div>
-    </AppTourProvider>
+    <GroupNotificationProviders groupSlug={groupSlug}>
+      <AppTourProvider
+        steps={groupDashboardSteps}
+        tourKey="group_dashboard_main"
+        onClickMask={() => { }}
+      >
+        <div className={styles.dashboardLayout}>
+          <header className={styles.header}>
+            <div className={styles.groupNameRow}>
+              <h1 className={styles.groupName}>{currentGroup.name}</h1>
+              {groupSlug ? (
+                <RecentlyPlayedWidget groupName={groupSlug} viewer="admin" />
+              ) : null}
+            </div>
+            <GroupNav />
+          </header>
+          <main className={styles.content}>
+            <Outlet />
+          </main>
+        </div>
+      </AppTourProvider>
+    </GroupNotificationProviders>
   );
 };

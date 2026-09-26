@@ -57,6 +57,8 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   "PATCH /materials/{materialId}": RoleGroups.ADMIN_ONLY,
   "POST /materials/batch-delete": RoleGroups.ADMIN_ONLY,
   "POST /materials/sync-all-repertoires": RoleGroups.ADMIN_ONLY,
+  "POST /materials/library-folder-choir-status": RoleGroups.ADMIN_ONLY,
+  "POST /materials/add-to-choirs": RoleGroups.ADMIN_ONLY,
   "GET /my-materials": RoleGroups.ALL_LOGGED_IN, // <-- KORRIGERAD
   "POST /materials/download-urls": RoleGroups.ALL_LOGGED_IN,
   "POST /groups/{groupName}/repertoires": RoleGroups.MANAGEMENT,
@@ -89,4 +91,21 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   "DELETE /playlists/{playlistId}/items/{materialId}": RoleGroups.ALL_LOGGED_IN,
   "PATCH /playlists/{playlistId}": RoleGroups.ALL_LOGGED_IN,
   "DELETE /playlists/{playlistId}": RoleGroups.ALL_LOGGED_IN,
+
+  // === Aktuellt / Messages (message-api) ===
+  "POST /messages": RoleGroups.ADMIN_ONLY,
+  "GET /messages/sent": RoleGroups.ADMIN_ONLY,
+  "GET /groups/{groupSlug}/messages": RoleGroups.ALL_LOGGED_IN,
+  "GET /groups/{groupSlug}/messages/unread-status": RoleGroups.ALL_LOGGED_IN,
+  "POST /messages/{messageId}/read": RoleGroups.ALL_LOGGED_IN,
+  "DELETE /messages/{messageId}": RoleGroups.ADMIN_ONLY,
+
+  // === Gemensamma konserter / Konsertanmälan (concert-api) ===
+  "POST /shared-concerts": RoleGroups.ADMIN_ONLY,
+  "GET /shared-concerts": RoleGroups.ALL_LOGGED_IN,
+  "GET /shared-concerts/{id}": RoleGroups.ALL_LOGGED_IN,
+  "PATCH /shared-concerts/{id}": RoleGroups.ADMIN_ONLY,
+  "DELETE /shared-concerts/{id}": RoleGroups.ADMIN_ONLY,
+  "POST /shared-concerts/{id}/signups": RoleGroups.ALL_LOGGED_IN,
+  "GET /shared-concerts/{id}/signups": RoleGroups.ADMIN_ONLY,
 };

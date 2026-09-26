@@ -419,6 +419,63 @@ syncAllRepertoiresFromLibraryFolder:
       Action: ["cognito-idp:AdminGetUser"]
       Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
 
+libraryFolderChoirStatus:
+  handler: functions/libraryFolderChoirStatus.handler
+  name: hrk-library-folder-choir-status-${sls:stage}
+  iamRoleStatementsName: hrk-lib-folder-choir-status-${sls:stage}
+  description: Which choirs already have a library folder linked as repertoire. Admin only.
+  timeout: 30
+  memorySize: 256
+  events:
+    - httpApi:
+        method: POST
+        path: /materials/library-folder-choir-status
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+    COGNITO_USER_POOL_ID: ${self:custom.userPoolId}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+        - "dynamodb:BatchGetItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminGetUser"]
+      Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
+
+addLibraryFolderToChoirs:
+  handler: functions/addLibraryFolderToChoirs.handler
+  name: hrk-add-library-folder-to-choirs-${sls:stage}
+  iamRoleStatementsName: hrk-add-lib-folder-to-choirs-${sls:stage}
+  description: Add a media-library folder to selected choir repertoires. Admin only.
+  timeout: 60
+  memorySize: 512
+  events:
+    - httpApi:
+        method: POST
+        path: /materials/add-to-choirs
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+    COGNITO_USER_POOL_ID: ${self:custom.userPoolId}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+        - "dynamodb:BatchGetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:BatchWriteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI2"
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminGetUser"]
+      Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
+
 syncRepertoireFromLibraryFolder:
   handler: functions/syncRepertoireFromLibraryFolder.handler
   name: hrk-sync-repertoire-from-library-folder-${sls:stage}

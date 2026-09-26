@@ -2,16 +2,14 @@ import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
+import type { AuthContext } from "../../../core/types";
+import { requireGroupAccessResponse } from "../../../core/utils/requireGroupAccess";
 import { nanoid } from "nanoid";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
 
-type AuthorizerContext = {
-  role?: string;
-};
-
-type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthorizerContext>;
+type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
 export const handler = async (
   event: AuthorizedEvent
@@ -35,9 +33,12 @@ export const handler = async (
     }
 
     const { groupSlug } = event.pathParameters || {};
-    if (!groupSlug) {
-      return sendError(400, "Group slug is required in the path.");
-    }
+    const authDenied = await requireGroupAccessResponse(
+      event.requestContext.authorizer?.lambda,
+      groupSlug
+    );
+    if (authDenied) return authDenied;
+
     if (!title || !eventDate || !endDate || !eventType) {
       return sendError(400, "title, eventDate, endDate, and eventType are required.");
     }

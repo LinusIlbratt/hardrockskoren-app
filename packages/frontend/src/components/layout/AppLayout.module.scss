@@ -59,12 +59,6 @@
 .mainContent {
   flex-grow: 1; // Se till att main-elementet växer och tar upp all ledig plats
 
-  // --- MOBIL-STILAR (standard) ---
-  // Viktigt! Skapa utrymme för den fasta navigationen så innehållet inte hamnar bakom.
-  // Justera detta värde så att det matchar höjden på din MainNav (t.ex. 70px).
-  padding-top: 50px;
-
-
   // --- DESKTOP-STILAR (skalar upp) ---
   // När skärmen är bredare än vår tablet-brytpunkt...
   @media (min-width: #{$tabletBreakpoint}) {

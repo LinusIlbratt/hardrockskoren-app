@@ -99,10 +99,10 @@ export const CreateEventForm = ({ user, groupSlug, authToken, eventToEdit, onSuc
 
   const eventTypeOptions = useMemo((): SelectOption[] => {
     const options: SelectOption[] = [
-      { value: 'REHEARSAL', label: 'Repetition' },
+      { value: 'REHEARSAL', label: 'Rep' },
     ];
     if (user?.role === 'admin') {
-      options.push({ value: 'CONCERT', label: 'Konsert' });
+      options.push({ value: 'CONCERT', label: 'Gig' });
     }
     return options;
   }, [user]);

@@ -59,7 +59,7 @@ export const GroupCard = ({ group, onDelete, isLink = false, destination = '#', 
           <nav className={styles.nav}>
             <NavLink to={`/admin/groups/${group.slug}/repertoires`} className={styles.navLink}>Repertoar</NavLink>
             <NavLink to={`/admin/groups/${group.slug}/practice`} className={styles.navLink}>Sjungupp!</NavLink>
-            <NavLink to={`/admin/groups/${group.slug}/concerts`} className={styles.navLink}>Konserter & repdatum</NavLink>
+            <NavLink to={`/admin/groups/${group.slug}/concerts`} className={styles.navLink}>Gig & Repdatum</NavLink>
             <NavLink to={`/admin/groups/${group.slug}/users`} className={styles.navLink}>Användare</NavLink>
             <NavLink to={`/admin/groups/${group.slug}/attendance`} className={styles.navLink}>Närvaro</NavLink>
           </nav>

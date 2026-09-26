@@ -4,16 +4,15 @@ import { DynamoDBClient, BatchWriteItemCommand, WriteRequest, BatchWriteItemComm
 import { marshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
+import type { AuthContext } from "../../../core/types";
+import { requireGroupAccessResponse } from "../../../core/utils/requireGroupAccess";
 import { nanoid } from "nanoid";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
 const BATCH_SIZE = 25;
 
-type AuthorizerContext = {
-  role?: string;
-};
-type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthorizerContext>;
+type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
 // STEG 1: Lägg till det nya fältet i interfacet
 interface EventItem {
@@ -69,10 +68,12 @@ export const handler = async (
       return sendError(403, "Forbidden: You do not have permission for this action.");
     }
     const { groupSlug } = event.pathParameters || {};
-    if (!groupSlug) {
-      return sendError(400, "Group slug is required in the path.");
-    }
-    
+    const authDenied = await requireGroupAccessResponse(
+      event.requestContext.authorizer?.lambda,
+      groupSlug
+    );
+    if (authDenied) return authDenied;
+
     const itemsToCreate: EventItem[] = [];
     let currentDate = new Date(body.startDate);
     const finalDate = new Date(body.endDate);

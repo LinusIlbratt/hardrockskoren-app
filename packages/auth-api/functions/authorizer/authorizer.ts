@@ -33,16 +33,17 @@ export const handler = middy()
           Username: payload.sub,
         });
 
-        // 4. Hämta roll och grupp med din uppdaterade hjälpfunktion
-        const { role, group } = getUserDetailsFromAttributes(UserAttributes);
+        const { role, given_name, family_name } =
+          getUserDetailsFromAttributes(UserAttributes);
 
         // 5. Skapa det slutgiltiga context-objektet
         const context: AuthContext = {
           uuid: payload.sub,
           role: (role as RoleTypes) || "user",
-          group: group, // 'group' kommer från din hjälpfunktion
           clientId,
           userPoolId,
+          ...(given_name ? { given_name } : {}),
+          ...(family_name ? { family_name } : {}),
         };
         
         // 6. Returnera ett godkänt svar

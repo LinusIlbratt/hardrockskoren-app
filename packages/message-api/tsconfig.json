@@ -1,0 +1,14 @@
+{
+  "display": "Node 20",
+  "compilerOptions": {
+    "lib": ["es2022"],
+    "module": "esnext",
+    "target": "es2022",
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "bundler",
+    "noEmit": true
+  }
+}

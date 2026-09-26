@@ -49,7 +49,9 @@ export const createVerifierFromUnverifiedToken = (
 export const getUserDetailsFromAttributes = (
   userAttributes?: AttributeType[]
 ): {
-  role?: string; 
+  role?: string;
+  given_name?: string;
+  family_name?: string;
 } => {
   if (!userAttributes) {
     return {};
@@ -60,6 +62,8 @@ export const getUserDetailsFromAttributes = (
 
   return {
     role: find("custom:role"),
+    given_name: find("given_name") || undefined,
+    family_name: find("family_name") || undefined,
   };
 };
 

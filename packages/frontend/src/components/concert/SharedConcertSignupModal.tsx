@@ -1,0 +1,441 @@
+import { useState, useEffect, useMemo, type FormEvent } from "react";
+import axios from "axios";
+import { FiMapPin, FiUsers } from "react-icons/fi";
+import {
+  Button,
+  ButtonSize,
+  ButtonVariant,
+} from "@/components/ui/button/Button";
+import { FormGroup } from "@/components/ui/form/FormGroup";
+import { Input } from "@/components/ui/input/Input";
+import { Modal } from "@/components/ui/modal/Modal";
+import {
+  StyledSelect,
+  type SelectOption,
+} from "@/components/ui/select/StyledSelect";
+import {
+  createConcertSignup,
+  getSharedConcert,
+  type SharedConcert,
+} from "@/services/concertService";
+import styles from "./SharedConcertSignupPanel.module.scss";
+
+const WEEKDAY_LABELS = ["må", "ti", "on", "to", "fr", "lö", "sö"] as const;
+
+const MONTH_NAMES_SV = [
+  "januari",
+  "februari",
+  "mars",
+  "april",
+  "maj",
+  "juni",
+  "juli",
+  "augusti",
+  "september",
+  "oktober",
+  "november",
+  "december",
+] as const;
+
+export function extractApiErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data;
+    if (data && typeof data === "object" && "message" in data) {
+      const msg = (data as { message: unknown }).message;
+      if (typeof msg === "string" && msg.trim()) {
+        return msg.trim();
+      }
+    }
+    if (error.response?.status === 401 || error.response?.status === 403) {
+      return "Du har inte behörighet.";
+    }
+    if (!error.response) {
+      return "Kunde inte nå konsert-API:t. Kontrollera nätverk och VITE_CONCERT_API_URL.";
+    }
+  }
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim();
+  }
+  return fallback;
+}
+
+/** 409 "already signed up" after a lost 201 (timeout) — treat as success in UI. */
+function isDuplicateSignupConflict(error: unknown): boolean {
+  if (!axios.isAxiosError(error) || error.response?.status !== 409) return false;
+  const msg = extractApiErrorMessage(error, "").toLowerCase();
+  return msg.includes("redan anmäld") || msg.includes("already");
+}
+
+function applySignedUpLocalState(concert: SharedConcert): SharedConcert {
+  return {
+    ...concert,
+    viewerIsSignedUp: true,
+    signupCount: concert.viewerIsSignedUp
+      ? concert.signupCount ?? 0
+      : (concert.signupCount ?? 0) + 1,
+  };
+}
+
+function pickDefaultChoirSlug(groups: string[], preferred?: string): string {
+  if (preferred && groups.includes(preferred)) return preferred;
+  return groups[0] ?? "";
+}
+
+function formatConcertDate(isoDate: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return isoDate;
+  const [y, m, d] = isoDate.split("-").map(Number);
+  try {
+    return new Intl.DateTimeFormat("sv-SE", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }).format(new Date(Date.UTC(y, m - 1, d)));
+  } catch {
+    return isoDate;
+  }
+}
+
+function parseConcertDateParts(
+  isoDate: string
+): { year: number; monthIndex: number; day: number } | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return null;
+  const [year, month, day] = isoDate.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return { year, monthIndex: month - 1, day };
+}
+
+function ConcertEventCalendar({ isoDate }: { isoDate: string }) {
+  const parts = parseConcertDateParts(isoDate);
+  if (!parts) {
+    return <div className={styles.calendarFallback}>{isoDate}</div>;
+  }
+
+  const { year, monthIndex, day } = parts;
+  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+  const startPad = (new Date(year, monthIndex, 1).getDay() + 6) % 7;
+  const cells: Array<number | null> = [
+    ...Array.from({ length: startPad }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+
+  return (
+    <div className={styles.calendar} aria-label={formatConcertDate(isoDate)}>
+      <div className={styles.calendarHeader}>
+        {MONTH_NAMES_SV[monthIndex]} {year}
+      </div>
+      <div className={styles.calendarWeekdays}>
+        {WEEKDAY_LABELS.map((label) => (
+          <span key={label} className={styles.calendarWeekday}>
+            {label}
+          </span>
+        ))}
+      </div>
+      <div className={styles.calendarGrid}>
+        {cells.map((cellDay, index) =>
+          cellDay === null ? (
+            <span key={`pad-${index}`} className={styles.calendarEmpty} />
+          ) : (
+            <span
+              key={cellDay}
+              className={`${styles.calendarDay} ${
+                cellDay === day ? styles.calendarDayActive : ""
+              }`}
+            >
+              {cellDay}
+            </span>
+          )
+        )}
+      </div>
+    </div>
+  );
+}
+
+export type SharedConcertSignupModalProps = {
+  concert: SharedConcert | null;
+  onClose: () => void;
+  onConcertUpdated?: (concert: SharedConcert) => void;
+  preferredChoirSlug?: string;
+  userGroups: string[];
+  givenName?: string;
+  familyName?: string;
+};
+
+export const SharedConcertSignupModal = ({
+  concert,
+  onClose,
+  onConcertUpdated,
+  preferredChoirSlug,
+  userGroups,
+  givenName = "",
+  familyName = "",
+}: SharedConcertSignupModalProps) => {
+  const [selected, setSelected] = useState<SharedConcert | null>(concert);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
+  const [firstName, setFirstName] = useState(givenName);
+  const [lastName, setLastName] = useState(familyName);
+  const [choirSlug, setChoirSlug] = useState(() =>
+    pickDefaultChoirSlug(userGroups, preferredChoirSlug)
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [signupMessage, setSignupMessage] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  const choirOptions: SelectOption[] = useMemo(
+    () => userGroups.map((slug) => ({ value: slug, label: slug })),
+    [userGroups]
+  );
+
+  useEffect(() => {
+    setFirstName(givenName);
+    setLastName(familyName);
+  }, [givenName, familyName]);
+
+  useEffect(() => {
+    setChoirSlug(pickDefaultChoirSlug(userGroups, preferredChoirSlug));
+  }, [userGroups, preferredChoirSlug]);
+
+  const concertId = concert?.concertId ?? null;
+
+  useEffect(() => {
+    if (!concertId || !concert) {
+      setSelected(null);
+      setDetailError(null);
+      setSignupMessage(null);
+      setIsLoadingDetail(false);
+      return;
+    }
+
+    let cancelled = false;
+    setSelected(concert);
+    setDetailError(null);
+    setSignupMessage(null);
+    setIsLoadingDetail(true);
+
+    getSharedConcert(concertId)
+      .then((fresh) => {
+        if (cancelled) return;
+        setSelected(fresh);
+        onConcertUpdated?.(fresh);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        console.error("Failed to load concert detail", error);
+        setDetailError(
+          extractApiErrorMessage(error, "Kunde inte hämta gigdetaljer.")
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingDetail(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // Re-fetch only when another concert is opened — not when the parent
+    // object identity changes after signup/list enrichment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [concertId]);
+
+  const markSignedUpInUi = (current: SharedConcert) => {
+    const optimistic = applySignedUpLocalState(current);
+    setSelected(optimistic);
+    onConcertUpdated?.(optimistic);
+    setSignupMessage({
+      type: "success",
+      message: "Tack för din anmälan",
+    });
+  };
+
+  const handleSignup = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!selected || isSubmitting) return;
+
+    const trimmedFirst = firstName.trim();
+    const trimmedLast = lastName.trim();
+    if (!trimmedFirst) {
+      setSignupMessage({ type: "error", message: "Förnamn krävs." });
+      return;
+    }
+    if (!trimmedLast) {
+      setSignupMessage({ type: "error", message: "Efternamn krävs." });
+      return;
+    }
+    if (!choirSlug.trim()) {
+      setSignupMessage({ type: "error", message: "Välj kör." });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSignupMessage(null);
+    try {
+      await createConcertSignup(selected.concertId, {
+        firstName: trimmedFirst,
+        lastName: trimmedLast,
+        choirSlug: choirSlug.trim(),
+      });
+      markSignedUpInUi(selected);
+    } catch (error) {
+      if (isDuplicateSignupConflict(error)) {
+        markSignedUpInUi(selected);
+      } else {
+        console.error("Failed to sign up for concert", error);
+        setSignupMessage({
+          type: "error",
+          message: extractApiErrorMessage(error, "Kunde inte anmäla dig."),
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const canSignUp =
+    Boolean(selected?.signupOpen) &&
+    !selected?.viewerIsSignedUp &&
+    userGroups.length > 0;
+
+  return (
+    <Modal
+      isOpen={Boolean(concert)}
+      onClose={onClose}
+      title={selected?.title ?? concert?.title ?? "Gig"}
+    >
+      {selected && (
+        <div className={styles.modalBody}>
+          <article className={styles.eventCard}>
+            <div className={styles.eventCardTop}>
+              <ConcertEventCalendar isoDate={selected.concertDate} />
+              <div className={styles.eventCardMeta}>
+                <div className={styles.metaItem}>
+                  <FiMapPin
+                    className={styles.metaIcon}
+                    aria-hidden
+                    size={18}
+                  />
+                  <span className={styles.metaText}>
+                    {selected.location || "Plats saknas"}
+                  </span>
+                </div>
+                <div className={styles.metaItem}>
+                  <FiUsers
+                    className={styles.metaIcon}
+                    aria-hidden
+                    size={18}
+                  />
+                  <span className={styles.metaText}>
+                    {selected.signupCount}{" "}
+                    {selected.signupCount === 1 ? "anmäld" : "anmälda"}
+                  </span>
+                </div>
+                {!selected.signupOpen && (
+                  <p className={styles.metaClosedHint}>Anmälan stängd</p>
+                )}
+              </div>
+            </div>
+
+            {selected.description ? (
+              <div className={styles.eventDescription}>
+                <h3 className={styles.eventDescriptionLabel}>Om giget</h3>
+                <p className={styles.eventDescriptionText}>
+                  {selected.description}
+                </p>
+              </div>
+            ) : null}
+          </article>
+
+          {isLoadingDetail && <p className={styles.muted}>Laddar…</p>}
+          {detailError && <p className={styles.error}>{detailError}</p>}
+
+          {!isLoadingDetail && selected.viewerIsSignedUp && (
+            <p className={styles.signedUpBanner} role="status">
+              {signupMessage?.type === "success"
+                ? "Tack för din anmälan"
+                : "Du är redan anmäld"}
+            </p>
+          )}
+
+          {!isLoadingDetail &&
+            !selected.signupOpen &&
+            !selected.viewerIsSignedUp && (
+              <p className={styles.closedBanner}>
+                Anmälan är stängd för detta gig.
+              </p>
+            )}
+
+          {!isLoadingDetail && canSignUp && (
+            <form
+              className={styles.signupForm}
+              onSubmit={handleSignup}
+              noValidate
+            >
+              <p className={styles.signupFormLead}>Anmäl dig</p>
+
+              {userGroups.length === 0 && (
+                <p className={styles.error}>
+                  Du måste tillhöra minst en kör för att anmäla dig.
+                </p>
+              )}
+
+              {userGroups.length > 1 && (
+                <FormGroup label="Kör" htmlFor="signup-choir">
+                  <StyledSelect
+                    inputId="signup-choir"
+                    options={choirOptions}
+                    value={
+                      choirOptions.find((o) => o.value === choirSlug) ?? null
+                    }
+                    onChange={(option) =>
+                      setChoirSlug(option ? String(option.value) : "")
+                    }
+                    isDisabled={isSubmitting}
+                    placeholder="Välj kör…"
+                  />
+                </FormGroup>
+              )}
+
+              <FormGroup label="Förnamn" htmlFor="signup-first-name">
+                <Input
+                  id="signup-first-name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  maxLength={80}
+                  disabled={isSubmitting}
+                  required
+                />
+              </FormGroup>
+
+              <FormGroup label="Efternamn" htmlFor="signup-last-name">
+                <Input
+                  id="signup-last-name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  maxLength={80}
+                  disabled={isSubmitting}
+                  required
+                />
+              </FormGroup>
+
+              <Button
+                type="submit"
+                variant={ButtonVariant.Primary}
+                size={ButtonSize.Default}
+                disabled={isSubmitting || userGroups.length === 0}
+              >
+                {isSubmitting ? "Anmäler…" : "Anmäl mig"}
+              </Button>
+
+              {signupMessage?.type === "error" && (
+                <p className={styles.error} role="status">
+                  {signupMessage.message}
+                </p>
+              )}
+            </form>
+          )}
+        </div>
+      )}
+    </Modal>
+  );
+};

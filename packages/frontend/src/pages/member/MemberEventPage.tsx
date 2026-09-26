@@ -10,6 +10,8 @@ import { sv } from 'date-fns/locale';
 import styles from './MemberEventPage.module.scss';
 import type { Event } from '@/types';
 import { useEventNotification } from '@/hooks/useEventNotification';
+import { useAuth } from '@/context/AuthContext';
+import { SharedConcertSignupPanel } from '@/components/concert/SharedConcertSignupPanel';
 
 const API_BASE_URL = import.meta.env.VITE_EVENT_API_URL;
 
@@ -18,13 +20,13 @@ export const MemberEventPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [eventToShowDescription, setEventToShowDescription] = useState<Event | null>(null);
-  const [activeTab, setActiveTab] = useState<'REHEARSAL' | 'CONCERT' | 'OTHER'>('REHEARSAL');
+  const [activeTab, setActiveTab] = useState<'REHEARSAL' | 'CONCERT' | 'SHARED'>('REHEARSAL');
   const [nextUpcomingEventId, setNextUpcomingEventId] = useState<string | null>(null);
 
   const { groupName } = useParams<{ groupName: string }>();
+  const { user } = useAuth();
 
-  // STEG 1: Hämta de nya, specifika funktionerna från din hook
-  const { notificationData, markNewEventAsRead, markGeneralUpdateAsSeen, markDescriptionUpdateAsSeen } = useEventNotification(groupName);
+  const { notificationData, markNewEventAsRead, markGeneralUpdateAsSeen, markDescriptionUpdateAsSeen } = useEventNotification();
 
   const fetchEvents = useCallback(async () => {
     if (!groupName) {
@@ -46,6 +48,8 @@ export const MemberEventPage = () => {
       const nextEvent = sortedEvents.find((event: Event) => !isPast(new Date(event.endDate)));
       if (nextEvent) {
         setNextUpcomingEventId(nextEvent.eventId);
+      } else {
+        setNextUpcomingEventId(null);
       }
 
     } catch (err) {
@@ -61,7 +65,6 @@ export const MemberEventPage = () => {
 
   const rehearsals = events.filter(e => e.eventType === 'REHEARSAL');
   const concerts = events.filter(e => e.eventType === 'CONCERT');
-  const others = events.filter(e => e.eventType !== 'REHEARSAL' && e.eventType !== 'CONCERT');
 
   const allNotificationIds = new Set([
     ...notificationData.newEventIds,
@@ -70,7 +73,6 @@ export const MemberEventPage = () => {
 
   const hasRehearsalNotification = rehearsals.some(event => allNotificationIds.has(event.eventId));
   const hasConcertNotification = concerts.some(event => allNotificationIds.has(event.eventId));
-  const hasOtherNotification = others.some(event => allNotificationIds.has(event.eventId));
 
   const renderEventItem = (event: Event) => {
     const startDate = new Date(event.eventDate);
@@ -82,30 +84,24 @@ export const MemberEventPage = () => {
     const updatedFields = notificationData.updatedEvents[event.eventId];
     const hasUnreadUpdate = !!updatedFields;
 
-    // STEG 2: Skapa två separata flaggor för de olika uppdateringstyperna
     const hasUnreadDescription = hasUnreadUpdate && updatedFields.includes('description');
     const hasOtherUnreadUpdates = hasUnreadUpdate && updatedFields.some(field => field !== 'description');
 
-    // STEG 3: Skapa två separata klick-hanterare med specifik logik
     const handleItemClick = () => {
       if (isNew) {
         markNewEventAsRead(event.eventId);
       } else if (hasOtherUnreadUpdates) {
-        // Denna rensar BARA de allmänna uppdateringarna
         markGeneralUpdateAsSeen(event.eventId, event.updatedAt);
       }
     };
 
     const handleEyeClick = (e: React.MouseEvent) => {
-      e.stopPropagation(); // Mycket viktig: förhindrar att handleItemClick också körs
+      e.stopPropagation();
 
-      // Denna rensar BARA beskrivnings-uppdateringen
       if (hasUnreadDescription) {
         markDescriptionUpdateAsSeen(event.eventId, event.descriptionUpdatedAt);
       }
 
-      // Om det fanns andra uppdateringar också, rensa dem samtidigt
-      // eftersom användaren nu har interagerat med eventet.
       if (hasOtherUnreadUpdates) {
         markGeneralUpdateAsSeen(event.eventId, event.updatedAt);
       }
@@ -160,7 +156,6 @@ export const MemberEventPage = () => {
     switch (activeTab) {
       case 'REHEARSAL': return rehearsals;
       case 'CONCERT': return concerts;
-      case 'OTHER': return others;
       default: return [];
     }
   };
@@ -170,25 +165,23 @@ export const MemberEventPage = () => {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h2>Konsert & Repdatum</h2>
+        <h2>Gig & Repdatum</h2>
         <div className={styles.tabs}>
           <button className={`${styles.tabButton} ${activeTab === 'REHEARSAL' ? styles.activeTab : ''}`} onClick={() => setActiveTab('REHEARSAL')}>
-            Repetitioner
+            Rep
             {hasRehearsalNotification && <span className={styles.tabBadge} />}
           </button>
           <button className={`${styles.tabButton} ${activeTab === 'CONCERT' ? styles.activeTab : ''}`} onClick={() => setActiveTab('CONCERT')}>
-            Konserter
+            Gig
             {hasConcertNotification && <span className={styles.tabBadge} />}
           </button>
-          {others.length > 0 && (
-            <button className={`${styles.tabButton} ${activeTab === 'OTHER' ? styles.activeTab : ''}`} onClick={() => setActiveTab('OTHER')}>
-              Övrigt
-              {hasOtherNotification && <span className={styles.tabBadge} />}
-            </button>
-          )}
+          <button className={`${styles.tabButton} ${activeTab === 'SHARED' ? styles.activeTab : ''}`} onClick={() => setActiveTab('SHARED')}>
+            Gemensamma Gig
+          </button>
         </div>
       </div>
-      <div className={styles.legend}>
+      {activeTab !== 'SHARED' && (
+        <div className={styles.legend}>
 
         <IoInformationCircleOutline size={20} className={styles.legendIcon} />
 
@@ -203,12 +196,24 @@ export const MemberEventPage = () => {
         </p>
 
       </div>
+      )}
+      {activeTab === 'SHARED' ? (
+        <SharedConcertSignupPanel
+          preferredChoirSlug={groupName}
+          userGroups={user?.groups ?? []}
+          givenName={user?.given_name}
+          familyName={user?.family_name}
+        />
+      ) : (
+        <>
       {isLoading && <p>Laddar kommande händelser...</p>}
       {error && <p className={styles.error}>{error}</p>}
       {!isLoading && !error && (
         <section className={styles.listSection}>
           {eventsToDisplay.length > 0 ? (<ul className={styles.eventList}>{eventsToDisplay.map(renderEventItem)}</ul>) : (<p>Det finns inga inplanerade händelser ännu.</p>)}
         </section>
+      )}
+        </>
       )}
       <Modal isOpen={!!eventToShowDescription} onClose={() => setEventToShowDescription(null)} title={eventToShowDescription?.title || "Eventbeskrivning"}>
         <div><pre className={styles.descriptionText}>{eventToShowDescription?.description}</pre></div>

@@ -1,0 +1,28 @@
+{
+  "name": "concert-api",
+  "version": "1.0.0",
+  "description": "Gemensamma konserter / konsertanmälan (SharedConcert + ConcertSignup)",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.826.0",
+    "@aws-sdk/lib-dynamodb": "^3.826.0",
+    "@hrk/core": "*",
+    "nanoid": "^5.1.5"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.149",
+    "@types/node": "^22.15.30",
+    "esbuild": "^0.25.5",
+    "serverless-iam-roles-per-function": "^3.2.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}

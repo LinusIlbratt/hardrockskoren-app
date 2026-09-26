@@ -6,6 +6,7 @@ import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } f
 import { sendResponse, sendError } from "../../../core/utils/http";
 import { AuthContext } from "../../../core/types";
 import { cognito } from "../../../core/services/cognito";
+import { requireGroupAccessResponse } from "../../../core/utils/requireGroupAccess";
 import middy from "@middy/core";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
@@ -20,7 +21,10 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler
     try {
       const userContext = event.requestContext.authorizer.lambda;
       const { groupSlug } = event.pathParameters || {};
-      if (!groupSlug || !userContext.uuid || !userContext.userPoolId) {
+      const authDenied = await requireGroupAccessResponse(userContext, groupSlug);
+      if (authDenied) return authDenied;
+
+      if (!userContext.uuid || !userContext.userPoolId) {
         return sendError(400, "Missing required parameters.");
       }
 

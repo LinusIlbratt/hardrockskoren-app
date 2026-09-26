@@ -14,6 +14,9 @@ createEvent:
     - Effect: "Allow"
       Action: ["dynamodb:PutItem"]
       Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminListGroupsForUser"]
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
 listEvents:
   handler: functions/event/list.handler
@@ -33,6 +36,9 @@ listEvents:
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI1"
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminListGroupsForUser"]
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
 updateEvent:
   handler: functions/event/update.handler
@@ -52,6 +58,9 @@ updateEvent:
         - "dynamodb:UpdateItem"
         - "dynamodb:GetItem"
       Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminListGroupsForUser"]
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
 deleteEvent:
   handler: functions/event/delete.handler
@@ -69,6 +78,9 @@ deleteEvent:
     - Effect: "Allow"
       Action: ["dynamodb:DeleteItem"]
       Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminListGroupsForUser"]
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
 batchCreateEvents:
   handler: functions/event/batch.handler
@@ -88,6 +100,9 @@ batchCreateEvents:
       # Denna funktion behöver den speciella BatchWriteItem-behörigheten
       Action: ["dynamodb:BatchWriteItem"]
       Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminListGroupsForUser"]
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
 getEventNotificationStatus:
   handler: functions/event/getNotificationStatus.handler
@@ -111,6 +126,7 @@ getEventNotificationStatus:
     - Effect: "Allow"
       Action:
         - cognito-idp:AdminGetUser
+        - cognito-idp:AdminListGroupsForUser
       Resource:
         - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 

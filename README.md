@@ -105,6 +105,8 @@ npx serverless deploy --stage dev
 
 Anteckna de utskrivna HTTP API-URL:erna för varje tjänst (auth, admin, event, material).
 
+**concert-api:** Authorizern och `routePermissions` ligger i `admin-api`. Efter ändringar i `packages/core/utils/permissions.ts` — deploya **`admin-api` före `concert-api`**, annars nekas PATCH/DELETE tills authorizern uppdaterats.
+
 ### 3. Konfigurera frontend
 
 I `packages/frontend` skapa `.env` med dev-API-URL:er:
@@ -114,6 +116,8 @@ VITE_AUTH_API_URL=https://<auth-api-dev-url>
 VITE_ADMIN_API_URL=https://<admin-api-dev-url>
 VITE_EVENT_API_URL=https://<event-api-dev-url>
 VITE_MATERIAL_API_URL=https://<material-api-dev-url>
+VITE_MESSAGE_API_URL=https://<message-api-dev-url>
+VITE_CONCERT_API_URL=https://<concert-api-dev-url>
 VITE_S3_BUCKET_URL=https://<media-bucket-url>
 ```
 

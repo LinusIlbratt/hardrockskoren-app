@@ -1,0 +1,134 @@
+createSharedConcert:
+  handler: functions/concert/create.handler
+  name: hrk-create-shared-concert-${sls:stage}
+  description: Admin creates a shared concert (canonical META + GSI1 list keys).
+  events:
+    - httpApi:
+        method: POST
+        path: /shared-concerts
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:PutItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+listSharedConcerts:
+  handler: functions/concert/list.handler
+  name: hrk-list-shared-concerts-${sls:stage}
+  description: Lists shared concerts via GSI1; BatchGet enriches viewerIsSignedUp.
+  events:
+    - httpApi:
+        method: GET
+        path: /shared-concerts
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+        - "dynamodb:BatchGetItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI1"
+
+getSharedConcert:
+  handler: functions/concert/get.handler
+  name: hrk-get-shared-concert-${sls:stage}
+  description: Gets one shared concert; optional viewerIsSignedUp.
+  events:
+    - httpApi:
+        method: GET
+        path: /shared-concerts/{id}
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+updateSharedConcert:
+  handler: functions/concert/update.handler
+  name: hrk-update-shared-concert-${sls:stage}
+  description: Admin updates a shared concert (META + GSI1SK when date changes).
+  events:
+    - httpApi:
+        method: PATCH
+        path: /shared-concerts/{id}
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:UpdateItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+deleteSharedConcert:
+  handler: functions/concert/delete.handler
+  name: hrk-delete-shared-concert-${sls:stage}
+  description: Admin deletes a shared concert and all signup rows (cascade).
+  events:
+    - httpApi:
+        method: DELETE
+        path: /shared-concerts/{id}
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:Query"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:DeleteItem"
+        - "dynamodb:BatchWriteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
+createConcertSignup:
+  handler: functions/concert/createSignup.handler
+  name: hrk-create-concert-signup-${sls:stage}
+  description: Member signs up (atomic TransactWrite Put REF+SIGNUP + Update META).
+  events:
+    - httpApi:
+        method: POST
+        path: /shared-concerts/{id}/signups
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:TransactWriteItems"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
+
+listConcertSignups:
+  handler: functions/concert/listSignups.handler
+  name: hrk-list-concert-signups-${sls:stage}
+  description: Admin lists signups for a shared concert (Query, no Scan).
+  events:
+    - httpApi:
+        method: GET
+        path: /shared-concerts/{id}/signups
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:Query"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"

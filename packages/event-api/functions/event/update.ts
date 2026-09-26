@@ -4,11 +4,10 @@ import { DynamoDBClient, UpdateItemCommand, GetItemCommand } from "@aws-sdk/clie
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
+import type { AuthContext } from "../../../core/types";
+import { requireGroupAccessResponse } from "../../../core/utils/requireGroupAccess";
 
-type AuthorizerContext = {
-  role?: string;
-};
-type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthorizerContext>;
+type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
@@ -27,9 +26,15 @@ export const handler = async (
     }
 
     const { groupSlug, eventId } = event.pathParameters || {};
-    if (!groupSlug || !eventId) {
+    if (!eventId) {
       return sendError(400, "Group slug and event ID are required in the path.");
     }
+
+    const authDenied = await requireGroupAccessResponse(
+      event.requestContext.authorizer?.lambda,
+      groupSlug
+    );
+    if (authDenied) return authDenied;
 
     if (!event.body) {
       return sendError(400, "Request body with fields to update is required.");

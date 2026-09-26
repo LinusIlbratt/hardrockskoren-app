@@ -1,0 +1,1 @@
+Läs alltid ARKITEKTUR.md och AFFARSLOGIK.md innan du föreslår kodändringar, för att förstå databasstrukturen och beroenden. Följ strikt våra Golden Path-exempel från ARKITEKTUR.md. Uppdatera dessa md-filer om ny domänlogik läggs till.

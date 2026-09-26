@@ -38,9 +38,27 @@ const customSelectStyles: StylesConfig<SelectOption> = {
     },
   }),
   singleValue: (provided) => ({ ...provided, color: 'var(--color-text)' }),
+  multiValue: (provided) => ({
+    ...provided,
+    backgroundColor: 'var(--color-border)',
+    borderRadius: 'var(--radius-sm)',
+  }),
+  multiValueLabel: (provided) => ({
+    ...provided,
+    color: 'var(--color-text)',
+  }),
+  multiValueRemove: (provided) => ({
+    ...provided,
+    color: 'var(--color-text-secondary)',
+    ':hover': {
+      backgroundColor: 'var(--color-background-hover-strong)',
+      color: 'var(--color-text)',
+    },
+  }),
   input: (provided) => ({ ...provided, color: 'var(--color-text)' }),
   indicatorSeparator: () => ({ display: 'none' }),
   dropdownIndicator: (provided) => ({ ...provided, color: 'var(--color-text-secondary)', ':hover': { color: 'var(--color-text)' } }),
+  placeholder: (provided) => ({ ...provided, color: 'var(--color-text-secondary)' }),
 };
 
 // Vår återanvändbara wrapper-komponent

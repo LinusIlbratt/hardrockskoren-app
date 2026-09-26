@@ -90,6 +90,6 @@ export const leaderNavSteps: StepType[] = [
     },
     {
         selector: '[data-tour="leader-attendance-link"]',
-        content: 'Här kan du se och hantera närvaron för körens repetitioner.'
+        content: 'Här kan du se och hantera närvaron för körens rep.'
     }
 ];

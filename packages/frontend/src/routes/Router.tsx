@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { LoginPage } from "@/pages/LoginPage";
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { RequireRole } from '@/components/auth/RequireRole';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { LeaderLayout } from "@/components/layout/LeaderLayout";
 import { UserLayout } from "@/components/layout/UserLayout";
@@ -14,7 +15,10 @@ import { AdminUploadPracticePage } from '@/pages/admin/AdminUploadPracticePage';
 import { AdminUserManagementPage } from "@/pages/admin/AdminUserManagementPage";
 import { RegistrationPage } from "@/pages/RegistrationPage";
 import { AdminEventPage } from "@/pages/admin/AdminEventPage";
+import { AdminMessagePage } from "@/pages/admin/AdminMessagePage";
+import { AdminSharedConcertPage } from "@/pages/admin/AdminSharedConcertPage";
 import { MemberDashboard } from "@/pages/member/MemberDashboard";
+import { MemberAktuelltPage } from "@/pages/member/MemberAktuelltPage";
 import { LeaderDashboard } from "@/pages/leader/LeaderDashboard";
 import { MemberListRepertoirePage } from "@/pages/member/MemberListRepertoirePage";
 import { MemberRepertoireMaterialPage } from "@/pages/member/MemberRepertoireMaterialPage";
@@ -94,8 +98,11 @@ const router = createBrowserRouter([
           },
           {
             path: "admin",
-            element: <AdminLayout />,
+            element: <RequireRole roles={["admin"]} />,
             children: [
+              {
+                element: <AdminLayout />,
+                children: [
               {
                 path: "globalMaterial",
                 element: <AdminUploadMaterialPage />,
@@ -109,6 +116,14 @@ const router = createBrowserRouter([
                 element: <AdminUploadPracticePage />,
               },
               {
+                path: "messages",
+                element: <AdminMessagePage />,
+              },
+              {
+                path: "shared-concerts",
+                element: <AdminSharedConcertPage />,
+              },
+              {
                 path: "groups",
                 element: <AdminGroupListPage />,
               },
@@ -119,11 +134,14 @@ const router = createBrowserRouter([
                   { path: "repertoires", element: <AdminRepertoireListPage /> },
                   // ✅ ÄNDRING 1 HÄR:
                   { path: "repertoires/:repertoireId/materials/*", element: <AdminRepertoireMaterialPage /> },
+                  { path: "aktuellt", element: <MemberAktuelltPage /> },
                   { path: "concerts", element: <AdminEventPage /> },
                   { path: "practice", element: <PracticePage /> },
                   { path: "users", element: <AdminUserManagementPage viewerRole="admin" /> },
                   { path: "attendance", element: <LeaderAttendancePage /> },
                   { path: "music", element: <MusicDeepLinkHandler viewer="admin" /> },
+                ],
+              },
                 ],
               },
             ],
@@ -153,6 +171,10 @@ const router = createBrowserRouter([
                   {
                     path: "concerts",
                     element: <AdminEventPage />,
+                  },
+                  {
+                    path: "aktuellt",
+                    element: <MemberAktuelltPage />,
                   },
                   {
                     path: "users",
@@ -212,6 +234,10 @@ const router = createBrowserRouter([
                   {
                     path: "concerts",
                     element: <MemberEventPage />,
+                  },
+                  {
+                    path: "aktuellt",
+                    element: <MemberAktuelltPage />,
                   },
                 ]
               },

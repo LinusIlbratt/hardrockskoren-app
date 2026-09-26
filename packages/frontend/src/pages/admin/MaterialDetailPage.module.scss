@@ -545,7 +545,7 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 
-.syncButton {
+.addToChoirsButton {
   @include toolbarButton;
   font-size: var(--fs-sm);
   padding: 0.5rem 1rem;
@@ -558,6 +558,21 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
     background: linear-gradient(180deg, var(--color-accent-hover) 0%, #ff2a1f 100%);
     border-color: var(--color-accent-hover);
     box-shadow: 0 4px 18px rgba(254, 22, 10, 0.35);
+  }
+}
+
+.syncButton {
+  @include toolbarButton;
+  font-size: var(--fs-sm);
+  padding: 0.5rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text);
+  font-weight: 600;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(254, 22, 10, 0.45);
   }
 }
 

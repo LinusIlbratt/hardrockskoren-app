@@ -85,26 +85,34 @@ interface MainNavProps {
       )
     );
   
+    const getNavLinkClassName = ({ isActive }: { isActive: boolean }) =>
+      isActive ? `${styles.navLink} ${styles.active}` : styles.navLink;
+
+    const getHeaderLinkClassName = ({ isActive }: { isActive: boolean }) =>
+      isActive ? `${styles.headerLink} ${styles.active}` : styles.headerLink;
+
     const MainNavLinks = (
       <>
         {user?.role === 'admin' && (
           <>
-            <NavLink to="/admin/groups" className={styles.navLink} onClick={handleLinkClick}>Körer</NavLink>
-            <NavLink to="/admin/globalMaterial" className={styles.navLink} onClick={handleLinkClick}>Material</NavLink>
-            <NavLink to="/admin/practice" className={styles.navLink} onClick={handleLinkClick}>Sjungupp!</NavLink>
+            <NavLink to="/admin/groups" className={getNavLinkClassName} onClick={handleLinkClick}>Körer</NavLink>
+            <NavLink to="/admin/messages" className={getNavLinkClassName} onClick={handleLinkClick}>Meddelande</NavLink>
+            <NavLink to="/admin/shared-concerts" className={getNavLinkClassName} onClick={handleLinkClick}>Gemensamma Gig</NavLink>
+            <NavLink to="/admin/globalMaterial" className={getNavLinkClassName} onClick={handleLinkClick}>Material</NavLink>
+            <NavLink to="/admin/practice" end className={getNavLinkClassName} onClick={handleLinkClick}>Sjungupp!</NavLink>
           </>
         )}
         {(user?.role === 'leader' || user?.role === 'user') && user.groups && user.groups.length > 0 && (
           user.groups.length === 1 ? (
             <NavLink
               to={user.role === 'leader' ? `/leader/choir/${user.groups[0]}` : `/user/me/${user.groups[0]}`}
-              className={styles.navLink}
+              className={getNavLinkClassName}
               onClick={handleLinkClick}
             >
               Min Kör
             </NavLink>
           ) : (
-            <NavLink to="/select-group" className={styles.myChoir} onClick={handleLinkClick}>
+            <NavLink to="/select-group" className={getNavLinkClassName} onClick={handleLinkClick}>
               Mina Körer
             </NavLink>
           )
@@ -129,7 +137,7 @@ interface MainNavProps {
     );
   
     const AllChoirsLink = (
-      <NavLink to="/choirs" className={styles.headerLink} title="Visa alla körer" onClick={handleLinkClick}>
+      <NavLink to="/choirs" end className={getHeaderLinkClassName} title="Visa alla körer" onClick={handleLinkClick}>
         <FiGlobe size={22} />
         <span>Alla körer</span>
       </NavLink>
