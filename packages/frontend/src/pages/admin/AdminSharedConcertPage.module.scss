@@ -134,7 +134,7 @@
 
 .historySticky {
   position: sticky;
-  top: 0;
+  top: 70px; // under sticky MainNav
   z-index: 2;
   padding: var(--spacing-sm) 0;
   background: color-mix(in srgb, var(--color-background) 92%, transparent);

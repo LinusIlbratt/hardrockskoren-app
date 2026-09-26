@@ -6,7 +6,7 @@
 
 .stickyHeader {
   position: sticky;
-  top: 0;
+  top: 70px; // under sticky MainNav
   z-index: 2;
   margin: calc(var(--spacing-md) * -1) calc(var(--spacing-md) * -1) 0;
   padding: var(--spacing-md);
