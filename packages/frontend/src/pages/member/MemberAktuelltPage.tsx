@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
+import { LinkifiedText } from "@/components/ui/LinkifiedText";
 import { Modal } from "@/components/ui/modal/Modal";
 import { Button, ButtonSize, ButtonVariant } from "@/components/ui/button/Button";
 import {
@@ -210,7 +211,9 @@ export const MemberAktuelltPage = () => {
                 {new Date(selected.createdAt).toLocaleString("sv-SE")}
               </time>
             </p>
-            <p className={styles.modalContent}>{selected.body}</p>
+            <p className={styles.modalContent}>
+              <LinkifiedText text={selected.body} />
+            </p>
           </div>
         )}
       </Modal>

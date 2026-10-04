@@ -1,23 +1,30 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal/Modal';
 import { InviteForm } from '@/components/ui/form/InviteForm';
 import { UserEditModal } from '@/components/ui/modal/UserEditModal';
+import { StyledSelect, type SelectOption } from '@/components/ui/select/StyledSelect';
 import type { RoleTypes } from '@hrk/core/types';
 import { Search } from 'lucide-react';
 import type { GroupMember } from '@/types';
 import { UserList } from '@/components/ui/user/UserList';
+import { useAuth } from '@/context/AuthContext';
 import styles from './AdminUserManagementPage.module.scss';
 
 interface AdminUserManagementPageProps {
   viewerRole: 'admin' | 'leader';
 }
 
-const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
+interface ChoirChoice {
+  slug: string;
+  name: string;
+}
 
-const SEARCH_DEBOUNCE_MS = 400;
+const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
+const ALL_CHOIRS = '';
+const MAX_MEMBER_PAGES = 50;
 
 function isAbortError(err: unknown): boolean {
   return axios.isAxiosError(err) && (err.code === 'ERR_CANCELED' || err.name === 'CanceledError');
@@ -37,179 +44,215 @@ function sortMembersBySurname(members: GroupMember[]): GroupMember[] {
   });
 }
 
+function sortChoirs(choirs: ChoirChoice[]): ChoirChoice[] {
+  return [...choirs].sort((a, b) =>
+    a.name.localeCompare(b.name, 'sv', { sensitivity: 'base' }),
+  );
+}
+
+function memberMatchesQuery(member: GroupMember, rawQuery: string): boolean {
+  const terms = rawQuery.trim().toLocaleLowerCase('sv').split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return true;
+  const haystack = [member.given_name, member.family_name, member.email]
+    .filter((part): part is string => Boolean(part))
+    .join(' ')
+    .toLocaleLowerCase('sv');
+  return terms.every((term) => haystack.includes(term));
+}
+
+async function fetchGroupMembers(
+  groupSlug: string,
+  token: string,
+  signal: AbortSignal,
+): Promise<GroupMember[]> {
+  const collected: GroupMember[] = [];
+  let pageToken: string | null = null;
+  let pages = 0;
+
+  do {
+    const params = new URLSearchParams();
+    params.set('limit', '60');
+    if (pageToken) params.set('nextToken', pageToken);
+    const response = await axios.get(
+      `${API_BASE_URL}/groups/${groupSlug}/users?${params.toString()}`,
+      { headers: { Authorization: `Bearer ${token}` }, signal },
+    );
+    const users: GroupMember[] = response.data.users ?? [];
+    collected.push(...users);
+    pageToken = response.data.nextToken || null;
+    pages += 1;
+  } while (pageToken && pages < MAX_MEMBER_PAGES);
+
+  return collected;
+}
+
 export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageProps) => {
   const { groupName } = useParams<{ groupName: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
+  const [choirs, setChoirs] = useState<ChoirChoice[]>([]);
+  const [choirsReady, setChoirsReady] = useState(false);
+  const [selectedChoir, setSelectedChoir] = useState(groupName ?? ALL_CHOIRS);
   const [allMembers, setAllMembers] = useState<GroupMember[]>([]);
-  const [searchResults, setSearchResults] = useState<GroupMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [nextToken, setNextToken] = useState<string | null>(null);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const [roleToInvite, setRoleToInvite] = useState<RoleTypes | null>(null);
   const [selectedUser, setSelectedUser] = useState<GroupMember | null>(null);
 
-  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
-  const scrollLoadLockRef = useRef(false);
+  useEffect(() => {
+    setSelectedChoir(groupName ?? ALL_CHOIRS);
+  }, [groupName]);
 
   useEffect(() => {
-    const trimmed = searchTerm.trim();
-    if (!trimmed) {
-      setDebouncedSearch('');
-      return;
-    }
-    const id = window.setTimeout(() => setDebouncedSearch(trimmed), SEARCH_DEBOUNCE_MS);
-    return () => window.clearTimeout(id);
-  }, [searchTerm]);
+    let cancelled = false;
 
-  const fetchMembers = useCallback(async (tokenForNextPage?: string | null) => {
-    if (!groupName) return;
+    const loadChoirs = async () => {
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
 
-    if (tokenForNextPage) {
-      setIsLoadingMore(true);
-    } else {
-      setIsLoading(true);
-    }
+      try {
+        if (viewerRole === 'admin') {
+          const response = await axios.get<Array<{ slug?: string; name?: string }>>(
+            `${API_BASE_URL}/groups`,
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
+          const list = (response.data ?? [])
+            .filter((group): group is { slug: string; name?: string } => Boolean(group.slug))
+            .map((group) => ({ slug: group.slug, name: group.name || group.slug }));
+          if (!cancelled) setChoirs(sortChoirs(list));
+          return;
+        }
 
-    const token = localStorage.getItem('authToken');
-    try {
-      const params = new URLSearchParams();
-      if (tokenForNextPage) {
-        params.append('nextToken', tokenForNextPage);
+        const slugs = user?.groups?.filter(Boolean) ?? [];
+        if (slugs.length === 0) {
+          if (!cancelled && groupName) setChoirs([{ slug: groupName, name: groupName }]);
+          return;
+        }
+
+        const response = await axios.post<Array<{ slug?: string; name?: string }>>(
+          `${API_BASE_URL}/groups/batch-get`,
+          { groupSlugs: slugs },
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        const list = (response.data ?? [])
+          .filter((group): group is { slug: string; name?: string } => Boolean(group.slug))
+          .map((group) => ({ slug: group.slug, name: group.name || group.slug }));
+        if (!cancelled) setChoirs(sortChoirs(list.length > 0 ? list : slugs.map((slug) => ({ slug, name: slug }))));
+      } catch (error) {
+        console.error('Failed to fetch choirs:', error);
+        if (!cancelled && groupName) setChoirs([{ slug: groupName, name: groupName }]);
       }
-      params.append('limit', '25');
+    };
 
-      const response = await axios.get(`${API_BASE_URL}/groups/${groupName}/users?${params.toString()}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      const { users, nextToken: newNextToken } = response.data;
-
-      setAllMembers(prev => tokenForNextPage ? [...prev, ...users] : users);
-      setNextToken(newNextToken || null);
-
-    } catch (error) {
-      console.error("Failed to fetch members:", error);
-    } finally {
-      setIsLoading(false);
-      setIsLoadingMore(false);
-    }
-  }, [groupName]);
-
-  const fetchSearchResults = useCallback(async (query: string, signal?: AbortSignal): Promise<GroupMember[]> => {
-    if (!groupName) return [];
-    const token = localStorage.getItem('authToken');
-    const params = new URLSearchParams();
-    params.append('q', query);
-    const response = await axios.get(`${API_BASE_URL}/groups/${groupName}/users?${params.toString()}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal,
+    void loadChoirs().finally(() => {
+      if (!cancelled) setChoirsReady(true);
     });
-    return response.data.users ?? [];
-  }, [groupName]);
+    return () => {
+      cancelled = true;
+    };
+  }, [viewerRole, user, groupName]);
 
   useEffect(() => {
-    fetchMembers();
-  }, [fetchMembers]);
-
-  useEffect(() => {
-    if (!groupName) return;
-
-    if (!debouncedSearch) {
-      setSearchResults([]);
-      setIsSearchLoading(false);
+    if (!selectedChoir && viewerRole === 'admin' && !choirsReady) {
+      setIsLoading(true);
       return;
     }
+    if (!selectedChoir && viewerRole !== 'admin') return;
 
     const controller = new AbortController();
-    let active = true;
-    setIsSearchLoading(true);
-    setSearchResults([]);
-
-    fetchSearchResults(debouncedSearch, controller.signal)
-      .then((users) => {
-        if (active) setSearchResults(users);
-      })
-      .catch((err) => {
-        if (!active || isAbortError(err)) return;
-        console.error('Failed to search members:', err);
-      })
-      .finally(() => {
-        if (active) setIsSearchLoading(false);
-      });
-
-    return () => {
-      active = false;
-      controller.abort();
-    };
-  }, [debouncedSearch, groupName, fetchSearchResults]);
-
-  const refreshMemberLists = useCallback(async () => {
-    if (debouncedSearch) {
-      try {
-        const users = await fetchSearchResults(debouncedSearch);
-        setSearchResults(users);
-      } catch (err) {
-        console.error('Failed to refresh search results:', err);
-      }
-    } else {
-      await fetchMembers();
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      setIsLoading(false);
+      return;
     }
-  }, [debouncedSearch, fetchMembers, fetchSearchResults]);
+
+    const load = async () => {
+      setIsLoading(true);
+      try {
+        if (!selectedChoir) {
+          const merged: GroupMember[] = [];
+          for (const choir of choirs) {
+            const users = await fetchGroupMembers(choir.slug, token, controller.signal);
+            for (const member of users) {
+              merged.push({ ...member, groupSlug: choir.slug, choirName: choir.name });
+            }
+          }
+          if (!controller.signal.aborted) setAllMembers(merged);
+          return;
+        }
+
+        const users = await fetchGroupMembers(selectedChoir, token, controller.signal);
+        if (!controller.signal.aborted) {
+          setAllMembers(users.map((member) => ({ ...member, groupSlug: selectedChoir })));
+        }
+      } catch (error) {
+        if (isAbortError(error) || controller.signal.aborted) return;
+        console.error('Failed to fetch members:', error);
+        setAllMembers([]);
+      } finally {
+        if (!controller.signal.aborted) setIsLoading(false);
+      }
+    };
+
+    void load();
+    return () => controller.abort();
+  }, [selectedChoir, choirs, choirsReady, viewerRole, reloadKey]);
+
+  const choirOptions = useMemo<SelectOption[]>(() => {
+    const options = choirs.map((choir) => ({ value: choir.slug, label: choir.name }));
+    if (viewerRole === 'admin') {
+      return [{ value: ALL_CHOIRS, label: 'Alla körer' }, ...options];
+    }
+    return options;
+  }, [choirs, viewerRole]);
+
+  const selectedChoirOption = choirOptions.find((option) => option.value === selectedChoir) ?? null;
+
+  const handleChoirChange = (option: SelectOption | null) => {
+    const value = option ? String(option.value) : ALL_CHOIRS;
+    if (value === ALL_CHOIRS) {
+      setSelectedChoir(ALL_CHOIRS);
+      return;
+    }
+    if (value === groupName) {
+      setSelectedChoir(value);
+      return;
+    }
+    const path = viewerRole === 'admin'
+      ? `/admin/groups/${value}/users`
+      : `/leader/choir/${value}/users`;
+    navigate(path);
+  };
+
+  const refreshMemberLists = useCallback(() => {
+    setReloadKey((key) => key + 1);
+  }, []);
 
   const handleInviteSuccess = () => {
     setRoleToInvite(null);
-    void refreshMemberLists();
+    refreshMemberLists();
   };
 
-  const trimmedLiveSearch = searchTerm.trim();
-  const isSearchMode = trimmedLiveSearch.length > 0;
-  const searchPending =
-    isSearchMode && (trimmedLiveSearch !== debouncedSearch || isSearchLoading);
-  const membersForDisplay = !isSearchMode ? allMembers : searchPending ? [] : searchResults;
+  const trimmedSearch = searchTerm.trim();
+  const isSearchMode = trimmedSearch.length > 0;
 
-  const sortedMembersForDisplay = useMemo(
-    () => sortMembersBySurname(membersForDisplay),
-    [membersForDisplay]
-  );
+  const sortedMembersForDisplay = useMemo(() => {
+    const matched = isSearchMode
+      ? allMembers.filter((member) => memberMatchesQuery(member, trimmedSearch))
+      : allMembers;
+    return sortMembersBySurname(matched);
+  }, [allMembers, isSearchMode, trimmedSearch]);
 
   const { leaders, members: membersOnly } = useMemo(() => {
     const leaders = sortedMembersForDisplay.filter(m => m.role === 'leader' || m.role === 'admin');
     const members = sortedMembersForDisplay.filter(m => m.role === 'user');
-    return { leaders, members: members };
+    return { leaders, members };
   }, [sortedMembersForDisplay]);
 
   const hasAnyFiltered = leaders.length > 0 || membersOnly.length > 0;
-
-  useEffect(() => {
-    if (isSearchMode || !nextToken || isLoading) {
-      return;
-    }
-
-    const el = loadMoreSentinelRef.current;
-    if (!el) return;
-
-    const token = nextToken;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const hit = entries.some((e) => e.isIntersecting);
-        if (!hit || scrollLoadLockRef.current) return;
-        scrollLoadLockRef.current = true;
-        void fetchMembers(token).finally(() => {
-          scrollLoadLockRef.current = false;
-        });
-      },
-      { root: null, rootMargin: '120px', threshold: 0 }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [isSearchMode, nextToken, isLoading, fetchMembers]);
-
-  const showMainLoading = isLoading && !isSearchMode;
-  const showSearchPendingUi = isSearchMode && searchPending;
+  const editGroupSlug = selectedUser?.groupSlug || groupName;
 
   return (
     <div className={styles.page}>
@@ -223,20 +266,34 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
         </div>
       </div>
 
-      <div className={styles.searchBar}>
-        <Search className={styles.searchIcon} size={20} />
-        <input
-          type="text"
-          placeholder="Sök på namn eller e-post..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
+      <div className={styles.filters}>
+        <div className={styles.filterField}>
+          <label className={styles.filterLabel} htmlFor="choir-filter">Kör</label>
+          <StyledSelect
+            inputId="choir-filter"
+            options={choirOptions}
+            value={selectedChoirOption}
+            onChange={handleChoirChange}
+            placeholder="Välj kör"
+            isDisabled={choirOptions.length === 0}
+          />
+        </div>
+
+        <div className={styles.searchBar}>
+          <Search className={styles.searchIcon} size={20} />
+          <input
+            id="member-search"
+            type="text"
+            placeholder="Sök medlem (namn eller e-post)..."
+            aria-label="Sök medlem (namn eller e-post)"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </div>
 
-      {showMainLoading ? (
+      {isLoading ? (
         <p>Laddar medlemmar...</p>
-      ) : showSearchPendingUi ? (
-        <p>Söker...</p>
       ) : hasAnyFiltered ? (
         <>
           {leaders.length > 0 && (
@@ -257,19 +314,15 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
               />
             </section>
           )}
-          {!isSearchMode && nextToken && (
-            <div ref={loadMoreSentinelRef} className={styles.loadMoreSentinel} aria-hidden />
-          )}
-          {!isSearchMode && isLoadingMore && (
-            <p className={styles.loadingMore}>Laddar fler medlemmar...</p>
-          )}
         </>
       ) : (
         <div className={styles.emptyState}>
           <p>
             {isSearchMode
               ? 'Inga medlemmar matchade din sökning.'
-              : 'Inga medlemmar har bjudits in till denna kör ännu.'}
+              : selectedChoir
+                ? 'Inga medlemmar har bjudits in till denna kör ännu.'
+                : 'Inga medlemmar att visa.'}
           </p>
         </div>
       )}
@@ -285,12 +338,12 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
         )}
       </Modal>
 
-      {selectedUser && groupName && (
+      {selectedUser && editGroupSlug && (
         <UserEditModal
           user={selectedUser}
-          groupSlug={groupName}
+          groupSlug={editGroupSlug}
           onClose={() => setSelectedUser(null)}
-          onUserUpdate={() => void refreshMemberLists()}
+          onUserUpdate={refreshMemberLists}
         />
       )}
     </div>

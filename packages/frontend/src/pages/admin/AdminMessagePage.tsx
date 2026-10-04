@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/button/Button";
 import { FormGroup } from "@/components/ui/form/FormGroup";
 import { Input } from "@/components/ui/input/Input";
+import { LinkifiedText } from "@/components/ui/LinkifiedText";
 import { Modal } from "@/components/ui/modal/Modal";
 import { StyledSelect, type SelectOption } from "@/components/ui/select/StyledSelect";
 import {
@@ -529,7 +530,9 @@ export const AdminMessagePage = () => {
                 {new Date(selectedSent.createdAt).toLocaleString("sv-SE")}
               </time>
             </p>
-            <p className={styles.modalContent}>{selectedSent.body}</p>
+            <p className={styles.modalContent}>
+              <LinkifiedText text={selectedSent.body} />
+            </p>
           </div>
         )}
       </Modal>
