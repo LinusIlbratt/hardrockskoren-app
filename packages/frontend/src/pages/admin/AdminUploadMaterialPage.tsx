@@ -205,7 +205,7 @@ export const AdminUploadMaterialPage = () => {
     <div className={styles.page}>
       <header className={styles.header}>
         <h1>Mediabibliotek</h1>
-        <p>Här hanterar du globalt material som kan användas för Sjung upp-övningar.</p>
+        <p>Här hanterar du globalt material</p>
       </header>
 
       {/* ADDED: Visa statusmeddelanden för användaren */}

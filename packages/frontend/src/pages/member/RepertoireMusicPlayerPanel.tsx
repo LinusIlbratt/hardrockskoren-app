@@ -37,6 +37,7 @@ import {
 } from "@/context/MusicPlayerOverlayContext";
 import { useAuth } from "@/context/AuthContext";
 import { saveRecentPlayback } from "@/utils/recentPlayback";
+import { sortBySwedishTitle } from "@/utils/sortBySwedishTitle";
 import {
   formatDisplayTitle,
   isPlayableAudioFile,
@@ -116,6 +117,10 @@ export function RepertoireMusicPlayerPanel({
   const [newPlaylistTitle, setNewPlaylistTitle] = useState("");
   const [creatingPlaylist, setCreatingPlaylist] = useState(false);
   const [repertoires, setRepertoires] = useState<RepertoireItem[]>([]);
+  const sortedRepertoires = useMemo(
+    () => sortBySwedishTitle(repertoires),
+    [repertoires],
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loadingList, setLoadingList] = useState(true);
@@ -1340,7 +1345,7 @@ export function RepertoireMusicPlayerPanel({
                 <ul
                   className={`${styles.mobilePickerList} ${styles.mobilePickerListInMain}`}
                 >
-                  {repertoires.map((item) => (
+                  {sortedRepertoires.map((item) => (
                     <li
                       key={item.repertoireId}
                       className={styles.mobilePickerListItem}
@@ -1715,7 +1720,7 @@ export function RepertoireMusicPlayerPanel({
               <p className={styles.muted}>Ingen repertoar för denna kör.</p>
             ) : (
               <ul className={styles.folderList}>
-                {repertoires.map((item) => (
+                {sortedRepertoires.map((item) => (
                   <li key={item.repertoireId}>
                     <button
                       type="button"

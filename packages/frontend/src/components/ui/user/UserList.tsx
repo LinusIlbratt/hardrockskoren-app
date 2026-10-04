@@ -23,12 +23,17 @@ export const UserList = ({ members, onEditUser }: UserListProps) => {
 
             <div className={styles.listBody}>
                 {members.map((member, index) => (
-                    <article key={member.id} className={styles.listRow}>
+                    <article key={member.groupSlug ? `${member.groupSlug}:${member.id}` : member.id} className={styles.listRow}>
                         <span className={styles.cellIndex}>{index + 1}</span>
                         <div className={styles.cellAvatar}>
-                            {member.given_name.charAt(0)}{member.family_name.charAt(0)}
+                            {(member.given_name ?? '').charAt(0)}{(member.family_name ?? '').charAt(0)}
                         </div>
-                        <span className={styles.cellName}>{member.given_name} {member.family_name}</span>
+                        <span className={styles.cellName}>
+                            {(member.given_name ?? '')} {(member.family_name ?? '')}
+                            {member.choirName ? (
+                                <span className={styles.cellChoir}>{member.choirName}</span>
+                            ) : null}
+                        </span>
                         <span className={styles.cellEmail}>{member.email}</span>
                         <span className={styles.cellRole}>{translateRole(member.role)}</span>
                         <div className={styles.cellActions}>

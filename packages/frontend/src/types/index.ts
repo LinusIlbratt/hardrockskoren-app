@@ -33,4 +33,8 @@ export interface GroupMember {
   given_name: string;
   family_name: string;
   role: RoleTypes;
+  /** Sätts i medlemslistan så redigering träffar rätt kör. */
+  groupSlug?: string;
+  /** Visas bara när listan samlar flera körer. */
+  choirName?: string;
 }

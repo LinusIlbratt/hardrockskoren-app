@@ -24,10 +24,34 @@
   gap: var(--spacing-sm);
 }
 
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  width: 100%;
+  min-width: 0;
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  width: 100%;
+  min-width: 0;
+}
+
+.filterLabel {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
 /* Sökfältet */
 .searchBar {
   position: relative;
-  margin-bottom: var(--spacing-xl);
+  width: 100%;
+  min-width: 0;
 
   .searchIcon {
     position: absolute;

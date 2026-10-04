@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import styles from './MemberListRepertoirePage.module.scss';
 import axios from 'axios';
 import { ChevronRight } from 'lucide-react'; // Ikon för att visa att det är en länk
+import { sortBySwedishTitle } from '@/utils/sortBySwedishTitle';
 
 interface Repertoire {
     repertoireId: string;
@@ -43,6 +44,11 @@ export const MemberListRepertoirePage = () => {
         fetchRepertoires();
     }, [fetchRepertoires]);
 
+    const sortedRepertoires = useMemo(
+        () => sortBySwedishTitle(repertoires),
+        [repertoires],
+    );
+
     return (
         <div className={styles.page}>
             <header className={styles.header}>
@@ -54,7 +60,7 @@ export const MemberListRepertoirePage = () => {
                 <p>Laddar repertoar...</p>
             ) : (
                 <div className={styles.repertoireList}>
-                    {repertoires.map(item => (
+                    {sortedRepertoires.map(item => (
                         // Hela kortet är nu en länk
                         <Link
                             key={item.repertoireId}

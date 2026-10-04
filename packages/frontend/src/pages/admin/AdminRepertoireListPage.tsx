@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/modal/Modal';
 import { IoTrashOutline, IoInformationCircleOutline } from 'react-icons/io5';
 import { LibraryFolderPickerModal } from '@/components/media/LibraryFolderPickerModal';  // Importera den nya komponenten
 import styles from './AdminRepertoireListPage.module.scss';
+import { sortBySwedishTitle } from '@/utils/sortBySwedishTitle';
 
 // --- TYPER ---
 interface Repertoire {
@@ -53,6 +54,11 @@ export const AdminRepertoireListPage = () => {
   useEffect(() => {
     fetchRepertoires();
   }, [fetchRepertoires]);
+
+  const sortedRepertoires = useMemo(
+    () => sortBySwedishTitle(repertoires),
+    [repertoires],
+  );
 
   // Funktion för att hantera bekräftelse av radering (oförändrad)
   const handleConfirmDelete = async () => {
@@ -119,8 +125,8 @@ export const AdminRepertoireListPage = () => {
       </div>
 
       <ul className={styles.repertoireList}>
-        {repertoires.length > 0 ? (
-          repertoires.map(item => (
+        {sortedRepertoires.length > 0 ? (
+          sortedRepertoires.map(item => (
             <li key={item.repertoireId} className={styles.repertoireItem}>
               <Link to={`${item.repertoireId}/materials`} state={{ repertoireTitle: item.title }} className={styles.songLink}>
                 <span className={styles.songTitle}>{item.title}</span>
