@@ -1,0 +1,16 @@
+@use '@/styles/variables' as *;
+
+.root {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.link {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    color: var(--color-text);
+  }
+}
