@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/button/Button";
 import { FormGroup } from "@/components/ui/form/FormGroup";
 import { Input } from "@/components/ui/input/Input";
+import { LinkifiedText } from "@/components/ui/LinkifiedText";
 import { Modal } from "@/components/ui/modal/Modal";
 import {
   StyledSelect,
@@ -340,7 +341,7 @@ export const SharedConcertSignupModal = ({
               <div className={styles.eventDescription}>
                 <h3 className={styles.eventDescriptionLabel}>Om giget</h3>
                 <p className={styles.eventDescriptionText}>
-                  {selected.description}
+                  <LinkifiedText text={selected.description} />
                 </p>
               </div>
             ) : null}
