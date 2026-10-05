@@ -1,9 +1,12 @@
 import {
   FIELD_LIMITS,
   isValidConcertDate,
+  isVoicePart,
   normalizeBoundedString,
+  VOICE_PARTS,
   type SharedConcertRecord,
   type ConcertSignupRecord,
+  type VoicePart,
 } from "./keys";
 
 export type ParseCreateConcertResult =
@@ -41,6 +44,7 @@ export type ParseSignupBodyResult =
       firstName: string;
       lastName: string;
       choirSlug: string;
+      voicePart: VoicePart;
     }
   | { ok: false; message: string };
 
@@ -233,7 +237,14 @@ export function parseSignupBody(
     };
   }
 
-  return { ok: true, firstName, lastName, choirSlug };
+  if (!isVoicePart(body.voicePart)) {
+    return {
+      ok: false,
+      message: `voicePart is required and must be one of: ${VOICE_PARTS.join(", ")}.`,
+    };
+  }
+
+  return { ok: true, firstName, lastName, choirSlug, voicePart: body.voicePart };
 }
 
 export type PublicSharedConcert = {
@@ -282,6 +293,8 @@ export type PublicConcertSignup = {
   lastName: string;
   choirSlug: string;
   choirName?: string;
+  /** Absent on signups created before voice part was collected. */
+  voicePart?: VoicePart;
   createdAt: string;
   status: string;
 };
@@ -293,6 +306,7 @@ export function toPublicSignup(item: ConcertSignupRecord): PublicConcertSignup {
     lastName: item.lastName,
     choirSlug: item.choirSlug,
     ...(item.choirName ? { choirName: item.choirName } : {}),
+    ...(isVoicePart(item.voicePart) ? { voicePart: item.voicePart } : {}),
     createdAt: item.createdAt,
     status: item.status || "active",
   };

@@ -17,7 +17,9 @@ import {
 import {
   createConcertSignup,
   getSharedConcert,
+  VOICE_PARTS,
   type SharedConcert,
+  type VoicePart,
 } from "@/services/concertService";
 import styles from "./SharedConcertSignupPanel.module.scss";
 
@@ -178,6 +180,7 @@ export const SharedConcertSignupModal = ({
   const [choirSlug, setChoirSlug] = useState(() =>
     pickDefaultChoirSlug(userGroups, preferredChoirSlug)
   );
+  const [voicePart, setVoicePart] = useState<VoicePart | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [signupMessage, setSignupMessage] = useState<{
     type: "success" | "error";
@@ -187,6 +190,10 @@ export const SharedConcertSignupModal = ({
   const choirOptions: SelectOption[] = useMemo(
     () => userGroups.map((slug) => ({ value: slug, label: slug })),
     [userGroups]
+  );
+  const voiceOptions: SelectOption[] = useMemo(
+    () => VOICE_PARTS.map((part) => ({ value: part, label: part })),
+    []
   );
 
   useEffect(() => {
@@ -199,6 +206,10 @@ export const SharedConcertSignupModal = ({
   }, [userGroups, preferredChoirSlug]);
 
   const concertId = concert?.concertId ?? null;
+
+  useEffect(() => {
+    setVoicePart("");
+  }, [concertId]);
 
   useEffect(() => {
     if (!concertId || !concert) {
@@ -268,6 +279,10 @@ export const SharedConcertSignupModal = ({
       setSignupMessage({ type: "error", message: "Välj kör." });
       return;
     }
+    if (!voicePart) {
+      setSignupMessage({ type: "error", message: "Välj stämma." });
+      return;
+    }
 
     setIsSubmitting(true);
     setSignupMessage(null);
@@ -276,6 +291,7 @@ export const SharedConcertSignupModal = ({
         firstName: trimmedFirst,
         lastName: trimmedLast,
         choirSlug: choirSlug.trim(),
+        voicePart,
       });
       markSignedUpInUi(selected);
     } catch (error) {
@@ -419,11 +435,29 @@ export const SharedConcertSignupModal = ({
                 />
               </FormGroup>
 
+              <FormGroup label="Stämma" htmlFor="signup-voice-part">
+                <StyledSelect
+                  inputId="signup-voice-part"
+                  options={voiceOptions}
+                  value={
+                    voiceOptions.find((o) => o.value === voicePart) ?? null
+                  }
+                  onChange={(option) => {
+                    const next = option ? String(option.value) : "";
+                    setVoicePart(
+                      VOICE_PARTS.find((part) => part === next) ?? ""
+                    );
+                  }}
+                  isDisabled={isSubmitting}
+                  placeholder="Välj stämma…"
+                />
+              </FormGroup>
+
               <Button
                 type="submit"
                 variant={ButtonVariant.Primary}
                 size={ButtonSize.Default}
-                disabled={isSubmitting || userGroups.length === 0}
+                disabled={isSubmitting || userGroups.length === 0 || !voicePart}
               >
                 {isSubmitting ? "Anmäler…" : "Anmäl mig"}
               </Button>

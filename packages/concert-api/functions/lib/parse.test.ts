@@ -6,11 +6,13 @@ import {
   parseJsonBody,
   parsePathId,
   toPublicConcert,
+  toPublicSignup,
 } from "./parse";
 import {
   FIELD_LIMITS,
   isConcertOpenForSignup,
   listGsi1Pk,
+  type ConcertSignupRecord,
   type SharedConcertRecord,
 } from "./keys";
 
@@ -125,12 +127,14 @@ describe("parseSignupBody", () => {
         firstName: "Anna",
         lastName: "Andersson",
         choirSlug: "stockholm",
+        voicePart: "Sopran",
       })
     ).toEqual({
       ok: true,
       firstName: "Anna",
       lastName: "Andersson",
       choirSlug: "stockholm",
+      voicePart: "Sopran",
     });
   });
 
@@ -139,11 +143,13 @@ describe("parseSignupBody", () => {
       firstName: "Anna",
       lastName: "Andersson",
       choirSlug: "stockholm",
+      voicePart: "Alt",
       userUuid: "attacker-uuid",
     });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result).not.toHaveProperty("userUuid");
+    expect(result.voicePart).toBe("Alt");
   });
 
   it("rejects empty names", () => {
@@ -152,8 +158,53 @@ describe("parseSignupBody", () => {
         firstName: "  ",
         lastName: "X",
         choirSlug: "stockholm",
+        voicePart: "Tenor",
       }).ok
     ).toBe(false);
+  });
+
+  it("rejects missing or unknown voicePart", () => {
+    expect(
+      parseSignupBody({
+        firstName: "Anna",
+        lastName: "Andersson",
+        choirSlug: "stockholm",
+      }).ok
+    ).toBe(false);
+    expect(
+      parseSignupBody({
+        firstName: "Anna",
+        lastName: "Andersson",
+        choirSlug: "stockholm",
+        voicePart: "baryton",
+      }).ok
+    ).toBe(false);
+  });
+});
+
+describe("toPublicSignup", () => {
+  const baseSignup: ConcertSignupRecord = {
+    PK: "SHARED_CONCERT#id1",
+    SK: "SIGNUP#2026-10-05T00:00:00.000Z#user-1",
+    type: "ConcertSignup",
+    concertId: "id1",
+    userUuid: "user-1",
+    firstName: "Anna",
+    lastName: "Andersson",
+    choirSlug: "stockholm",
+    voicePart: "Bas",
+    createdAt: "2026-10-05T00:00:00.000Z",
+    status: "active",
+  };
+
+  it("includes voicePart when present", () => {
+    expect(toPublicSignup(baseSignup).voicePart).toBe("Bas");
+  });
+
+  it("omits voicePart on legacy rows that lack it", () => {
+    const { voicePart: _voicePart, ...legacy } = baseSignup;
+    const result = toPublicSignup(legacy as ConcertSignupRecord);
+    expect(result).not.toHaveProperty("voicePart");
   });
 });
 

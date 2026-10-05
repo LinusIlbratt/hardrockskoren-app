@@ -163,6 +163,7 @@ export const handler = async (
     firstName: content.firstName,
     lastName: content.lastName,
     choirSlug: content.choirSlug,
+    voicePart: content.voicePart,
     createdAt,
     status: "active",
   };

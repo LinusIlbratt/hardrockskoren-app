@@ -22,6 +22,7 @@ import {
   createSharedConcert,
   listSharedConcerts,
   listConcertSignups,
+  VOICE_PARTS,
   type SharedConcert,
   type ConcertSignup,
 } from "@/services/concertService";
@@ -62,6 +63,27 @@ function todayInStockholm(now: Date = new Date()): string {
     month: "2-digit",
     day: "2-digit",
   }).format(now);
+}
+
+function formatVoicePartSummary(signups: ConcertSignup[]): string | null {
+  if (signups.length === 0) return null;
+
+  const counts = new Map<string, number>();
+  let unset = 0;
+  for (const signup of signups) {
+    const part = signup.voicePart;
+    if (part && (VOICE_PARTS as readonly string[]).includes(part)) {
+      counts.set(part, (counts.get(part) ?? 0) + 1);
+    } else {
+      unset += 1;
+    }
+  }
+
+  const parts = VOICE_PARTS.map((part) => `${part}: ${counts.get(part) ?? 0}`);
+  if (unset > 0) {
+    parts.push(`Övriga/Ej vald: ${unset}`);
+  }
+  return parts.join(" · ");
 }
 
 function compareConcertDateAsc(a: SharedConcert, b: SharedConcert): number {
@@ -122,7 +144,7 @@ function extractApiErrorMessage(error: unknown, fallback: string): string {
 }
 
 export const AdminSharedConcertPage = () => {
-  const [activeTab, setActiveTab] = useState<"create" | "list">("create");
+  const [activeTab, setActiveTab] = useState<"create" | "list">("list");
 
   const [title, setTitle] = useState("");
   const [concertDate, setConcertDate] = useState<Date | null>(null);
@@ -152,6 +174,11 @@ export const AdminSharedConcertPage = () => {
   const [signupsError, setSignupsError] = useState<string | null>(null);
   const [isLoadingSignups, setIsLoadingSignups] = useState(false);
   const [isLoadingMoreSignups, setIsLoadingMoreSignups] = useState(false);
+
+  const voicePartSummary = useMemo(
+    () => formatVoicePartSummary(signups),
+    [signups]
+  );
 
   const fetchList = useCallback(async () => {
     setIsLoadingList(true);
@@ -599,14 +626,19 @@ export const AdminSharedConcertPage = () => {
       >
         {selected && (
           <div className={styles.modalBody}>
-            <p className={styles.modalMeta}>
-              <span>{formatConcertDate(selected.concertDate)}</span>
-              <span>{selected.location}</span>
-              <span>
-                {signupCount} {signupCount === 1 ? "anmäld" : "anmälda"}
-              </span>
-              {!selected.signupOpen && <span>Anmälan stängd</span>}
-            </p>
+            <div className={styles.modalHeader}>
+              <p className={styles.modalMeta}>
+                <span>{formatConcertDate(selected.concertDate)}</span>
+                <span>{selected.location}</span>
+                <span>
+                  {signupCount} {signupCount === 1 ? "anmäld" : "anmälda"}
+                </span>
+                {!selected.signupOpen && <span>Anmälan stängd</span>}
+              </p>
+              {voicePartSummary && (
+                <p className={styles.voiceSummary}>{voicePartSummary}</p>
+              )}
+            </div>
             {selected.description && (
               <p className={styles.modalDescription}>{selected.description}</p>
             )}
@@ -631,6 +663,7 @@ export const AdminSharedConcertPage = () => {
                       <th>Förnamn</th>
                       <th>Efternamn</th>
                       <th>Kör</th>
+                      <th>Stämma</th>
                       <th>Anmäld</th>
                     </tr>
                   </thead>
@@ -641,6 +674,7 @@ export const AdminSharedConcertPage = () => {
                         <td>{s.firstName}</td>
                         <td>{s.lastName}</td>
                         <td>{s.choirName || s.choirSlug}</td>
+                        <td>{s.voicePart ?? "—"}</td>
                         <td>{formatSignupTime(s.createdAt)}</td>
                       </tr>
                     ))}

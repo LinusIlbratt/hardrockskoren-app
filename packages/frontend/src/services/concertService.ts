@@ -33,12 +33,17 @@ export type SharedConcert = {
   version?: number;
 };
 
+export const VOICE_PARTS = ["Sopran", "Alt", "Tenor", "Bas"] as const;
+export type VoicePart = (typeof VOICE_PARTS)[number];
+
 export type ConcertSignup = {
   userUuid: string;
   firstName: string;
   lastName: string;
   choirSlug: string;
   choirName?: string;
+  /** Absent on signups created before voice part was collected. */
+  voicePart?: VoicePart;
   createdAt: string;
   status: string;
 };
@@ -68,6 +73,7 @@ export type CreateConcertSignupInput = {
   firstName: string;
   lastName: string;
   choirSlug: string;
+  voicePart: VoicePart;
 };
 
 export async function createSharedConcert(
@@ -142,6 +148,7 @@ export async function createConcertSignup(
       firstName: input.firstName.trim(),
       lastName: input.lastName.trim(),
       choirSlug: input.choirSlug.trim(),
+      voicePart: input.voicePart,
     },
     {
       headers: { ...authHeaders(), "Content-Type": "application/json" },
