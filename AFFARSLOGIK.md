@@ -196,7 +196,7 @@ Admin har en egen vy över allt som skickats och kan ta bort meddelanden.
 Admin skapar en gemensam konsert med titel, datum, plats och beskrivning. Den är
 synlig för alla inloggade oavsett kör.
 
-Medlemmar anmäler sig med förnamn, efternamn och vilken kör de representerar.
+Medlemmar anmäler sig med förnamn, efternamn, stämma (Sopran, Alt, Tenor eller Bas) och vilken kör de representerar. Stämman sparas på anmälan. Äldre anmälningar kan sakna den.
 Systemet garanterar att **en person bara kan anmäla sig en gång** per konsert.
 
 **Anmälan stänger automatiskt** när konsertdatumet har passerat (räknat i svensk
@@ -248,7 +248,7 @@ Saker som inte finns idag och som ofta efterfrågas:
 | Närvarostatistik över tid | Finns inte, bara dag för dag. |
 | Avanmälan från gemensam konsert | Finns inte. |
 | Kommentarer eller svar på meddelanden | Finns inte. Enkelriktat. |
-| Stämindelning (sopran/alt/tenor/bas) | Finns inte i datamodellen. |
+| Stämma på medlemsprofilen | Finns inte. Stämma anges vid varje anmälan till gemensam konsert och sparas bara där. |
 | Rollen gäller per kör | Nej. En körledare är körledare överallt. |
 | Permanent radering av konto | Finns inte i appen. Görs i AWS-konsolen. |
 | Tilldela admin-rollen | Finns inte i appen. Görs i AWS-konsolen. |

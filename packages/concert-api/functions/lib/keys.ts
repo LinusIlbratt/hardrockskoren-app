@@ -40,6 +40,17 @@ export const SIGNUP_CHILD_SK_END = "SIGNUPREF~";
 export type ConcertSignupStatus = "active";
 export type SharedConcertStatus = "active" | "deleting";
 
+/** Canonical voice parts stored on a signup. UI shows these labels as-is. */
+export const VOICE_PARTS = ["Sopran", "Alt", "Tenor", "Bas"] as const;
+export type VoicePart = (typeof VOICE_PARTS)[number];
+
+export function isVoicePart(value: unknown): value is VoicePart {
+  return (
+    typeof value === "string" &&
+    (VOICE_PARTS as readonly string[]).includes(value)
+  );
+}
+
 /** Canonical shared concert — one META item per concert. */
 export type SharedConcertRecord = {
   PK: string;
@@ -77,6 +88,8 @@ export type ConcertSignupRecord = {
   firstName: string;
   lastName: string;
   choirSlug: string;
+  /** Required on new writes. Legacy rows may omit it. */
+  voicePart: VoicePart;
   choirName?: string;
   createdAt: string;
   status: ConcertSignupStatus;
