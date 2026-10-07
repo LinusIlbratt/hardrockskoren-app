@@ -72,7 +72,16 @@ export const handler = middy<APIGatewayProxyEventV2, APIGatewayProxyResultV2>()
         console.log(`Lösenordet för ${email} har återställts.`);
         return sendResponse({ message: "Ditt lösenord har nu återställts. Du kan nu logga in med ditt nya lösenord." });
 
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const name = error instanceof Error ? error.name : "";
+        if (name === "InvalidPasswordException" || name === "InvalidParameterException") {
+          console.error("Misslyckades att återställa lösenord: lösenordet uppfyller inte policyn", error);
+          return sendError(
+            400,
+            "Lösenordet uppfyller inte säkerhetskraven (minst 8 tecken, en stor och en liten bokstav samt en siffra)."
+          );
+        }
+
         console.error("Misslyckades att återställa lösenord:", error);
         return sendError(500, "Ett oväntat fel uppstod.");
       }

@@ -31,7 +31,7 @@ Plattformsansvarig. Ser och gör allt, i alla körer.
 - Laddar upp allt material: noter, stämfiler, sjung-upp-material
 - Skickar meddelanden (Aktuellt) till en, flera eller alla körer
 - Skapar och administrerar gemensamma konserter och ser anmälningslistorna
-- Ändrar andras roller och plockar bort medlemmar ur körer
+- Ändrar andras roller och raderar medlemmars Cognito-konto
 - Skapar både konserter och repetitioner i kalendern
 
 ### Körledare (`leader`)
@@ -63,7 +63,7 @@ Vanlig körsångare.
 | Skapa/ta bort kör | ✅ | — | — |
 | Bjuda in medlemmar | ✅ | ✅ | — |
 | Se medlemslista | ✅ | ✅ | — |
-| Plocka bort medlem ur kören | ✅ | ✅ | — |
+| Radera medlemskonto | ✅ | ✅ | — |
 | Ändra roll (till körledare eller medlem) | ✅ | ✅ | — |
 | Göra någon till admin | — | — | — |
 | Ladda upp material till biblioteket | ✅ | — | — |
@@ -82,10 +82,11 @@ Vanlig körsångare.
 | Registrera egen närvaro | ✅ | ✅ | ✅ |
 | Spellistor och favoriter | ✅ | ✅ | ✅ |
 
-**Om att ta bort medlemmar:** en borttagning plockar personen ur den aktuella
-kören. Kontot finns kvar, och personen behåller sina eventuella andra körer,
-sina spellistor och sina favoriter. Det finns med andra ord ingen funktion i
-appen för att radera ett konto permanent — det måste göras i AWS-konsolen.
+**Om att ta bort medlemmar:** borttagning raderar Cognito-kontot helt
+(`AdminDeleteUser`). E-postadressen frigörs och personen försvinner ur alla
+körer, inte bara den aktuella. Målet måste vara medlem i kören i sökvägen.
+Ett konto i Cognito-gruppen `admin` kan inte raderas här. Spellistor, favoriter
+och andra DynamoDB-poster som skapats senare ligger kvar.
 
 **Om att sätta admin-rollen:** admin-rollen kan inte delas ut via appen. Den
 sätts manuellt i AWS-konsolen. Det är avsiktligt, så att en körledare inte kan
@@ -250,5 +251,5 @@ Saker som inte finns idag och som ofta efterfrågas:
 | Kommentarer eller svar på meddelanden | Finns inte. Enkelriktat. |
 | Stämma på medlemsprofilen | Finns inte. Stämma anges vid varje anmälan till gemensam konsert och sparas bara där. |
 | Rollen gäller per kör | Nej. En körledare är körledare överallt. |
-| Permanent radering av konto | Finns inte i appen. Görs i AWS-konsolen. |
+| Permanent radering av konto | Cognito-kontot raderas när en medlem tas bort. DynamoDB-poster (spellistor, favoriter, anmälningar) städas inte. |
 | Tilldela admin-rollen | Finns inte i appen. Görs i AWS-konsolen. |

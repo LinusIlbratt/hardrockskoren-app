@@ -1,6 +1,7 @@
 import {
   CognitoIdentityProviderClient,
-  AdminRemoveUserFromGroupCommand,
+  AdminDeleteUserCommand,
+  AdminListGroupsForUserCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 import {
   APIGatewayProxyEventV2WithLambdaAuthorizer,
@@ -54,29 +55,75 @@ export const handler = async (
   const username = email.trim();
 
   try {
-    // Plockar bort medlemmen ur kören. Kontot, övriga körer, spellistor och
-    // favoriter finns kvar — permanent radering görs inte via detta API.
-    await cognitoClient.send(
-      new AdminRemoveUserFromGroupCommand({
-        UserPoolId: USER_POOL_ID,
-        Username: username,
-        GroupName: groupSlug,
-      })
-    );
-
-    return sendResponse(
-      { message: `Användaren ${username} har tagits bort från kören ${groupSlug}.` },
-      200
-    );
-  } catch (error: any) {
-    if (error?.name === "UserNotFoundException") {
-      return sendError(404, `Ingen användare med e-postadressen ${username} hittades.`);
+    const groupNames = await listGroupNames(username);
+    if (groupNames === null) {
+      return deletedResponse();
     }
-    if (error?.name === "ResourceNotFoundException") {
-      return sendError(404, `Kören ${groupSlug} hittades inte.`);
+    if (groupNames.includes("admin")) {
+      return sendError(403, "Administratörens konto kan inte raderas via detta API.");
+    }
+    if (!groupNames.includes(groupSlug)) {
+      return sendError(404, `Användaren ${username} är inte medlem i kören ${groupSlug}.`);
     }
 
-    console.error("deleteUserFromGroup: AdminRemoveUserFromGroup failed", error);
-    return sendError(500, "Kunde inte ta bort användaren från kören.");
+    try {
+      await cognitoClient.send(
+        new AdminDeleteUserCommand({
+          UserPoolId: USER_POOL_ID,
+          Username: username,
+        })
+      );
+    } catch (error: unknown) {
+      if (isUserNotFound(error)) {
+        return deletedResponse();
+      }
+      throw error;
+    }
+
+    return deletedResponse();
+  } catch (error: unknown) {
+    console.error("deleteUserFromGroup: AdminDeleteUser failed", error);
+    return sendError(500, "Kunde inte radera användaren.");
   }
 };
+
+function deletedResponse() {
+  return sendResponse({ success: true, message: "User deleted successfully" }, 200);
+}
+
+function isUserNotFound(error: unknown): boolean {
+  return error instanceof Error && error.name === "UserNotFoundException";
+}
+
+/** Gruppnamn för användaren. `null` om kontot redan saknas i Cognito. */
+async function listGroupNames(username: string): Promise<string[] | null> {
+  const names: string[] = [];
+  let nextToken: string | undefined;
+
+  try {
+    do {
+      const listed = await cognitoClient.send(
+        new AdminListGroupsForUserCommand({
+          UserPoolId: USER_POOL_ID,
+          Username: username,
+          NextToken: nextToken,
+          Limit: 60,
+        })
+      );
+      for (const group of listed.Groups ?? []) {
+        const name = group.GroupName?.trim();
+        if (name) {
+          names.push(name);
+        }
+      }
+      nextToken = listed.NextToken;
+    } while (nextToken);
+  } catch (error: unknown) {
+    if (isUserNotFound(error)) {
+      return null;
+    }
+    throw error;
+  }
+
+  return names;
+}

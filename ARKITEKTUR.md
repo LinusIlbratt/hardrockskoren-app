@@ -147,7 +147,7 @@ delete, getNotificationStatus), `admin-api` (user delete/update).
 
 | # | Var | Problem |
 |---|---|---|
-| 1 | `admin-api/functions/user/delete.ts` | ✅ **Åtgärdat 2026-09-26.** Kör nu `AdminRemoveUserFromGroup` mot `groupSlug` i sökvägen i stället för `AdminDeleteUser`. |
+| 1 | `admin-api/functions/user/delete.ts` | ✅ **Ändrat 2026-10-07.** `AdminDeleteUser` tar bort hela Cognito-kontot. Anropet kräver att målet är medlem i `groupSlug`. Cognito-gruppen `admin` kan inte raderas. `UserNotFoundException` ger 200. |
 | 2 | `admin-api/functions/user/update.ts` | ✅ **Åtgärdat 2026-09-26.** Allowlist på `leader`/`user`; `admin` kan inte sättas via API:et. |
 | 3 | `event-api/functions/event/*` | ✅ **Åtgärdat 2026-09-26.** `requireGroupAccessResponse` på alla kör-skopade event-endpoints (list, create, update, batch, delete, getNotificationStatus). Admin passerar; leader/user begränsas till sina Cognito-grupper. |
 | 4 | `material-api/functions/getUploadUrl.ts` | Ingen validering av filnamn, filtyp eller storlek. Presigned PUT binder inte `ContentType`. |
