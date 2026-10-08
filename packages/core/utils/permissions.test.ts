@@ -5,6 +5,9 @@ describe("message-api routePermissions", () => {
   it("registers all Aktuellt routes with expected roles", () => {
     expect(routePermissions["POST /messages"]).toEqual(RoleGroups.ADMIN_ONLY);
     expect(routePermissions["GET /messages/sent"]).toEqual(RoleGroups.ADMIN_ONLY);
+    expect(routePermissions["POST /groups/{groupSlug}/messages"]).toEqual(
+      RoleGroups.MANAGEMENT
+    );
     expect(routePermissions["GET /groups/{groupSlug}/messages"]).toEqual(
       RoleGroups.ALL_LOGGED_IN
     );
@@ -14,8 +17,11 @@ describe("message-api routePermissions", () => {
     expect(routePermissions["POST /messages/{messageId}/read"]).toEqual(
       RoleGroups.ALL_LOGGED_IN
     );
+    expect(routePermissions["PUT /messages/{messageId}"]).toEqual(
+      RoleGroups.MANAGEMENT
+    );
     expect(routePermissions["DELETE /messages/{messageId}"]).toEqual(
-      RoleGroups.ADMIN_ONLY
+      RoleGroups.MANAGEMENT
     );
   });
 });

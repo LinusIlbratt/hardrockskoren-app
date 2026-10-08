@@ -95,10 +95,12 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   // === Aktuellt / Messages (message-api) ===
   "POST /messages": RoleGroups.ADMIN_ONLY,
   "GET /messages/sent": RoleGroups.ADMIN_ONLY,
+  "POST /groups/{groupSlug}/messages": RoleGroups.MANAGEMENT,
   "GET /groups/{groupSlug}/messages": RoleGroups.ALL_LOGGED_IN,
   "GET /groups/{groupSlug}/messages/unread-status": RoleGroups.ALL_LOGGED_IN,
   "POST /messages/{messageId}/read": RoleGroups.ALL_LOGGED_IN,
-  "DELETE /messages/{messageId}": RoleGroups.ADMIN_ONLY,
+  "PUT /messages/{messageId}": RoleGroups.MANAGEMENT,
+  "DELETE /messages/{messageId}": RoleGroups.MANAGEMENT,
 
   // === Gemensamma konserter / Konsertanmälan (concert-api) ===
   "POST /shared-concerts": RoleGroups.ADMIN_ONLY,

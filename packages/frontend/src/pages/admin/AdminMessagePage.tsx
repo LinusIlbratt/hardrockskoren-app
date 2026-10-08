@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
+import { FiEdit } from "react-icons/fi";
+import { IoTrashOutline } from "react-icons/io5";
 import {
   Button,
   ButtonSize,
@@ -12,7 +14,9 @@ import { Modal } from "@/components/ui/modal/Modal";
 import { StyledSelect, type SelectOption } from "@/components/ui/select/StyledSelect";
 import {
   createMessage,
+  deleteMessage,
   listSentMessages,
+  updateMessage,
   type CreateMessageResponse,
   type SentMessage,
 } from "@/services/messageService";
@@ -24,6 +28,8 @@ import styles from "./AdminMessagePage.module.scss";
 
 const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL;
 const HISTORY_PAGE_SIZE = 20;
+const TITLE_MAX = 120;
+const BODY_MAX = 4000;
 
 type AudienceMode = "all" | "selected";
 
@@ -71,7 +77,25 @@ function formatTargetsShort(
   return `${names[0]} +${names.length - 1}`;
 }
 
-function extractApiErrorMessage(error: unknown): string {
+function validateDraft(title: string, body: string): string | null {
+  const trimmedTitle = title.trim();
+  const trimmedBody = body.trim();
+  if (!trimmedTitle || !trimmedBody) {
+    return "Fyll i både rubrik och meddelande.";
+  }
+  if (trimmedTitle.length > TITLE_MAX) {
+    return `Rubriken får vara högst ${TITLE_MAX} tecken.`;
+  }
+  if (trimmedBody.length > BODY_MAX) {
+    return `Texten får vara högst ${BODY_MAX} tecken.`;
+  }
+  return null;
+}
+
+function extractApiErrorMessage(
+  error: unknown,
+  fallback = "Kunde inte skicka meddelandet."
+): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data;
     if (data && typeof data === "object" && "message" in data) {
@@ -93,7 +117,7 @@ function extractApiErrorMessage(error: unknown): string {
   if (error instanceof Error && error.message.trim()) {
     return error.message.trim();
   }
-  return "Kunde inte skicka meddelandet.";
+  return fallback;
 }
 
 export const AdminMessagePage = () => {
@@ -118,6 +142,14 @@ export const AdminMessagePage = () => {
   const [isLoadingSent, setIsLoadingSent] = useState(true);
   const [isLoadingMoreSent, setIsLoadingMoreSent] = useState(false);
   const [selectedSent, setSelectedSent] = useState<SentMessage | null>(null);
+  const [editing, setEditing] = useState<SentMessage | null>(null);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftBody, setDraftBody] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<SentMessage | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const fetchGroups = useCallback(async () => {
     setIsLoadingGroups(true);
@@ -209,6 +241,80 @@ export const AdminMessagePage = () => {
       setSentError("Kunde inte ladda äldre meddelanden.");
     } finally {
       setIsLoadingMoreSent(false);
+    }
+  };
+
+  const openEdit = (message: SentMessage) => {
+    setDraftTitle(message.title);
+    setDraftBody(message.body);
+    setFormError(null);
+    setEditing(message);
+  };
+
+  const closeEdit = () => {
+    if (isSavingEdit) return;
+    setEditing(null);
+    setFormError(null);
+  };
+
+  const submitEdit = async () => {
+    if (!editing) return;
+    const validationError = validateDraft(draftTitle, draftBody);
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
+
+    const draft = { title: draftTitle.trim(), body: draftBody.trim() };
+    setIsSavingEdit(true);
+    setFormError(null);
+    try {
+      const updated = await updateMessage(editing.messageId, draft);
+      const nextTitle = updated.title || draft.title;
+      const nextBody = updated.body || draft.body;
+      setSentMessages((prev) =>
+        prev.map((message) =>
+          message.messageId === editing.messageId
+            ? { ...message, title: nextTitle, body: nextBody }
+            : message
+        )
+      );
+      setSelectedSent((current) =>
+        current && current.messageId === editing.messageId
+          ? { ...current, title: nextTitle, body: nextBody }
+          : current
+      );
+      setEditing(null);
+    } catch (error) {
+      console.error("Failed to update sent message", error);
+      setFormError(
+        extractApiErrorMessage(error, "Kunde inte spara meddelandet.")
+      );
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteMessage(pendingDelete.messageId);
+      setSentMessages((prev) =>
+        prev.filter((message) => message.messageId !== pendingDelete.messageId)
+      );
+      setSelectedSent((current) =>
+        current?.messageId === pendingDelete.messageId ? null : current
+      );
+      setPendingDelete(null);
+    } catch (error) {
+      console.error("Failed to delete sent message", error);
+      setDeleteError(
+        extractApiErrorMessage(error, "Kunde inte ta bort meddelandet.")
+      );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -475,7 +581,7 @@ export const AdminMessagePage = () => {
 
         <ul className={styles.historyList}>
           {sentMessages.map((msg) => (
-            <li key={msg.messageId}>
+            <li key={msg.messageId} className={styles.historyItem}>
               <button
                 type="button"
                 className={styles.historyRow}
@@ -497,6 +603,29 @@ export const AdminMessagePage = () => {
                   </time>
                 </div>
               </button>
+              <div className={styles.historyActions}>
+                <button
+                  type="button"
+                  className={styles.iconButton}
+                  title="Redigera meddelande"
+                  aria-label="Redigera meddelande"
+                  onClick={() => openEdit(msg)}
+                >
+                  <FiEdit size={16} aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  className={`${styles.iconButton} ${styles.deleteIcon}`}
+                  title="Ta bort meddelande"
+                  aria-label="Ta bort meddelande"
+                  onClick={() => {
+                    setDeleteError(null);
+                    setPendingDelete(msg);
+                  }}
+                >
+                  <IoTrashOutline size={17} aria-hidden="true" />
+                </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -535,6 +664,111 @@ export const AdminMessagePage = () => {
             </p>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={!!editing}
+        onClose={closeEdit}
+        title="Redigera meddelande"
+        formMode
+        footer={
+          <div className={styles.formActions}>
+            <Button
+              type="button"
+              variant={ButtonVariant.Ghost}
+              size={ButtonSize.Small}
+              disabled={isSavingEdit}
+              onClick={closeEdit}
+            >
+              Avbryt
+            </Button>
+            <Button
+              type="button"
+              variant={ButtonVariant.Primary}
+              size={ButtonSize.Small}
+              isLoading={isSavingEdit}
+              onClick={() => {
+                void submitEdit();
+              }}
+            >
+              Spara
+            </Button>
+          </div>
+        }
+      >
+        <form
+          className={styles.editForm}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submitEdit();
+          }}
+        >
+          <FormGroup label="Rubrik" htmlFor="edit-message-title">
+            <Input
+              id="edit-message-title"
+              value={draftTitle}
+              maxLength={TITLE_MAX}
+              disabled={isSavingEdit}
+              onChange={(event) => setDraftTitle(event.target.value)}
+            />
+          </FormGroup>
+          <FormGroup label="Meddelande" htmlFor="edit-message-body">
+            <textarea
+              id="edit-message-body"
+              className={styles.textarea}
+              value={draftBody}
+              maxLength={BODY_MAX}
+              disabled={isSavingEdit}
+              onChange={(event) => setDraftBody(event.target.value)}
+            />
+          </FormGroup>
+          {formError && <p className={styles.error}>{formError}</p>}
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={!!pendingDelete}
+        onClose={() => {
+          if (!isDeleting) {
+            setPendingDelete(null);
+            setDeleteError(null);
+          }
+        }}
+        title="Ta bort meddelande"
+        footer={
+          <div className={styles.formActions}>
+            <Button
+              type="button"
+              variant={ButtonVariant.Ghost}
+              size={ButtonSize.Small}
+              disabled={isDeleting}
+              onClick={() => {
+                setPendingDelete(null);
+                setDeleteError(null);
+              }}
+            >
+              Avbryt
+            </Button>
+            <Button
+              type="button"
+              variant={ButtonVariant.Destructive}
+              size={ButtonSize.Small}
+              isLoading={isDeleting}
+              onClick={() => {
+                void confirmDelete();
+              }}
+            >
+              Ta bort
+            </Button>
+          </div>
+        }
+      >
+        <div className={styles.modalBody}>
+          <p className={styles.confirmText}>
+            Är du säker på att du vill ta bort detta meddelande?
+          </p>
+          {deleteError && <p className={styles.error}>{deleteError}</p>}
+        </div>
       </Modal>
     </div>
   );

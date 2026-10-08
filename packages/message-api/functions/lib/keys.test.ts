@@ -67,7 +67,7 @@ describe("parseCreateTargets", () => {
       targets: ["ALL", "stockholm"],
     });
     expect(result.ok).toBe(false);
-    if (result.ok) return;
+    if (!("message" in result)) return;
     expect(result.message).toMatch(/Cannot combine/i);
   });
 
@@ -93,7 +93,7 @@ describe("parseCreateTargets", () => {
     const targets = Array.from({ length: MAX_MESSAGE_TARGETS + 1 }, (_, i) => `g${i}`);
     const result = parseCreateTargets({ targets });
     expect(result.ok).toBe(false);
-    if (result.ok) return;
+    if (!("message" in result)) return;
     expect(result.message).toMatch(String(MAX_MESSAGE_TARGETS));
   });
 });

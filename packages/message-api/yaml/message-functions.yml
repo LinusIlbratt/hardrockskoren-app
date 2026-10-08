@@ -24,6 +24,32 @@ createMessage:
       Resource:
         - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 
+createGroupMessage:
+  handler: functions/message/createGroupMessage.handler
+  name: hrk-create-group-message-${sls:stage}
+  description: Leader or admin creates one Aktuellt message for a single choir.
+  events:
+    - httpApi:
+        method: POST
+        path: /groups/{groupSlug}/messages
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:PutItem"
+        - "dynamodb:GetItem"
+        - "dynamodb:TransactWriteItems"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminGetUser"
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
+
 listSentMessages:
   handler: functions/message/listSent.handler
   name: hrk-list-sent-messages-${sls:stage}
@@ -123,10 +149,28 @@ markMessageRead:
       Resource:
         - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 
+updateMessage:
+  handler: functions/message/update.handler
+  name: hrk-update-message-${sls:stage}
+  description: Admin or owning leader updates title and body on the canonical message.
+  events:
+    - httpApi:
+        method: PUT
+        path: /messages/{messageId}
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:UpdateItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
 deleteMessage:
   handler: functions/message/delete.handler
   name: hrk-delete-message-${sls:stage}
-  description: Admin hard-deletes canonical message and choir refs.
+  description: Admin, or the leader who created it, hard-deletes canonical message and choir refs.
   events:
     - httpApi:
         method: DELETE

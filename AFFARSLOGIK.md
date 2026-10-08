@@ -2,7 +2,7 @@
 
 Vad appen gör, för vem, och vilka regler som gäller. Icke-teknisk beskrivning.
 
-Senast verifierad mot koden: 2026-09-26.
+Senast verifierad mot koden: 2026-10-08.
 
 ---
 
@@ -42,6 +42,7 @@ Ansvarar för sin kör. Ser sin körs sidor.
 - Skapar **endast repetitioner** i kalendern, inte konserter
 - Bjuder in medlemmar
 - Ser och hanterar medlemslistan (andra körledare döljs i listan)
+- Skickar meddelanden (Aktuellt) till sin egen kör
 - Startar närvaroregistrering och ser närvarohistorik
 - Kan **inte** ladda upp nytt material till biblioteket — det är admin-only
 
@@ -73,7 +74,8 @@ Vanlig körsångare.
 | Skapa konsert i kalendern | ✅ | — | — |
 | Skapa repetition i kalendern | ✅ | ✅ | — |
 | Se kalendern | ✅ | ✅ | ✅ |
-| Skicka meddelande (Aktuellt) | ✅ | — | — |
+| Skicka meddelande (Aktuellt) | ✅ (en, flera eller alla körer) | ✅ (enbart egen kör) | — |
+| Redigera eller radera meddelande | ✅ (alla) | ✅ (enbart egna) | — |
 | Läsa Aktuellt | ✅ | ✅ | ✅ |
 | Skapa gemensam konsert | ✅ | — | — |
 | Anmäla sig till gemensam konsert | ✅ | ✅ | ✅ |
@@ -182,6 +184,15 @@ Admin skriver ett meddelande med rubrik (max 120 tecken) och brödtext (max 4000
 tecken) och väljer mottagare: antingen **alla körer** eller **en lista med
 specifika körer** (max 50 åt gången). De två kan inte kombineras.
 
+Körledare kan skriva ett meddelande under fliken Aktuellt, med samma
+längdgränser, men bara till den kör de själva tillhör. Det går inte att nå
+andra körer eller alla körer den vägen. Redigera och ta bort syns bara på
+meddelanden de själva har skickat. Admin kan skriva, redigera och ta bort alla.
+
+Admin kan redigera och radera alla meddelanden. Körledare kan redigera och
+radera bara meddelanden de själva har skickat. En körledare som försöker ändra
+någon annans meddelande nekas. Pekarna till körerna ändras inte vid redigering.
+
 Meddelandet lagras en gång och pekas ut mot varje mottagarkör. Avsändarens
 förnamn sparas vid utskickstillfället så att det står kvar även om personen
 senare byter namn eller slutar.
@@ -190,7 +201,7 @@ Medlemmar ser ett flöde med nyaste först, med sin körs meddelanden och
 alla-körer-meddelanden sammanslagna. Olästa markeras. Flödet laddar 20 åt gången
 med en "ladda äldre"-funktion, max 50 per anrop.
 
-Admin har en egen vy över allt som skickats och kan ta bort meddelanden.
+Admin har en egen vy över allt som skickats och kan redigera och ta bort alla meddelanden.
 
 ### Gemensamma konserter och anmälan
 

@@ -135,7 +135,7 @@ inte "får den här *användaren* nå den här *kören*". Det andra kräver
 
 Returnerar `null` vid OK, annars ett färdigt felsvar.
 
-**Används idag av:** `message-api` (list, markRead, unreadStatus),
+**Används idag av:** `message-api` (list, markRead, unreadStatus, createGroupMessage),
 `concert-api` (createSignup), `material-api` (listRepertoires,
 listMaterialsInRepertoire), `event-api` (list, create, update, batch,
 delete, getNotificationStatus), `admin-api` (user delete/update).
@@ -219,7 +219,9 @@ Tre `ScanCommand` finns kvar och är **legacy, inte mall**:
 
 **Fan-out undviks i `message-api`.** Ett kanoniskt meddelande (`MSG#{id}/META`)
 plus en tunn pekare per kör. Inte N fulla kopior. Max 50 mottagarkörer per
-utskick eftersom TransactWrite klarar 100 items.
+utskick eftersom TransactWrite klarar 100 items. Redigering (`PUT`) uppdaterar
+bara `title`, `body` och `updatedAt` på META-posten. Radering tar bort META och
+pekarna som listas i `targets`.
 
 **Årsshardning i `concert-api`.** `GSI1PK = SHARED_CONCERT#LIST#{år}` sprider
 last i stället för en enda het partition. Listningen frågar 5 år bakåt plus den

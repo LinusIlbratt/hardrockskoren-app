@@ -25,10 +25,28 @@ export type FeedMessage = {
   title: string;
   body: string;
   createdAt: string;
+  updatedAt?: string;
+  createdByUuid?: string;
   createdByName?: string;
   createdByGivenName?: string;
   isRead: boolean;
   scope: "all" | "group";
+};
+
+export type MessageDraft = {
+  title: string;
+  body: string;
+};
+
+export type WrittenMessage = {
+  messageId: string;
+  title: string;
+  body: string;
+  createdAt: string;
+  updatedAt?: string;
+  createdByUuid?: string;
+  scope?: string;
+  targets?: string[];
 };
 
 export type UnreadStatus = {
@@ -100,6 +118,63 @@ export async function createMessage(
     {
       headers: { ...authHeaders(), "Content-Type": "application/json" },
     }
+  );
+  return response.data;
+}
+
+const TITLE_MAX = 120;
+const BODY_MAX = 4000;
+
+function parseMessageDraft(data: MessageDraft): { title: string; body: string } {
+  const title = data.title?.trim() ?? "";
+  const body = data.body?.trim() ?? "";
+  if (!title) {
+    throw new Error("title is required.");
+  }
+  if (title.length > TITLE_MAX) {
+    throw new Error(`title must be at most ${TITLE_MAX} characters.`);
+  }
+  if (!body) {
+    throw new Error("body is required.");
+  }
+  if (body.length > BODY_MAX) {
+    throw new Error(`body must be at most ${BODY_MAX} characters.`);
+  }
+  return { title, body };
+}
+
+export async function createGroupMessage(
+  groupSlug: string,
+  data: MessageDraft
+): Promise<WrittenMessage> {
+  const slug = groupSlug?.trim() ?? "";
+  if (!slug) {
+    throw new Error("groupSlug is required.");
+  }
+  const draft = parseMessageDraft(data);
+  const base = requireBaseUrl();
+  const response = await axios.post<WrittenMessage>(
+    `${base}/groups/${encodeURIComponent(slug)}/messages`,
+    draft,
+    { headers: { ...authHeaders(), "Content-Type": "application/json" } }
+  );
+  return response.data;
+}
+
+export async function updateMessage(
+  messageId: string,
+  data: MessageDraft
+): Promise<WrittenMessage> {
+  const id = messageId?.trim() ?? "";
+  if (!id) {
+    throw new Error("messageId is required.");
+  }
+  const draft = parseMessageDraft(data);
+  const base = requireBaseUrl();
+  const response = await axios.put<WrittenMessage>(
+    `${base}/messages/${encodeURIComponent(id)}`,
+    draft,
+    { headers: { ...authHeaders(), "Content-Type": "application/json" } }
   );
   return response.data;
 }
