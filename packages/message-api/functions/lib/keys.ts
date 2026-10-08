@@ -29,6 +29,8 @@ export type MessageCanonicalRecord = {
   title: string;
   body: string;
   createdAt: string;
+  /** Set when title or body is edited. Pointers are not updated. */
+  updatedAt?: string;
   createdByUuid: string;
   /** Full display name at send time. */
   createdByName?: string;

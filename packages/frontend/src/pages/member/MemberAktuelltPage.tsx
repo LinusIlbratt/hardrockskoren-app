@@ -1,11 +1,20 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
+import axios from "axios";
+import { FiEdit } from "react-icons/fi";
+import { IoTrashOutline } from "react-icons/io5";
 import { LinkifiedText } from "@/components/ui/LinkifiedText";
 import { Modal } from "@/components/ui/modal/Modal";
+import { FormGroup } from "@/components/ui/form/FormGroup";
+import { Input } from "@/components/ui/input/Input";
 import { Button, ButtonSize, ButtonVariant } from "@/components/ui/button/Button";
+import { useAuth } from "@/context/AuthContext";
 import {
+  createGroupMessage,
+  deleteMessage,
   listMessages,
   markMessageRead,
+  updateMessage,
   type FeedMessage,
 } from "@/services/messageService";
 import { useMessageUnread } from "@/hooks/useMessageUnread";
@@ -16,6 +25,10 @@ import {
 import styles from "./MemberAktuelltPage.module.scss";
 
 const PAGE_SIZE = 20;
+const TITLE_MAX = 120;
+const BODY_MAX = 4000;
+
+type ComposerMode = "create" | "edit";
 
 function sortNewestFirst(a: FeedMessage, b: FeedMessage): number {
   const cmp = (b.createdAt || "").localeCompare(a.createdAt || "");
@@ -40,20 +53,82 @@ function oldestCursor(messages: FeedMessage[]): string | null {
   return `${oldest.createdAt}#${oldest.messageId}`;
 }
 
+function callerUuid(user: { uuid?: string } | null): string {
+  return typeof user?.uuid === "string" ? user.uuid.trim() : "";
+}
+
+function canManageMessage(
+  role: string | undefined,
+  uuid: string,
+  message: FeedMessage
+): boolean {
+  if (role === "admin") return true;
+  if (role !== "leader") return false;
+  const owner = message.createdByUuid?.trim() ?? "";
+  return owner.length > 0 && owner === uuid;
+}
+
+function validateDraft(title: string, body: string): string | null {
+  const trimmedTitle = title.trim();
+  const trimmedBody = body.trim();
+  if (!trimmedTitle || !trimmedBody) {
+    return "Fyll i både rubrik och meddelande.";
+  }
+  if (trimmedTitle.length > TITLE_MAX) {
+    return `Rubriken får vara högst ${TITLE_MAX} tecken.`;
+  }
+  if (trimmedBody.length > BODY_MAX) {
+    return `Texten får vara högst ${BODY_MAX} tecken.`;
+  }
+  return null;
+}
+
+function extractApiErrorMessage(error: unknown, fallback: string): string {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data;
+    if (data && typeof data === "object" && "message" in data) {
+      const msg = (data as { message: unknown }).message;
+      if (typeof msg === "string" && msg.trim()) {
+        return msg.trim();
+      }
+    }
+    if (!error.response) {
+      return "Kunde inte nå meddelandetjänsten. Kontrollera nätverk och API-URL.";
+    }
+  }
+  if (error instanceof Error && error.message.trim()) {
+    return error.message.trim();
+  }
+  return fallback;
+}
+
 export const MemberAktuelltPage = () => {
   const { groupName } = useParams<{ groupName: string }>();
+  const { user } = useAuth();
   const [messages, setMessages] = useState<FeedMessage[]>([]);
   const [hasMore, setHasMore] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<FeedMessage | null>(null);
+  const [composerMode, setComposerMode] = useState<ComposerMode | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftTitle, setDraftTitle] = useState("");
+  const [draftBody, setDraftBody] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<FeedMessage | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const { unreadStatus, refetchUnread, decrementUnreadOptimistic } =
     useMessageUnread();
 
-  const fetchMessages = useCallback(async () => {
+  const uuid = callerUuid(user);
+  const canCreate = user?.role === "admin" || user?.role === "leader";
+
+  const fetchMessages = useCallback(async (silent = false) => {
     if (!groupName) return;
-    setIsLoading(true);
+    if (!silent) setIsLoading(true);
     setError(null);
     try {
       const data = await listMessages(groupName, { limit: PAGE_SIZE });
@@ -63,7 +138,7 @@ export const MemberAktuelltPage = () => {
       console.error("Failed to load Aktuellt", err);
       setError("Kunde inte ladda Aktuellt.");
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [groupName]);
 
@@ -116,6 +191,96 @@ export const MemberAktuelltPage = () => {
     }
   };
 
+  const closeComposer = () => {
+    if (isSaving) return;
+    setComposerMode(null);
+    setEditingId(null);
+    setFormError(null);
+  };
+
+  const openCreate = () => {
+    setDraftTitle("");
+    setDraftBody("");
+    setFormError(null);
+    setEditingId(null);
+    setComposerMode("create");
+  };
+
+  const openEdit = (message: FeedMessage) => {
+    setDraftTitle(message.title);
+    setDraftBody(message.body);
+    setFormError(null);
+    setEditingId(message.messageId);
+    setComposerMode("edit");
+  };
+
+  const submitComposer = async () => {
+    if (!groupName || !composerMode) return;
+    const validationError = validateDraft(draftTitle, draftBody);
+    if (validationError) {
+      setFormError(validationError);
+      return;
+    }
+
+    const draft = { title: draftTitle.trim(), body: draftBody.trim() };
+    setIsSaving(true);
+    setFormError(null);
+    try {
+      if (composerMode === "create") {
+        await createGroupMessage(groupName, draft);
+      } else if (editingId) {
+        const updated = await updateMessage(editingId, draft);
+        setSelected((current) =>
+          current && current.messageId === editingId
+            ? {
+                ...current,
+                title: updated.title || draft.title,
+                body: updated.body || draft.body,
+                updatedAt: updated.updatedAt,
+              }
+            : current
+        );
+      }
+      setComposerMode(null);
+      setEditingId(null);
+      await fetchMessages(true);
+    } catch (err) {
+      console.error("Failed to save Aktuellt message", err);
+      setFormError(
+        extractApiErrorMessage(
+          err,
+          composerMode === "create"
+            ? "Kunde inte publicera meddelandet."
+            : "Kunde inte spara meddelandet."
+        )
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteMessage(pendingDelete.messageId);
+      if (selected?.messageId === pendingDelete.messageId) {
+        setSelected(null);
+      }
+      setPendingDelete(null);
+      await fetchMessages(true);
+      await refetchUnread();
+    } catch (err) {
+      console.error("Failed to delete Aktuellt message", err);
+      setDeleteError(
+        extractApiErrorMessage(err, "Kunde inte ta bort meddelandet.")
+      );
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (!groupName) {
     return null;
   }
@@ -136,6 +301,17 @@ export const MemberAktuelltPage = () => {
             ? `${unread.length} olästa · tryck för att läsa${unreadHint}`
             : "Tryck för att läsa hela meddelandet"}
         </p>
+        {canCreate && (
+          <Button
+            type="button"
+            variant={ButtonVariant.Primary}
+            size={ButtonSize.Default}
+            className={styles.createButton}
+            onClick={openCreate}
+          >
+            Nytt meddelande
+          </Button>
+        )}
       </header>
 
       {isLoading && <p className={styles.muted}>Laddar…</p>}
@@ -155,7 +331,13 @@ export const MemberAktuelltPage = () => {
               <MessageRow
                 key={message.messageId}
                 message={message}
+                canManage={canManageMessage(user?.role, uuid, message)}
                 onOpen={openMessage}
+                onEdit={openEdit}
+                onDelete={(item) => {
+                  setDeleteError(null);
+                  setPendingDelete(item);
+                }}
               />
             ))}
           </ul>
@@ -172,7 +354,13 @@ export const MemberAktuelltPage = () => {
               <MessageRow
                 key={message.messageId}
                 message={message}
+                canManage={canManageMessage(user?.role, uuid, message)}
                 onOpen={openMessage}
+                onEdit={openEdit}
+                onDelete={(item) => {
+                  setDeleteError(null);
+                  setPendingDelete(item);
+                }}
               />
             ))}
           </ul>
@@ -217,16 +405,125 @@ export const MemberAktuelltPage = () => {
           </div>
         )}
       </Modal>
+
+      <Modal
+        isOpen={composerMode !== null}
+        onClose={closeComposer}
+        title={composerMode === "edit" ? "Redigera meddelande" : "Nytt meddelande"}
+        formMode
+        footer={
+          <div className={styles.formActions}>
+            <Button
+              type="button"
+              variant={ButtonVariant.Ghost}
+              size={ButtonSize.Small}
+              disabled={isSaving}
+              onClick={closeComposer}
+            >
+              Avbryt
+            </Button>
+            <Button
+              type="button"
+              variant={ButtonVariant.Primary}
+              size={ButtonSize.Small}
+              isLoading={isSaving}
+              onClick={submitComposer}
+            >
+              {composerMode === "edit" ? "Spara" : "Publicera"}
+            </Button>
+          </div>
+        }
+      >
+        <form
+          className={styles.form}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submitComposer();
+          }}
+        >
+          <FormGroup label="Rubrik" htmlFor="aktuellt-title">
+            <Input
+              id="aktuellt-title"
+              value={draftTitle}
+              maxLength={TITLE_MAX}
+              disabled={isSaving}
+              onChange={(event) => setDraftTitle(event.target.value)}
+            />
+          </FormGroup>
+          <FormGroup label="Meddelande" htmlFor="aktuellt-body">
+            <textarea
+              id="aktuellt-body"
+              className={styles.textarea}
+              value={draftBody}
+              maxLength={BODY_MAX}
+              disabled={isSaving}
+              onChange={(event) => setDraftBody(event.target.value)}
+            />
+          </FormGroup>
+          {formError && <p className={styles.error}>{formError}</p>}
+        </form>
+      </Modal>
+
+      <Modal
+        isOpen={!!pendingDelete}
+        onClose={() => {
+          if (!isDeleting) {
+            setPendingDelete(null);
+            setDeleteError(null);
+          }
+        }}
+        title="Ta bort meddelande"
+        footer={
+          <div className={styles.formActions}>
+            <Button
+              type="button"
+              variant={ButtonVariant.Ghost}
+              size={ButtonSize.Small}
+              disabled={isDeleting}
+              onClick={() => {
+                setPendingDelete(null);
+                setDeleteError(null);
+              }}
+            >
+              Avbryt
+            </Button>
+            <Button
+              type="button"
+              variant={ButtonVariant.Destructive}
+              size={ButtonSize.Small}
+              isLoading={isDeleting}
+              onClick={() => {
+                void confirmDelete();
+              }}
+            >
+              Ta bort
+            </Button>
+          </div>
+        }
+      >
+        <div className={styles.modalBody}>
+          <p className={styles.confirmText}>
+            Är du säker på att du vill ta bort detta meddelande?
+          </p>
+          {deleteError && <p className={styles.error}>{deleteError}</p>}
+        </div>
+      </Modal>
     </div>
   );
 };
 
 function MessageRow({
   message,
+  canManage,
   onOpen,
+  onEdit,
+  onDelete,
 }: {
   message: FeedMessage;
+  canManage: boolean;
   onOpen: (message: FeedMessage) => void;
+  onEdit: (message: FeedMessage) => void;
+  onDelete: (message: FeedMessage) => void;
 }) {
   const sender = formatMessageSenderFirstName(
     message.createdByGivenName,
@@ -235,7 +532,7 @@ function MessageRow({
   const timeLabel = formatMessageListTime(message.createdAt);
 
   return (
-    <li>
+    <li className={styles.item}>
       <article
         className={`${styles.row} ${message.isRead ? styles.read : styles.unread}`}
         onClick={() => onOpen(message)}
@@ -264,6 +561,28 @@ function MessageRow({
           <time dateTime={message.createdAt}>{timeLabel}</time>
         </div>
       </article>
+      {canManage && (
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className={styles.iconButton}
+            title="Redigera meddelande"
+            aria-label="Redigera meddelande"
+            onClick={() => onEdit(message)}
+          >
+            <FiEdit size={16} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className={`${styles.iconButton} ${styles.deleteIcon}`}
+            title="Ta bort meddelande"
+            aria-label="Ta bort meddelande"
+            onClick={() => onDelete(message)}
+          >
+            <IoTrashOutline size={17} aria-hidden="true" />
+          </button>
+        </div>
+      )}
     </li>
   );
 }

@@ -49,7 +49,7 @@ Läs `ARKITEKTUR.md` och `AFFARSLOGIK.md` innan kod. Ingen `Scan`. Identitet fr�
 - [ ] **Manuell användarhantering för admin (Bypass inbjudningsstrul)**
   - Admin ska kunna skapa ett konto utan inbjudningsmejl och sätta ett initialt permanent lösenord (Cognito `AdminCreateUser` + `AdminSetUserPassword` med `Permanent: true`), så att medlemmen kan logga in direkt.
   - Lösenordskrav som vid registrering: minst 8 tecken, bokstäver och siffror. Rollen får bara vara `leader` eller `user` — `admin` sätts inte via API:et.
-  - Komplett radering är ett eget, explicit adminflöde: ta bort användaren i Cognito User Pool och tillhörande poster i DynamoDB. Det ersätter inte dagens "ta bort ur kör" (`AdminRemoveUserFromGroup`), som fortsatt bara plockar personen ur vald kör.
+  - Cognito-kontot raderas när en medlem tas bort (`AdminDeleteUser` i `delete.ts`, 2026-10-07). DynamoDB-poster (spellistor, favoriter, anmälningar) städas fortfarande inte.
   - Körledare får inte skapa eller radera konton på plattformsnivå. Identitet från authorizer, `requireGroupAccess` om anropet är kör-skopat.
   - **Acceptans**
     - [ ] Admin skapar ett konto med permanent lösenord och användaren kan logga in utan mejlaktivering.

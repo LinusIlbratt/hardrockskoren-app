@@ -1,7 +1,7 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
   DynamoDBDocumentClient,
-  BatchGetCommand,
+  GetCommand,
   TransactWriteCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { nanoid } from "nanoid";
@@ -10,6 +10,7 @@ import {
   APIGatewayProxyResultV2,
 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
+import { requireGroupAccessResponse } from "../../../core/utils/requireGroupAccess";
 import type { AuthContext } from "../../../core/types";
 import {
   ALL_TARGET,
@@ -17,9 +18,7 @@ import {
   groupPk,
   messageCanonicalPk,
   messageRefSk,
-  parseCreateTargets,
   sentGsi1Sk,
-  targetsFromResolved,
 } from "../lib/keys";
 import { resolveCreatorNames } from "../lib/senderNames";
 
@@ -57,52 +56,6 @@ function parseTitleAndBody(
   return { ok: true, title, messageBody };
 }
 
-async function assertChoirsExist(
-  tableName: string,
-  groupSlugs: string[]
-): Promise<{ ok: true } | { ok: false; missing: string[] }> {
-  let pendingKeys = groupSlugs.map((slug) => ({
-    PK: groupPk(slug),
-    SK: "METADATA",
-  }));
-  const found = new Set<string>();
-
-  for (let attempt = 0; attempt < 2 && pendingKeys.length > 0; attempt++) {
-    const result = await docClient.send(
-      new BatchGetCommand({
-        RequestItems: {
-          [tableName]: { Keys: pendingKeys },
-        },
-      })
-    );
-
-    for (const item of result.Responses?.[tableName] ?? []) {
-      if (typeof item.PK === "string" && item.PK.startsWith("GROUP#")) {
-        const slug = item.PK.slice("GROUP#".length);
-        if (slug && slug !== ALL_TARGET) {
-          found.add(slug);
-        }
-      }
-    }
-
-    const unprocessed = result.UnprocessedKeys?.[tableName]?.Keys;
-    pendingKeys = Array.isArray(unprocessed)
-      ? (unprocessed as Array<{ PK: string; SK: string }>)
-      : [];
-  }
-
-  if (pendingKeys.length > 0) {
-    console.error("assertChoirsExist: UnprocessedKeys remaining", pendingKeys);
-    throw new Error("Could not verify all target choirs (BatchGet unprocessed keys).");
-  }
-
-  const stillMissing = groupSlugs.filter((slug) => !found.has(slug));
-  if (stillMissing.length > 0) {
-    return { ok: false, missing: stillMissing };
-  }
-  return { ok: true };
-}
-
 export const handler = async (
   event: AuthorizedEvent
 ): Promise<APIGatewayProxyResultV2> => {
@@ -112,9 +65,29 @@ export const handler = async (
     return sendError(500, "Server configuration error.");
   }
 
+  const groupSlug = event.pathParameters?.groupSlug;
+  const authDenied = await requireGroupAccessResponse(
+    event.requestContext.authorizer?.lambda,
+    groupSlug
+  );
+  if (authDenied) return authDenied;
+
   const uuid = event.requestContext.authorizer?.lambda?.uuid?.trim();
   if (!uuid) {
     return sendError(401, "User identity is missing from the request context.");
+  }
+
+  let slug: string;
+  try {
+    slug = decodeURIComponent(groupSlug!).trim();
+  } catch {
+    return sendError(400, "Group name is required in the path.");
+  }
+  if (!slug) {
+    return sendError(400, "Group name is required in the path.");
+  }
+  if (slug.toUpperCase() === ALL_TARGET) {
+    return sendError(400, 'Use a choir slug in the path; "ALL" is not allowed.');
   }
 
   const { createdByGivenName, createdByName } = await resolveCreatorNames(
@@ -139,32 +112,28 @@ export const handler = async (
     return sendError(400, content.message);
   }
 
-  const targetsResult = parseCreateTargets(body);
-  if ("message" in targetsResult) {
-    return sendError(400, targetsResult.message);
-  }
-
   const { title, messageBody } = content;
-  const resolved = targetsResult.value;
-  const { scope, targets } = targetsFromResolved(resolved);
+  const scope = "groups" as const;
+  const targets = [slug];
   const createdAt = new Date().toISOString();
   const messageId = nanoid();
 
   try {
-    if (resolved.mode === "groups") {
-      const existence = await assertChoirsExist(tableName, resolved.groupSlugs);
-      if ("missing" in existence) {
-        return sendError(
-          404,
-          `Target choir(s) not found: ${existence.missing.join(", ")}.`
-        );
-      }
+    const choir = await docClient.send(
+      new GetCommand({
+        TableName: tableName,
+        Key: { PK: groupPk(slug), SK: "METADATA" },
+        ProjectionExpression: "PK",
+      })
+    );
+    if (!choir.Item) {
+      return sendError(404, `Target choir not found: ${slug}.`);
     }
 
     const canonical = {
       PK: messageCanonicalPk(messageId),
-      SK: "META",
-      type: "MessageCanonical",
+      SK: "META" as const,
+      type: "MessageCanonical" as const,
       messageId,
       title,
       body: messageBody,
@@ -178,28 +147,25 @@ export const handler = async (
       GSI1SK: sentGsi1Sk(createdAt, messageId),
     };
 
-    const refPuts = targets.map((groupSlug) => {
-      const pk = groupPk(groupSlug);
-      const sk = messageRefSk(createdAt, messageId);
-      return {
-        Put: {
-          TableName: tableName,
-          Item: {
-            PK: pk,
-            SK: sk,
-            type: "MessageRef",
-            messageId,
-            groupSlug,
-            createdAt,
-          },
-        },
-      };
-    });
-
-    // 1 canonical + N thin refs — atomic, no body duplication.
+    const refSk = messageRefSk(createdAt, messageId);
     await docClient.send(
       new TransactWriteCommand({
-        TransactItems: [{ Put: { TableName: tableName, Item: canonical } }, ...refPuts],
+        TransactItems: [
+          { Put: { TableName: tableName, Item: canonical } },
+          {
+            Put: {
+              TableName: tableName,
+              Item: {
+                PK: groupPk(slug),
+                SK: refSk,
+                type: "MessageRef",
+                messageId,
+                groupSlug: slug,
+                createdAt,
+              },
+            },
+          },
+        ],
       })
     );
 
@@ -212,12 +178,12 @@ export const handler = async (
         scope,
         targets,
         count: 1,
-        messages: [{ messageId, groupSlug: targets[0] }],
+        messages: [{ messageId, groupSlug: slug }],
       },
       201
     );
   } catch (err) {
-    console.error("createMessage failed", err);
+    console.error("createGroupMessage failed", err);
     const name =
       err && typeof err === "object" && "name" in err
         ? String((err as { name: unknown }).name)
@@ -227,12 +193,6 @@ export const handler = async (
         409,
         "Could not create message due to a write conflict. Please try again."
       );
-    }
-    if (
-      err instanceof Error &&
-      err.message.includes("BatchGet unprocessed keys")
-    ) {
-      return sendError(503, "Could not verify target choirs. Please try again.");
     }
     return sendError(500, "Failed to create message.");
   }

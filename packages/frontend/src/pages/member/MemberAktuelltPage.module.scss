@@ -27,6 +27,11 @@
   font-size: var(--fs-sm);
 }
 
+.createButton {
+  align-self: flex-start;
+  margin-top: var(--spacing-xs);
+}
+
 .muted {
   color: var(--color-text-secondary);
 }
@@ -54,15 +59,22 @@
   padding: 0;
 }
 
+.item {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-bottom: 1px solid var(--color-border);
+}
+
 .row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--spacing-md);
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   padding: 0.7rem 0;
   border: none;
-  border-bottom: 1px solid var(--color-border);
   background: transparent;
   color: inherit;
   cursor: pointer;
@@ -128,10 +140,77 @@
   white-space: nowrap;
 }
 
+.actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: var(--color-text);
+  }
+}
+
+.deleteIcon:hover {
+  background-color: rgba(169, 0, 0, 0.22);
+  color: var(--color-accent);
+}
+
 .loadMore {
   display: flex;
   justify-content: center;
   padding-top: var(--spacing-sm);
+}
+
+.form {
+  @include column(var(--spacing-md));
+}
+
+.textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: var(--spacing-md);
+  background-color: var(--color-dark-gray);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: var(--fs-sm);
+  resize: vertical;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+}
+
+.confirmText {
+  margin: 0;
+  line-height: 1.5;
 }
 
 .modalBody {

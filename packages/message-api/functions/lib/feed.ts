@@ -463,6 +463,7 @@ export function toFeedResponse(
     title: m.title,
     body: m.body,
     createdAt: m.createdAt,
+    createdByUuid: m.createdByUuid,
     createdByName: m.createdByName,
     createdByGivenName: m.createdByGivenName,
     isRead: readIds.has(m.messageId),

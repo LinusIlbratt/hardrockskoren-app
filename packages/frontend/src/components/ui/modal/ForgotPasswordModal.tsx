@@ -12,6 +12,59 @@ import styles from './ForgotPasswordModal.module.scss';
 
 const API_BASE_URL = import.meta.env.VITE_AUTH_API_URL;
 
+/** Samma regler som RegistrationPage: minst 8 tecken, versal, gemen och siffra. */
+const PASSWORD_POLICY = /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
+
+function passwordPolicyError(password: string): string | null {
+  if (password.length < 8) {
+    return 'Lösenordet måste vara minst 8 tecken långt.';
+  }
+  if (!PASSWORD_POLICY.test(password)) {
+    return 'Lösenordet måste innehålla minst en stor bokstav, en liten bokstav och en siffra.';
+  }
+  return null;
+}
+
+function isUserFacingMessage(message: string): boolean {
+  if (message.length > 240) {
+    return false;
+  }
+  if (/exception/i.test(message)) {
+    return false;
+  }
+  if (/^internal server error\.?$/i.test(message)) {
+    return false;
+  }
+  if (/\bmust be\b|\bis required\b|\bis not allowed\b/i.test(message)) {
+    return false;
+  }
+  if (/<[^>]+>/.test(message) || /[{}[\]]/.test(message)) {
+    return false;
+  }
+  return true;
+}
+
+function readApiErrorMessage(err: unknown, fallback: string): string {
+  if (!axios.isAxiosError(err)) {
+    return fallback;
+  }
+  const data: unknown = err.response?.data;
+  let raw: unknown;
+  if (typeof data === 'string') {
+    raw = data;
+  } else if (data && typeof data === 'object' && 'message' in data) {
+    raw = (data as { message?: unknown }).message;
+  }
+  if (typeof raw !== 'string') {
+    return fallback;
+  }
+  const message = raw.trim();
+  if (!message || !isUserFacingMessage(message)) {
+    return fallback;
+  }
+  return message;
+}
+
 interface ForgotPasswordModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -25,6 +78,7 @@ function ForgotPasswordModalContent({ onClose }: { onClose: () => void }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const isDirty = useMemo(() => {
@@ -54,8 +108,8 @@ function ForgotPasswordModalContent({ onClose }: { onClose: () => void }) {
       const response = await axios.post(`${API_BASE_URL}/forgot-password`, { email });
       setMessage(response.data.message);
       setStep('enterCode');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Ett oväntat fel uppstod.');
+    } catch (err: unknown) {
+      setError(readApiErrorMessage(err, 'Ett oväntat fel uppstod. Försök igen.'));
     } finally {
       setIsLoading(false);
     }
@@ -63,12 +117,21 @@ function ForgotPasswordModalContent({ onClose }: { onClose: () => void }) {
 
   const handleResetSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      setError("Lösenorden matchar inte.");
+    setError(null);
+
+    const policyError = passwordPolicyError(newPassword);
+    if (policyError) {
+      setPasswordError(policyError);
       return;
     }
+    setPasswordError(null);
+
+    if (newPassword !== confirmPassword) {
+      setError('Lösenorden matchar inte.');
+      return;
+    }
+
     setIsLoading(true);
-    setError(null);
 
     try {
       const response = await axios.post(`${API_BASE_URL}/reset-password`, {
@@ -78,8 +141,16 @@ function ForgotPasswordModalContent({ onClose }: { onClose: () => void }) {
       });
       setMessage(response.data.message);
       setStep('success');
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Kunde inte återställa lösenordet.');
+    } catch (err: unknown) {
+      const apiMessage = readApiErrorMessage(
+        err,
+        'Kunde inte återställa lösenordet. Kontrollera koden och försök igen.'
+      );
+      if (/lösenord/i.test(apiMessage)) {
+        setPasswordError(apiMessage);
+      } else {
+        setError(apiMessage);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -112,11 +183,35 @@ function ForgotPasswordModalContent({ onClose }: { onClose: () => void }) {
             <FormGroup label="Återställningskod">
               <Input type="text" value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" required />
             </FormGroup>
-            <FormGroup label="Nytt lösenord">
-              <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="••••••••••" required />
+            <FormGroup label="Nytt lösenord" htmlFor="new-password" error={passwordError}>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  setPasswordError(null);
+                }}
+                placeholder="••••••••••"
+                required
+                aria-describedby="new-password-hint"
+              />
+              <p id="new-password-hint" className={styles.hint}>
+                Minst 8 tecken, med stor och liten bokstav samt en siffra.
+              </p>
             </FormGroup>
-            <FormGroup label="Bekräfta nytt lösenord" error={error}>
-              <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="••••••••••" required />
+            <FormGroup label="Bekräfta nytt lösenord" htmlFor="confirm-password" error={error}>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => {
+                  setConfirmPassword(e.target.value);
+                  setError(null);
+                }}
+                placeholder="••••••••••"
+                required
+              />
             </FormGroup>
             <div className={styles.buttonGroup}>
               <Button type="button" variant={ButtonVariant.Ghost} onClick={requestClose} disabled={isLoading}>

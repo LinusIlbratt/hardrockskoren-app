@@ -18,6 +18,7 @@ import {
   normalizeTarget,
 } from "../lib/keys";
 import { getCanonicalMessage } from "../lib/feed";
+import { evaluateMessageOwnership } from "../lib/ownership";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
@@ -43,6 +44,19 @@ export const handler = async (
     const message = await getCanonicalMessage(docClient, tableName, messageId);
     if (!message) {
       return sendError(404, "Message not found.");
+    }
+
+    const auth = event.requestContext.authorizer?.lambda;
+    const ownership = evaluateMessageOwnership(
+      auth?.role,
+      auth?.uuid,
+      message.createdByUuid
+    );
+    if ("statusCode" in ownership) {
+      if (ownership.statusCode === 401) {
+        return sendError(401, "User identity is missing from the request context.");
+      }
+      return sendError(403, "Du kan bara radera dina egna meddelanden");
     }
 
     if (querySlug) {

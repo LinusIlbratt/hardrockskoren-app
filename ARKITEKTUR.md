@@ -135,7 +135,7 @@ inte "får den här *användaren* nå den här *kören*". Det andra kräver
 
 Returnerar `null` vid OK, annars ett färdigt felsvar.
 
-**Används idag av:** `message-api` (list, markRead, unreadStatus),
+**Används idag av:** `message-api` (list, markRead, unreadStatus, createGroupMessage),
 `concert-api` (createSignup), `material-api` (listRepertoires,
 listMaterialsInRepertoire), `event-api` (list, create, update, batch,
 delete, getNotificationStatus), `admin-api` (user delete/update).
@@ -147,7 +147,7 @@ delete, getNotificationStatus), `admin-api` (user delete/update).
 
 | # | Var | Problem |
 |---|---|---|
-| 1 | `admin-api/functions/user/delete.ts` | ✅ **Åtgärdat 2026-09-26.** Kör nu `AdminRemoveUserFromGroup` mot `groupSlug` i sökvägen i stället för `AdminDeleteUser`. |
+| 1 | `admin-api/functions/user/delete.ts` | ✅ **Ändrat 2026-10-07.** `AdminDeleteUser` tar bort hela Cognito-kontot. Anropet kräver att målet är medlem i `groupSlug`. Cognito-gruppen `admin` kan inte raderas. `UserNotFoundException` ger 200. |
 | 2 | `admin-api/functions/user/update.ts` | ✅ **Åtgärdat 2026-09-26.** Allowlist på `leader`/`user`; `admin` kan inte sättas via API:et. |
 | 3 | `event-api/functions/event/*` | ✅ **Åtgärdat 2026-09-26.** `requireGroupAccessResponse` på alla kör-skopade event-endpoints (list, create, update, batch, delete, getNotificationStatus). Admin passerar; leader/user begränsas till sina Cognito-grupper. |
 | 4 | `material-api/functions/getUploadUrl.ts` | Ingen validering av filnamn, filtyp eller storlek. Presigned PUT binder inte `ContentType`. |
@@ -219,7 +219,9 @@ Tre `ScanCommand` finns kvar och är **legacy, inte mall**:
 
 **Fan-out undviks i `message-api`.** Ett kanoniskt meddelande (`MSG#{id}/META`)
 plus en tunn pekare per kör. Inte N fulla kopior. Max 50 mottagarkörer per
-utskick eftersom TransactWrite klarar 100 items.
+utskick eftersom TransactWrite klarar 100 items. Redigering (`PUT`) uppdaterar
+bara `title`, `body` och `updatedAt` på META-posten. Radering tar bort META och
+pekarna som listas i `targets`.
 
 **Årsshardning i `concert-api`.** `GSI1PK = SHARED_CONCERT#LIST#{år}` sprider
 last i stället för en enda het partition. Listningen frågar 5 år bakåt plus den

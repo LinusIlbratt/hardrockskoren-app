@@ -2,7 +2,7 @@
 
 Vad appen gör, för vem, och vilka regler som gäller. Icke-teknisk beskrivning.
 
-Senast verifierad mot koden: 2026-09-26.
+Senast verifierad mot koden: 2026-10-08.
 
 ---
 
@@ -31,7 +31,7 @@ Plattformsansvarig. Ser och gör allt, i alla körer.
 - Laddar upp allt material: noter, stämfiler, sjung-upp-material
 - Skickar meddelanden (Aktuellt) till en, flera eller alla körer
 - Skapar och administrerar gemensamma konserter och ser anmälningslistorna
-- Ändrar andras roller och plockar bort medlemmar ur körer
+- Ändrar andras roller och raderar medlemmars Cognito-konto
 - Skapar både konserter och repetitioner i kalendern
 
 ### Körledare (`leader`)
@@ -42,6 +42,7 @@ Ansvarar för sin kör. Ser sin körs sidor.
 - Skapar **endast repetitioner** i kalendern, inte konserter
 - Bjuder in medlemmar
 - Ser och hanterar medlemslistan (andra körledare döljs i listan)
+- Skickar meddelanden (Aktuellt) till sin egen kör
 - Startar närvaroregistrering och ser närvarohistorik
 - Kan **inte** ladda upp nytt material till biblioteket — det är admin-only
 
@@ -63,7 +64,7 @@ Vanlig körsångare.
 | Skapa/ta bort kör | ✅ | — | — |
 | Bjuda in medlemmar | ✅ | ✅ | — |
 | Se medlemslista | ✅ | ✅ | — |
-| Plocka bort medlem ur kören | ✅ | ✅ | — |
+| Radera medlemskonto | ✅ | ✅ | — |
 | Ändra roll (till körledare eller medlem) | ✅ | ✅ | — |
 | Göra någon till admin | — | — | — |
 | Ladda upp material till biblioteket | ✅ | — | — |
@@ -73,7 +74,8 @@ Vanlig körsångare.
 | Skapa konsert i kalendern | ✅ | — | — |
 | Skapa repetition i kalendern | ✅ | ✅ | — |
 | Se kalendern | ✅ | ✅ | ✅ |
-| Skicka meddelande (Aktuellt) | ✅ | — | — |
+| Skicka meddelande (Aktuellt) | ✅ (en, flera eller alla körer) | ✅ (enbart egen kör) | — |
+| Redigera eller radera meddelande | ✅ (alla) | ✅ (enbart egna) | — |
 | Läsa Aktuellt | ✅ | ✅ | ✅ |
 | Skapa gemensam konsert | ✅ | — | — |
 | Anmäla sig till gemensam konsert | ✅ | ✅ | ✅ |
@@ -82,10 +84,11 @@ Vanlig körsångare.
 | Registrera egen närvaro | ✅ | ✅ | ✅ |
 | Spellistor och favoriter | ✅ | ✅ | ✅ |
 
-**Om att ta bort medlemmar:** en borttagning plockar personen ur den aktuella
-kören. Kontot finns kvar, och personen behåller sina eventuella andra körer,
-sina spellistor och sina favoriter. Det finns med andra ord ingen funktion i
-appen för att radera ett konto permanent — det måste göras i AWS-konsolen.
+**Om att ta bort medlemmar:** borttagning raderar Cognito-kontot helt
+(`AdminDeleteUser`). E-postadressen frigörs och personen försvinner ur alla
+körer, inte bara den aktuella. Målet måste vara medlem i kören i sökvägen.
+Ett konto i Cognito-gruppen `admin` kan inte raderas här. Spellistor, favoriter
+och andra DynamoDB-poster som skapats senare ligger kvar.
 
 **Om att sätta admin-rollen:** admin-rollen kan inte delas ut via appen. Den
 sätts manuellt i AWS-konsolen. Det är avsiktligt, så att en körledare inte kan
@@ -181,6 +184,15 @@ Admin skriver ett meddelande med rubrik (max 120 tecken) och brödtext (max 4000
 tecken) och väljer mottagare: antingen **alla körer** eller **en lista med
 specifika körer** (max 50 åt gången). De två kan inte kombineras.
 
+Körledare kan skriva ett meddelande under fliken Aktuellt, med samma
+längdgränser, men bara till den kör de själva tillhör. Det går inte att nå
+andra körer eller alla körer den vägen. Redigera och ta bort syns bara på
+meddelanden de själva har skickat. Admin kan skriva, redigera och ta bort alla.
+
+Admin kan redigera och radera alla meddelanden. Körledare kan redigera och
+radera bara meddelanden de själva har skickat. En körledare som försöker ändra
+någon annans meddelande nekas. Pekarna till körerna ändras inte vid redigering.
+
 Meddelandet lagras en gång och pekas ut mot varje mottagarkör. Avsändarens
 förnamn sparas vid utskickstillfället så att det står kvar även om personen
 senare byter namn eller slutar.
@@ -189,7 +201,7 @@ Medlemmar ser ett flöde med nyaste först, med sin körs meddelanden och
 alla-körer-meddelanden sammanslagna. Olästa markeras. Flödet laddar 20 åt gången
 med en "ladda äldre"-funktion, max 50 per anrop.
 
-Admin har en egen vy över allt som skickats och kan ta bort meddelanden.
+Admin har en egen vy över allt som skickats och kan redigera och ta bort alla meddelanden.
 
 ### Gemensamma konserter och anmälan
 
@@ -250,5 +262,5 @@ Saker som inte finns idag och som ofta efterfrågas:
 | Kommentarer eller svar på meddelanden | Finns inte. Enkelriktat. |
 | Stämma på medlemsprofilen | Finns inte. Stämma anges vid varje anmälan till gemensam konsert och sparas bara där. |
 | Rollen gäller per kör | Nej. En körledare är körledare överallt. |
-| Permanent radering av konto | Finns inte i appen. Görs i AWS-konsolen. |
+| Permanent radering av konto | Cognito-kontot raderas när en medlem tas bort. DynamoDB-poster (spellistor, favoriter, anmälningar) städas inte. |
 | Tilldela admin-rollen | Finns inte i appen. Görs i AWS-konsolen. |
