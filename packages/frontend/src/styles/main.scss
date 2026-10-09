@@ -6,7 +6,11 @@
 // Then load typography (depends on variables for $tabletBreakpoint).
 @use 'typography';
 
-// I t.ex. main.scss
+// Meddelanden och gig-beskrivningar ska behålla radbrytningar.
+.whitespace-pre-wrap {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
 
 /* Anpassningar för react-datepicker för att passa mörkt tema */
 .react-datepicker {

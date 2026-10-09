@@ -207,7 +207,7 @@ export const AdminEventPage = () => {
 
       <Modal isOpen={!!eventToShowDescription} onClose={() => setEventToShowDescription(null)} title={eventToShowDescription?.title || "Eventbeskrivning"}>
         <div>
-          <pre className={styles.descriptionText}>{eventToShowDescription?.description}</pre>
+          <pre className={`${styles.descriptionText} whitespace-pre-wrap`}>{eventToShowDescription?.description}</pre>
         </div>
       </Modal>
     </div>
