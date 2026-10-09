@@ -216,7 +216,7 @@ export const MemberEventPage = () => {
         </>
       )}
       <Modal isOpen={!!eventToShowDescription} onClose={() => setEventToShowDescription(null)} title={eventToShowDescription?.title || "Eventbeskrivning"}>
-        <div><pre className={styles.descriptionText}>{eventToShowDescription?.description}</pre></div>
+        <div><pre className={`${styles.descriptionText} whitespace-pre-wrap`}>{eventToShowDescription?.description}</pre></div>
       </Modal>
     </div>
   );

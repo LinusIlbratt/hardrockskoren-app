@@ -659,7 +659,7 @@ export const AdminMessagePage = () => {
                 {new Date(selectedSent.createdAt).toLocaleString("sv-SE")}
               </time>
             </p>
-            <p className={styles.modalContent}>
+            <p className={`${styles.modalContent} whitespace-pre-wrap`}>
               <LinkifiedText text={selectedSent.body} />
             </p>
           </div>

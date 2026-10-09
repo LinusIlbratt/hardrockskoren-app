@@ -31,6 +31,9 @@ export type SharedConcert = {
   viewerIsSignedUp?: boolean;
   /** Optimistic-lock version for PATCH (from API). */
   version?: number;
+  /** Absent today: every shared gig is for all choirs. */
+  scope?: "all" | "groups";
+  targets?: string[];
 };
 
 export const VOICE_PARTS = ["Sopran", "Alt", "Tenor", "Bas"] as const;
@@ -124,6 +127,44 @@ export async function listSharedConcerts(options?: {
     hasMore: Boolean(response.data?.hasMore),
     nextBefore: response.data?.nextBefore ?? null,
   };
+}
+
+export type UpdateSharedConcertInput = {
+  title: string;
+  concertDate: string;
+  location: string;
+  description?: string | null;
+  version: number;
+};
+
+export async function updateSharedConcert(
+  concertId: string,
+  input: UpdateSharedConcertInput
+): Promise<SharedConcert> {
+  const id = concertId.trim();
+  if (!id) {
+    throw new Error("concertId is required.");
+  }
+  if (!Number.isInteger(input.version) || input.version < 1) {
+    throw new Error("version is required.");
+  }
+
+  const base = requireBaseUrl();
+  const description = input.description?.trim() ?? "";
+  const response = await axios.patch<SharedConcert>(
+    `${base}/shared-concerts/${encodeURIComponent(id)}`,
+    {
+      version: input.version,
+      title: input.title.trim(),
+      concertDate: input.concertDate.trim(),
+      location: input.location.trim(),
+      description: description || null,
+    },
+    {
+      headers: { ...authHeaders(), "Content-Type": "application/json" },
+    }
+  );
+  return response.data;
 }
 
 export async function getSharedConcert(

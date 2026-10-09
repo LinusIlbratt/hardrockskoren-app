@@ -99,6 +99,8 @@ function linkify(text: string): ReactNode[] {
 }
 
 export function LinkifiedText({ text, className }: LinkifiedTextProps) {
-  const classNames = className ? `${styles.root} ${className}` : styles.root;
+  const classNames = [styles.root, "whitespace-pre-wrap", className]
+    .filter(Boolean)
+    .join(" ");
   return <span className={classNames}>{linkify(text ?? "")}</span>;
 }

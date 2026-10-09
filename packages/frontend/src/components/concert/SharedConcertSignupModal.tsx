@@ -319,6 +319,7 @@ export const SharedConcertSignupModal = ({
       isOpen={Boolean(concert)}
       onClose={onClose}
       title={selected?.title ?? concert?.title ?? "Gig"}
+      size="lg"
     >
       {selected && (
         <div className={styles.modalBody}>
@@ -356,7 +357,7 @@ export const SharedConcertSignupModal = ({
             {selected.description ? (
               <div className={styles.eventDescription}>
                 <h3 className={styles.eventDescriptionLabel}>Om giget</h3>
-                <p className={styles.eventDescriptionText}>
+                <p className={`${styles.eventDescriptionText} whitespace-pre-wrap`}>
                   <LinkifiedText text={selected.description} />
                 </p>
               </div>

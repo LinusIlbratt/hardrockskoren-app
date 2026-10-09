@@ -216,6 +216,10 @@
 
 .eventDescription {
   @include column(var(--spacing-xs));
+  align-self: stretch;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding-top: var(--spacing-sm);
   border-top: 1px solid var(--color-border);
 }
@@ -231,6 +235,8 @@
 
 .eventDescriptionText {
   margin: 0;
+  width: 100%;
+  max-width: 100%;
   white-space: pre-wrap;
   line-height: 1.55;
   font-size: var(--fs-sm);

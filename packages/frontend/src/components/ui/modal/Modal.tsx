@@ -9,12 +9,16 @@ import styles from './Modal.module.scss';
 
 const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+export type ModalSize = "md" | "lg";
+
 export interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /** md is the default 500px dialog. lg is 680px for longer text. */
+  size?: ModalSize;
   /**
    * Form modals: disables backdrop close by default.
    * Close-guard context is always available when the modal is open;
@@ -33,6 +37,7 @@ export const Modal = ({
   title,
   children,
   footer,
+  size = "md",
   formMode = false,
   closeOnBackdropClick: closeOnBackdropClickProp,
   closeOnEscape = true,
@@ -172,7 +177,7 @@ export const Modal = ({
       >
         <div
           ref={modalRef}
-          className={styles.modal}
+          className={size === "lg" ? `${styles.modal} ${styles.modalLg}` : styles.modal}
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           role="dialog"
