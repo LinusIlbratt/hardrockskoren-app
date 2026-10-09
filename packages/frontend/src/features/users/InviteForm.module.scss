@@ -1,0 +1,40 @@
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+  
+  .textarea {
+    min-height: 120px;
+    width: 100%;
+    background-color: rgba(0,0,0,0.2);
+    border: 1px solid var(--color-border);
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    transition: border-color 0.2s ease;
+    color: var(--color-text);
+    font-family: inherit;
+  
+    &:focus {
+      border-color: var(--color-primary);
+      outline: none;
+    }
+  }
+  
+  .description {
+    font-size: var(--fs-sm);
+    color: #9ca3af;
+    margin-top: var(--margin); // Minska avståndet till textarean
+  }
+  
+  .error {
+    color: var(--color-accent);
+    text-align: center;
+  }
+
+  .buttonGroup {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+  }

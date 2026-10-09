@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
-import { GroupNav } from '@/components/ui/nav/GroupNav';
+import { GroupNav } from '@/components/nav/GroupNav';
 import { RecentlyPlayedWidget } from '@/components/music/RecentlyPlayedWidget';
 import { GroupNotificationProviders } from '@/context/GroupNotificationProviders';
 import axios from 'axios';
@@ -10,13 +10,7 @@ import styles from './GroupDashboardLayout.module.scss';
 
 import { AppTourProvider } from '@/tours/AppTourProvider';
 import { groupDashboardSteps } from '@/tours/admin/groupDashboardSteps';
-
-interface Group {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-}
+import type { Group } from '@/types';
 
 export const GroupDashboardLayout = () => {
   const { groupName: groupSlug } = useParams<{ groupName: string }>();

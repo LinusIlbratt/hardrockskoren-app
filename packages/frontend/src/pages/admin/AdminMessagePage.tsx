@@ -1,5 +1,3 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import axios from "axios";
 import { FiEdit } from "react-icons/fi";
 import { IoTrashOutline } from "react-icons/io5";
 import {
@@ -9,45 +7,23 @@ import {
 } from "@/components/ui/button/Button";
 import { FormGroup } from "@/components/ui/form/FormGroup";
 import { Input } from "@/components/ui/input/Input";
+import { Textarea } from "@/components/ui/textarea/Textarea";
 import { LinkifiedText } from "@/components/ui/LinkifiedText";
+import { Cluster } from "@/components/ui/layout/Cluster";
 import { Modal } from "@/components/ui/modal/Modal";
-import { StyledSelect, type SelectOption } from "@/components/ui/select/StyledSelect";
-import {
-  createMessage,
-  deleteMessage,
-  listSentMessages,
-  updateMessage,
-  type CreateMessageResponse,
-  type SentMessage,
-} from "@/services/messageService";
+import { StyledSelect } from "@/components/ui/select/StyledSelect";
+import type { SentMessage } from "@/services/messageService";
 import {
   formatMessageListTime,
   formatMessageSender,
 } from "@/utils/messagePreview";
+import {
+  BODY_MAX,
+  TITLE_MAX,
+  useMessageComposer,
+  useMessageHistory,
+} from "@/features/messages";
 import styles from "./AdminMessagePage.module.scss";
-
-const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL;
-const HISTORY_PAGE_SIZE = 20;
-const TITLE_MAX = 120;
-const BODY_MAX = 4000;
-
-type AudienceMode = "all" | "selected";
-
-interface Group {
-  name: string;
-  slug: string;
-}
-
-function formatCreateSuccess(result: CreateMessageResponse): string {
-  if (result.scope === "all") {
-    return "Meddelandet har skickats till alla körer.";
-  }
-  const n = result.targets?.length ?? 0;
-  if (n <= 1) {
-    return "Meddelandet har skickats till 1 kör.";
-  }
-  return `Meddelandet har skickats till ${n} körer.`;
-}
 
 function formatTargetsLabel(
   message: SentMessage,
@@ -77,371 +53,54 @@ function formatTargetsShort(
   return `${names[0]} +${names.length - 1}`;
 }
 
-function validateDraft(title: string, body: string): string | null {
-  const trimmedTitle = title.trim();
-  const trimmedBody = body.trim();
-  if (!trimmedTitle || !trimmedBody) {
-    return "Fyll i både rubrik och meddelande.";
-  }
-  if (trimmedTitle.length > TITLE_MAX) {
-    return `Rubriken får vara högst ${TITLE_MAX} tecken.`;
-  }
-  if (trimmedBody.length > BODY_MAX) {
-    return `Texten får vara högst ${BODY_MAX} tecken.`;
-  }
-  return null;
-}
-
-function extractApiErrorMessage(
-  error: unknown,
-  fallback = "Kunde inte skicka meddelandet."
-): string {
-  if (axios.isAxiosError(error)) {
-    const data = error.response?.data;
-    if (data && typeof data === "object" && "message" in data) {
-      const msg = (data as { message: unknown }).message;
-      if (typeof msg === "string" && msg.trim()) {
-        return msg.trim();
-      }
-    }
-    if (error.response?.status === 401 || error.response?.status === 403) {
-      return "Du har inte behörighet att skicka meddelanden.";
-    }
-    if (error.response?.status === 404) {
-      return "En eller flera valda körer hittades inte.";
-    }
-    if (!error.response) {
-      return "Kunde inte nå meddelandetjänsten. Kontrollera nätverk och API-URL.";
-    }
-  }
-  if (error instanceof Error && error.message.trim()) {
-    return error.message.trim();
-  }
-  return fallback;
-}
-
 export const AdminMessagePage = () => {
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [groupsError, setGroupsError] = useState<string | null>(null);
-  const [isLoadingGroups, setIsLoadingGroups] = useState(true);
+  const {
+    sentMessages,
+    sentHasMore,
+    sentError,
+    isLoadingSent,
+    isLoadingMoreSent,
+    selectedSent,
+    setSelectedSent,
+    editing,
+    draftTitle,
+    setDraftTitle,
+    draftBody,
+    setDraftBody,
+    formError,
+    isSavingEdit,
+    pendingDelete,
+    setPendingDelete,
+    isDeleting,
+    deleteError,
+    setDeleteError,
+    loadOlderSent,
+    openEdit,
+    closeEdit,
+    submitEdit,
+    confirmDelete,
+    fetchSent,
+  } = useMessageHistory();
 
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [audienceMode, setAudienceMode] = useState<AudienceMode>("all");
-  const [selectedGroups, setSelectedGroups] = useState<SelectOption[]>([]);
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [statusMessage, setStatusMessage] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
-
-  const [sentMessages, setSentMessages] = useState<SentMessage[]>([]);
-  const [sentHasMore, setSentHasMore] = useState(false);
-  const [sentError, setSentError] = useState<string | null>(null);
-  const [isLoadingSent, setIsLoadingSent] = useState(true);
-  const [isLoadingMoreSent, setIsLoadingMoreSent] = useState(false);
-  const [selectedSent, setSelectedSent] = useState<SentMessage | null>(null);
-  const [editing, setEditing] = useState<SentMessage | null>(null);
-  const [draftTitle, setDraftTitle] = useState("");
-  const [draftBody, setDraftBody] = useState("");
-  const [formError, setFormError] = useState<string | null>(null);
-  const [isSavingEdit, setIsSavingEdit] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState<SentMessage | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-
-  const fetchGroups = useCallback(async () => {
-    setIsLoadingGroups(true);
-    setGroupsError(null);
-
-    const token = localStorage.getItem("authToken");
-    if (!token) {
-      setGroupsError("Du är inte inloggad.");
-      setGroups([]);
-      setIsLoadingGroups(false);
-      return;
-    }
-    if (!ADMIN_API_URL?.trim()) {
-      setGroupsError("Admin-API saknas (VITE_ADMIN_API_URL).");
-      setGroups([]);
-      setIsLoadingGroups(false);
-      return;
-    }
-
-    try {
-      const response = await axios.get<Group[]>(`${ADMIN_API_URL}/groups`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const list = Array.isArray(response.data) ? response.data : [];
-      const valid = list.filter(
-        (g) => typeof g?.slug === "string" && g.slug.trim().length > 0
-      );
-      setGroups(valid);
-      if (valid.length === 0) {
-        setGroupsError(
-          "Inga körer hittades. Skapa en kör innan du skickar till valda."
-        );
-      }
-    } catch (error) {
-      console.error("Failed to fetch groups for message target", error);
-      setGroups([]);
-      setGroupsError(
-        axios.isAxiosError(error) && !error.response
-          ? "Kunde inte hämta körlistan (nätverksfel)."
-          : "Kunde inte hämta körlistan."
-      );
-    } finally {
-      setIsLoadingGroups(false);
-    }
-  }, []);
-
-  const fetchSent = useCallback(async () => {
-    setIsLoadingSent(true);
-    setSentError(null);
-    try {
-      const result = await listSentMessages({ limit: HISTORY_PAGE_SIZE });
-      setSentMessages(result.messages);
-      setSentHasMore(result.hasMore);
-    } catch (error) {
-      console.error("Failed to fetch sent messages", error);
-      setSentMessages([]);
-      setSentHasMore(false);
-      setSentError(
-        axios.isAxiosError(error) && error.response?.status === 403
-          ? "Du har inte behörighet att se skickade meddelanden."
-          : "Kunde inte hämta skickade meddelanden."
-      );
-    } finally {
-      setIsLoadingSent(false);
-    }
-  }, []);
-
-  const loadOlderSent = async () => {
-    if (isLoadingMoreSent || !sentHasMore || sentMessages.length === 0) return;
-    const oldest = sentMessages[sentMessages.length - 1];
-    const before = `${oldest.createdAt}#${oldest.messageId}`;
-    setIsLoadingMoreSent(true);
-    try {
-      const result = await listSentMessages({
-        limit: HISTORY_PAGE_SIZE,
-        before,
-      });
-      setSentMessages((prev) => {
-        const seen = new Set(prev.map((m) => m.messageId));
-        const next = [...prev];
-        for (const m of result.messages) {
-          if (!seen.has(m.messageId)) next.push(m);
-        }
-        return next;
-      });
-      setSentHasMore(result.hasMore);
-    } catch (error) {
-      console.error("Failed to fetch older sent messages", error);
-      setSentError("Kunde inte ladda äldre meddelanden.");
-    } finally {
-      setIsLoadingMoreSent(false);
-    }
-  };
-
-  const openEdit = (message: SentMessage) => {
-    setDraftTitle(message.title);
-    setDraftBody(message.body);
-    setFormError(null);
-    setEditing(message);
-  };
-
-  const closeEdit = () => {
-    if (isSavingEdit) return;
-    setEditing(null);
-    setFormError(null);
-  };
-
-  const submitEdit = async () => {
-    if (!editing) return;
-    const validationError = validateDraft(draftTitle, draftBody);
-    if (validationError) {
-      setFormError(validationError);
-      return;
-    }
-
-    const draft = { title: draftTitle.trim(), body: draftBody.trim() };
-    setIsSavingEdit(true);
-    setFormError(null);
-    try {
-      const updated = await updateMessage(editing.messageId, draft);
-      const nextTitle = updated.title || draft.title;
-      const nextBody = updated.body || draft.body;
-      setSentMessages((prev) =>
-        prev.map((message) =>
-          message.messageId === editing.messageId
-            ? { ...message, title: nextTitle, body: nextBody }
-            : message
-        )
-      );
-      setSelectedSent((current) =>
-        current && current.messageId === editing.messageId
-          ? { ...current, title: nextTitle, body: nextBody }
-          : current
-      );
-      setEditing(null);
-    } catch (error) {
-      console.error("Failed to update sent message", error);
-      setFormError(
-        extractApiErrorMessage(error, "Kunde inte spara meddelandet.")
-      );
-    } finally {
-      setIsSavingEdit(false);
-    }
-  };
-
-  const confirmDelete = async () => {
-    if (!pendingDelete) return;
-    setIsDeleting(true);
-    setDeleteError(null);
-    try {
-      await deleteMessage(pendingDelete.messageId);
-      setSentMessages((prev) =>
-        prev.filter((message) => message.messageId !== pendingDelete.messageId)
-      );
-      setSelectedSent((current) =>
-        current?.messageId === pendingDelete.messageId ? null : current
-      );
-      setPendingDelete(null);
-    } catch (error) {
-      console.error("Failed to delete sent message", error);
-      setDeleteError(
-        extractApiErrorMessage(error, "Kunde inte ta bort meddelandet.")
-      );
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchGroups();
-    fetchSent();
-  }, [fetchGroups, fetchSent]);
-
-  useEffect(() => {
-    if (!statusMessage) return;
-    const timer = setTimeout(() => setStatusMessage(null), 5000);
-    return () => clearTimeout(timer);
-  }, [statusMessage]);
-
-  const groupOptions: SelectOption[] = useMemo(
-    () =>
-      groups.map((g) => ({
-        value: g.slug,
-        label: g.name?.trim() ? g.name : g.slug,
-      })),
-    [groups]
-  );
-
-  const groupsBySlug = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const g of groups) {
-      map.set(g.slug, g.name?.trim() ? g.name : g.slug);
-    }
-    return map;
-  }, [groups]);
-
-  const resolveTargets = (): string[] | null => {
-    if (audienceMode === "all") {
-      return ["ALL"];
-    }
-    if (selectedGroups.length === 0) {
-      return null;
-    }
-
-    const slugs = selectedGroups
-      .map((o) => String(o.value).trim())
-      .filter((s) => s.length > 0 && s.toUpperCase() !== "ALL");
-
-    if (slugs.length === 0) {
-      return null;
-    }
-
-    if (groups.length > 0 && slugs.length === groups.length) {
-      const selectedSet = new Set(slugs);
-      const allMatch = groups.every((g) => selectedSet.has(g.slug));
-      if (allMatch) {
-        return ["ALL"];
-      }
-    }
-
-    return Array.from(new Set(slugs));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setStatusMessage(null);
-
-    const trimmedTitle = title.trim();
-    const trimmedBody = body.trim();
-    if (!trimmedTitle || !trimmedBody) {
-      setStatusMessage({
-        type: "error",
-        message: "Fyll i både rubrik och meddelande.",
-      });
-      return;
-    }
-
-    if (audienceMode === "selected" && isLoadingGroups) {
-      setStatusMessage({
-        type: "error",
-        message: "Vänta tills körlistan har laddats.",
-      });
-      return;
-    }
-
-    if (audienceMode === "selected" && groupsError && groups.length === 0) {
-      setStatusMessage({
-        type: "error",
-        message: groupsError,
-      });
-      return;
-    }
-
-    const targets = resolveTargets();
-    if (!targets) {
-      setStatusMessage({
-        type: "error",
-        message: "Välj minst en kör, eller byt till Alla körer.",
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const result = await createMessage({
-        title: trimmedTitle,
-        body: trimmedBody,
-        targets,
-      });
-      setTitle("");
-      setBody("");
-      setSelectedGroups([]);
-      setStatusMessage({
-        type: "success",
-        message: formatCreateSuccess(result),
-      });
-      await fetchSent();
-    } catch (error) {
-      console.error("Failed to create message", error);
-      setStatusMessage({
-        type: "error",
-        message: extractApiErrorMessage(error),
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const selectedModeDisabled =
-    isSubmitting ||
-    (audienceMode === "selected" &&
-      (isLoadingGroups || (groups.length === 0 && Boolean(groupsError))));
+  const {
+    groups,
+    groupsError,
+    isLoadingGroups,
+    groupOptions,
+    groupsBySlug,
+    title,
+    setTitle,
+    body,
+    setBody,
+    audienceMode,
+    setAudienceMode,
+    selectedGroups,
+    setSelectedGroups,
+    isSubmitting,
+    statusMessage,
+    handleSubmit,
+    selectedModeDisabled,
+  } = useMessageComposer({ fetchSent });
 
   return (
     <div className={styles.page}>
@@ -454,11 +113,7 @@ export const AdminMessagePage = () => {
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         <fieldset className={styles.audienceFieldset}>
           <legend className={styles.audienceLegend}>Mottagare</legend>
-          <div
-            className={styles.audienceOptions}
-            role="radiogroup"
-            aria-label="Mottagare"
-          >
+          <Cluster gap="md" role="radiogroup" aria-label="Mottagare">
             <label className={styles.radioLabel}>
               <input
                 type="radio"
@@ -481,7 +136,7 @@ export const AdminMessagePage = () => {
               />
               Valda körer
             </label>
-          </div>
+          </Cluster>
         </fieldset>
 
         {audienceMode === "selected" && (
@@ -528,9 +183,8 @@ export const AdminMessagePage = () => {
         </FormGroup>
 
         <FormGroup label="Meddelande" htmlFor="message-body">
-          <textarea
+          <Textarea
             id="message-body"
-            className={styles.textarea}
             value={body}
             onChange={(e) => setBody(e.target.value)}
             maxLength={4000}
@@ -631,7 +285,7 @@ export const AdminMessagePage = () => {
         </ul>
 
         {sentHasMore && (
-          <div className={styles.loadMore}>
+          <Cluster justify="center" className={styles.loadMore}>
             <Button
               type="button"
               variant={ButtonVariant.Ghost}
@@ -641,7 +295,7 @@ export const AdminMessagePage = () => {
             >
               {isLoadingMoreSent ? "Laddar…" : "Ladda äldre meddelanden"}
             </Button>
-          </div>
+          </Cluster>
         )}
       </section>
 
@@ -652,13 +306,13 @@ export const AdminMessagePage = () => {
       >
         {selectedSent && (
           <div className={styles.modalBody}>
-            <p className={styles.modalMeta}>
+            <Cluster as="p" gap="sm" className={styles.modalMeta}>
               <span>{formatMessageSender(selectedSent.createdByName)}</span>
               <span>Till: {formatTargetsLabel(selectedSent, groupsBySlug)}</span>
               <time dateTime={selectedSent.createdAt}>
                 {new Date(selectedSent.createdAt).toLocaleString("sv-SE")}
               </time>
-            </p>
+            </Cluster>
             <p className={`${styles.modalContent} whitespace-pre-wrap`}>
               <LinkifiedText text={selectedSent.body} />
             </p>
@@ -672,7 +326,7 @@ export const AdminMessagePage = () => {
         title="Redigera meddelande"
         formMode
         footer={
-          <div className={styles.formActions}>
+          <Cluster justify="end" gap="sm">
             <Button
               type="button"
               variant={ButtonVariant.Ghost}
@@ -693,7 +347,7 @@ export const AdminMessagePage = () => {
             >
               Spara
             </Button>
-          </div>
+          </Cluster>
         }
       >
         <form
@@ -713,12 +367,12 @@ export const AdminMessagePage = () => {
             />
           </FormGroup>
           <FormGroup label="Meddelande" htmlFor="edit-message-body">
-            <textarea
+            <Textarea
               id="edit-message-body"
-              className={styles.textarea}
               value={draftBody}
               maxLength={BODY_MAX}
               disabled={isSavingEdit}
+              rows={8}
               onChange={(event) => setDraftBody(event.target.value)}
             />
           </FormGroup>
@@ -736,7 +390,7 @@ export const AdminMessagePage = () => {
         }}
         title="Ta bort meddelande"
         footer={
-          <div className={styles.formActions}>
+          <Cluster justify="end" gap="sm">
             <Button
               type="button"
               variant={ButtonVariant.Ghost}
@@ -760,7 +414,7 @@ export const AdminMessagePage = () => {
             >
               Ta bort
             </Button>
-          </div>
+          </Cluster>
         }
       >
         <div className={styles.modalBody}>

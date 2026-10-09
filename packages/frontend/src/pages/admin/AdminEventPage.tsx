@@ -5,14 +5,14 @@ import { sv } from 'date-fns/locale';
 import * as eventService from '@/services/eventService';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal/Modal';
-import { CreateRecurringEventForm } from '@/components/ui/form/CreateRecurringEventForm';
-import { CreateEventForm } from '@/components/ui/form/CreateEventForm';
+import { Tab, Tabs } from '@/components/ui/tabs/Tabs';
+import { CreateEventForm, CreateRecurringEventForm } from '@/features/events';
 import { FiEdit, FiClock } from 'react-icons/fi';
 import { IoTrashOutline, IoEyeOutline, IoInformationCircleOutline } from 'react-icons/io5';
 import type { Event } from '@/types';
 import styles from './AdminEventPage.module.scss';
 import { useAuth } from '@/context/AuthContext';
-import { SharedConcertSignupPanel } from '@/components/concert/SharedConcertSignupPanel';
+import { SharedConcertSignupPanel } from '@/features/concerts';
 
 export const AdminEventPage = () => {
   const { groupName } = useParams<{ groupName: string }>();
@@ -142,11 +142,13 @@ export const AdminEventPage = () => {
       </div>
       )}
 
-      <div className={styles.tabs}>
-        <button className={`${styles.tabButton} ${activeTab === 'REHEARSAL' ? styles.activeTab : ''}`} onClick={() => setActiveTab('REHEARSAL')}>Rep</button>
-        {(user?.role === 'admin' || user?.role === 'leader') && (<button className={`${styles.tabButton} ${activeTab === 'CONCERT' ? styles.activeTab : ''}`} onClick={() => setActiveTab('CONCERT')}>Gig</button>)}
-        <button className={`${styles.tabButton} ${activeTab === 'SHARED' ? styles.activeTab : ''}`} onClick={() => setActiveTab('SHARED')}>Gemensamma Gig</button>
-      </div>
+      <Tabs label="Gig och repdatum" className={styles.tabs}>
+        <Tab active={activeTab === 'REHEARSAL'} onSelect={() => setActiveTab('REHEARSAL')}>Rep</Tab>
+        {(user?.role === 'admin' || user?.role === 'leader') && (
+          <Tab active={activeTab === 'CONCERT'} onSelect={() => setActiveTab('CONCERT')}>Gig</Tab>
+        )}
+        <Tab active={activeTab === 'SHARED'} onSelect={() => setActiveTab('SHARED')}>Gemensamma Gig</Tab>
+      </Tabs>
 
       {activeTab === 'SHARED' ? (
         <SharedConcertSignupPanel

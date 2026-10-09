@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useLocation, Link } from 'react-router-dom';
-import { MediaModal } from '@/components/ui/modal/MediaModal';
+import { MediaModal } from '@/components/media/MediaModal';
 import {
   FileText,
   Music,

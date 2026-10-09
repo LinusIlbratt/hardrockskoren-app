@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
+import { getApiErrorMessage } from "@/utils/apiError";
 import { FiEdit } from "react-icons/fi";
 import { IoTrashOutline } from "react-icons/io5";
 import { LinkifiedText } from "@/components/ui/LinkifiedText";
@@ -96,10 +97,7 @@ function extractApiErrorMessage(error: unknown, fallback: string): string {
       return "Kunde inte nå meddelandetjänsten. Kontrollera nätverk och API-URL.";
     }
   }
-  if (error instanceof Error && error.message.trim()) {
-    return error.message.trim();
-  }
-  return fallback;
+  return getApiErrorMessage(error, fallback);
 }
 
 export const MemberAktuelltPage = () => {

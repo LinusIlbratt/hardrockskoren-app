@@ -2,17 +2,13 @@ import { Outlet, useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { GroupNotificationProviders } from '@/context/GroupNotificationProviders';
 import { RecentlyPlayedWidget } from '@/components/music/RecentlyPlayedWidget';
-import { LeaderNav } from '@/components/ui/nav/LeaderNav';
+import { LeaderNav } from '@/components/nav/LeaderNav';
 import styles from './LeaderDashboard.module.scss';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import type { Group } from '@/types';
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
-
-interface Group {
-  name: string;
-  slug: string;
-}
 
 export const LeaderDashboard = () => {
   const { groupName } = useParams<{ groupName: string }>();

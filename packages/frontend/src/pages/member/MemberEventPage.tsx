@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
 import { Modal } from '@/components/ui/modal/Modal';
+import { Tab, Tabs } from '@/components/ui/tabs/Tabs';
 import { IoEyeOutline, IoInformationCircleOutline } from 'react-icons/io5';
 import { format, isPast } from 'date-fns';
 import { sv } from 'date-fns/locale';
@@ -11,9 +11,8 @@ import styles from './MemberEventPage.module.scss';
 import type { Event } from '@/types';
 import { useEventNotification } from '@/hooks/useEventNotification';
 import { useAuth } from '@/context/AuthContext';
-import { SharedConcertSignupPanel } from '@/components/concert/SharedConcertSignupPanel';
-
-const API_BASE_URL = import.meta.env.VITE_EVENT_API_URL;
+import { SharedConcertSignupPanel } from '@/features/concerts';
+import { listEvents } from '@/services/eventService';
 
 export const MemberEventPage = () => {
   const [events, setEvents] = useState<Event[]>([]);
@@ -36,11 +35,9 @@ export const MemberEventPage = () => {
     }
     setIsLoading(true);
     setError(null);
-    const token = localStorage.getItem('authToken');
     try {
-      const url = `${API_BASE_URL}/groups/${groupName}/events`;
-      const response = await axios.get(url, { headers: { Authorization: `Bearer ${token}` } });
-      const sortedEvents = response.data.sort((a: Event, b: Event) =>
+      const data = await listEvents(groupName);
+      const sortedEvents = [...data].sort((a, b) =>
         new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime()
       );
       setEvents(sortedEvents);
@@ -166,19 +163,19 @@ export const MemberEventPage = () => {
     <div className={styles.page}>
       <div className={styles.header}>
         <h2>Gig & Repdatum</h2>
-        <div className={styles.tabs}>
-          <button className={`${styles.tabButton} ${activeTab === 'REHEARSAL' ? styles.activeTab : ''}`} onClick={() => setActiveTab('REHEARSAL')}>
+        <Tabs label="Gig och repdatum">
+          <Tab active={activeTab === 'REHEARSAL'} onSelect={() => setActiveTab('REHEARSAL')}>
             Rep
             {hasRehearsalNotification && <span className={styles.tabBadge} />}
-          </button>
-          <button className={`${styles.tabButton} ${activeTab === 'CONCERT' ? styles.activeTab : ''}`} onClick={() => setActiveTab('CONCERT')}>
+          </Tab>
+          <Tab active={activeTab === 'CONCERT'} onSelect={() => setActiveTab('CONCERT')}>
             Gig
             {hasConcertNotification && <span className={styles.tabBadge} />}
-          </button>
-          <button className={`${styles.tabButton} ${activeTab === 'SHARED' ? styles.activeTab : ''}`} onClick={() => setActiveTab('SHARED')}>
+          </Tab>
+          <Tab active={activeTab === 'SHARED'} onSelect={() => setActiveTab('SHARED')}>
             Gemensamma Gig
-          </button>
-        </div>
+          </Tab>
+        </Tabs>
       </div>
       {activeTab !== 'SHARED' && (
         <div className={styles.legend}>

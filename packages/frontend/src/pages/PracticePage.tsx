@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import type { Material } from '@/types';
-import { MediaModal } from '@/components/ui/modal/MediaModal';
+import { MediaModal } from '@/components/media/MediaModal';
 import styles from './PracticePage.module.scss';
 import { MemberWeekAccordion } from '@/components/member/MemberWeekAccordion';
 import { IoInformationCircleOutline, IoEyeOutline } from 'react-icons/io5';

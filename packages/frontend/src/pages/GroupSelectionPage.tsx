@@ -1,18 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { GroupCard } from '@/components/ui/card/GroupCard';
+import { GroupCard } from '@/features/groups';
 import axios from 'axios';
 import styles from './GroupSelectionPage.module.scss';
-
-// Definierar Group-typen direkt i filen
-interface Group {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  imageUrl?: string;
-}
+import type { Group } from '@/types';
 
 export const GroupSelectionPage = () => {
   const { user, isLoading: isAuthLoading } = useAuth();

@@ -631,7 +631,7 @@
 }
 
 /* ───────── mobile ───────── */
-@media (max-width: 767px) {
+@media (max-width: #{$tabletBreakpoint - 1px}) {
   .playerContainer {
     min-height: auto;
     padding: 8px 12px;

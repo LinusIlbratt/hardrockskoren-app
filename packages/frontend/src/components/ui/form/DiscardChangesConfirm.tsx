@@ -1,6 +1,8 @@
 import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
+import { Cluster } from '@/components/ui/layout/Cluster';
+import { Stack } from '@/components/ui/layout/Stack';
 import styles from './DiscardChangesConfirm.module.scss';
 
 const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
@@ -103,25 +105,27 @@ export const DiscardChangesConfirm = ({ onConfirm, onCancel }: DiscardChangesCon
             aria-labelledby={titleId}
             aria-describedby={descId}
           >
-            <p id={titleId} className={styles.message}>
-              Du har osparade ändringar. Vill du stänga utan att spara?
-            </p>
-            <p id={descId} className={styles.srOnly}>
-              Välj att fortsätta redigera eller stänga utan att spara.
-            </p>
-            <div className={styles.actions}>
-              <Button
-                type="button"
-                variant={ButtonVariant.Primary}
-                data-discard-cancel
-                onClick={onCancel}
-              >
-                Fortsätt redigera
-              </Button>
-              <Button type="button" variant={ButtonVariant.Destructive} onClick={onConfirm}>
-                Stäng utan att spara
-              </Button>
-            </div>
+            <Stack gap="md">
+              <p id={titleId} className={styles.message}>
+                Du har osparade ändringar. Vill du stänga utan att spara?
+              </p>
+              <p id={descId} className={styles.srOnly}>
+                Välj att fortsätta redigera eller stänga utan att spara.
+              </p>
+              <Cluster justify="end" gap="sm">
+                <Button
+                  type="button"
+                  variant={ButtonVariant.Primary}
+                  data-discard-cancel
+                  onClick={onCancel}
+                >
+                  Fortsätt redigera
+                </Button>
+                <Button type="button" variant={ButtonVariant.Destructive} onClick={onConfirm}>
+                  Stäng utan att spara
+                </Button>
+              </Cluster>
+            </Stack>
           </div>
         </div>,
         dialogEl,

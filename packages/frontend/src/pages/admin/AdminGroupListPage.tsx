@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
-import { GroupCard } from '@/components/ui/card/GroupCard';
+import { CreateGroupForm, GroupCard } from '@/features/groups';
 import { IoFilterOutline } from "react-icons/io5";
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal/Modal';
-import { CreateGroupForm } from '@/components/ui/form/CreateGroupForm';
 
 import { adminListGroupPageStepsMobile } from '@/tours/admin/adminListGroupPageStepsMobile';
 import { adminListGroupPageStepsDesktop } from '@/tours/admin/adminListGroupPageStepsDesktop';

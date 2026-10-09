@@ -72,6 +72,10 @@ interface RepertoireItem {
   artist?: string;
 }
 
+/** Samma gräns som $tabletBreakpoint i styles/_variables.scss. Mobil är strikt under den. */
+const TABLET_MIN_PX = 768;
+const BELOW_TABLET_QUERY = `(max-width: ${TABLET_MIN_PX - 1}px)`;
+
 export interface RepertoireMusicPlayerPanelProps {
   groupName: string;
   viewer: MusicPlayerViewer;
@@ -155,7 +159,7 @@ export function RepertoireMusicPlayerPanel({
     string | null
   >(null);
   const [deletePlaylistBusy, setDeletePlaylistBusy] = useState(false);
-  /** Mobil (max 767px): spellistor/repertoar i mitten utan modal */
+  /** Mobil under $tabletBreakpoint (768px): spellistor/repertoar i mitten utan modal */
   const [mobileBrowseMode, setMobileBrowseMode] = useState<
     null | "playlists" | "repertoires"
   >(null);
@@ -164,7 +168,7 @@ export function RepertoireMusicPlayerPanel({
   const [isMobileShell, setIsMobileShell] = useState(
     () =>
       typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 767px)").matches,
+      window.matchMedia(BELOW_TABLET_QUERY).matches,
   );
 
   const hasLibraryPlaybackQueue = Boolean(libraryQueueMaterials?.length);
@@ -172,7 +176,7 @@ export function RepertoireMusicPlayerPanel({
     hasLibraryPlaybackQueue && !libraryPlaybackWithRepertoire;
 
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
+    const mq = window.matchMedia(BELOW_TABLET_QUERY);
     const onChange = () => setIsMobileShell(mq.matches);
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);

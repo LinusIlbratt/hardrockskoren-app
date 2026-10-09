@@ -25,15 +25,8 @@
 }
 
 .message {
-  margin: 0 0 var(--spacing-md);
+  margin: 0;
   color: var(--color-text);
-}
-
-.actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
-  flex-wrap: wrap;
 }
 
 .srOnly {

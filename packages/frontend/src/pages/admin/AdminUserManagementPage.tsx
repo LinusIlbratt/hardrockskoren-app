@@ -3,18 +3,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal/Modal';
-import { InviteForm } from '@/components/ui/form/InviteForm';
-import { UserEditModal } from '@/components/ui/modal/UserEditModal';
+import { InviteForm, UserEditModal, UserList } from '@/features/users';
 import { StyledSelect, type SelectOption } from '@/components/ui/select/StyledSelect';
-import type { RoleTypes } from '@hrk/core/types';
+import type { GroupMember, RoleTypes } from '@/types';
 import { Search } from 'lucide-react';
-import type { GroupMember } from '@/types';
-import { UserList } from '@/components/ui/user/UserList';
 import { useAuth } from '@/context/AuthContext';
 import styles from './AdminUserManagementPage.module.scss';
 
 interface AdminUserManagementPageProps {
-  viewerRole: 'admin' | 'leader';
+  viewerRole: Exclude<RoleTypes, 'user'>;
 }
 
 interface ChoirChoice {

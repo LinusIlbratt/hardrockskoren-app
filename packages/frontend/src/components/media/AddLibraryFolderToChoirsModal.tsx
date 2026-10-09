@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { getApiErrorMessage } from "@/utils/apiError";
 import {
   Button,
   ButtonVariant,
@@ -67,10 +68,7 @@ function extractApiErrorMessage(error: unknown, fallback: string): string {
       return "Kunde inte nå servern. Saknas ny endpoint? Deploya material-api, eller kontrollera nätverk/API-URL.";
     }
   }
-  if (error instanceof Error && error.message.trim()) {
-    return error.message.trim();
-  }
-  return fallback;
+  return getApiErrorMessage(error, fallback);
 }
 
 function authHeaders(): { Authorization: string } | null {

@@ -6,7 +6,7 @@ import { FaPlayCircle } from "react-icons/fa";
 import { FiFolder, FiMusic, FiFileText, FiFile, FiChevronRight, FiArrowLeft } from 'react-icons/fi';
 import styles from './AdminRepertoireMaterialPage.module.scss';
 import type { Material } from '@/types';
-import { MediaModal } from '@/components/ui/modal/MediaModal';
+import { MediaModal } from '@/components/media/MediaModal';
 import {
   useMusicPlayerOverlay,
   type MusicPlayerViewer,

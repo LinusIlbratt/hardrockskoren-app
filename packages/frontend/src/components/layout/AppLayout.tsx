@@ -5,7 +5,7 @@ import { FavoritesProvider } from '@/context/FavoritesContext';
 import { MusicPlayerOverlayProvider, useMusicPlayerOverlay } from '@/context/MusicPlayerOverlayContext';
 import { MusicPlayerOverlayHost } from '@/components/music/MusicPlayerOverlay';
 import { MiniPlayerBar } from '@/components/media/MiniPlayerBar';
-import { MainNav } from '../ui/nav/MainNav';
+import { MainNav } from '../nav/MainNav';
 import { PageLoader } from '@/components/ui/loader/Loader';
 import styles from './AppLayout.module.scss';
 

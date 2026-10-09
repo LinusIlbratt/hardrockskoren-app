@@ -1,7 +1,7 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import axios from 'axios';
-// Importera din delade typ
 import type { AuthContext as User } from '@hrk/core/types';
+import { AUTH_TOKEN_KEY, getAuthHeaders as readAuthHeaders } from '@/utils/authHeaders';
 
 // Ersätt detta med din riktiga API-URL från en .env-fil
 const API_BASE_URL = import.meta.env.VITE_AUTH_API_URL;
@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error) {
       console.error("Failed to fetch user", error);
       // Om /me-anropet misslyckas, ta bort den ogiltiga token
-      localStorage.removeItem('authToken');
+      localStorage.removeItem(AUTH_TOKEN_KEY);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Denna körs bara en gång när appen laddas
   useEffect(() => {
-    const token = localStorage.getItem('authToken');
+    const token = localStorage.getItem(AUTH_TOKEN_KEY);
     if (token) {
       fetchUser(token);
     } else {
@@ -54,22 +54,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Den nya login-funktionen. Den tar emot en token, sparar den,
   // och hämtar sedan användardatan för att uppdatera appens state.
   const login = async (token: string) => {
-    localStorage.setItem('authToken', token);
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
     setIsLoading(true);
     await fetchUser(token);
   };
 
   const logout = () => {
-    localStorage.removeItem('authToken');
+    localStorage.removeItem(AUTH_TOKEN_KEY);
     setUser(null);
   };
 
-  const getAuthHeaders = useCallback((): Record<string, string> => {
-    const raw = localStorage.getItem('authToken');
-    const token = typeof raw === 'string' ? raw.trim() : '';
-    if (!token) return {};
-    return { Authorization: `Bearer ${token}` };
-  }, []);
+  const getAuthHeaders = useCallback((): Record<string, string> => readAuthHeaders(), []);
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, logout, getAuthHeaders }}>
