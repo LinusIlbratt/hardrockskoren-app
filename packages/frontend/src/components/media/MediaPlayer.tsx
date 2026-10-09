@@ -2,8 +2,6 @@ import {
   useState,
   useRef,
   useEffect,
-  useLayoutEffect,
-  useCallback,
   useMemo,
   type CSSProperties,
 } from 'react';
@@ -23,21 +21,16 @@ import { extractFileKeyFromMediaUrl, formatDisplayTitle } from '@/utils/media';
 import type { Material } from '@/types';
 import { AddToPlaylistModal } from '@/components/music/AddToPlaylistModal';
 import { TrackTitleMarquee } from '@/components/media/TrackTitleMarquee';
+import { Cluster } from '@/components/ui/layout/Cluster';
+import { useOptionalMusicPlayerOverlay } from '@/context/MusicPlayerOverlayContext';
+import type { MediaPlayerTrack } from '@/features/music-player';
+import { readStoredProgress, useAudioEngine } from '@/features/music-player/hooks/useAudioEngine';
 import {
-  useOptionalMusicPlayerOverlay,
-  type MusicPlaybackApi,
-} from '@/context/MusicPlayerOverlayContext';
+  useTrackQueue,
+  type TrackQueueEngineControls,
+} from '@/features/music-player/hooks/useTrackQueue';
 
-export interface MediaPlayerTrack {
-  src: string;
-  title: string;
-  /** För favorit / spellista i spelaren */
-  materialId?: string;
-}
-
-const PROGRESS_STORAGE_PREFIX = 'hrk-media-progress:';
-const TIMEUPDATE_UI_MS = 200;
-const PROGRESS_SAVE_MS = 1500;
+export type { MediaPlayerTrack };
 
 const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
 
@@ -88,48 +81,9 @@ function hashQueueSignature(s: string): string {
   return `q${(h >>> 0).toString(36)}`;
 }
 
-function isEditableTarget(target: EventTarget | null): boolean {
-  if (!target || !(target instanceof HTMLElement)) return false;
-  const tag = target.tagName;
-  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
-  return target.isContentEditable;
-}
-
-interface StoredProgress {
-  v: 1;
-  qs: string;
-  trackIndex: number;
-  currentTime: number;
-  singleSrc?: string;
-}
-
-function readStoredProgress(key: string): StoredProgress | null {
-  try {
-    const raw = sessionStorage.getItem(`${PROGRESS_STORAGE_PREFIX}${key}`);
-    if (!raw) return null;
-    const data = JSON.parse(raw) as StoredProgress;
-    if (data?.v !== 1 || typeof data.qs !== 'string') return null;
-    return data;
-  } catch {
-    return null;
-  }
-}
-
-function writeStoredProgress(key: string, data: StoredProgress): void {
-  try {
-    sessionStorage.setItem(`${PROGRESS_STORAGE_PREFIX}${key}`, JSON.stringify(data));
-  } catch {
-    /* quota / private mode */
-  }
-}
-
 export const MediaPlayer = (props: MediaPlayerProps) => {
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const lastUiTickRef = useRef(0);
-  const lastSaveRef = useRef(0);
   const pendingSeekRef = useRef<number | null>(null);
-  const prevQueueSigRef = useRef<string | null>(null);
-  const togglePlayPauseRef = useRef<() => void>(() => {});
+  const engineRef = useRef<TrackQueueEngineControls | null>(null);
 
   const { favoriteMaterialIds, toggleFavoriteOptimistic } = useFavorites();
   const overlayPlayback = useOptionalMusicPlayerOverlay();
@@ -144,18 +98,8 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
   const overlaySetQueueMeta = overlayPlayback?.setQueueMeta;
   const overlaySetActiveMaterialId = overlayPlayback?.setActiveMaterialId;
 
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [duration, setDuration] = useState(0);
-  const [currentTime, setCurrentTime] = useState(0);
   const [isPlayerVisible, setIsPlayerVisible] = useState(true);
-  const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
-  const [volume, setVolume] = useState(1);
-  const [playbackRate, setPlaybackRate] = useState(1);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [repeatMode, setRepeatMode] = useState<'off' | 'all' | 'one'>('off');
   const [showPlaylistModal, setShowPlaylistModal] = useState(false);
-
-  const onTrackIndexChangeRef = useRef<((index: number) => void) | undefined>(undefined);
 
   const queueMode = isQueueProps(props);
   const variant = props.variant ?? 'fixed';
@@ -167,48 +111,43 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
   const persistProgressKey = props.persistProgressKey?.trim() || undefined;
   const enableKeyboardShortcuts = props.enableKeyboardShortcuts !== false;
 
-  onTrackIndexChangeRef.current = queueMode ? props.onTrackIndexChange : undefined;
-
-  const safeInitial = queueMode && tracks?.length
-    ? Math.min(props.initialTrackIndex ?? 0, tracks.length - 1)
-    : 0;
-
   const queueSignature =
     queueMode && tracks?.length ? tracks.map((t) => t.src).join('\0') : !queueMode ? props.src : '';
 
   const queueSigHash = queueSignature ? hashQueueSignature(queueSignature) : '';
 
   const singleSrc = !queueMode && 'src' in props ? props.src : '';
+  const singleTitle = !queueMode && 'title' in props ? props.title : '';
 
-  /**
-   * Spårindex + seek från sessionStorage endast när kön byts (ny queueSignature).
-   * Om samma kö men nytt initialTrackIndex (t.ex. radklick) ska lagrat index inte skriva över valet.
-   */
-  useEffect(() => {
-    if (!queueMode || !tracks?.length) {
-      setCurrentTrackIndex(0);
-      prevQueueSigRef.current = null;
-      return;
-    }
-    const queueJustChanged = prevQueueSigRef.current !== queueSignature;
-    prevQueueSigRef.current = queueSignature;
+  const syncPlaybackToContextFlag = props.syncPlaybackToContext === true;
+  const overlayIsMinimized =
+    syncPlaybackToContextFlag && overlayPlayback && !overlayPlayback.isOpen;
+  const syncPlayback = syncPlaybackToContextFlag && Boolean(overlayPlayback);
 
-    let idx = safeInitial;
-    let seek: number | null = null;
-    if (persistProgressKey && queueSigHash && queueJustChanged) {
-      const stored = readStoredProgress(persistProgressKey);
-      if (stored && stored.qs === queueSigHash) {
-        if (typeof stored.trackIndex === 'number') {
-          idx = Math.min(Math.max(0, stored.trackIndex), tracks.length - 1);
-        }
-        if (typeof stored.currentTime === 'number' && Number.isFinite(stored.currentTime)) {
-          seek = stored.currentTime;
-        }
-      }
-    }
-    setCurrentTrackIndex(idx);
-    pendingSeekRef.current = seek;
-  }, [queueSignature, queueMode, tracks, safeInitial, persistProgressKey, queueSigHash]);
+  const {
+    currentIndex: currentTrackIndex,
+    currentTrack,
+    repeatMode,
+    handleNext: goToNext,
+    handlePrevious: goToPrevious,
+    cycleRepeatMode,
+    onEnded: onAudioEnded,
+  } = useTrackQueue({
+    tracks,
+    queueMode,
+    initialIndex: queueMode ? (props.initialTrackIndex ?? 0) : 0,
+    isMinimized: Boolean(overlayIsMinimized),
+    keyboardEnabled: enableKeyboardShortcuts,
+    autoAdvance,
+    onIndexChange: queueMode ? props.onTrackIndexChange : undefined,
+    pendingSeekRef,
+    persistProgressKey,
+    queueSignature,
+    queueSigHash,
+    engineRef,
+    singleTitle,
+    singleSrc,
+  });
 
   /** Enkelspår: återställ seek från lagring. */
   useEffect(() => {
@@ -225,33 +164,12 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
     }
   }, [queueMode, persistProgressKey, queueSigHash, singleSrc]);
 
-  useEffect(() => {
-    onTrackIndexChangeRef.current?.(currentTrackIndex);
-  }, [currentTrackIndex]);
-
   const audioSrc =
     queueMode && tracks?.length
       ? tracks[currentTrackIndex]?.src ?? ''
       : !queueMode
         ? props.src
         : '';
-
-  const currentTrack = useMemo((): Pick<MediaPlayerTrack, 'title' | 'src'> | null => {
-    if (queueMode && tracks?.length) {
-      const t = tracks[currentTrackIndex];
-      return t ? { title: t.title, src: t.src } : null;
-    }
-    if (!queueMode && 'title' in props && 'src' in props) {
-      return { title: props.title, src: props.src };
-    }
-    return null;
-  }, [
-    queueMode,
-    tracks,
-    currentTrackIndex,
-    !queueMode && 'title' in props ? props.title : '',
-    !queueMode && 'src' in props ? props.src : '',
-  ]);
 
   const rawTrackTitle = useMemo(() => {
     if (queueMode && tracks?.length) {
@@ -275,173 +193,53 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
 
   useEffect(() => {
     setIsPlayerVisible(true);
-    setLoadError(null);
   }, [audioSrc]);
 
-  const persistCurrentProgress = useCallback(() => {
-    if (!persistProgressKey || !audioRef.current) return;
-    const audio = audioRef.current;
-    const t = audio.currentTime;
-    if (!Number.isFinite(t) || t < 0) return;
-
-    if (queueMode && tracks?.length) {
-      writeStoredProgress(persistProgressKey, {
-        v: 1,
-        qs: queueSigHash,
-        trackIndex: currentTrackIndex,
-        currentTime: t,
-      });
-    } else if (!queueMode && singleSrc) {
-      writeStoredProgress(persistProgressKey, {
-        v: 1,
-        qs: queueSigHash,
-        trackIndex: 0,
-        currentTime: t,
-        singleSrc,
-      });
-    }
-  }, [persistProgressKey, queueSigHash, queueMode, tracks, currentTrackIndex, singleSrc]);
-
-  useEffect(() => {
-    return () => {
-      persistCurrentProgress();
-    };
-  }, [persistCurrentProgress]);
-
-  const goToPrevious = useCallback(() => {
-    if (!queueMode || !tracks?.length) return;
-    setCurrentTrackIndex((i) => Math.max(0, i - 1));
-  }, [queueMode, tracks?.length]);
-
-  const goToNext = useCallback(() => {
-    if (!queueMode || !tracks?.length) return;
-    setCurrentTrackIndex((i) => {
-      if (repeatMode === 'all' && i >= tracks.length - 1) return 0;
-      return Math.min(tracks.length - 1, i + 1);
-    });
-  }, [queueMode, tracks, repeatMode]);
-
-  const handleAudioEnded = useCallback(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    if (queueMode && tracks?.length) {
-      if (repeatMode === 'one') {
-        audio.currentTime = 0;
-        void audio.play();
-        return;
-      }
-      if (repeatMode === 'all') {
-        if (tracks.length === 1) {
-          audio.currentTime = 0;
-          void audio.play();
-          return;
-        }
-        setCurrentTrackIndex((prev) => {
-          if (prev >= tracks.length - 1) return 0;
-          return prev + 1;
-        });
-        return;
-      }
-      setCurrentTrackIndex((prev) => {
-        if (!autoAdvance || prev >= tracks.length - 1) return prev;
-        return prev + 1;
-      });
-      return;
-    }
-
-    if (repeatMode === 'one' || repeatMode === 'all') {
-      audio.currentTime = 0;
-      void audio.play();
-    }
-  }, [queueMode, tracks, autoAdvance, repeatMode]);
-
-  const cycleRepeatMode = useCallback(() => {
-    setRepeatMode((m) => (m === 'off' ? 'all' : m === 'all' ? 'one' : 'off'));
-  }, []);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.volume = volume;
-    }
-  }, [volume]);
-
-  useEffect(() => {
-    if (audioRef.current) {
-      audioRef.current.playbackRate = playbackRate;
-    }
-  }, [playbackRate, audioSrc]);
-
-  const togglePlayPause = useCallback(() => {
-    setLoadError(null);
-    setIsPlaying((was) => {
-      if (was) {
-        audioRef.current?.pause();
-        return false;
-      }
-      void audioRef.current
-        ?.play()
-        .then(() => {
-          setIsPlaying(true);
-        })
-        .catch(() => {
-          setLoadError('Uppspelning kunde inte startas.');
-          setIsPlaying(false);
-        });
-      return false;
-    });
-  }, []);
-
-  useEffect(() => {
-    togglePlayPauseRef.current = togglePlayPause;
-  }, [togglePlayPause]);
-
-  useEffect(() => {
-    if (!('mediaSession' in navigator)) return;
-
-    const ms = navigator.mediaSession;
-
-    ms.metadata = new MediaMetadata({
-      title: displayTitle || 'Ljudspår',
-      artist: 'Hårdrockskören',
-    });
-
-    ms.playbackState = isPlaying ? 'playing' : 'paused';
-
-    ms.setActionHandler('play', () => {
-      void audioRef.current?.play();
-    });
-    ms.setActionHandler('pause', () => {
-      audioRef.current?.pause();
-    });
-
-    if (queueMode) {
-      ms.setActionHandler('previoustrack', () => {
-        goToPrevious();
-      });
-      ms.setActionHandler('nexttrack', () => {
-        goToNext();
-      });
-    } else {
-      ms.setActionHandler('previoustrack', null);
-      ms.setActionHandler('nexttrack', null);
-    }
-
-    return () => {
-      ms.metadata = null;
-      ms.setActionHandler('play', null);
-      ms.setActionHandler('pause', null);
-      ms.setActionHandler('previoustrack', null);
-      ms.setActionHandler('nexttrack', null);
-    };
-  }, [
-    displayTitle,
-    currentTrack?.src,
+  const {
+    audioRef,
     isPlaying,
+    setIsPlaying,
+    duration,
+    currentTime,
+    setCurrentTime,
+    volume,
+    setVolume,
+    playbackRate,
+    setPlaybackRate,
+    loadError,
+    setLoadError,
+    togglePlayPause,
+    togglePlayPauseRef,
+    durationRef,
+    persistCurrentProgress,
+    handleAudioEnded,
+  } = useAudioEngine({
+    audioSrc,
+    displayTitle,
+    mediaSessionTrackSrc: currentTrack?.src,
     queueMode,
-    goToPrevious,
-    goToNext,
-  ]);
+    onNext: goToNext,
+    onPrevious: goToPrevious,
+    onEnded: onAudioEnded,
+    cycleRepeat: cycleRepeatMode,
+    syncPlayback,
+    playbackApiRef: overlayPlaybackApiRef,
+    playbackToggleRef: overlayPlaybackToggleRef,
+    pendingSeekRef,
+    persistProgressKey,
+    queueSigHash,
+    hasQueueTracks: Boolean(tracks?.length),
+    currentTrackIndex,
+    singleSrc,
+  });
+
+  engineRef.current = {
+    audioRef,
+    togglePlayPauseRef,
+    setCurrentTime,
+    setVolume,
+    durationRef,
+  };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const v = Number(e.target.value);
@@ -473,142 +271,6 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
     ['--slider-progress' as string]: `${timelineProgressPct}%`,
   } as CSSProperties;
 
-  const durationRef = useRef(0);
-  useEffect(() => {
-    durationRef.current = duration;
-  }, [duration]);
-
-  const goToNextRef = useRef(goToNext);
-  const goToPreviousRef = useRef(goToPrevious);
-  useEffect(() => {
-    goToNextRef.current = goToNext;
-    goToPreviousRef.current = goToPrevious;
-  }, [goToNext, goToPrevious]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const setAudioData = () => {
-      setDuration(audio.duration);
-      setCurrentTime(audio.currentTime);
-      if (pendingSeekRef.current != null) {
-        const seek = pendingSeekRef.current;
-        pendingSeekRef.current = null;
-        if (Number.isFinite(seek) && seek >= 0 && seek < (audio.duration || Infinity)) {
-          audio.currentTime = seek;
-          setCurrentTime(seek);
-        }
-      }
-    };
-
-    const onTimeUpdate = () => {
-      const now = performance.now();
-      if (now - lastUiTickRef.current < TIMEUPDATE_UI_MS) return;
-      lastUiTickRef.current = now;
-      setCurrentTime(audio.currentTime);
-
-      if (persistProgressKey && now - lastSaveRef.current >= PROGRESS_SAVE_MS) {
-        lastSaveRef.current = now;
-        persistCurrentProgress();
-      }
-    };
-
-    const onError = () => {
-      const code = audio.error?.code;
-      let msg = 'Kunde inte spela upp ljudfilen.';
-      if (code === MediaError.MEDIA_ERR_NETWORK) {
-        msg = 'Nätverksfel vid uppspelning.';
-      } else if (code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) {
-        msg = 'Ljudformatet stöds inte.';
-      }
-      setLoadError(msg);
-      setIsPlaying(false);
-    };
-
-    audio.addEventListener('loadedmetadata', setAudioData);
-    audio.addEventListener('timeupdate', onTimeUpdate);
-    audio.addEventListener('error', onError);
-
-    return () => {
-      audio.removeEventListener('loadedmetadata', setAudioData);
-      audio.removeEventListener('timeupdate', onTimeUpdate);
-      audio.removeEventListener('error', onError);
-    };
-  }, [audioSrc, persistProgressKey, persistCurrentProgress]);
-
-  const syncPlaybackToContextFlag = props.syncPlaybackToContext === true;
-  const overlayIsMinimized =
-    syncPlaybackToContextFlag && overlayPlayback && !overlayPlayback.isOpen;
-
-  useEffect(() => {
-    if (!enableKeyboardShortcuts || overlayIsMinimized) return;
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (isEditableTarget(e.target)) return;
-
-      const audio = audioRef.current;
-      if (!audio && e.key !== ' ') return;
-
-      switch (e.key) {
-        case ' ':
-          e.preventDefault();
-          togglePlayPauseRef.current();
-          break;
-        case 'ArrowLeft':
-          e.preventDefault();
-          if (audio) {
-            audio.currentTime = Math.max(0, audio.currentTime - 5);
-            setCurrentTime(audio.currentTime);
-          }
-          break;
-        case 'ArrowRight':
-          e.preventDefault();
-          if (audio && durationRef.current > 0) {
-            const d = durationRef.current;
-            audio.currentTime = Math.min(d, audio.currentTime + 5);
-            setCurrentTime(audio.currentTime);
-          }
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          setVolume((v) => {
-            const next = Math.min(1, Math.round((v + 0.1) * 100) / 100);
-            if (audioRef.current) audioRef.current.volume = next;
-            return next;
-          });
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          setVolume((v) => {
-            const next = Math.max(0, Math.round((v - 0.1) * 100) / 100);
-            if (audioRef.current) audioRef.current.volume = next;
-            return next;
-          });
-          break;
-        case 'n':
-        case 'N':
-          if (queueMode && tracks && tracks.length > 1) {
-            e.preventDefault();
-            goToNextRef.current();
-          }
-          break;
-        case 'p':
-        case 'P':
-          if (queueMode && tracks && tracks.length > 1) {
-            e.preventDefault();
-            goToPreviousRef.current();
-          }
-          break;
-        default:
-          break;
-      }
-    };
-
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [enableKeyboardShortcuts, overlayIsMinimized, queueMode, tracks]);
-
   const playerClasses = [
     styles.playerContainer,
     isEmbedded ? styles.playerEmbedded : '',
@@ -631,17 +293,6 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
       : repeatMode === 'all'
         ? 'Upprepa alla (på)'
         : 'Upprepa av';
-
-  const syncPlayback = syncPlaybackToContextFlag && Boolean(overlayPlayback);
-
-  useEffect(() => {
-    if (!syncPlayback || !overlayPlaybackToggleRef) return;
-    const ref = overlayPlaybackToggleRef;
-    ref.current = togglePlayPause;
-    return () => {
-      ref.current = null;
-    };
-  }, [syncPlayback, overlayPlaybackToggleRef, togglePlayPause]);
 
   const singleSrcForFileKey = !queueMode && 'src' in props ? props.src : '';
   const activeTrackFileKey = useMemo(() => {
@@ -713,49 +364,6 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
     if (!syncPlayback || !overlaySetActiveMaterialId) return;
     overlaySetActiveMaterialId(currentMaterialId ?? null);
   }, [syncPlayback, overlaySetActiveMaterialId, currentMaterialId]);
-
-  useLayoutEffect(() => {
-    if (!syncPlayback || !overlayPlaybackApiRef || !overlayPlaybackToggleRef) return;
-    const api: MusicPlaybackApi = {
-      togglePlayPause,
-      goPrevious: goToPrevious,
-      goNext: goToNext,
-      cycleRepeat: cycleRepeatMode,
-      seek: (seconds: number) => {
-        const a = audioRef.current;
-        if (!a || !Number.isFinite(seconds)) return;
-        const d = a.duration;
-        const clamped =
-          Number.isFinite(d) && d > 0 ? Math.max(0, Math.min(seconds, d)) : Math.max(0, seconds);
-        a.currentTime = clamped;
-        setCurrentTime(a.currentTime);
-      },
-      setPlaybackRate: (r: number) => {
-        if (!Number.isFinite(r)) return;
-        setPlaybackRate(r);
-        if (audioRef.current) audioRef.current.playbackRate = r;
-      },
-      setVolume: (v: number) => {
-        const nv = Math.max(0, Math.min(1, v));
-        setVolume(nv);
-        if (audioRef.current) audioRef.current.volume = nv;
-      },
-    };
-    overlayPlaybackApiRef.current = api;
-    overlayPlaybackToggleRef.current = togglePlayPause;
-    return () => {
-      overlayPlaybackApiRef.current = null;
-      overlayPlaybackToggleRef.current = null;
-    };
-  }, [
-    syncPlayback,
-    overlayPlaybackApiRef,
-    overlayPlaybackToggleRef,
-    togglePlayPause,
-    goToPrevious,
-    goToNext,
-    cycleRepeatMode,
-  ]);
 
   const handlePlaybackRateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const r = Number(e.target.value);
@@ -882,7 +490,13 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
 
           <div className={styles.sectionTransport}>
             <div className={styles.transportCluster}>
-              <div className={styles.transportSideStart}>
+              <Cluster
+                className={styles.transportSideStart}
+                justify="end"
+                align="center"
+                gap="sm"
+                wrap={false}
+              >
                 {showPrevNext ? (
                   <button
                     type="button"
@@ -894,7 +508,7 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
                     <FaStepBackward size={15} />
                   </button>
                 ) : null}
-              </div>
+              </Cluster>
               <button
                 type="button"
                 onClick={togglePlayPause}
@@ -907,7 +521,12 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
                   <FaPlay size={18} style={{ marginLeft: 2 }} />
                 )}
               </button>
-              <div className={styles.transportSideEnd}>
+              <Cluster
+                className={styles.transportSideEnd}
+                justify="start"
+                align="center"
+                gap="sm"
+              >
                 {showPrevNext ? (
                   <button
                     type="button"
@@ -949,12 +568,18 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
                     ))}
                   </select>
                 </label>
-              </div>
+              </Cluster>
             </div>
           </div>
 
           <div className={styles.sectionMeta}>
-            <div className={styles.sectionVolume}>
+            <Cluster
+              className={styles.sectionVolume}
+              justify="end"
+              align="center"
+              gap="sm"
+              wrap={false}
+            >
               <FaVolumeUp size={16} className={styles.volumeIcon} aria-hidden />
               <input
                 type="range"
@@ -966,7 +591,7 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
                 className={styles.volumeSlider}
                 aria-label="Volym"
               />
-            </div>
+            </Cluster>
           </div>
         </div>
 

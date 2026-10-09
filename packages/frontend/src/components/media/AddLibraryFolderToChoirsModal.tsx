@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { createAuthedClient } from "@/services/apiClient";
+import {
+  addLibraryFolderToChoirs,
+  getLibraryFolderChoirStatus,
+} from "@/services/materialService";
 import { getApiErrorMessage } from "@/utils/apiError";
+import { getAuthHeaders } from "@/utils/authHeaders";
 import {
   Button,
   ButtonVariant,
 } from "@/components/ui/button/Button";
 import { FormGroup } from "@/components/ui/form/FormGroup";
+import { Cluster } from "@/components/ui/layout/Cluster";
 import { Modal } from "@/components/ui/modal/Modal";
 import { StyledSelect, type SelectOption } from "@/components/ui/select/StyledSelect";
 import styles from "./AddLibraryFolderToChoirsModal.module.scss";
@@ -20,24 +27,6 @@ interface Group {
   slug: string;
 }
 
-type ChoirStatusResponse = {
-  linked: { groupSlug: string; repertoireId: string }[];
-  notLinked: string[];
-  linkedCount: number;
-  notLinkedCount: number;
-};
-
-type AddToChoirsResponse = {
-  addedCount: number;
-  skippedCount: number;
-  failedCount: number;
-  results: Array<
-    | { groupSlug: string; status: "added"; repertoireId: string; linkedCount: number }
-    | { groupSlug: string; status: "skipped"; repertoireId: string; reason: string }
-    | { groupSlug: string; status: "failed"; message: string }
-  >;
-};
-
 export type AddLibraryFolderToChoirsModalProps = {
   folderPath: string;
   isOpen: boolean;
@@ -45,20 +34,10 @@ export type AddLibraryFolderToChoirsModalProps = {
   onSuccess: (message: string) => void;
 };
 
-function extractApiErrorMessage(error: unknown, fallback: string): string {
+function choirRequestError(error: unknown, fallback: string): string {
+  const message = getApiErrorMessage(error, fallback);
   if (axios.isAxiosError(error)) {
-    const data = error.response?.data;
-    if (data && typeof data === "object" && "message" in data) {
-      const msg = (data as { message: unknown }).message;
-      if (typeof msg === "string" && msg.trim()) {
-        const trimmed = msg.trim();
-        if (/^not found$/i.test(trimmed)) {
-          return "API-endpointen saknas ännu. Deploya material-api (och admin-authorizer) till samma stage.";
-        }
-        return trimmed;
-      }
-    }
-    if (error.response?.status === 404) {
+    if (error.response?.status === 404 || /^not found$/i.test(message)) {
       return "API-endpointen saknas ännu. Deploya material-api (och admin-authorizer) till samma stage.";
     }
     if (error.response?.status === 403) {
@@ -68,13 +47,7 @@ function extractApiErrorMessage(error: unknown, fallback: string): string {
       return "Kunde inte nå servern. Saknas ny endpoint? Deploya material-api, eller kontrollera nätverk/API-URL.";
     }
   }
-  return getApiErrorMessage(error, fallback);
-}
-
-function authHeaders(): { Authorization: string } | null {
-  const token = localStorage.getItem("authToken");
-  if (!token) return null;
-  return { Authorization: `Bearer ${token}` };
+  return message;
 }
 
 export function AddLibraryFolderToChoirsModal({
@@ -120,8 +93,7 @@ export function AddLibraryFolderToChoirsModal({
   );
 
   const loadStatus = useCallback(async () => {
-    const headers = authHeaders();
-    if (!headers) {
+    if (!getAuthHeaders().Authorization) {
       setError("Saknar auth-token. Logga in igen.");
       return;
     }
@@ -140,9 +112,7 @@ export function AddLibraryFolderToChoirsModal({
     setAudienceMode("all_remaining");
 
     try {
-      const groupsRes = await axios.get<Group[]>(`${ADMIN_API_URL}/groups`, {
-        headers,
-      });
+      const groupsRes = await createAuthedClient(ADMIN_API_URL).get<Group[]>("/groups");
       const nextGroups = (groupsRes.data || [])
         .map((g) => ({
           name: (g.name || g.slug || "").trim(),
@@ -160,24 +130,18 @@ export function AddLibraryFolderToChoirsModal({
         return;
       }
 
-      const statusRes = await axios.post<ChoirStatusResponse>(
-        `${MATERIAL_API_URL}/materials/library-folder-choir-status`,
-        {
-          folderPath,
-          groupSlugs: nextGroups.map((g) => g.slug),
-        },
-        { headers }
+      const status = await getLibraryFolderChoirStatus(
+        folderPath,
+        nextGroups.map((g) => g.slug)
       );
 
-      const linked = new Set(
-        (statusRes.data.linked || []).map((l) => l.groupSlug)
-      );
+      const linked = new Set((status.linked || []).map((l) => l.groupSlug));
       setLinkedSlugs(linked);
-      setNotLinkedSlugs(statusRes.data.notLinked || []);
+      setNotLinkedSlugs(status.notLinked || []);
     } catch (err) {
       console.error("Failed to load choir folder status:", err);
       setError(
-        extractApiErrorMessage(err, "Kunde inte hämta vilka körer som har mappen.")
+        choirRequestError(err, "Kunde inte hämta vilka körer som har mappen.")
       );
       setLinkedSlugs(new Set());
       setNotLinkedSlugs([]);
@@ -203,8 +167,7 @@ export function AddLibraryFolderToChoirsModal({
   };
 
   const handleSubmit = async () => {
-    const headers = authHeaders();
-    if (!headers) {
+    if (!getAuthHeaders().Authorization) {
       setError("Saknar auth-token. Logga in igen.");
       return;
     }
@@ -223,13 +186,10 @@ export function AddLibraryFolderToChoirsModal({
     setError(null);
 
     try {
-      const res = await axios.post<AddToChoirsResponse>(
-        `${MATERIAL_API_URL}/materials/add-to-choirs`,
-        { folderPath, groupSlugs: targets },
-        { headers }
+      const { addedCount, skippedCount, failedCount, results } = await addLibraryFolderToChoirs(
+        folderPath,
+        targets
       );
-
-      const { addedCount, skippedCount, failedCount, results } = res.data;
       const failedNames = (results || [])
         .filter((r) => r.status === "failed")
         .map((r) => groupsBySlug.get(r.groupSlug) ?? r.groupSlug);
@@ -271,7 +231,7 @@ export function AddLibraryFolderToChoirsModal({
     } catch (err) {
       console.error("Failed to add folder to choirs:", err);
       setError(
-        extractApiErrorMessage(err, "Kunde inte lägga till mappen i körerna.")
+        choirRequestError(err, "Kunde inte lägga till mappen i körerna.")
       );
     } finally {
       setIsSubmitting(false);
@@ -393,7 +353,7 @@ export function AddLibraryFolderToChoirsModal({
           </p>
         ) : null}
 
-        <div className={styles.actions}>
+        <Cluster justify="end" gap="sm" className={styles.actions}>
           <Button
             type="button"
             variant={ButtonVariant.Ghost}
@@ -411,7 +371,7 @@ export function AddLibraryFolderToChoirsModal({
           >
             Lägg till
           </Button>
-        </div>
+        </Cluster>
       </div>
     </Modal>
   );

@@ -2,29 +2,23 @@
 
 .page {
   padding: var(--spacing-md) var(--spacing-lg);
-  @include column($gap-size: var(--spacing-xl));
 }
 
 .header {
-  @include column($gap-size: var(--spacing-xs));
-  
   h2 {
     margin: 0;
     font-size: var(--fs-h2);
   }
-  
+
   p {
     margin: 0;
     color: var(--color-text-secondary);
     font-size: var(--fs-base);
-    max-width: 60ch; // Förbättrar läsbarhet
+    max-width: 60ch;
   }
 }
 
 .legend {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-md);
   padding: var(--spacing-md);
   background-color: rgba(255, 255, 255, 0.03);
   border-radius: var(--radius-md);
@@ -34,7 +28,7 @@
 .legendIcon {
   flex-shrink: 0;
   color: var(--color-text);
-  margin-top: 3px; 
+  margin-top: var(--spacing-2xs);
 }
 
 .legendText {
@@ -42,10 +36,12 @@
   font-size: var(--fs-sm);
   color: var(--color-text-secondary);
   line-height: 1.6;
+  flex: 1;
+  min-width: 0;
 
   .inlineIcon, .inlinePlayIcon {
     vertical-align: middle;
-    margin: 0 0.1em -0.2em 0.2em;
+    margin: 0 var(--spacing-2xs) calc(var(--spacing-2xs) * -1) var(--spacing-2xs);
   }
   .inlinePlayIcon { color: var(--color-icon-play); }
   .inlineIcon { color: var(--color-icon-view); }

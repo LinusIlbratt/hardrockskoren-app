@@ -32,9 +32,15 @@ const getApiClient = (token?: string) => {
 /**
  * Hämtar en lista över alla events för en specifik kör.
  */
-export const listEvents = async (groupSlug: string, token?: string): Promise<Event[]> => {
+export const listEvents = async (
+  groupSlug: string,
+  token?: string,
+  options?: { signal?: AbortSignal }
+): Promise<Event[]> => {
   const apiClient = getApiClient(token);
-  const response = await apiClient.get(`/groups/${groupSlug}/events`);
+  const response = await apiClient.get(`/groups/${groupSlug}/events`, {
+    signal: options?.signal,
+  });
   return response.data;
 };
 

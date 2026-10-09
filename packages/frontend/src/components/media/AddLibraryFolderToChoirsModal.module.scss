@@ -99,11 +99,7 @@
 }
 
 .actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
   margin-top: var(--spacing-md);
-  flex-wrap: wrap;
   padding-top: var(--spacing-sm);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }

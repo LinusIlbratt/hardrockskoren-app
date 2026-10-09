@@ -45,7 +45,7 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
     &:focus-visible {
       outline: 2px solid var(--color-primary);
       outline-offset: 3px;
-      border-radius: 2px;
+      border-radius: var(--radius-xs);
     }
   }
 }
@@ -113,13 +113,6 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   letter-spacing: 0.02em;
 }
 
-.headerActions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--spacing-sm);
-}
-
 .addFilesHint {
   margin: var(--spacing-md) 0 0;
   padding-top: var(--spacing-md);
@@ -174,8 +167,8 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
 .uploadProgressTrack {
   position: relative;
-  height: 8px;
-  border-radius: 99rem;
+  height: var(--spacing-sm);
+  border-radius: var(--radius-round);
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: hidden;
@@ -294,10 +287,6 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
 // --- Markering / bulk ---
 .selectionBar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--spacing-md);
   padding: var(--spacing-md) var(--spacing-sm);
   margin-bottom: var(--spacing-xs);
   border-radius: var(--radius-md);
@@ -333,7 +322,8 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   background: rgba(254, 22, 10, 0.08);
   color: #ffb4b0;
   border-radius: var(--radius-md);
-  padding: 0.5rem 1rem;
+  min-height: var(--control-height);
+  padding: 0 var(--spacing-md);
   font-size: var(--fs-sm);
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -367,7 +357,7 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   height: 1.1rem;
   accent-color: var(--color-primary);
   cursor: pointer;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
 
   &:focus-visible {
     outline: 2px solid var(--color-primary);
@@ -377,7 +367,7 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
 // --- Lista ---
 .itemList {
-  @include column(6px);
+  gap: var(--spacing-sm);
 }
 
 .itemRow {
@@ -478,9 +468,7 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .itemActions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   margin-left: auto;
   flex-shrink: 0;
 }
@@ -490,8 +478,8 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @mixin toolbarButton {
-  min-height: 2.25rem;
-  padding: 0.45rem 0.85rem;
+  min-height: var(--control-height);
+  padding: 0 var(--spacing-md);
   font-size: var(--fs-xs);
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -534,9 +522,9 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: transparent;
   color: var(--color-text-secondary);
-  min-width: 2.5rem;
-  padding-left: 0.65rem;
-  padding-right: 0.65rem;
+  min-width: var(--control-height);
+  padding-left: var(--spacing-sm);
+  padding-right: var(--spacing-sm);
 
   &:hover:not(:disabled) {
     background: rgba(254, 22, 10, 0.12);
@@ -548,7 +536,6 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 .addToChoirsButton {
   @include toolbarButton;
   font-size: var(--fs-sm);
-  padding: 0.5rem 1rem;
   border: 1px solid var(--color-primary);
   background: linear-gradient(180deg, #ff2a1f 0%, var(--color-primary) 100%);
   color: #fff;
@@ -564,7 +551,6 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 .syncButton {
   @include toolbarButton;
   font-size: var(--fs-sm);
-  padding: 0.5rem 1rem;
   border: 1px solid rgba(255, 255, 255, 0.18);
   background: rgba(255, 255, 255, 0.05);
   color: var(--color-text);
@@ -580,9 +566,8 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   @include toolbarButton;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--spacing-sm);
   font-size: var(--fs-sm);
-  padding: 0.5rem 1rem;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.06);
   color: var(--color-text);
@@ -697,16 +682,12 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
   &::-webkit-scrollbar-thumb {
     background: rgba(254, 22, 10, 0.25);
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
   }
 }
 
 .syncModalActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
   margin-top: var(--spacing-md);
-  flex-wrap: wrap;
   padding-top: var(--spacing-sm);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }

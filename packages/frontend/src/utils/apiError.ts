@@ -22,3 +22,9 @@ export function getApiErrorMessage(error: unknown, fallback = 'Något gick fel.'
   }
   return fallback;
 }
+
+/** Avbrutna anrop (datumbyte, unmount) ska inte visas som fel. */
+export function isAbortError(error: unknown): boolean {
+  if (axios.isCancel(error)) return true;
+  return error instanceof DOMException && error.name === 'AbortError';
+}

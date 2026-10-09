@@ -1,7 +1,4 @@
 import axios from 'axios';
-import type { Material } from '@/types';
-import type { MediaPlayerTrack } from '@/components/media/MediaPlayer';
-import { formatDisplayTitle, isPlayableAudioFile } from '@/utils/media';
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL as string;
 const BATCH_SIZE = 50;
@@ -32,7 +29,8 @@ function cacheSet(fileKey: string, url: string, expiresInSeconds: number): void 
  */
 export async function getMediaDownloadUrls(
   fileKeys: string[],
-  authHeaders: Record<string, string>
+  authHeaders: Record<string, string>,
+  signal?: AbortSignal,
 ): Promise<Record<string, string>> {
   const normalized = [...new Set(fileKeys.map((k) => k.trim()).filter(Boolean))];
   if (normalized.length === 0) return {};
@@ -54,7 +52,7 @@ export async function getMediaDownloadUrls(
     const response = await axios.post<{ urls: Record<string, string>; expiresIn: number }>(
       `${API_BASE_URL}/materials/download-urls`,
       { fileKeys: chunk },
-      { headers: { ...authHeaders } }
+      { headers: { ...authHeaders }, signal },
     );
     const { urls, expiresIn } = response.data;
     for (const [fileKey, url] of Object.entries(urls ?? {})) {
@@ -77,34 +75,4 @@ export async function getMediaDownloadUrl(
     throw new Error('Could not resolve media URL.');
   }
   return url;
-}
-
-export async function buildMediaPlayerTracks(
-  materials: Material[],
-  authHeaders: Record<string, string>
-): Promise<MediaPlayerTrack[]> {
-  const playable = materials.filter((m) => m.fileKey && isPlayableAudioFile(m.fileKey));
-  if (playable.length === 0) return [];
-
-  const fileKeys = playable.map((m) => m.fileKey.trim());
-  const urls = await getMediaDownloadUrls(fileKeys, authHeaders);
-
-  return playable
-    .filter((m) => urls[m.fileKey.trim()])
-    .map((m) => ({
-      src: urls[m.fileKey.trim()],
-      title:
-        formatDisplayTitle(m.title || m.fileKey?.split('/').pop() || '') || 'Okänd',
-      materialId: m.materialId,
-    }));
-}
-
-/** Stable queue identity — use materialIds, not presigned src URLs. */
-export function hashTrackQueueKey(tracks: MediaPlayerTrack[]): string {
-  const sig = tracks.map((t) => t.materialId ?? t.src).join('\0');
-  let h = 0;
-  for (let i = 0; i < sig.length; i += 1) {
-    h = (Math.imul(31, h) + sig.charCodeAt(i)) | 0;
-  }
-  return `m${(h >>> 0).toString(36)}`;
 }

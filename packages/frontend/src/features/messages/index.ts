@@ -6,3 +6,5 @@ export {
 } from "./useMessageComposer";
 export { useMessageHistory } from "./useMessageHistory";
 export { useMessageTargetGroups } from "./useMessageTargetGroups";
+export { useMemberFeed } from "./hooks/useMemberFeed";
+export type { ComposerMode } from "./hooks/useMemberFeed";

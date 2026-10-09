@@ -1,12 +1,9 @@
-@use '@/styles/variables' as *;
-
 /* --- Generella sid- och kortstilar --- */
 .page {
-  @include column(var(--spacing-xl));
+  width: 100%;
 }
 
 .header {
-  @include column(var(--spacing-xs));
   h1 { margin: 0; }
   p { 
     margin: 0; 
@@ -21,10 +18,6 @@
 }
 
 .cardHeader {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--spacing-md);
   padding: var(--spacing-md) var(--spacing-lg);
   border-bottom: 1px solid var(--color-border);
 
@@ -39,7 +32,6 @@
 
 .cardBody {
   padding: var(--spacing-lg);
-  @include column(var(--spacing-lg));
 
   p {
     margin: 0;
@@ -49,13 +41,11 @@
 
 // Progress bar stilar
 .progressWrapper {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
+  width: 100%;
 }
 .progressBarContainer {
   flex-grow: 1;
-  height: 8px;
+  height: var(--spacing-sm);
   background-color: var(--color-background);
   border-radius: var(--radius-round);
   overflow: hidden;
@@ -93,16 +83,12 @@
 
 /* --- NYA, FÖRBÄTTRADE STILAR FÖR MATERIAL-LISTAN --- */
 
-.materialList {
-  @include column(var(--spacing-sm)); // Mindre gap mellan varje mapp-rad
+.materialHit {
+  cursor: pointer;
 }
 
 // Varje rad i listan
 .materialItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-md);
   padding: var(--spacing-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
@@ -117,9 +103,6 @@
 }
 
 .itemInfo {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
   min-width: 0;
   flex-grow: 1;
 }
@@ -130,7 +113,6 @@
 }
 
 .itemText {
-  @include column(2px);
   min-width: 0;
 }
 

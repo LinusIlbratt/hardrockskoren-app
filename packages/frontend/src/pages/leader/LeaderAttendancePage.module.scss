@@ -1,27 +1,21 @@
 @use '@/styles/variables' as *;
 
-// Grundläggande layout för hela sidan
 .page {
   padding: var(--spacing-sm);
 }
 
-// Sidhuvudet med titel och knappar
 .header {
-  display: flex;
-  flex-direction: column; // Mobil-först: stapla vertikalt
-  align-items: flex-start;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
-
   h2 {
     margin: 0;
   }
 }
 
-// En behållare för knappar
-.buttonGroup {
-  display: flex;
-  gap: var(--spacing-sm);
+.page .header {
+  @media (min-width: #{$tabletBreakpoint}) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
 }
 
 // Behållare för listan med närvarokort
@@ -64,9 +58,6 @@
 // Behållare för den genererade koden
 .attendanceCodeDisplay {
   text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
 }
 
 .codeBox {
@@ -78,11 +69,6 @@
   font-weight: bold;
   letter-spacing: 4px;
   color: var(--color-primary);
-}
-
-.infoText {
-  font-size: var(--fs-sm);
-  color: var(--color-text-secondary);
 }
 
 // Lista för närvarande medlemmar i modalen
@@ -110,9 +96,6 @@
 }
 
 .modalFooter {
-  display: flex;
-  justify-content: flex-end; // Placera knappen till höger
-  margin-top: var(--spacing-lg);
   padding-top: var(--spacing-lg);
   border-top: 1px solid var(--color-border);
 }
@@ -122,8 +105,4 @@
     padding: var(--spacing-xl);
   }
 
-  .header {
-  @include row;
-    justify-content: space-between; // Placera titel och knappar på samma rad
-  }
 }

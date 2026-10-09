@@ -9,12 +9,15 @@ import {
   type ReactNode,
 } from 'react';
 import type { Material } from '@/types';
+import type { MusicPlaybackApi } from '@/features/music-player';
 import type {
   MusicResumePayload,
   OpenMusicOptions,
   OpenMusicPlaybackIntent,
   RepertoirePlaybackIntent,
 } from '@/utils/recentPlayback';
+
+export type { MusicPlaybackApi };
 
 export type {
   MusicResumePayload,
@@ -42,18 +45,6 @@ export interface ActiveTrackMeta {
 export interface PlaybackQueueMeta {
   currentIndex: number;
   total: number;
-}
-
-export interface MusicPlaybackApi {
-  togglePlayPause: () => void;
-  /** Maps to MediaPlayer goToPrevious */
-  goPrevious: () => void;
-  /** Maps to MediaPlayer goToNext */
-  goNext: () => void;
-  cycleRepeat: () => void;
-  seek: (seconds: number) => void;
-  setPlaybackRate: (rate: number) => void;
-  setVolume: (v: number) => void;
 }
 
 export interface PlaybackProgressSnapshot {

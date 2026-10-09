@@ -1,11 +1,10 @@
 @use '@/styles/variables' as *;
 
 .page {
-  @include column($gap-size: var(--spacing-xl));
+  width: 100%;
 }
 
 .header {
-  @include column($gap-size: var(--spacing-md));
   width: 100%;
 
   h2 {
@@ -14,11 +13,8 @@
 }
 
 .legend {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-md);
   padding: var(--spacing-md);
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: color-mix(in srgb, var(--color-text) 3%, transparent);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
 }
@@ -26,7 +22,7 @@
 .legendIcon {
   flex-shrink: 0;
   color: var(--color-text);
-  margin-top: 3px; // Finjustering för vertikal linjering
+  margin-top: var(--spacing-2xs);
 }
 
 .legendText {
@@ -34,11 +30,13 @@
   font-size: var(--fs-sm);
   color: var(--color-text-secondary);
   line-height: 1.6;
+  flex: 1;
+  min-width: 0;
 
   .inlineIcon {
-    color: var(--color-text); // Använder din befintliga färg för ögat
+    color: var(--color-text);
     vertical-align: middle;
-    margin: 0 0.1em -0.2em 0.2em; // Finjustering för att linjera med texten
+    margin: 0 var(--spacing-2xs) calc(var(--spacing-2xs) * -1) var(--spacing-2xs);
   }
 }
 
@@ -47,7 +45,6 @@
 }
 
 .eventList {
-  @include column($gap-size: var(--spacing-sm));
   list-style: none;
   padding: 0;
   margin: 0;
@@ -74,12 +71,12 @@
 
 .tabBadge {
   display: inline-block;
-  width: 8px;
-  height: 8px;
-  margin-left: 8px;
-  background-color: var(--color-primary); // Använder din temafärg
-  border-radius: 50%;
-  animation: pulseScale 1.5s infinite; // Samma pulsering som ögat-ikonen
+  width: var(--spacing-sm);
+  height: var(--spacing-sm);
+  margin-left: var(--spacing-sm);
+  background-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  animation: pulseScale 1.5s infinite;
 }
 
 // Stil för helt nya event
@@ -100,12 +97,12 @@
 
 // NYTT: Stil för det röda, pulserande ögat
 .pulsingRedEye {
-  color: var(--color-text), !important; 
+  color: var(--color-accent);
   animation: pulseScale 1.5s infinite;
 }
 
 .nextUpcomingEvent {
-  box-shadow: 0 0 8px -2px var(--color-text);
+  box-shadow: 0 0 var(--spacing-sm) calc(var(--spacing-2xs) * -1) var(--color-text);
 }
 
 .pastEvent {
@@ -118,31 +115,15 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  background-color: rgba(255, 255, 255, 0.05);
+  width: calc(var(--spacing-2xl) + var(--spacing-xs));
+  height: calc(var(--spacing-2xl) + var(--spacing-xs));
+  background-color: color-mix(in srgb, var(--color-text) 5%, transparent);
   border-radius: var(--radius-md);
   color: var(--color-text);
   border: 1px solid var(--color-border);
-
-  .month {
-    font-size: var(--fs-xs);
-    text-transform: uppercase;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    transition: color 0.3s ease;
-  }
-  .day {
-    font-size: var(--fs-lg);
-    font-weight: 700;
-    line-height: 1.1;
-    color: var(--color-text-strong);
-    transition: color 0.3s ease;
-  }
 }
 
 .itemDetails {
-  @include column($gap-size: 0.25rem);
   flex-grow: 1;
   min-width: 0;
 }
