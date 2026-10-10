@@ -99,7 +99,7 @@ export function CreatePlaylistModal({
   onSubmit,
 }: CreatePlaylistModalProps) {
   return (
-    <Modal formMode isOpen={isOpen} onClose={onClose} title="Ny spellista">
+    <Modal formMode tone="library" isOpen={isOpen} onClose={onClose} title="Ny spellista">
       <PlaylistTitleModalBody
         isBusy={isBusy}
         value={value}
@@ -138,7 +138,7 @@ export function RenamePlaylistModal({
   const isDirty = value.trim() !== initialTitle.trim();
 
   return (
-    <Modal formMode isOpen={isOpen} onClose={onClose} title="Byt namn på spellista">
+    <Modal formMode tone="library" isOpen={isOpen} onClose={onClose} title="Byt namn på spellista">
       <PlaylistTitleModalBody
         isBusy={isBusy}
         value={value}

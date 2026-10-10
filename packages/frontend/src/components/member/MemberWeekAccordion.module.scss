@@ -2,9 +2,10 @@
 @use '@/styles/variables' as *;
 
 .accordion {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background-color: var(--color-dark-gray);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  background-color: var(--color-luxury-surface);
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -16,15 +17,26 @@
   padding: var(--spacing-md) var(--spacing-lg);
   background: none;
   border: none;
-  color: var(--color-text-primary);
+  color: var(--color-text-luxury);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: var(--fs-h4);
   font-weight: 600;
   text-align: left;
   cursor: pointer;
   transition: background-color 0.2s ease;
 
+  svg {
+    flex-shrink: 0;
+    color: var(--color-text-luxury-muted);
+    transition: color 0.2s ease;
+  }
+
   &:hover {
-    background-color: var(--color-background-hover);
+    background-color: rgba(255, 255, 255, 0.03);
+
+    svg {
+      color: var(--color-text-luxury);
+    }
   }
 }
 
@@ -33,17 +45,19 @@
   align-items: baseline;
   gap: var(--spacing-sm);
   flex-wrap: wrap;
+  color: var(--color-text-luxury);
+  font-weight: 600;
 }
 
 .year {
   font-size: var(--fs-sm);
-  color: var(--color-text-secondary);
+  color: var(--color-text-luxury-muted);
   font-weight: 400;
 }
 
 .content {
   padding: var(--spacing-lg);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--color-border-subtle);
   @include column(var(--spacing-lg));
 }
 
@@ -54,8 +68,11 @@
 
 .categoryTitle {
   margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: var(--fs-h4);
-  border-bottom: 1px solid var(--color-border);
+  font-weight: 600;
+  color: var(--color-text-luxury);
+  border-bottom: 1px solid var(--color-border-subtle);
   padding-bottom: var(--spacing-sm);
 }
 
@@ -69,7 +86,24 @@
   justify-content: space-between;
   gap: var(--spacing-md);
   padding: var(--spacing-sm);
-  border-radius: var(--radius-md);
+  background: transparent;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  transition: background-color 0.2s ease;
+
+  &:last-child {
+    border-bottom: none;
+  }
+
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+
+    .materialTitle,
+    .fileIcon,
+    .actionButton {
+      color: var(--color-text-luxury);
+    }
+  }
 }
 
 .itemInfo {
@@ -81,14 +115,18 @@
 }
 
 .fileIcon {
-  color: var(--color-text-secondary);
+  color: var(--color-text-luxury-muted);
   flex-shrink: 0;
+  transition: color 0.2s ease;
 }
 
 .materialTitle {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--color-text-luxury);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color 0.2s ease;
 }
 
 .actions {
@@ -99,20 +137,22 @@
 .actionButton {
   background: none;
   border: none;
-  color: var(--color-text-secondary);
+  color: var(--color-text-luxury-muted);
   cursor: pointer;
   padding: var(--spacing-sm);
   display: flex;
   transition: color 0.2s ease;
 
   &:hover {
-    color: var(--color-primary);
+    color: var(--color-text-luxury);
   }
 }
 
-.playButton {
-  color: var(--color-primary);
+.playButton,
+.viewButton {
+  color: var(--color-text-luxury-muted);
+
   &:hover {
-    color: var(--color-primary-hover);
+    color: var(--color-text-luxury);
   }
 }

@@ -22,12 +22,15 @@
 
 .title {
   margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: var(--fs-h2);
+  color: var(--color-text-luxury);
 }
 
 .subtitle {
   margin: 0;
-  color: var(--color-text-secondary);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--color-text-luxury-muted);
   font-size: var(--fs-sm);
 }
 
@@ -46,11 +49,12 @@
 
 .sectionTitle {
   margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: var(--fs-xs);
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-text-secondary);
+  color: var(--color-text-luxury-muted);
 }
 
 .list {
@@ -63,7 +67,7 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-2xs);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .row {
@@ -81,7 +85,7 @@
   text-align: left;
 
   &:hover {
-    background-color: var(--color-background-hover-strong);
+    background-color: rgba(255, 255, 255, 0.03);
   }
 }
 
@@ -106,8 +110,10 @@
 
 .rowTitle {
   margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: var(--fs-md);
   line-height: 1.3;
+  color: var(--color-text-luxury);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -117,14 +123,15 @@
   width: var(--spacing-sm);
   height: var(--spacing-sm);
   border-radius: var(--radius-full);
-  background-color: var(--color-accent);
+  background-color: var(--color-luxury-accent-solid);
   flex-shrink: 0;
 }
 
 .rowMeta {
   flex-shrink: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: var(--fs-xs);
-  color: var(--color-text-secondary);
+  color: var(--color-text-luxury-muted);
 }
 
 .sender {
@@ -132,6 +139,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--color-text-luxury-muted);
 }
 
 .actions {
@@ -178,12 +187,27 @@
 
 .modalMeta {
   margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: var(--fs-xs);
-  color: var(--color-text-secondary);
+  color: var(--color-text-luxury-muted);
 }
 
 .modalContent {
   margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   white-space: pre-wrap;
-  line-height: 1.55;
+  line-height: 1.6;
+  color: var(--color-text-luxury);
+
+  a {
+    color: var(--color-luxury-accent-solid);
+    text-decoration: underline;
+    text-decoration-color: var(--color-luxury-accent-border);
+    text-underline-offset: 3px;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: var(--color-text-luxury);
+    }
+  }
 }

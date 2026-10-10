@@ -961,7 +961,10 @@ export function RepertoireMusicPlayerPanel({
           ) : (
             <>
               <div className={styles.hero}>
-                <div className={styles.heroArt} aria-hidden>
+                <div
+                  className={`${styles.heroArt} ${isFavoritesView ? styles.heroArtFavorites : ''}`}
+                  aria-hidden
+                >
                   {isFavoritesView ? (
                     <Heart size={34} className={styles.heroArtIcon} />
                   ) : selectedPlaylistTitle ? (
