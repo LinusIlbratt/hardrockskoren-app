@@ -7,9 +7,11 @@
 }
 
 .title {
-  margin-bottom: var(--spacing-md);
+  margin: 0 0 var(--spacing-xl);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: var(--fs-h2);
   font-weight: 700;
+  line-height: 1.2;
   color: #f5ebd7;
 }
 

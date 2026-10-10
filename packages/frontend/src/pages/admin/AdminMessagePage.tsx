@@ -191,30 +191,34 @@ export const AdminMessagePage = () => {
       >
         <fieldset className={styles.audienceFieldset}>
           <legend className={styles.audienceLegend}>Mottagare</legend>
-          <Cluster gap="md" role="radiogroup" aria-label="Mottagare">
-            <label className={styles.radioLabel}>
+          <div className={styles.recipientRadioGroup} role="radiogroup" aria-label="Välj mottagare">
+            <label className={styles.radioOption}>
               <input
                 type="radio"
-                name="audience-mode"
+                name="recipientType"
                 value="all"
                 checked={editing ? editingIsAll : audienceMode === "all"}
                 onChange={() => setAudienceMode("all")}
                 disabled={isSubmitting || isSavingEdit || Boolean(editing)}
+                className={styles.radioInput}
               />
-              Alla körer
+              <span className={styles.radioCircle} />
+              <span className={styles.radioLabel}>Alla körer</span>
             </label>
-            <label className={styles.radioLabel}>
+            <label className={styles.radioOption}>
               <input
                 type="radio"
-                name="audience-mode"
+                name="recipientType"
                 value="selected"
                 checked={editing ? !editingIsAll : audienceMode === "selected"}
                 onChange={() => setAudienceMode("selected")}
                 disabled={isSubmitting || isSavingEdit || Boolean(editing)}
+                className={styles.radioInput}
               />
-              Valda körer
+              <span className={styles.radioCircle} />
+              <span className={styles.radioLabel}>Valda körer</span>
             </label>
-          </Cluster>
+          </div>
         </fieldset>
 
         {editing && !editingIsAll && (
