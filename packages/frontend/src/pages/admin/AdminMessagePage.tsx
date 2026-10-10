@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { FiEdit } from "react-icons/fi";
 import { IoTrashOutline } from "react-icons/io5";
 import {
@@ -53,7 +54,11 @@ function formatTargetsShort(
   return `${names[0]} +${names.length - 1}`;
 }
 
+type MessageTab = "compose" | "sent";
+
 export const AdminMessagePage = () => {
+  const [tab, setTab] = useState<MessageTab>("compose");
+
   const {
     sentMessages,
     sentHasMore,
@@ -100,17 +105,90 @@ export const AdminMessagePage = () => {
     statusMessage,
     handleSubmit,
     selectedModeDisabled,
-  } = useMessageComposer({ fetchSent });
+  } = useMessageComposer({
+    fetchSent,
+    onCreated: () => setTab("sent"),
+  });
+
+  const editingIsAll = Boolean(
+    editing && (editing.scope === "all" || editing.targets.includes("ALL"))
+  );
+
+  const handleSaveEdit = async () => {
+    const saved = await submitEdit();
+    if (saved) setTab("sent");
+  };
+
+  const handleEdit = (message: SentMessage) => {
+    openEdit(message);
+    setTab("compose");
+  };
 
   return (
     <div className={styles.page}>
       <h1 className={styles.title}>Meddelande</h1>
-      <p className={styles.subtitle}>
-        Skriv ett meddelande till alla körer eller till en eller flera specifika
-        körer. Medlemmar ser det under fliken Aktuellt.
-      </p>
 
-      <form className={styles.form} onSubmit={handleSubmit} noValidate>
+      <div className={styles.segment} role="tablist" aria-label="Meddelandevy">
+        <button
+          type="button"
+          role="tab"
+          id="message-tab-compose"
+          aria-selected={tab === "compose"}
+          aria-controls="message-panel-compose"
+          className={styles.segmentButton}
+          onClick={() => setTab("compose")}
+        >
+          Skriv nytt
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="message-tab-sent"
+          aria-selected={tab === "sent"}
+          aria-controls="message-panel-sent"
+          className={styles.segmentButton}
+          onClick={() => setTab("sent")}
+        >
+          Skickade ({sentMessages.length})
+        </button>
+      </div>
+
+      {statusMessage && (
+        <p
+          className={
+            statusMessage.type === "success" ? styles.success : styles.error
+          }
+          role="status"
+        >
+          {statusMessage.message}
+        </p>
+      )}
+
+      {tab === "compose" && (
+      <div
+        role="tabpanel"
+        id="message-panel-compose"
+        aria-labelledby="message-tab-compose"
+        className={styles.panel}
+      >
+      {editing && (
+        <p className={styles.subtitle}>
+          Du redigerar ett skickat meddelande. Mottagarna behålls.
+        </p>
+      )}
+
+      <form
+        className={styles.form}
+        noValidate
+        onSubmit={(event) => {
+          if (editing) {
+            event.preventDefault();
+            void handleSaveEdit();
+            return;
+          }
+          void handleSubmit(event);
+        }}
+      >
         <fieldset className={styles.audienceFieldset}>
           <legend className={styles.audienceLegend}>Mottagare</legend>
           <Cluster gap="md" role="radiogroup" aria-label="Mottagare">
@@ -119,9 +197,9 @@ export const AdminMessagePage = () => {
                 type="radio"
                 name="audience-mode"
                 value="all"
-                checked={audienceMode === "all"}
+                checked={editing ? editingIsAll : audienceMode === "all"}
                 onChange={() => setAudienceMode("all")}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isSavingEdit || Boolean(editing)}
               />
               Alla körer
             </label>
@@ -130,16 +208,22 @@ export const AdminMessagePage = () => {
                 type="radio"
                 name="audience-mode"
                 value="selected"
-                checked={audienceMode === "selected"}
+                checked={editing ? !editingIsAll : audienceMode === "selected"}
                 onChange={() => setAudienceMode("selected")}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isSavingEdit || Boolean(editing)}
               />
               Valda körer
             </label>
           </Cluster>
         </fieldset>
 
-        {audienceMode === "selected" && (
+        {editing && !editingIsAll && (
+          <p className={styles.hint}>
+            Till: {formatTargetsLabel(editing, groupsBySlug)}
+          </p>
+        )}
+
+        {!editing && audienceMode === "selected" && (
           <FormGroup
             label="Körer"
             htmlFor="message-targets"
@@ -173,59 +257,79 @@ export const AdminMessagePage = () => {
         <FormGroup label="Rubrik" htmlFor="message-title">
           <Input
             id="message-title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            maxLength={120}
+            value={editing ? draftTitle : title}
+            onChange={(e) =>
+              editing ? setDraftTitle(e.target.value) : setTitle(e.target.value)
+            }
+            maxLength={TITLE_MAX}
             required
             placeholder="Kort rubrik"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isSavingEdit}
           />
         </FormGroup>
 
         <FormGroup label="Meddelande" htmlFor="message-body">
           <Textarea
             id="message-body"
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            maxLength={4000}
+            value={editing ? draftBody : body}
+            onChange={(e) =>
+              editing ? setDraftBody(e.target.value) : setBody(e.target.value)
+            }
+            maxLength={BODY_MAX}
             required
             rows={8}
             placeholder="Skriv ditt meddelande…"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isSavingEdit}
           />
         </FormGroup>
 
-        <Button
-          type="submit"
-          variant={ButtonVariant.Primary}
-          disabled={selectedModeDisabled}
-        >
-          {isSubmitting ? "Skickar…" : "Skicka meddelande"}
-        </Button>
-      </form>
+        {formError && <p className={styles.error}>{formError}</p>}
 
-      {statusMessage && (
-        <p
-          className={
-            statusMessage.type === "success" ? styles.success : styles.error
-          }
-          role="status"
-        >
-          {statusMessage.message}
-        </p>
+        {editing ? (
+          <div className={styles.editActions}>
+            <Button
+              type="submit"
+              className={styles.submitButton}
+              variant={ButtonVariant.Primary}
+              isLoading={isSavingEdit}
+            >
+              {isSavingEdit ? "Sparar…" : "Spara ändringar"}
+            </Button>
+            <Button
+              type="button"
+              variant={ButtonVariant.Ghost}
+              disabled={isSavingEdit}
+              onClick={closeEdit}
+            >
+              Avbryt
+            </Button>
+          </div>
+        ) : (
+          <Button
+            type="submit"
+            className={styles.submitButton}
+            variant={ButtonVariant.Primary}
+            disabled={selectedModeDisabled}
+          >
+            {isSubmitting ? "Skickar…" : "Skicka meddelande"}
+          </Button>
+        )}
+      </form>
+      </div>
       )}
 
-      <section className={styles.history} aria-labelledby="sent-history-heading">
-        <header className={styles.historySticky}>
-          <h2 id="sent-history-heading" className={styles.historyTitle}>
-            Skickade meddelanden
-          </h2>
-          <p className={styles.historySubtitle}>
-            {sentMessages.length > 0
-              ? `${sentMessages.length} utskick · tryck för att läsa`
-              : "Klicka för att läsa hela meddelandet"}
-          </p>
-        </header>
+      {tab === "sent" && (
+      <section
+        className={styles.history}
+        role="tabpanel"
+        id="message-panel-sent"
+        aria-labelledby="message-tab-sent"
+      >
+        <p className={styles.historySubtitle}>
+          {sentMessages.length > 0
+            ? "Tryck på ett meddelande för att läsa det."
+            : "Här visas meddelanden du har skickat."}
+        </p>
 
         {isLoadingSent && <p className={styles.muted}>Laddar historik…</p>}
         {sentError && <p className={styles.error}>{sentError}</p>}
@@ -263,7 +367,7 @@ export const AdminMessagePage = () => {
                   className={styles.iconButton}
                   title="Redigera meddelande"
                   aria-label="Redigera meddelande"
-                  onClick={() => openEdit(msg)}
+                  onClick={() => handleEdit(msg)}
                 >
                   <FiEdit size={16} aria-hidden="true" />
                 </button>
@@ -298,6 +402,7 @@ export const AdminMessagePage = () => {
           </Cluster>
         )}
       </section>
+      )}
 
       <Modal
         isOpen={!!selectedSent}
@@ -318,66 +423,6 @@ export const AdminMessagePage = () => {
             </p>
           </div>
         )}
-      </Modal>
-
-      <Modal
-        isOpen={!!editing}
-        onClose={closeEdit}
-        title="Redigera meddelande"
-        formMode
-        footer={
-          <Cluster justify="end" gap="sm">
-            <Button
-              type="button"
-              variant={ButtonVariant.Ghost}
-              size={ButtonSize.Small}
-              disabled={isSavingEdit}
-              onClick={closeEdit}
-            >
-              Avbryt
-            </Button>
-            <Button
-              type="button"
-              variant={ButtonVariant.Primary}
-              size={ButtonSize.Small}
-              isLoading={isSavingEdit}
-              onClick={() => {
-                void submitEdit();
-              }}
-            >
-              Spara
-            </Button>
-          </Cluster>
-        }
-      >
-        <form
-          className={styles.editForm}
-          onSubmit={(event) => {
-            event.preventDefault();
-            void submitEdit();
-          }}
-        >
-          <FormGroup label="Rubrik" htmlFor="edit-message-title">
-            <Input
-              id="edit-message-title"
-              value={draftTitle}
-              maxLength={TITLE_MAX}
-              disabled={isSavingEdit}
-              onChange={(event) => setDraftTitle(event.target.value)}
-            />
-          </FormGroup>
-          <FormGroup label="Meddelande" htmlFor="edit-message-body">
-            <Textarea
-              id="edit-message-body"
-              value={draftBody}
-              maxLength={BODY_MAX}
-              disabled={isSavingEdit}
-              rows={8}
-              onChange={(event) => setDraftBody(event.target.value)}
-            />
-          </FormGroup>
-          {formError && <p className={styles.error}>{formError}</p>}
-        </form>
       </Modal>
 
       <Modal

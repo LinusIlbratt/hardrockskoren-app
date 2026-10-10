@@ -76,7 +76,7 @@ export const LoginPage = () => {
               </div>
 
               <div className={styles.buttonGroup}>
-                <Button type="submit" radius={ButtonRadius.Small} size={ButtonSize.Login} isLoading={isLoading} fullWidth>
+                <Button type="submit" radius={ButtonRadius.Medium} size={ButtonSize.Login} isLoading={isLoading} fullWidth>
                   Rock'n Roll
                 </Button>
               </div>

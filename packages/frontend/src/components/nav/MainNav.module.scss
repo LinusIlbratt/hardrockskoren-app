@@ -50,15 +50,22 @@
   display: flex;
   align-items: center;
   gap: 1.5rem;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .userDetails {
   text-align: right;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   p { margin: 0; line-height: 1.2; }
-  .email { font-size: var(--fs-base); }
+  .email {
+    font-size: var(--fs-base);
+    font-weight: 500;
+    color: #f5ebd7;
+  }
   .role {
     font-size: 0.75rem;
-    color: var(--color-text-secondary);
+    font-weight: 400;
+    color: rgba(245, 235, 215, 0.5);
     padding-top: var(--spacing-xs);
   }
 }
@@ -81,15 +88,16 @@
   top: 0;
   right: 0;
   height: 100vh;
-  width: 280px;
-  background-color: var(--color-panel-darker);
+  height: 100dvh;
+  width: min(300px, 88vw);
+  background: #121214;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
   z-index: 10001;
   transform: translateX(100%);
   transition: transform 0.3s ease-in-out;
   display: flex;
   flex-direction: column;
-  padding: var(--spacing-xl);
-  padding-top: 100px;
+  padding: 88px 0 20px;
 }
 
 .navOpen {
@@ -103,7 +111,7 @@
   right: var(--spacing-md);
   background: none;
   border: none;
-  color: var(--color-text);
+  color: rgba(245, 235, 215, 0.75);
   cursor: pointer;
   font-size: var(--fs-h2);
 }
@@ -111,23 +119,100 @@
 .navLinksContainer {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: 2px;
+  overflow-y: auto;
+}
+
+.sectionLabel {
+  margin: 18px 0 6px;
+  padding: 0 20px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(245, 235, 215, 0.4);
+
+  &:first-child {
+    margin-top: 0;
+  }
+}
+
+.drawerLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 20px;
+  border-left: 3px solid transparent;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 500;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  text-align: left;
+  text-decoration: none;
+  text-transform: none;
+  color: rgba(245, 235, 215, 0.75);
+  transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.04);
+    text-decoration: none;
+  }
+}
+
+.drawerActive {
+  background: rgba(220, 38, 38, 0.12);
+  border-left-color: #b91c1c;
+  color: #f5ebd7;
+  font-weight: 600;
+
+  &:hover {
+    color: #f5ebd7;
+    background: rgba(220, 38, 38, 0.12);
+  }
 }
 
 .navLink {
-  width: 100%;
+  width: auto;
   text-align: center;
-  color: var(--color-text);
+  color: rgba(245, 235, 215, 0.75);
   text-decoration: none;
-  font-size: var(--fs-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  text-transform: uppercase;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 500;
+  font-size: 0.92rem;
+  line-height: 1.2;
+  padding: 8px var(--spacing-md) calc(8px - 2px);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  white-space: nowrap;
+  text-transform: none;
+  transition: color 0.2s ease;
 
   &:hover {
-    color: var(--color-background);
-    background-color: var(--color-accent-hover);
+    color: #f5ebd7;
+    background: transparent;
     text-decoration: none;
+  }
+
+  &.active {
+    background: transparent;
+    color: #f5ebd7;
+    font-weight: 600;
+    border-bottom: 2px solid #b81424;
+    padding-bottom: calc(8px - 2px);
+
+    &:hover {
+      color: #f5ebd7;
+      background: transparent;
+    }
   }
 }
 
@@ -159,20 +244,58 @@
 }
 
 .mobileOnlyUserInfo {
-  padding-top: var(--spacing-lg);
-  border-top: 1px solid var(--color-border);
+  padding: 16px 20px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   width: 100%;
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
 
   .userInfo {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
     gap: var(--spacing-md);
+    width: 100%;
   }
   .userDetails {
     text-align: left;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+    .email {
+      color: #f5ebd7;
+      font-weight: 600;
+    }
+
+    .role {
+      color: rgba(245, 235, 215, 0.5);
+    }
   }
+}
+
+.userInfo .logoutButton {
+  height: auto;
+  min-height: 0;
+  padding: 6px 12px;
+  font-family: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 500;
+  font-size: 0.85rem;
+  line-height: 1.2;
+  color: #f5ebd7;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  box-shadow: none;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: #f5ebd7;
+  }
+}
+
+.navFooter .logoutButton {
+  width: 100%;
 }
 
 .headerLink {
@@ -244,24 +367,4 @@
     gap: var(--spacing-lg);
   }
   
-  .navLink {
-    font-size: var(--fs-sm);
-    color: var(--color-text-secondary);
-    width: auto;
-
-    &:hover {
-      color: var(--color-text);
-      background-color: var(--color-background-hover);
-    }
-  }
-
-  .active {
-    color: var(--color-background);
-    background-color: var(--color-primary);
-
-    &:hover {
-      color: var(--color-background);
-      background-color: var(--color-primary);
-    }
-  }
 }

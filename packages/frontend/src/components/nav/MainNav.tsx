@@ -9,6 +9,7 @@ import styles from './MainNav.module.scss';
 import { IoClose } from 'react-icons/io5';
 import { RxHamburgerMenu } from "react-icons/rx";
 import { FiGlobe } from 'react-icons/fi';
+import { Calendar, FileText, Mail, Mic, Music } from 'lucide-react';
 import logoImage from '@/assets/images/hrk-logo.webp';
 import { useAttendance } from '@/hooks/useAttendance';
 import { translateRole } from '@/utils/translations';
@@ -78,6 +79,7 @@ interface MainNavProps {
             variant={ButtonVariant.Ghost}
             size={ButtonSize.Logout}
             radius={ButtonRadius.Small}
+            className={styles.logoutButton}
           >
             Logga ut
           </Button>
@@ -91,15 +93,18 @@ interface MainNavProps {
     const getHeaderLinkClassName = ({ isActive }: { isActive: boolean }) =>
       isActive ? `${styles.headerLink} ${styles.active}` : styles.headerLink;
 
+    const getDrawerLinkClassName = ({ isActive }: { isActive: boolean }) =>
+      isActive ? `${styles.drawerLink} ${styles.drawerActive}` : styles.drawerLink;
+
     const MainNavLinks = (
       <>
         {user?.role === 'admin' && (
           <>
-            <NavLink to="/admin/groups" className={getNavLinkClassName} onClick={handleLinkClick}>Körer</NavLink>
+            <NavLink to="/admin/groups" className={getNavLinkClassName} onClick={handleLinkClick} data-tour="admin-groups-link">Körer</NavLink>
             <NavLink to="/admin/messages" className={getNavLinkClassName} onClick={handleLinkClick}>Meddelande</NavLink>
-            <NavLink to="/admin/shared-concerts" className={getNavLinkClassName} onClick={handleLinkClick}>Gemensamma Gig</NavLink>
-            <NavLink to="/admin/globalMaterial" className={getNavLinkClassName} onClick={handleLinkClick}>Material</NavLink>
-            <NavLink to="/admin/practice" end className={getNavLinkClassName} onClick={handleLinkClick}>Sjungupp!</NavLink>
+            <NavLink to="/admin/shared-concerts" className={getNavLinkClassName} onClick={handleLinkClick}>Gemensamma gig</NavLink>
+            <NavLink to="/admin/globalMaterial" className={getNavLinkClassName} onClick={handleLinkClick} data-tour="admin-global-material-link">Material</NavLink>
+            <NavLink to="/admin/practice" end className={getNavLinkClassName} onClick={handleLinkClick} data-tour="admin-practice-link">Sjungupp!</NavLink>
           </>
         )}
         {(user?.role === 'leader' || user?.role === 'user') && user.groups && user.groups.length > 0 && (
@@ -136,6 +141,58 @@ interface MainNavProps {
       </>
     );
   
+    const DrawerNavLinks = (
+      <>
+        {(user?.role === 'admin' || ((user?.role === 'leader' || user?.role === 'user') && (user.groups?.length ?? 0) > 0)) && (
+          <p className={styles.sectionLabel}>Körer</p>
+        )}
+        {user?.role === 'admin' && (
+          <NavLink to="/admin/groups" className={getDrawerLinkClassName} onClick={handleLinkClick} data-tour="admin-groups-link">
+            <Music size={18} aria-hidden="true" />
+            <span>Välj kör</span>
+          </NavLink>
+        )}
+        {(user?.role === 'leader' || user?.role === 'user') && user.groups && user.groups.length > 0 && (
+          user.groups.length === 1 ? (
+            <NavLink
+              to={user.role === 'leader' ? `/leader/choir/${user.groups[0]}` : `/user/me/${user.groups[0]}`}
+              className={getDrawerLinkClassName}
+              onClick={handleLinkClick}
+            >
+              <Music size={18} aria-hidden="true" />
+              <span>Min kör</span>
+            </NavLink>
+          ) : (
+            <NavLink to="/select-group" className={getDrawerLinkClassName} onClick={handleLinkClick}>
+              <Music size={18} aria-hidden="true" />
+              <span>Mina körer</span>
+            </NavLink>
+          )
+        )}
+        {user?.role === 'admin' && (
+          <>
+            <p className={styles.sectionLabel}>Administration</p>
+            <NavLink to="/admin/messages" className={getDrawerLinkClassName} onClick={handleLinkClick}>
+              <Mail size={18} aria-hidden="true" />
+              <span>Meddelande</span>
+            </NavLink>
+            <NavLink to="/admin/shared-concerts" className={getDrawerLinkClassName} onClick={handleLinkClick}>
+              <Calendar size={18} aria-hidden="true" />
+              <span>Gemensamma gig</span>
+            </NavLink>
+            <NavLink to="/admin/globalMaterial" className={getDrawerLinkClassName} onClick={handleLinkClick} data-tour="admin-global-material-link">
+              <FileText size={18} aria-hidden="true" />
+              <span>Material</span>
+            </NavLink>
+            <NavLink to="/admin/practice" end className={getDrawerLinkClassName} onClick={handleLinkClick} data-tour="admin-practice-link">
+              <Mic size={18} aria-hidden="true" />
+              <span>Sjungupp!</span>
+            </NavLink>
+          </>
+        )}
+      </>
+    );
+
     const AllChoirsLink = (
       <NavLink to="/choirs" end className={getHeaderLinkClassName} title="Visa alla körer" onClick={handleLinkClick}>
         <FiGlobe size={22} />
@@ -211,14 +268,13 @@ interface MainNavProps {
               </button>
               
               <div className={styles.navLinksContainer}>
-                {MainNavLinks}
+                {DrawerNavLinks}
               </div>
 
               <div className={styles.navFooter}>
                 <div className={styles.mobileAttendanceButton} data-tour="user-attendance-button">
                   {AttendanceButton}
                 </div>
-                {AllChoirsLink}
                 <div className={styles.mobileOnlyUserInfo}>
                   <UserInfoAndLogout />
                 </div>

@@ -1,42 +1,116 @@
-/* --- Generella sid- och kortstilar --- */
+@use '@/styles/variables' as *;
+
 .page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  width: 100%;
+  max-width: 800px;
+}
+
+.title {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: var(--fs-h2);
+  font-weight: 700;
+  color: #f5ebd7;
+}
+
+.segment {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--spacing-lg);
+  width: 100%;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.segmentButton {
+  margin: 0 0 -1px;
+  padding: 0 0 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(245, 235, 215, 0.45);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+
+  &[aria-selected='true'] {
+    color: #f5ebd7;
+    border-bottom-color: #b91c1c;
+    font-weight: 600;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(185, 28, 28, 0.7);
+    outline-offset: 2px;
+  }
+}
+
+.uploadPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  width: 100%;
+  padding: 16px;
+  background: rgba(18, 18, 20, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+}
+
+.uploadIntro {
+  margin: 0;
+  max-width: 60ch;
+  color: rgba(245, 235, 215, 0.55);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.45;
+}
+
+.uploadPanel .pickFolderButton {
+  width: 100%;
+  min-height: 50px;
+  height: 50px;
+  padding: 0 20px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #d81b1b 0%, #a30e0e 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    0 4px 14px rgba(0, 0, 0, 0.6),
+    0 12px 30px -4px rgba(216, 27, 27, 0.5);
+  color: #f5ebd7;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+
+  &:hover:not(:disabled) {
+    background: linear-gradient(180deg, #e62222 0%, #b51212 100%);
+    color: #f5ebd7;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.985);
+  }
+}
+
+.library {
   width: 100%;
 }
 
-.header {
-  h1 { margin: 0; }
-  p { 
-    margin: 0; 
-    color: var(--color-text-secondary);
-  }
+.folderList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.card {
-  background-color: var(--color-dark-gray);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-}
-
-.cardHeader {
-  padding: var(--spacing-md) var(--spacing-lg);
-  border-bottom: 1px solid var(--color-border);
-
-  h3 {
-    margin: 0;
-    font-size: var(--fs-h3);
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-md);
-  }
-}
-
-.cardBody {
-  padding: var(--spacing-lg);
-
-  p {
-    margin: 0;
-    color: var(--color-text-secondary);
-  }
+.muted {
+  margin: 0;
+  color: rgba(245, 235, 215, 0.55);
 }
 
 // Progress bar stilar
@@ -83,78 +157,106 @@
 
 /* --- NYA, FÖRBÄTTRADE STILAR FÖR MATERIAL-LISTAN --- */
 
-.materialHit {
-  cursor: pointer;
+.materialItem {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
 }
 
-// Varje rad i listan
-.materialItem {
-  padding: var(--spacing-md);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+.folderOpen {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
   cursor: pointer;
 
-  &:hover {
-    background-color: var(--color-background-hover);
-    border-color: var(--color-border-hover);
-    transform: translateY(-2px);
+  &:focus-visible {
+    outline: 2px solid rgba(185, 28, 28, 0.7);
+    outline-offset: 2px;
   }
 }
 
-.itemInfo {
-  min-width: 0;
-  flex-grow: 1;
-}
-
 .itemIcon {
-  color: var(--color-icon-view);
   flex-shrink: 0;
+  margin-top: 1px;
+  color: rgba(245, 235, 215, 0.6);
 }
 
 .itemText {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
 }
 
 .itemTitle {
-  font-size: var(--fs-lg);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 1rem;
   font-weight: 600;
-  color: var(--color-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.35;
+  color: #f5ebd7;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .itemSubtitle {
-  font-size: var(--fs-sm);
-  color: var(--color-text-secondary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  margin-top: 3px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  color: rgba(245, 235, 215, 0.5);
 }
 
 .deleteButton {
-  background: none;
-  border: none;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-round);
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  min-height: 42px;
+  margin-left: 12px;
+  padding: 0;
   flex-shrink: 0;
-  transition: all 0.2s ease;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(245, 235, 215, 0.55);
+  cursor: pointer;
 
-  &:hover {
-    color: var(--color-accent);
-    background-color: var(--color-background-hover-accent);
+  &:hover:not(:disabled) {
+    color: #f5ebd7;
+    background: rgba(220, 38, 38, 0.2);
   }
 
-  // Om knappen är inaktiv
+  &:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+
   &:disabled {
     cursor: not-allowed;
     opacity: 0.5;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(185, 28, 28, 0.7);
+    outline-offset: 2px;
+  }
+}
+
+@media (min-width: #{$tabletBreakpoint}) {
+  .uploadPanel .pickFolderButton {
+    width: auto;
+    min-width: 240px;
   }
 }
 

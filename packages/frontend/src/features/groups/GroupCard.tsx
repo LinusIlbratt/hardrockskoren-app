@@ -1,16 +1,18 @@
 import { NavLink } from "react-router-dom";
+import { ChevronRight } from "lucide-react";
 import styles from './GroupCard.module.scss';
 import type { Group } from '@/types';
 
 export type { Group };
 
-// ÄNDRING: Uppdaterat interface för att ta emot nya, valfria props
 interface GroupCardProps {
   group: Group;
-  onDelete?: (group: Group) => void; // Gjort valfri
-  isLink?: boolean;                  // Ny prop för att agera som länk
-  destination?: string;              // Ny prop för länkens destination
-  'data-tour'?: string;              // Prop för tour-attribut
+  onDelete?: (group: Group) => void;
+  isLink?: boolean;
+  destination?: string;
+  /** Kompakt körväljare: hela ytan öppnar körens översikt. */
+  variant?: 'poster' | 'selector';
+  'data-tour'?: string;
 };
 
 // En enkel papperskorgs-ikon
@@ -22,7 +24,22 @@ const TrashIcon = () => (
 );
 
 
-export const GroupCard = ({ group, onDelete, isLink = false, destination = '#', 'data-tour': dataTour }: GroupCardProps) => {
+export const GroupCard = ({ group, onDelete, isLink = false, destination = '#', variant = 'poster', 'data-tour': dataTour }: GroupCardProps) => {
+  if (variant === 'selector') {
+    const subtitle = group.description?.trim() || 'Öppna översikt';
+    const href = destination !== '#' ? destination : `/admin/groups/${group.slug}`;
+
+    return (
+      <NavLink to={href} className={styles.selector} data-tour={dataTour}>
+        <span className={styles.selectorText}>
+          <span className={styles.selectorName}>{group.name}</span>
+          <span className={styles.selectorMeta}>{subtitle}</span>
+        </span>
+        <ChevronRight className={styles.selectorIcon} size={20} aria-hidden="true" />
+      </NavLink>
+    );
+  }
+
   // En fallback-bild om ingen imageUrl finns
   const placeholderImage = `https://placehold.co/600x400/121212/D2B48C?text=${group.name}`;
 

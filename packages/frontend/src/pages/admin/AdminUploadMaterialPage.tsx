@@ -2,8 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FileInput } from '@/components/ui/input/FileInput';
 import { Cluster } from '@/components/ui/layout/Cluster';
-import { Stack } from '@/components/ui/layout/Stack';
-import { FiFolder, FiTrash2, FiUploadCloud } from 'react-icons/fi';
+import { FiFolder, FiTrash2 } from 'react-icons/fi';
 import { materialActionError } from '@/features/materials/materialActionError';
 import { isAbortError } from '@/utils/apiError';
 import {
@@ -88,40 +87,43 @@ interface MaterialFolderItemProps {
 }
 
 const MaterialFolderItem: React.FC<MaterialFolderItemProps> = ({ node, onDelete, isDeleting }) => {
-  const navigate = useNavigate(); // ADDED: Hook för navigering
+  const navigate = useNavigate();
   const fileCount = useMemo(() => countFilesInFolder(node), [node]);
 
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDeleteClick = () => {
     const idsToDelete = getAllMaterialIdsInFolder(node);
     onDelete(node.name, idsToDelete);
   };
 
-  // CHANGED: Implementerad navigering
   const handleItemClick = () => {
-    // encodeURIComponent säkerställer att specialtecken som mellanslag eller '/' fungerar i URL:en
     navigate(`/admin/globalMaterial/${encodeURIComponent(node.name)}`);
   };
 
   return (
-    <div className={styles.materialHit} onClick={handleItemClick}>
-      <Cluster gap="md" justify="between" align="center" wrap={false} className={styles.materialItem}>
-        <Cluster gap="md" wrap={false} className={styles.itemInfo}>
-          <FiFolder size={24} className={styles.itemIcon} />
-          <Stack gap="2xs" className={styles.itemText}>
-            <span className={styles.itemTitle}>{node.name}</span>
-            <span className={styles.itemSubtitle}>{fileCount} {fileCount === 1 ? 'fil' : 'filer'}</span>
-          </Stack>
-        </Cluster>
-        <button
-          className={styles.deleteButton}
-          onClick={handleDeleteClick}
-          title={`Radera mappen ${node.name}`}
-          disabled={isDeleting}
-        >
-          <FiTrash2 size={20} />
-        </button>
-      </Cluster>
+    <div className={styles.materialItem}>
+      <button
+        type="button"
+        className={styles.folderOpen}
+        onClick={handleItemClick}
+      >
+        <FiFolder size={22} className={styles.itemIcon} aria-hidden="true" />
+        <span className={styles.itemText}>
+          <span className={styles.itemTitle}>{node.name}</span>
+          <span className={styles.itemSubtitle}>
+            {fileCount} {fileCount === 1 ? 'fil' : 'filer'}
+          </span>
+        </span>
+      </button>
+      <button
+        type="button"
+        className={styles.deleteButton}
+        onClick={handleDeleteClick}
+        aria-label={`Radera mappen ${node.name}`}
+        title={`Radera mappen ${node.name}`}
+        disabled={isDeleting}
+      >
+        <FiTrash2 size={18} aria-hidden="true" />
+      </button>
     </div>
   );
 };
@@ -134,6 +136,7 @@ export const AdminUploadMaterialPage = () => {
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<FileList | null>(null);
   const [deletingFolder, setDeletingFolder] = useState<string | null>(null);
+  const [tab, setTab] = useState<'library' | 'upload'>('library');
 
   const fetchMaterials = useCallback(async (signal?: AbortSignal) => {
     setIsLoading(true);
@@ -196,6 +199,8 @@ export const AdminUploadMaterialPage = () => {
         );
       }
       setStatusMessage({ type: 'success', message: `${files.length} filer har laddats upp!` });
+      setSelectedFolder(null);
+      setTab('library');
       await fetchMaterials();
     } catch (error) {
       const detail = materialActionError(error, 'Något gick fel vid uppladdningen.');
@@ -243,27 +248,53 @@ export const AdminUploadMaterialPage = () => {
     [fileTree]);
 
   return (
-    <Stack gap="xl" className={styles.page}>
-      <Stack gap="xs" className={styles.header}>
-        <h1>Mediabibliotek</h1>
-        <p>Här hanterar du globalt material</p>
-      </Stack>
+    <div className={styles.page}>
+      <h1 className={styles.title}>Material</h1>
+
+      <div className={styles.segment} role="tablist" aria-label="Material">
+        <button
+          type="button"
+          role="tab"
+          id="material-tab-library"
+          aria-selected={tab === 'library'}
+          aria-controls="material-panel-library"
+          className={styles.segmentButton}
+          onClick={() => setTab('library')}
+        >
+          Befintligt material
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="material-tab-upload"
+          aria-selected={tab === 'upload'}
+          aria-controls="material-panel-upload"
+          className={styles.segmentButton}
+          onClick={() => setTab('upload')}
+        >
+          Ladda upp mapp
+        </button>
+      </div>
 
       {statusMessage && (
-        <div className={`${styles.statusMessage} ${styles[statusMessage.type]}`}>
+        <div className={`${styles.statusMessage} ${styles[statusMessage.type]}`} role="status">
           {statusMessage.message}
         </div>
       )}
 
-      <section className={styles.card}>
-        <Cluster gap="md" align="center" className={styles.cardHeader}>
-          <FiUploadCloud size={20} />
-          <h3>Ladda upp en hel mapp</h3>
-        </Cluster>
-        <Stack gap="lg" className={styles.cardBody}>
-          <p>Välj en mapp från din dator. Alla filer och undermappar kommer att laddas upp och organiseras automatiskt.</p>
+      {tab === 'upload' && (
+        <section
+          id="material-panel-upload"
+          role="tabpanel"
+          aria-labelledby="material-tab-upload"
+          className={styles.uploadPanel}
+        >
+          <p className={styles.uploadIntro}>
+            Välj en mapp från din dator. Alla filer och undermappar kommer att laddas upp och organiseras automatiskt.
+          </p>
           <FileInput
             label="Välj mapp"
+            className={styles.pickFolderButton}
             onFileSelect={handleFolderUpload}
             isFolderPicker={true}
             disabled={isUploading || !!deletingFolder}
@@ -275,17 +306,19 @@ export const AdminUploadMaterialPage = () => {
               <span className={styles.progressText}>{uploadProgress}%</span>
             </Cluster>
           )}
-        </Stack>
-      </section>
+        </section>
+      )}
 
-      <section className={styles.card}>
-        <Cluster gap="md" align="center" className={styles.cardHeader}>
-          <h3>Befintligt material</h3>
-        </Cluster>
-        <Stack gap="lg" className={styles.cardBody}>
-          {isLoading ? <p>Laddar material...</p> :
+      {tab === 'library' && (
+        <section
+          id="material-panel-library"
+          role="tabpanel"
+          aria-labelledby="material-tab-library"
+          className={styles.library}
+        >
+          {isLoading ? <p className={styles.muted}>Laddar material...</p> :
             topLevelFolders.length > 0 ? (
-              <Stack gap="sm">
+              <div className={styles.folderList}>
                 {topLevelFolders.sort((a, b) => a.name.localeCompare(b.name)).map(node => (
                   <MaterialFolderItem
                     key={node.name}
@@ -294,11 +327,11 @@ export const AdminUploadMaterialPage = () => {
                     isDeleting={deletingFolder === node.name}
                   />
                 ))}
-              </Stack>
-            ) : <p>Inget material har laddats upp ännu.</p>
+              </div>
+            ) : <p className={styles.muted}>Inget material har laddats upp ännu.</p>
           }
-        </Stack>
-      </section>
-    </Stack>
+        </section>
+      )}
+    </div>
   );
 };

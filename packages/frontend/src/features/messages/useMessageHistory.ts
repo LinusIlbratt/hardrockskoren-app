@@ -88,12 +88,12 @@ export function useMessageHistory() {
     setFormError(null);
   };
 
-  const submitEdit = async () => {
-    if (!editing) return;
+  const submitEdit = async (): Promise<boolean> => {
+    if (!editing) return false;
     const validationError = validateDraft(draftTitle, draftBody);
     if (validationError) {
       setFormError(validationError);
-      return;
+      return false;
     }
 
     const draft = { title: draftTitle.trim(), body: draftBody.trim() };
@@ -116,11 +116,13 @@ export function useMessageHistory() {
           : current
       );
       setEditing(null);
+      return true;
     } catch (error) {
       console.error("Failed to update sent message", error);
       setFormError(
         extractMessageError(error, "Kunde inte spara meddelandet.")
       );
+      return false;
     } finally {
       setIsSavingEdit(false);
     }

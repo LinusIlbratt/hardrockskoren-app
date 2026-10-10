@@ -24,103 +24,61 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   @include column(var(--spacing-lg));
 }
 
-// --- Brödsmulor ---
-.breadcrumbs {
-  font-size: var(--fs-sm);
+.backLink {
+  align-self: flex-start;
+  color: #f5ebd7;
+  opacity: 0.7;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.95rem;
   font-weight: 500;
-  letter-spacing: 0.03em;
-  color: var(--color-text-secondary);
-  padding-bottom: var(--spacing-sm);
-  border-bottom: 1px solid $shell-border;
+  text-decoration: none;
 
-  a {
-    color: var(--color-text-secondary);
-    text-decoration: none;
-    transition: color 0.2s $ease-out;
+  &:hover {
+    opacity: 1;
+  }
 
-    &:hover {
-      color: var(--color-primary);
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--color-primary);
-      outline-offset: 3px;
-      border-radius: var(--radius-xs);
-    }
+  &:focus-visible {
+    outline: 2px solid rgba(185, 28, 28, 0.7);
+    outline-offset: 3px;
+    border-radius: 4px;
   }
 }
 
-.breadcrumbSep {
-  padding-left: var(--spacing-xs);
-}
-
-.breadcrumbSlash {
-  display: inline;
-  margin: 0 0.35rem;
-  opacity: 0.35;
-  user-select: none;
-}
-
-// --- Header-kort ---
 .headerCard {
-  background: linear-gradient(165deg, rgba(26, 26, 26, 0.98) 0%, rgba(20, 20, 20, 0.99) 100%);
-  border: 1px solid $shell-border;
-  border-radius: var(--radius-lg);
-  box-shadow: $shell-glow, $shadow-float;
-  padding: var(--spacing-lg);
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(254, 22, 10, 0.25), transparent);
-    pointer-events: none;
-  }
-}
-
-.pageHeaderRow {
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--spacing-lg);
-  flex-wrap: wrap;
-}
-
-.pageHeaderLead {
-  min-width: 0;
-  flex: 1 1 12rem;
+  gap: 12px;
 }
 
 .pageTitle {
-  font-family: var(--font-heading);
-  font-size: clamp(1.35rem, 2.5vw, var(--fs-h2));
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.2;
   margin: 0;
-  color: var(--color-text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #f5ebd7;
+  word-break: break-word;
 }
 
-.pageSubtitle {
-  margin: var(--spacing-sm) 0 0;
-  font-size: var(--fs-sm);
-  color: var(--color-text-secondary);
-  letter-spacing: 0.02em;
+.choirActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 .addFilesHint {
-  margin: var(--spacing-md) 0 0;
-  padding-top: var(--spacing-md);
-  border-top: 1px solid $shell-border;
-  font-size: var(--fs-xs);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: rgba(160, 160, 160, 0.85);
+  margin: 2px 0 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: right;
+  color: #f5ebd7;
+  opacity: 0.5;
 }
 
 // --- Uppladdningsprogress (lägg till filer) ---
@@ -285,63 +243,77 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 
-// --- Markering / bulk ---
-.selectionBar {
-  padding: var(--spacing-md) var(--spacing-sm);
-  margin-bottom: var(--spacing-xs);
-  border-radius: var(--radius-md);
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+.listToolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.toolbarLead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  min-width: 0;
+  padding-top: 6px;
+}
+
+.fileCount {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.85rem;
+  color: rgba(245, 235, 215, 0.5);
+}
+
+.toolbarAdd {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
 }
 
 .selectAllLabel {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  font-size: var(--fs-sm);
+  gap: 6px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.8rem;
   font-weight: 500;
-  color: var(--color-text-secondary);
+  color: rgba(245, 235, 215, 0.7);
   cursor: pointer;
   user-select: none;
-  transition: color 0.2s $ease-out;
-
-  &:hover {
-    color: var(--color-text);
-  }
 
   input {
-    width: 1.05rem;
-    height: 1.05rem;
-    accent-color: var(--color-primary);
+    width: 16px;
+    height: 16px;
+    margin: 0;
+    accent-color: #b81424;
     cursor: pointer;
   }
 }
 
 .removeSelectedButton {
-  border: 1px solid rgba(254, 22, 10, 0.45);
-  background: rgba(254, 22, 10, 0.08);
-  color: #ffb4b0;
-  border-radius: var(--radius-md);
-  min-height: var(--control-height);
-  padding: 0 var(--spacing-md);
-  font-size: var(--fs-sm);
+  display: inline-flex;
+  align-items: center;
+  margin: 0 0 10px;
+  border: 1px solid rgba(185, 28, 28, 0.45);
+  background: rgba(185, 28, 28, 0.16);
+  color: rgba(245, 235, 215, 0.9);
+  border-radius: 8px;
+  min-height: 36px;
+  padding: 6px 12px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.8rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
   cursor: pointer;
-  transition: background 0.2s $ease-out, border-color 0.2s $ease-out, transform 0.15s $ease-out;
 
   &:hover:not(:disabled) {
-    background: rgba(254, 22, 10, 0.16);
-    border-color: var(--color-primary);
-    color: var(--color-text);
-  }
-
-  &:active:not(:disabled) {
-    transform: scale(0.98);
+    background: rgba(185, 28, 28, 0.28);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid rgba(185, 28, 28, 0.7);
     outline-offset: 2px;
   }
 
@@ -367,19 +339,19 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
 // --- Lista ---
 .itemList {
-  gap: var(--spacing-sm);
+  gap: 10px;
 }
 
 .itemRow {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-sm);
-  border-radius: var(--radius-md);
-  transition: background 0.22s $ease-out, border-color 0.22s $ease-out, box-shadow 0.22s $ease-out;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   color: inherit;
   text-decoration: none;
-  border: 1px solid transparent;
   position: relative;
 }
 
@@ -406,14 +378,12 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
 .itemRowFile {
   cursor: default;
-  background: rgba(255, 255, 255, 0.02);
-
-  @media (min-width: #{$tabletBreakpoint}) {
-    &:hover {
-      background: rgba(255, 255, 255, 0.045);
-      border-color: rgba(255, 255, 255, 0.06);
-    }
-  }
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 12px;
+  border-radius: 8px;
 }
 
 .itemRowSelected {
@@ -426,17 +396,22 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 
+.fileLead {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 10px;
+  min-width: 0;
+}
+
 .itemIconWrap {
   flex-shrink: 0;
-  width: 2.75rem;
-  height: 2.75rem;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: border-color 0.2s $ease-out, color 0.2s $ease-out, background 0.2s $ease-out;
+  color: rgba(245, 235, 215, 0.7);
 }
 
 .itemIconWrapFolder {
@@ -444,10 +419,9 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .itemIconSvg {
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
-  opacity: 0.92;
 }
 
 .itemMain {
@@ -459,42 +433,88 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .itemName {
-  font-weight: 600;
-  font-size: var(--fs-base);
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 500;
+  font-size: 0.88rem;
+  line-height: 1.3;
+  color: #f5ebd7;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .itemActions {
-  gap: var(--spacing-sm);
-  margin-left: auto;
+  display: flex;
+  align-items: center;
   flex-shrink: 0;
+  gap: 6px;
 }
 
 .hiddenFileInput {
   display: none;
 }
 
-@mixin toolbarButton {
-  min-height: var(--control-height);
-  padding: 0 var(--spacing-md);
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  border-radius: var(--radius-md);
+.replaceButton,
+.deleteFileButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s $ease-out, border-color 0.2s $ease-out, color 0.2s $ease-out,
-    transform 0.15s $ease-out;
 
   &:focus-visible {
-    outline: 2px solid var(--color-primary);
+    outline: 2px solid rgba(185, 28, 28, 0.7);
     outline-offset: 2px;
   }
 
-  &:active:not(:disabled) {
-    transform: scale(0.98);
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+
+.replaceButton {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(245, 235, 215, 0.75);
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: #f5ebd7;
+  }
+}
+
+.deleteFileButton {
+  border: none;
+  background: transparent;
+  color: rgba(245, 235, 215, 0.55);
+
+  &:hover:not(:disabled) {
+    background: rgba(185, 28, 28, 0.2);
+    color: #f5ebd7;
+  }
+}
+
+.addToChoirsButton,
+.syncButton,
+.addFileButton {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid rgba(185, 28, 28, 0.7);
+    outline-offset: 2px;
   }
 
   &:disabled {
@@ -503,85 +523,24 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 
-.replaceButton {
-  @include toolbarButton;
-  font-size: var(--fs-xs);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--color-text);
-
-  &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(254, 22, 10, 0.45);
-    color: #fff;
-  }
-}
-
-.deleteFileButton {
-  @include toolbarButton;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: transparent;
-  color: var(--color-text-secondary);
-  min-width: var(--control-height);
-  padding-left: var(--spacing-sm);
-  padding-right: var(--spacing-sm);
-
-  &:hover:not(:disabled) {
-    background: rgba(254, 22, 10, 0.12);
-    border-color: rgba(254, 22, 10, 0.4);
-    color: #fecaca;
-  }
-}
-
 .addToChoirsButton {
-  @include toolbarButton;
-  font-size: var(--fs-sm);
-  border: 1px solid var(--color-primary);
-  background: linear-gradient(180deg, #ff2a1f 0%, var(--color-primary) 100%);
-  color: #fff;
-  box-shadow: 0 2px 12px rgba(254, 22, 10, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: #b81424;
+  color: #f5ebd7;
 
   &:hover:not(:disabled) {
-    background: linear-gradient(180deg, var(--color-accent-hover) 0%, #ff2a1f 100%);
-    border-color: var(--color-accent-hover);
-    box-shadow: 0 4px 18px rgba(254, 22, 10, 0.35);
+    background: #c81b2c;
   }
 }
 
-.syncButton {
-  @include toolbarButton;
-  font-size: var(--fs-sm);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--color-text);
-  font-weight: 600;
-
-  &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(254, 22, 10, 0.45);
-  }
-}
-
+.syncButton,
 .addFileButton {
-  @include toolbarButton;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  font-size: var(--fs-sm);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(255, 255, 255, 0.06);
-  color: var(--color-text);
-  font-weight: 600;
-
-  svg {
-    width: 1rem;
-    height: 1rem;
-    opacity: 0.9;
-  }
+  color: #f5ebd7;
 
   &:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(254, 22, 10, 0.5);
   }
 }
 
@@ -634,23 +593,25 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #f5ebd7;
 
   p {
     margin: 0;
-    line-height: 1.6;
-    color: var(--color-text);
+    line-height: 1.45;
+    color: rgba(245, 235, 215, 0.85);
   }
 
   strong {
-    color: #fff;
-    font-weight: 700;
+    color: #f5ebd7;
+    font-weight: 600;
   }
 }
 
 .syncModalHint {
-  font-size: var(--fs-sm);
-  line-height: 1.5;
-  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgba(245, 235, 215, 0.7);
 }
 
 .batchDeleteNameList {

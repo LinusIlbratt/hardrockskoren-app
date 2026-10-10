@@ -253,6 +253,7 @@ export function AddLibraryFolderToChoirsModal({
         if (!isSubmitting) onClose();
       }}
       title="Lägg till i körer"
+      tone="library"
       formMode
       closeOnEscape={!isSubmitting}
     >
@@ -263,8 +264,7 @@ export function AddLibraryFolderToChoirsModal({
         </p>
         <p className={styles.hint}>
           Då skapas låten i valda körer från mediabiblioteket. Du behöver inte gå
-          in i varje kör. Synka filer i efterhand med &quot;Uppdatera i alla
-          körer&quot;.
+          in i varje kör. Synka filer i efterhand med &quot;Synka körer&quot;.
         </p>
 
         {isLoading ? (
@@ -288,8 +288,8 @@ export function AddLibraryFolderToChoirsModal({
 
             {error && notLinkedSlugs.length === 0 && linkedNames.length === 0 ? null : notLinkedSlugs.length === 0 && !error ? (
               <p className={styles.hint}>
-                Alla körer har redan den här mappen. Använd &quot;Uppdatera i
-                alla körer&quot; om du vill synka filerna.
+                Alla körer har redan den här mappen. Använd &quot;Synka
+                körer&quot; om du vill synka filerna.
               </p>
             ) : notLinkedSlugs.length > 0 ? (
               <>

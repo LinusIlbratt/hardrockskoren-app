@@ -1,6 +1,7 @@
 import { useRef, useState, forwardRef } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import { sv } from "date-fns/locale";
+import { ChevronRight } from "lucide-react";
 import { FiEdit } from "react-icons/fi";
 import {
   Button,
@@ -11,7 +12,6 @@ import { FormGroup } from "@/components/ui/form/FormGroup";
 import { Cluster } from "@/components/ui/layout/Cluster";
 import { Input } from "@/components/ui/input/Input";
 import { Textarea } from "@/components/ui/textarea/Textarea";
-import { Tab, Tabs } from "@/components/ui/tabs/Tabs";
 import { LinkifiedText } from "@/components/ui/LinkifiedText";
 import { Modal } from "@/components/ui/modal/Modal";
 import {
@@ -157,11 +157,15 @@ export const AdminSharedConcertPage = () => {
 
   resetEditorRef.current = resetConcertEditor;
 
-  const renderConcertRow = (c: SharedConcert) => (
+  const renderConcertRow = (c: SharedConcert, tone: "current" | "past") => (
     <li key={c.concertId}>
       <button
         type="button"
-        className={styles.historyRow}
+        className={
+          tone === "past"
+            ? `${styles.historyRow} ${styles.historyRowPast}`
+            : `${styles.historyRow} ${styles.historyRowCurrent}`
+        }
         onClick={() => openDetail(c)}
       >
         <span className={styles.historyRowMain}>
@@ -169,7 +173,6 @@ export const AdminSharedConcertPage = () => {
           <span className={styles.historyMetaLine}>
             {formatConcertDate(c.concertDate)}
             {c.location ? ` · ${c.location}` : ""}
-            {!c.signupOpen ? " · stängd" : ""}
           </span>
         </span>
         <span className={styles.historyRowMeta}>
@@ -177,6 +180,7 @@ export const AdminSharedConcertPage = () => {
             {c.signupCount}{" "}
             {c.signupCount === 1 ? "anmäld" : "anmälda"}
           </span>
+          <ChevronRight className={styles.chevron} size={20} aria-hidden="true" />
         </span>
       </button>
     </li>
@@ -185,28 +189,42 @@ export const AdminSharedConcertPage = () => {
   return (
     <div className={styles.page}>
       <h1 className={styles.title}>Gemensamma Gig</h1>
-      <p className={styles.subtitle}>
-        Skapa gemensamma gig och se vilka som anmält sig.
-      </p>
 
-      <Tabs label="Gemensamma Gig" className={styles.tabs}>
-        <Tab
-          id="tab-create"
-          controls="panel-create"
-          active={activeTab === "create"}
-          onSelect={() => setActiveTab("create")}
-        >
-          Skapa
-        </Tab>
-        <Tab
+      <div className={styles.segment} role="tablist" aria-label="Gemensamma Gig">
+        <button
+          type="button"
+          role="tab"
           id="tab-list"
-          controls="panel-list"
-          active={activeTab === "list"}
-          onSelect={() => setActiveTab("list")}
+          aria-selected={activeTab === "list"}
+          aria-controls="panel-list"
+          className={styles.segmentButton}
+          onClick={() => setActiveTab("list")}
         >
-          Gig
-        </Tab>
-      </Tabs>
+          Alla gig
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="tab-create"
+          aria-selected={activeTab === "create"}
+          aria-controls="panel-create"
+          className={styles.segmentButton}
+          onClick={() => setActiveTab("create")}
+        >
+          Skapa nytt
+        </button>
+      </div>
+
+      {statusMessage && (
+        <p
+          className={
+            statusMessage.type === "success" ? styles.success : styles.error
+          }
+          role="status"
+        >
+          {statusMessage.message}
+        </p>
+      )}
 
       {activeTab === "create" && (
         <section
@@ -215,11 +233,6 @@ export const AdminSharedConcertPage = () => {
           aria-labelledby="tab-create"
           className={styles.tabPanel}
         >
-          <p className={styles.panelIntro}>
-            Fyll i uppgifterna och publicera ett gig som medlemmar från alla
-            körer kan anmäla sig till.
-          </p>
-
           <form className={styles.form} onSubmit={handleSubmit} noValidate>
             <FormGroup label="Titel" htmlFor="shared-concert-title">
               <Input
@@ -281,23 +294,11 @@ export const AdminSharedConcertPage = () => {
               type="submit"
               variant={ButtonVariant.Primary}
               size={ButtonSize.Default}
+              className={styles.submitButton}
               disabled={isSubmitting}
             >
               {isSubmitting ? "Skapar…" : "Skapa gig"}
             </Button>
-
-            {statusMessage && (
-              <p
-                className={
-                  statusMessage.type === "success"
-                    ? styles.success
-                    : styles.error
-                }
-                role="status"
-              >
-                {statusMessage.message}
-              </p>
-            )}
           </form>
         </section>
       )}
@@ -310,22 +311,13 @@ export const AdminSharedConcertPage = () => {
           className={styles.tabPanel}
         >
           <div className={styles.history}>
-            <div className={styles.historySticky}>
-              <h2 id="concert-list-heading" className={styles.historyTitle}>
-                Gig och anmälningar
-              </h2>
-              <p className={styles.historySubtitle}>
-                Klicka på ett gig för att se vem som anmält sig.
-              </p>
-            </div>
-
             {isLoadingList && <p className={styles.muted}>Laddar…</p>}
             {!isLoadingList && listError && (
               <p className={styles.error}>{listError}</p>
             )}
             {!isLoadingList && !listError && concerts.length === 0 && (
               <p className={styles.muted}>
-                Inga gig ännu. Skapa ett under fliken Skapa.
+                Inga gig ännu. Skapa ett under fliken Skapa nytt.
               </p>
             )}
 
@@ -343,14 +335,14 @@ export const AdminSharedConcertPage = () => {
                   </h3>
                   {upcomingConcerts.length > 0 ? (
                     <ul className={styles.historyList}>
-                      {upcomingConcerts.map(renderConcertRow)}
+                      {upcomingConcerts.map((concert) =>
+                        renderConcertRow(concert, "current"),
+                      )}
                     </ul>
                   ) : (
                     <p className={styles.muted}>Inga kommande gig.</p>
                   )}
                 </section>
-
-                <hr className={styles.sectionDivider} />
 
                 <section
                   className={styles.concertSection}
@@ -364,7 +356,9 @@ export const AdminSharedConcertPage = () => {
                   </h3>
                   {pastConcerts.length > 0 ? (
                     <ul className={styles.historyList}>
-                      {pastConcerts.map(renderConcertRow)}
+                      {pastConcerts.map((concert) =>
+                        renderConcertRow(concert, "past"),
+                      )}
                     </ul>
                   ) : (
                     <p className={styles.muted}>Inga tidigare gig.</p>
@@ -395,27 +389,52 @@ export const AdminSharedConcertPage = () => {
         onClose={closeDetail}
         title={selected?.title ?? "Gig"}
         formMode={isEditingConcert}
+        size="lg"
+        tone="luxury"
+        headerAction={
+          selected && !isEditingConcert ? (
+            <button
+              type="button"
+              className={styles.headerEdit}
+              aria-label="Redigera gig"
+              title="Redigera gig"
+              disabled={isLoadingDetail}
+              onClick={() => {
+                setDetailTab("info");
+                startEditing(selected);
+              }}
+            >
+              <FiEdit aria-hidden size={18} />
+            </button>
+          ) : null
+        }
       >
         {selected && (
           <div className={styles.modalBody}>
-            <Tabs label="Gigdetaljer">
-              <Tab
+            <div className={styles.modalTabs} role="tablist" aria-label="Gigdetaljer">
+              <button
+                type="button"
+                role="tab"
                 id="gig-tab-signups"
-                controls="gig-panel-signups"
-                active={detailTab === "signups"}
-                onSelect={() => setDetailTab("signups")}
+                aria-selected={detailTab === "signups"}
+                aria-controls="gig-panel-signups"
+                className={styles.modalTab}
+                onClick={() => setDetailTab("signups")}
               >
                 Anmälningar ({signupCount})
-              </Tab>
-              <Tab
+              </button>
+              <button
+                type="button"
+                role="tab"
                 id="gig-tab-info"
-                controls="gig-panel-info"
-                active={detailTab === "info"}
-                onSelect={() => setDetailTab("info")}
+                aria-selected={detailTab === "info"}
+                aria-controls="gig-panel-info"
+                className={styles.modalTab}
+                onClick={() => setDetailTab("info")}
               >
                 Information
-              </Tab>
-            </Tabs>
+              </button>
+            </div>
 
             {detailTab === "signups" && (
               <div
@@ -428,7 +447,13 @@ export const AdminSharedConcertPage = () => {
                   <p className={styles.muted}>Anmälan stängd</p>
                 )}
                 {voicePartSummary && (
-                  <p className={styles.voiceSummary}>{voicePartSummary}</p>
+                  <ul className={styles.voiceRow}>
+                    {voicePartSummary.split(" · ").map((part) => (
+                      <li key={part} className={styles.voicePill}>
+                        {part}
+                      </li>
+                    ))}
+                  </ul>
                 )}
 
                 {isLoadingSignups && (
@@ -441,6 +466,25 @@ export const AdminSharedConcertPage = () => {
                 )}
 
                 {signups.length > 0 && (
+                  <>
+                  <ul className={styles.signupCards}>
+                    {signups.map((s, index) => (
+                      <li key={s.userUuid} className={styles.signupCard}>
+                        <div className={styles.signupCardTop}>
+                          <span className={styles.signupNr}>{index + 1}</span>
+                          <span className={styles.signupName}>
+                            {s.firstName} {s.lastName}
+                          </span>
+                          <span className={styles.voiceBadge}>
+                            {s.voicePart ?? "—"}
+                          </span>
+                        </div>
+                        <p className={styles.signupChoir}>
+                          {s.choirName || s.choirSlug}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
                   <div className={styles.tableWrap}>
                     <table className={styles.signupTable}>
                       <thead>
@@ -469,6 +513,7 @@ export const AdminSharedConcertPage = () => {
                       </tbody>
                     </table>
                   </div>
+                  </>
                 )}
 
                 {signupsHasMore && (
@@ -589,18 +634,6 @@ export const AdminSharedConcertPage = () => {
                   </form>
                 ) : (
                   <>
-                    <Cluster justify="end">
-                      <button
-                        type="button"
-                        className={styles.iconButton}
-                        aria-label="Redigera"
-                        title="Redigera"
-                        disabled={isLoadingDetail}
-                        onClick={() => startEditing(selected)}
-                      >
-                        <FiEdit aria-hidden size={16} />
-                      </button>
-                    </Cluster>
                     <dl className={styles.detailList}>
                       <div className={styles.detailRow}>
                         <dt className={styles.detailLabel}>Datum</dt>

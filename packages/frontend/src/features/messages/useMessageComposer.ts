@@ -40,9 +40,10 @@ function formatCreateSuccess(result: CreateMessageResponse): string {
 
 type UseMessageComposerOptions = {
   fetchSent: () => Promise<void>;
+  onCreated?: () => void;
 };
 
-export function useMessageComposer({ fetchSent }: UseMessageComposerOptions) {
+export function useMessageComposer({ fetchSent, onCreated }: UseMessageComposerOptions) {
   const {
     groups,
     groupsError,
@@ -143,12 +144,14 @@ export function useMessageComposer({ fetchSent }: UseMessageComposerOptions) {
       });
       setTitle("");
       setBody("");
+      setAudienceMode("all");
       setSelectedGroups([]);
       setStatusMessage({
         type: "success",
         message: formatCreateSuccess(result),
       });
       await fetchSent();
+      onCreated?.();
     } catch (error) {
       console.error("Failed to create message", error);
       setStatusMessage({

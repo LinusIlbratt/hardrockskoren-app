@@ -29,6 +29,10 @@ export interface ModalProps {
   closeOnBackdropClick?: boolean;
   /** When false, Escape does not close the modal. */
   closeOnEscape?: boolean;
+  /** Control rendered in the header, immediately before the close button. */
+  headerAction?: React.ReactNode;
+  /** Cream title and a 44px close target. Other modals stay on the default chrome. */
+  tone?: "default" | "luxury" | "library";
 }
 
 export const Modal = ({
@@ -41,6 +45,8 @@ export const Modal = ({
   formMode = false,
   closeOnBackdropClick: closeOnBackdropClickProp,
   closeOnEscape = true,
+  headerAction,
+  tone = "default",
 }: ModalProps) => {
   const closeOnBackdropClick = closeOnBackdropClickProp ?? !formMode;
 
@@ -177,7 +183,12 @@ export const Modal = ({
       >
         <div
           ref={modalRef}
-          className={size === "lg" ? `${styles.modal} ${styles.modalLg}` : styles.modal}
+          className={[
+            styles.modal,
+            size === "lg" ? styles.modalLg : "",
+            tone === "luxury" ? styles.luxury : "",
+            tone === "library" ? styles.library : "",
+          ].filter(Boolean).join(" ")}
           onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           role="dialog"
@@ -186,14 +197,17 @@ export const Modal = ({
         >
           <header className={styles.header}>
             <h2 id="modal-title" className={styles.title}>{title}</h2>
-            <button
-              type="button"
-              className={styles.closeButton}
-              onClick={requestClose}
-              aria-label="Stäng modal"
-            >
-              <IoClose size={24} />
-            </button>
+            <div className={styles.headerTools}>
+              {headerAction}
+              <button
+                type="button"
+                className={styles.closeButton}
+                onClick={requestClose}
+                aria-label="Stäng modal"
+              >
+                <IoClose size={24} />
+              </button>
+            </div>
           </header>
 
           <div className={styles.content}>

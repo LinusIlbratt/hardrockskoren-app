@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FiFolder, FiMusic, FiFileText, FiFile, FiTrash2, FiUpload, FiInbox } from 'react-icons/fi';
+import { FiFolder, FiMusic, FiFileText, FiFile, FiTrash2, FiRefreshCw, FiInbox } from 'react-icons/fi';
 import { Cluster } from '@/components/ui/layout/Cluster';
 import { Stack } from '@/components/ui/layout/Stack';
 import { Modal } from '@/components/ui/modal/Modal';
@@ -52,7 +52,6 @@ export const MaterialDetailPage = () => {
     handleSelectAllFilesToggle,
     openBatchDeleteConfirm,
     breadcrumbs,
-    listSummaryLine,
   } = folder;
 
   const {
@@ -96,75 +95,31 @@ export const MaterialDetailPage = () => {
   return (
     <div className={styles.page}>
       <div className={styles.pageInner}>
-      <nav className={styles.breadcrumbs} aria-label="breadcrumb">
-        <Link to="/admin/globalMaterial">Mediabibliotek</Link>
-        {breadcrumbs.map((part, index) => {
-          const pathSlice = breadcrumbs.slice(0, index + 1);
-          // VIKTIGT: Använd encodeURIComponent för varje del för att skapa en giltig URL
-          const linkPath = pathSlice.map(encodeURIComponent).join('/');
-          return <span key={linkPath} className={styles.breadcrumbSep}><span className={styles.breadcrumbSlash} aria-hidden>/</span><Link to={`/admin/globalMaterial/${linkPath}`}>{part}</Link></span>;
-        })}
-      </nav>
+      <Link to="/admin/globalMaterial" className={styles.backLink}>
+        ← Tillbaka till Material
+      </Link>
 
       <header className={styles.headerCard}>
-        <div className={styles.pageHeaderRow}>
-          <div className={styles.pageHeaderLead}>
-            <h1 className={styles.pageTitle}>{breadcrumbs[breadcrumbs.length - 1] || 'Mediabibliotek'}</h1>
-            {listSummaryLine ? (
-              <p className={styles.pageSubtitle}>{listSummaryLine}</p>
-            ) : null}
-          </div>
-          <Cluster gap="sm" align="center">
-            {breadcrumbs.length === 1 && (
-              <>
-                <button
-                  type="button"
-                  className={styles.addToChoirsButton}
-                  onClick={() => setAddToChoirsOpen(true)}
-                >
-                  <span>Lägg till i körer</span>
-                </button>
-                <button
-                  type="button"
-                  className={styles.syncButton}
-                  disabled={isSyncing}
-                  onClick={() => setSyncConfirmOpen(true)}
-                >
-                  <span>{isSyncing ? 'Uppdaterar...' : 'Uppdatera i alla körer'}</span>
-                </button>
-              </>
-            )}
-            <input
-              ref={addFileInputRef}
-              className={styles.hiddenFileInput}
-              type="file"
-              multiple
-              aria-describedby="add-files-hint"
-              onChange={(e) => {
-                void handleAddFiles(e.target.files);
-                e.currentTarget.value = '';
-              }}
-            />
+        <h1 className={styles.pageTitle}>{breadcrumbs[breadcrumbs.length - 1] || 'Mediabibliotek'}</h1>
+        {breadcrumbs.length === 1 && (
+          <div className={styles.choirActions}>
             <button
               type="button"
-              className={styles.addFileButton}
-              disabled={isAddingFile}
-              onClick={() => addFileInputRef.current?.click()}
+              className={styles.addToChoirsButton}
+              onClick={() => setAddToChoirsOpen(true)}
             >
-              <FiUpload aria-hidden />
-              <span>
-                {isAddingFile && addFilesProgress?.phase === 'uploading'
-                  ? `Laddar upp ${addFilesProgress.percent}%`
-                  : isAddingFile
-                    ? 'Förbereder…'
-                    : 'Lägg till filer'}
-              </span>
+              Lägg till i körer
             </button>
-          </Cluster>
-        </div>
-        <p id="add-files-hint" className={styles.addFilesHint}>
-          Högst {MAX_FILES_PER_BATCH_UPLOAD} filer åt gången vid uppladdning
-        </p>
+            <button
+              type="button"
+              className={styles.syncButton}
+              disabled={isSyncing}
+              onClick={() => setSyncConfirmOpen(true)}
+            >
+              {isSyncing ? 'Synkar...' : 'Synka körer'}
+            </button>
+          </div>
+        )}
       </header>
 
       {isAddingFile && addFilesProgress ? (
@@ -237,7 +192,8 @@ export const MaterialDetailPage = () => {
         onClose={() => {
           if (!isSyncing) setSyncConfirmOpen(false);
         }}
-        title="Uppdatera låten i alla körer?"
+        title="Synka körer?"
+        tone="library"
       >
         <div className={styles.syncModalBody}>
           <p>
@@ -262,7 +218,7 @@ export const MaterialDetailPage = () => {
               isLoading={isSyncing}
               onClick={() => void performSyncAllRepertoires()}
             >
-              Ja, uppdatera
+              Ja, synka
             </Button>
           </Cluster>
         </div>
@@ -352,9 +308,12 @@ export const MaterialDetailPage = () => {
       </Modal>
 
       <section className={styles.listShell} aria-label="Mappinnehåll">
-      <Stack gap="sm" className={styles.itemList}>
-        {fileItemsInFolder.length > 0 ? (
-          <Cluster gap="md" align="center" className={styles.selectionBar}>
+      <div className={styles.listToolbar}>
+        <div className={styles.toolbarLead}>
+          <span className={styles.fileCount}>
+            {fileItemsInFolder.length} {fileItemsInFolder.length === 1 ? 'fil' : 'filer'}
+          </span>
+          {fileItemsInFolder.length > 0 ? (
             <label className={styles.selectAllLabel}>
               <input
                 ref={selectAllCheckboxRef}
@@ -363,20 +322,50 @@ export const MaterialDetailPage = () => {
                 disabled={rowBusy || fileIdsInFolder.length === 0}
                 onChange={() => handleSelectAllFilesToggle()}
               />
-              Markera alla filer i mappen
+              Markera alla
             </label>
-            {selectedMaterialIds.length > 0 ? (
-              <button
-                type="button"
-                className={styles.removeSelectedButton}
-                disabled={rowBusy}
-                onClick={() => openBatchDeleteConfirm()}
-              >
-                Ta bort valda ({selectedMaterialIds.length})
-              </button>
-            ) : null}
-          </Cluster>
-        ) : null}
+          ) : null}
+        </div>
+        <div className={styles.toolbarAdd}>
+          <input
+            ref={addFileInputRef}
+            className={styles.hiddenFileInput}
+            type="file"
+            multiple
+            aria-describedby="add-files-hint"
+            onChange={(e) => {
+              void handleAddFiles(e.target.files);
+              e.currentTarget.value = '';
+            }}
+          />
+          <button
+            type="button"
+            className={styles.addFileButton}
+            disabled={isAddingFile}
+            onClick={() => addFileInputRef.current?.click()}
+          >
+            {isAddingFile && addFilesProgress?.phase === 'uploading'
+              ? `Laddar upp ${addFilesProgress.percent}%`
+              : isAddingFile
+                ? 'Förbereder…'
+                : '+ Lägg till filer'}
+          </button>
+          <p id="add-files-hint" className={styles.addFilesHint}>
+            Max {MAX_FILES_PER_BATCH_UPLOAD} filer
+          </p>
+        </div>
+      </div>
+      {selectedMaterialIds.length > 0 ? (
+        <button
+          type="button"
+          className={styles.removeSelectedButton}
+          disabled={rowBusy}
+          onClick={() => openBatchDeleteConfirm()}
+        >
+          Ta bort markerade ({selectedMaterialIds.length})
+        </button>
+      ) : null}
+      <Stack gap="sm" className={styles.itemList}>
         {directoryItems.length > 0 ? (
           directoryItems.map(item => (
             item.type === 'folder' ? (
@@ -393,22 +382,22 @@ export const MaterialDetailPage = () => {
                   selectedMaterialIds.includes(item.material.materialId) ? styles.itemRowSelected : ''
                 }`}
               >
-                <input
-                  type="checkbox"
-                  className={styles.rowSelectCheckbox}
-                  checked={selectedMaterialIds.includes(item.material.materialId)}
-                  disabled={rowBusy}
-                  onChange={() => toggleMaterialSelected(item.material.materialId)}
-                  onClick={(e) => e.stopPropagation()}
-                  aria-label={`Markera ${item.material.title || item.material.filePath.split('/').pop() || 'fil'}`}
-                />
-                <div className={styles.itemMain}>
+                <div className={styles.fileLead}>
+                  <input
+                    type="checkbox"
+                    className={styles.rowSelectCheckbox}
+                    checked={selectedMaterialIds.includes(item.material.materialId)}
+                    disabled={rowBusy}
+                    onChange={() => toggleMaterialSelected(item.material.materialId)}
+                    onClick={(e) => e.stopPropagation()}
+                    aria-label={`Markera ${item.material.title || item.material.filePath.split('/').pop() || 'fil'}`}
+                  />
                   <span className={styles.itemIconWrap} aria-hidden>
                     {getIconForFile(item.material.filePath, styles.itemIconSvg)}
                   </span>
                   <span className={styles.itemName}>{item.material.title || item.material.filePath.split('/').pop()}</span>
                 </div>
-                <Cluster gap="sm" align="center" className={styles.itemActions}>
+                <div className={styles.itemActions}>
                   <input
                     ref={(el) => {
                       fileInputRefs.current[item.material.materialId] = el;
@@ -429,12 +418,18 @@ export const MaterialDetailPage = () => {
                       deletingMaterialId === item.material.materialId ||
                       isBatchDeleting
                     }
+                    aria-label={
+                      replacingMaterialId === item.material.materialId
+                        ? 'Ersätter fil'
+                        : 'Ersätt fil'
+                    }
+                    title="Ersätt fil"
                     onClick={(e) => {
                       e.stopPropagation();
                       fileInputRefs.current[item.material.materialId]?.click();
                     }}
                   >
-                    {replacingMaterialId === item.material.materialId ? 'Ersätter...' : 'Ersätt fil'}
+                    <FiRefreshCw aria-hidden size={16} />
                   </button>
                   <button
                     type="button"
@@ -453,7 +448,7 @@ export const MaterialDetailPage = () => {
                   >
                     {deletingMaterialId === item.material.materialId ? 'Tar bort...' : <FiTrash2 aria-hidden />}
                   </button>
-                </Cluster>
+                </div>
               </div>
             )
           ))
