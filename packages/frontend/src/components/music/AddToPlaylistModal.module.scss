@@ -1,0 +1,150 @@
+$sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-family: $sans;
+  color: var(--color-text-luxury-muted);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-luxury-accent-solid);
+  font-size: 0.9rem;
+}
+
+.sectionTitle {
+  margin: 0 0 8px;
+  font-family: $sans;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--color-text-luxury);
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-luxury-muted);
+  font-size: 0.9rem;
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.row {
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: none;
+  border-bottom: 1px solid var(--color-border-subtle);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-luxury);
+  font-family: $sans;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.6;
+  }
+}
+
+.description {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--color-text-luxury-muted);
+}
+
+.createSection {
+  border-top: 1px solid var(--color-border-subtle);
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 0.85rem;
+  color: var(--color-text-luxury-muted);
+}
+
+.input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-luxury);
+  font-family: $sans;
+  font-size: 0.95rem;
+
+  &::placeholder {
+    color: var(--color-text-luxury-dim);
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-luxury-accent-border);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+  }
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.secondary,
+.primary {
+  font-family: $sans;
+  font-size: 0.9rem;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.6;
+  }
+}
+
+.secondary {
+  background: transparent;
+  color: var(--color-text-luxury-muted);
+  border: 1px solid var(--color-border-subtle);
+
+  &:hover:not(:disabled) {
+    color: var(--color-text-luxury);
+  }
+}
+
+.primary {
+  background: var(--color-luxury-accent-active);
+  border: 1px solid var(--color-luxury-accent-border);
+  color: var(--color-text-luxury);
+
+  &:hover:not(:disabled) {
+    background: var(--color-luxury-accent-solid);
+  }
+}

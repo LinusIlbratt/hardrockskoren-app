@@ -29,7 +29,7 @@ export const UserNav = ({ groupName }: UserNavProps) => {
   return (
     <nav className={styles.nav}>
       <NavLink to={`${base}/repertoires`} className={getLinkClassName}>
-        Repetoar
+        Repertoar
       </NavLink>
       <NavLink to={`${base}/practice`} className={getLinkClassName}>
         Sjung upp

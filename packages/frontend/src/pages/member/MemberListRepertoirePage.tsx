@@ -13,6 +13,22 @@ interface Repertoire {
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
 
+function splitTitleAndArtist(title: string, artist?: string): { title: string; artist: string } {
+    const trimmedTitle = title.trim();
+    const trimmedArtist = artist?.trim() ?? '';
+    if (trimmedArtist) {
+        return { title: trimmedTitle, artist: trimmedArtist };
+    }
+    const parts = trimmedTitle.split(/\s+-\s+/);
+    if (parts.length >= 2 && parts[0] && parts[1]) {
+        return {
+            title: parts[0].trim(),
+            artist: parts.slice(1).join(' - ').trim(),
+        };
+    }
+    return { title: trimmedTitle, artist: '' };
+}
+
 export const MemberListRepertoirePage = () => {
     // Hämta den aktiva kören från URL:en för en mer pålitlig datahämtning
     const { groupName } = useParams<{ groupName: string }>();
@@ -60,21 +76,23 @@ export const MemberListRepertoirePage = () => {
                 <p>Laddar repertoar...</p>
             ) : (
                 <div className={styles.repertoireList}>
-                    {sortedRepertoires.map(item => (
-                        // Hela kortet är nu en länk
+                    {sortedRepertoires.map(item => {
+                        const { title, artist } = splitTitleAndArtist(item.title, item.artist);
+                        return (
                         <Link
                             key={item.repertoireId}
                             to={item.repertoireId}
                             state={{ title: item.title }}
                             className={styles.repertoireItem}
                         >
-                            <div className={styles.itemInfo}>
-                                <span className={styles.itemTitle}>{item.title}</span>
-                                <span className={styles.itemArtist}>{item.artist}</span>
-                            </div>
-                            <ChevronRight className={styles.itemIcon} size={24} />
+                            <span className={styles.itemInfo}>
+                                <span className={styles.itemTitle}>{title}</span>
+                                {artist ? <span className={styles.itemArtist}>{artist}</span> : null}
+                            </span>
+                            <ChevronRight className={styles.itemIcon} size={18} aria-hidden="true" />
                         </Link>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
         </div>

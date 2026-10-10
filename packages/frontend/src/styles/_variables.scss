@@ -103,6 +103,16 @@ $maxWidth: 1100px; // Kan användas för att begränsa bredden på containers.
   --color-text-muted: var(--color-text-secondary);
   --color-border-subtle: rgba(255, 255, 255, 0.08);
 
+  /* --- DARK LUXURY --- */
+  --color-text-luxury: #f5ebd7;
+  --color-text-luxury-muted: rgba(245, 235, 215, 0.6);
+  --color-text-luxury-dim: rgba(245, 235, 215, 0.45);
+  --color-luxury-surface: #121214;
+  --color-luxury-accent-subtle: rgba(220, 38, 38, 0.12);
+  --color-luxury-accent-active: rgba(220, 38, 38, 0.20);
+  --color-luxury-accent-border: rgba(220, 38, 38, 0.50);
+  --color-luxury-accent-solid: #b91c1c;
+
   /* --- NYA, REKOMMENDERADE VARIABLER --- */
 
   /**

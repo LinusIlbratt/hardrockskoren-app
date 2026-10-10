@@ -57,19 +57,14 @@ export const MemberDashboard = () => {
     <GroupNotificationProviders groupSlug={groupName}>
       <div className={styles.layout}>
         <header className={styles.header}>
-          <h1>Välkommen {user.given_name}</h1>
-          <p>
-            <span className={styles.subheadingLabel}>
-              Medlem i{isLoadingName ? " Laddar..." : ` ${choirDisplayName}`}
-            </span>
+          <h1 className={styles.title}>Välkommen, {user.given_name}</h1>
+          <p className={styles.subheading}>
+            Medlem i {isLoadingName ? "…" : choirDisplayName}
           </p>
         </header>
 
-        {!isLoadingName && choirDisplayName && groupName && (
-          <div className={styles.groupNameRow}>
-            <h2 className={styles.groupName}>{choirDisplayName}</h2>
-            <RecentlyPlayedWidget groupName={groupName} viewer="member" />
-          </div>
+        {groupName && (
+          <RecentlyPlayedWidget groupName={groupName} viewer="member" />
         )}
         <UserNav groupName={groupName} />
 

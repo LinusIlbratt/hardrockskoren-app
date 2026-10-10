@@ -1,7 +1,10 @@
 @use '@/styles/variables' as *;
 
+$sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
 .page {
   @include column($gap-size: var(--spacing-lg));
+  font-family: $sans;
 }
 
 // Länken för att gå tillbaka
@@ -9,56 +12,45 @@
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-sm);
-  color: var(--color-text-secondary);
+  margin-bottom: calc(var(--spacing-sm) - var(--spacing-lg));
+  color: var(--color-text-luxury-muted);
   text-decoration: none;
+  font-family: $sans;
   font-size: var(--fs-sm);
   width: fit-content;
   transition: color 0.2s ease;
 
   &:hover {
-    color: var(--color-text);
+    color: var(--color-text-luxury);
     text-decoration: none;
   }
 }
 
 .header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
   .repertoireTitle {
     margin: 0;
+    font-family: $sans;
     font-size: var(--fs-h1);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--color-text-luxury);
+    white-space: normal;
+    word-break: break-word;
   }
 }
-.legend {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  background-color: rgba(255, 255, 255, 0.03);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-}
 
-.legendIcon {
-  flex-shrink: 0;
-  color: var(--color-text);
-  margin-top: 3px; // Finjustering för vertikal linjering
-}
-
-.legendText {
+.repertoireArtist {
   margin: 0;
-  font-size: var(--fs-sm);
-  color: var(--color-text-secondary);
-  line-height: 1.6;
-
-  .inlineIcon, .inlinePlayIcon {
-    vertical-align: middle;
-    margin: 0 0.1em -0.2em 0.2em; // Finjustering för att linjera med texten
-  }
-  .inlinePlayIcon {
-    color: var(--color-icon-play);
-  }
-  .inlineIcon {
-    color: var(--color-icon-view);
-  }
+  font-family: $sans;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--color-text-luxury-muted);
 }
 
 // Behållare för alla sektioner
@@ -70,22 +62,26 @@
 .materialSection {
   @include column($gap-size: var(--spacing-md));
   padding: var(--spacing-lg);
-  background-color: var(--color-dark-gray);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
+  background: var(--color-luxury-surface);
+  border-radius: 12px;
+  border: 1px solid var(--color-border-subtle);
 }
 
 .sectionTitle {
   margin: 0;
   padding-bottom: var(--spacing-md);
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-family: $sans;
   font-size: var(--fs-h3);
-  color: var(--color-text);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text-luxury);
 }
 
-// Listan inuti en sektion
 .materialList {
-  @include column($gap-size: var(--spacing-sm));
+  display: flex;
+  flex-direction: column;
+  gap: 0;
 }
 
 // Varje rad i listan
@@ -93,37 +89,92 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   padding: var(--spacing-sm);
-  border-radius: var(--radius-md);
-  transition: background-color 0.2s ease;
+  border-bottom: 1px solid var(--color-border-subtle);
+  border-radius: 0;
+  transition: background-color 0.15s ease;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  &:hover,
+  &:active {
+    background: transparent;
+  }
+}
+
+.materialItemInteractive {
+  cursor: pointer;
+
+  &:hover,
+  &:active {
+    background: rgba(255, 255, 255, 0.04);
+  }
+}
+
+.rowButton {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: var(--spacing-sm);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: var(--radius-sm);
+  }
+}
+
+.viewHint {
+  flex-shrink: 0;
+  color: var(--color-text-luxury-muted);
 }
 
 // Info-delen (ikon + namn)
 .itemInfo {
   display: flex;
   align-items: center;
+  flex: 1;
   gap: var(--spacing-md);
-  min-width: 0; // Fixar flexbox-problem
+  min-width: 0;
 }
 
 .fileIcon {
   flex-shrink: 0;
-  color: var(--color-text-secondary);
+  color: var(--color-text-luxury-muted);
 }
 
 .displayName {
+  flex: 1;
+  min-width: 0;
+  font-family: $sans;
   font-size: var(--fs-base);
-  color: var(--color-text);
-  white-space: nowrap;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-text-luxury);
+  white-space: normal;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-// Action-knapparna till höger
 .actions {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
   gap: var(--spacing-sm);
 }
 
@@ -134,25 +185,26 @@
   cursor: pointer;
   padding: var(--spacing-xs);
   border-radius: var(--radius-round);
-  color: var(--color-text-secondary); // Fallback-färg
+  color: var(--color-text-luxury-muted);
   display: flex;
   transition: color 0.2s ease, background-color 0.2s ease;
 
   &:hover {
-    background-color: var(--color-background-hover-accent);
+    background-color: rgba(255, 255, 255, 0.06);
+    color: var(--color-text-luxury);
   }
 }
 
-// Specifik stil för play-knappen
 .playButton {
-  color: var(--color-icon-play);
+  color: var(--color-text-luxury-muted);
+
   &:hover {
-    color: var(--color-icon-play-hover);
+    color: var(--color-text-luxury);
   }
 }
 
 .playButtonActive {
-  color: var(--color-primary);
+  color: var(--color-text-luxury);
 }
 
 .playIconPulse {
@@ -173,9 +225,10 @@
 
 // Specifik stil för view-knappen
 .viewButton {
-  color: var(--color-icon-view);
+  color: var(--color-text-luxury-muted);
+
   &:hover {
-    color: var(--color-icon-view-hover);
+    color: var(--color-text-luxury);
   }
 }
 

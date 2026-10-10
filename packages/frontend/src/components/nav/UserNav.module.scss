@@ -1,108 +1,92 @@
 @use '@/styles/variables' as *;
 
-// Behållaren för hela navigeringsfältet
+$sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
 .nav {
-  @include column(0); // gap: 0
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-xs);
   width: 100%;
-  margin: var(--spacing-md) auto;
-  background-color: var(--color-dark-gray);
-  border-radius: var(--radius-sm);
+  margin: 0;
+  padding: var(--spacing-xs);
+  background: var(--color-background);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
 }
 
-.navLinkRow {
-  display: inline-flex;
+.navLink {
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
-}
-
-// Stilen för varje enskild länk/flik
-.navLink {
-  position: relative;
-  @include center;
-  width: 100%;
-  padding: var(--spacing-md) 0;
+  min-height: 44px;
+  padding: var(--spacing-sm) 10px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text-luxury-muted);
+  font-family: $sans;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  text-align: center;
   text-decoration: none;
-  color: var(--color-text-secondary); // ÄNDRING: Standardfärgen för inaktiva länkar
-  background-color: transparent;
-  font-size: var(--fs-xs);
-  line-height: 150%;
-  font-weight: 600;
-  text-transform: uppercase;
-  white-space: nowrap;
-  border-bottom: 1px solid var(--color-background);
-  transition: color 0.2s, background-color 0.2s; // Lade till transition för mjuka övergångar
+  text-transform: none;
+  transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
 
-  &:last-child {
-    border-bottom: none;
+  &:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--color-text-luxury);
+    text-decoration: none;
   }
 
-  // hover-state
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.active {
+  background: var(--color-luxury-accent-active);
+  border-color: var(--color-luxury-accent-border);
+  color: var(--color-text-luxury);
+  font-weight: 600;
+  box-shadow: none;
+
   &:hover {
-    background-color: var(--color-border);
-    text-decoration: none;
-    color: var(--color-text); // Gör texten ljusare vid hover för tydlighet
+    background: var(--color-luxury-accent-active);
+    color: var(--color-text-luxury);
   }
 }
 
 .badge {
-  position: absolute;
-  top: 2px;
-  right: -5px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 6px;
-  border-radius: var(--radius-round);
-
-  background-color: var(--color-text); // Ljus (nästan vit) bakgrund
-  color: var(--color-dark-gray);      // Mörk text
-  border: 1px solid var(--color-dark-gray);
-  font-size: var(--fs-xs);
-  font-weight: 700;
-  line-height: 20px; // Centrerar texten vertikalt
-  text-align: center;
-
-  // En subtil animation för att dra till sig uppmärksamhet
-  animation: pop-in 0.5s ease-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  border: 1px solid var(--color-primary);
+  color: var(--color-text-on-primary);
+  font-family: $sans;
+  font-size: var(--fs-xxs);
+  font-weight: 600;
+  line-height: 1;
 }
 
 .unreadDot {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 10px;
-  height: 10px;
-  background-color: var(--color-accent, #e53935);
-  border-radius: 50%;
-  border: 2px solid var(--color-dark-gray);
-  animation: pop-in 0.5s ease-out;
-}
-
-// Keyframes för animationen
-@keyframes pop-in {
-  0% {
-    transform: scale(0.5);
-    opacity: 0;
-  }
-  80% {
-    transform: scale(1.1);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-
-.active {
-  background-color: var(--color-border); // ✅ Lade till den ljusare bakgrundsfärgen
-  color: var(--color-text);             // ✅ Säkerställer starkare textfärg
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
 }
 
 @media (min-width: #{$tabletBreakpoint}) {
   .nav {
-    @include row;
-    justify-content: flex-end; // gap: 0
+    grid-template-columns: repeat(4, 1fr);
   }
 }
