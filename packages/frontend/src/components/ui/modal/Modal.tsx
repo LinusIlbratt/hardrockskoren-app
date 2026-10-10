@@ -9,7 +9,7 @@ import styles from './Modal.module.scss';
 
 const FOCUSABLE_SELECTOR = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
-export type ModalSize = "md" | "lg";
+export type ModalSize = "md" | "lg" | "compact";
 
 export interface ModalProps {
   isOpen: boolean;
@@ -186,6 +186,7 @@ export const Modal = ({
           className={[
             styles.modal,
             size === "lg" ? styles.modalLg : "",
+            size === "compact" ? styles.modalCompact : "",
             tone === "luxury" ? styles.luxury : "",
             tone === "library" ? styles.library : "",
           ].filter(Boolean).join(" ")}

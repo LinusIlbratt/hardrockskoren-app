@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import styles from './MemberListRepertoirePage.module.scss';
 import axios from 'axios';
 import { ChevronRight } from 'lucide-react'; // Ikon för att visa att det är en länk
+import { RecentlyPlayedWidget } from '@/components/music/RecentlyPlayedWidget';
 import { sortBySwedishTitle } from '@/utils/sortBySwedishTitle';
 
 interface Repertoire {
@@ -68,9 +69,14 @@ export const MemberListRepertoirePage = () => {
     return (
         <div className={styles.page}>
             <header className={styles.header}>
-                <h2>Repertoar</h2>
+                <div className={styles.titleRow}>
+                    <h2>Repertoar</h2>
+                </div>
                 <p>Välj en låt för att se allt material.</p>
             </header>
+            {groupName && (
+                <RecentlyPlayedWidget groupName={groupName} viewer="member" />
+            )}
 
             {isLoading ? (
                 <p>Laddar repertoar...</p>

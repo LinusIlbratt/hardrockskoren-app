@@ -3,37 +3,66 @@
 $sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
 .nav {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--spacing-xs);
   width: 100%;
   margin: 0;
-  padding: var(--spacing-xs);
-  background: var(--color-background);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-lg);
+  padding: 6px 8px 8px;
+  background: var(--color-luxury-surface);
+  border-top: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.groupLabel {
+  font-family: $sans;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
+  text-align: center;
+  margin: 0 0 6px;
+  line-height: 1.2;
+  min-height: 1.2em;
+}
+
+.groupLabelSkeleton {
+  display: block;
+  width: 8rem;
+  height: 0.75rem;
+  margin: 0.15em auto 0;
+  border-radius: 999px;
+  background: rgba(245, 235, 215, 0.14);
+}
+
+.list {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  width: 100%;
+  margin: 0;
 }
 
 .navLink {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: var(--spacing-sm) 10px;
+  gap: 4px;
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 8px;
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border-radius: 8px;
   background: transparent;
   color: var(--color-text-luxury-muted);
   font-family: $sans;
-  font-size: var(--fs-sm);
+  font-size: 13px;
   font-weight: 500;
   line-height: 1.2;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   text-align: center;
   text-decoration: none;
-  text-transform: none;
-  transition: color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+  white-space: nowrap;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 
   &:hover {
     background: rgba(255, 255, 255, 0.04);
@@ -48,14 +77,13 @@ $sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .active {
-  background: var(--color-luxury-accent-active);
+  background: rgba(180, 40, 40, 0.15);
   border-color: var(--color-luxury-accent-border);
   color: var(--color-text-luxury);
   font-weight: 600;
-  box-shadow: none;
 
   &:hover {
-    background: var(--color-luxury-accent-active);
+    background: rgba(180, 40, 40, 0.15);
     color: var(--color-text-luxury);
   }
 }
@@ -64,29 +92,44 @@ $sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
+  flex-shrink: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
   border-radius: var(--radius-full);
-  background: var(--color-accent);
-  border: 1px solid var(--color-primary);
-  color: var(--color-text-on-primary);
+  background: var(--color-luxury-accent-solid);
+  border: none;
+  color: var(--color-text-luxury);
   font-family: $sans;
-  font-size: var(--fs-xxs);
+  font-size: 10px;
   font-weight: 600;
   line-height: 1;
 }
 
 .unreadDot {
   flex-shrink: 0;
-  width: 7px;
-  height: 7px;
-  background: var(--color-primary);
+  width: 6px;
+  height: 6px;
+  background: var(--color-luxury-accent-solid);
   border-radius: var(--radius-full);
 }
 
 @media (min-width: #{$tabletBreakpoint}) {
   .nav {
-    grid-template-columns: repeat(4, 1fr);
+    padding: 6px 16px 8px;
+  }
+
+  .list {
+    max-width: 680px;
+    margin: 0 auto;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .navLink {
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    font-size: 14px;
+    letter-spacing: -0.01em;
   }
 }

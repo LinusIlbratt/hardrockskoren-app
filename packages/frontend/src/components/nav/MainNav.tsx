@@ -1,6 +1,6 @@
 // src/components/ui/nav/MainNav.tsx
 import { useState, useMemo } from 'react';
-import { useNavigate, NavLink } from 'react-router-dom';
+import { useNavigate, useLocation, NavLink } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Button, ButtonVariant, ButtonSize, ButtonRadius } from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal/Modal';
@@ -9,7 +9,28 @@ import styles from './MainNav.module.scss';
 import { IoClose } from 'react-icons/io5';
 import { RxHamburgerMenu } from "react-icons/rx";
 import { FiGlobe } from 'react-icons/fi';
-import { Calendar, FileText, Mail, Mic, Music } from 'lucide-react';
+import { Calendar, FileText, Mail, Mic, Music, Music2 } from 'lucide-react';
+import { useMusicPlayerOverlay, type MusicPlayerViewer } from '@/context/MusicPlayerOverlayContext';
+
+function choirPlayerTarget(pathname: string): { groupName: string; viewer: MusicPlayerViewer } | null {
+  const patterns: Array<{ re: RegExp; viewer: MusicPlayerViewer }> = [
+    { re: /^\/user\/me\/([^/]+)/, viewer: 'member' },
+    { re: /^\/leader\/choir\/([^/]+)/, viewer: 'leader' },
+    { re: /^\/admin\/groups\/([^/]+)/, viewer: 'admin' },
+  ];
+
+  for (const { re, viewer } of patterns) {
+    const match = pathname.match(re);
+    if (!match?.[1]) continue;
+    try {
+      return { groupName: decodeURIComponent(match[1]), viewer };
+    } catch {
+      return { groupName: match[1], viewer };
+    }
+  }
+
+  return null;
+}
 import logoImage from '@/assets/images/hrk-logo.webp';
 import { useAttendance } from '@/hooks/useAttendance';
 import { translateRole } from '@/utils/translations';
@@ -21,12 +42,23 @@ import { useIsMobile } from '@/hooks/useIsMobile';
 interface MainNavProps {
     isMenuOpen: boolean;
     setIsMenuOpen: (open: boolean) => void;
+    /** Medlemsflikarna sitter under listen, så den egna underkanten tas bort. */
+    withMemberTabs?: boolean;
   }
   
-  export const MainNav = ({ isMenuOpen, setIsMenuOpen }: MainNavProps) => {
+  export const MainNav = ({ isMenuOpen, setIsMenuOpen, withMemberTabs = false }: MainNavProps) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const isMobile = useIsMobile();
+    const {
+      open: openMusicOverlay,
+      expandOverlay,
+      isOpen: isMusicOpen,
+      activeGroupName,
+      activeViewer,
+    } = useMusicPlayerOverlay();
+    const playerTarget = choirPlayerTarget(location.pathname);
   
     const [showMainNavTour, setShowMainNavTour] = useState(false);
   
@@ -55,6 +87,22 @@ interface MainNavProps {
     };
   
     const handleLinkClick = () => {
+      setIsMenuOpen(false);
+    };
+
+    const handleOpenMusicPlayer = () => {
+      if (!playerTarget) return;
+      if (
+        activeGroupName === playerTarget.groupName &&
+        activeViewer === playerTarget.viewer &&
+        !isMusicOpen
+      ) {
+        expandOverlay();
+      } else {
+        openMusicOverlay(playerTarget.groupName, playerTarget.viewer, {
+          playbackIntent: 'browse',
+        });
+      }
       setIsMenuOpen(false);
     };
     
@@ -169,6 +217,16 @@ interface MainNavProps {
             </NavLink>
           )
         )}
+        {playerTarget && (
+          <button
+            type="button"
+            className={styles.drawerLink}
+            onClick={handleOpenMusicPlayer}
+          >
+            <Music2 size={18} aria-hidden="true" />
+            <span>Musikspelaren</span>
+          </button>
+        )}
         {user?.role === 'admin' && (
           <>
             <p className={styles.sectionLabel}>Administration</p>
@@ -202,7 +260,10 @@ interface MainNavProps {
 
   return (
     <>
-      <header className={styles.mainNav} data-tour="main-navbar">
+      <header
+        className={`${styles.mainNav} ${withMemberTabs ? styles.withMemberTabs : ''}`}
+        data-tour="main-navbar"
+      >
         {/* --- DESKTOP LAYOUT --- */}
         {!isMobile && (
           <>

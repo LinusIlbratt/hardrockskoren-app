@@ -6,8 +6,20 @@ import { MusicPlayerOverlayProvider, useMusicPlayerOverlay } from '@/context/Mus
 import { MusicPlayerOverlayHost } from '@/components/music/MusicPlayerOverlay';
 import { MiniPlayerBar } from '@/components/media/MiniPlayerBar';
 import { MainNav } from '../nav/MainNav';
+import { UserNav } from '../nav/UserNav';
+import { GroupNotificationProviders } from '@/context/GroupNotificationProviders';
 import { PageLoader } from '@/components/ui/loader/Loader';
 import styles from './AppLayout.module.scss';
+
+function memberGroupFromPath(pathname: string): string | undefined {
+  const match = pathname.match(/^\/user\/me\/([^/]+)/);
+  if (!match?.[1]) return undefined;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
 
 const AppLayoutContent = memo(function AppLayoutContent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -19,6 +31,7 @@ const AppLayoutContent = memo(function AppLayoutContent() {
 
   const hasSession = Boolean(activeGroupName) && Boolean(activeViewer);
   const showMiniBar = Boolean(activeTrack) && !isOpen && hasSession;
+  const memberGroupName = memberGroupFromPath(location.pathname);
 
   useEffect(() => {
     isOpenRef.current = isOpen;
@@ -68,15 +81,44 @@ const AppLayoutContent = memo(function AppLayoutContent() {
     setMusicOverlayMount((prev) => (prev === el ? prev : el));
   }, []);
 
+  const topNav = memberGroupName ? (
+    <div className={styles.memberTopStack}>
+      <MainNav
+        isMenuOpen={isMenuOpen}
+        setIsMenuOpen={setIsMenuOpen}
+        withMemberTabs
+      />
+      <UserNav groupName={memberGroupName} />
+    </div>
+  ) : (
+    <MainNav isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+  );
+
+  const page = (
+    <main
+      className={`${styles.mainContent} ${showMiniBar ? styles.mainWithMiniPlayer : ''}`}
+    >
+      <Outlet />
+    </main>
+  );
+
   return (
-    <div className={styles.appLayout} data-mini-player-visible={showMiniBar ? 'true' : undefined}>
+    <div
+      className={`${styles.appLayout} ${memberGroupName ? styles.withMemberTabs : ''}`}
+      data-mini-player-visible={showMiniBar ? 'true' : undefined}
+    >
       <div className={styles.appBody}>
-        <MainNav isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
-        <main
-          className={`${styles.mainContent} ${showMiniBar ? styles.mainWithMiniPlayer : ''}`}
-        >
-          <Outlet />
-        </main>
+        {memberGroupName ? (
+          <GroupNotificationProviders groupSlug={memberGroupName}>
+            {topNav}
+            {page}
+          </GroupNotificationProviders>
+        ) : (
+          <>
+            {topNav}
+            {page}
+          </>
+        )}
       </div>
       {/* Monteringspunkt för musik-overlay: pekare passerar när minispelare (inte fullskärm). */}
       <div

@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
-import { IoEyeOutline, IoInformationCircleOutline } from "react-icons/io5";
+import { Info } from "lucide-react";
+import { IoEyeOutline } from "react-icons/io5";
 import { format, isPast } from "date-fns";
 import { sv } from "date-fns/locale";
-import { Cluster } from "@/components/ui/layout/Cluster";
 import { Stack } from "@/components/ui/layout/Stack";
 import { Modal } from "@/components/ui/modal/Modal";
 import { Tab, Tabs } from "@/components/ui/tabs/Tabs";
@@ -16,6 +17,7 @@ import styles from "./MemberEventPage.module.scss";
 export const MemberEventPage = () => {
   const { groupName } = useParams<{ groupName: string }>();
   const { user } = useAuth();
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const {
     rehearsals,
     concerts,
@@ -119,7 +121,18 @@ export const MemberEventPage = () => {
   return (
     <Stack gap="xl" className={styles.page}>
       <Stack gap="md" className={styles.header}>
-        <h2>Gig & Repdatum</h2>
+        <div className={styles.titleRow}>
+          <h2>Gig & Repdatum</h2>
+          <button
+            type="button"
+            className={styles.infoButton}
+            onClick={() => setIsHelpOpen(true)}
+            aria-label="Så fungerar det"
+            aria-expanded={isHelpOpen}
+          >
+            <Info size={20} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+        </div>
         <Tabs label="Gig och repdatum">
           <Tab active={activeTab === "REHEARSAL"} onSelect={() => setActiveTab("REHEARSAL")}>
             Rep
@@ -134,17 +147,6 @@ export const MemberEventPage = () => {
           </Tab>
         </Tabs>
       </Stack>
-
-      {activeTab !== "SHARED" && (
-        <Cluster align="start" gap="md" className={styles.legend}>
-          <IoInformationCircleOutline size={20} className={styles.legendIcon} />
-          <p className={styles.legendText}>
-            Tryck på ögat <IoEyeOutline size={20} className={styles.inlineIcon} /> för att läsa mer.
-            Nya event har en ljusare bakgrund, medan en pulserande detalj visar exakt vad som har ändrats.
-            Klicka på ett markerat event för att markera det som läst.
-          </p>
-        </Cluster>
-      )}
 
       {activeTab === "SHARED" ? (
         <SharedConcertSignupPanel
@@ -170,6 +172,20 @@ export const MemberEventPage = () => {
           )}
         </>
       )}
+
+      <Modal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        title="Så fungerar det"
+        tone="luxury"
+        size="compact"
+      >
+        <p className={styles.helpText}>
+          Tryck på ögat <IoEyeOutline size={18} aria-hidden="true" /> för att läsa mer.
+          Nya event har en ljusare bakgrund, och en pulserande detalj visar vad som har ändrats.
+          Tryck på ett markerat event för att markera det som läst.
+        </p>
+      </Modal>
 
       <Modal
         isOpen={!!eventToShowDescription}

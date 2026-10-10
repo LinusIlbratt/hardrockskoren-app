@@ -39,7 +39,9 @@ export const MemberAktuelltPage = () => {
   return (
     <Stack gap="lg" className={styles.page}>
       <Cluster align="start" gap="xs" className={styles.stickyHeader}>
-        <h1 className={styles.title}>Aktuellt</h1>
+        <div className={styles.titleRow}>
+          <h1 className={styles.title}>Aktuellt</h1>
+        </div>
         <p className={styles.subtitle}>
           {unread.length > 0
             ? `${unread.length} olästa · tryck för att läsa${unreadHint}`
