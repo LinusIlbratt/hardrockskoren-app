@@ -29,14 +29,15 @@ export const UserNav = ({ groupName }: UserNavProps) => {
 
   return (
     <nav className={styles.nav} aria-label="Medlemssektioner">
-      <div className={styles.groupLabel} aria-busy={isChoirNameLoading}>
-        {isChoirNameLoading ? (
-          <span className={styles.groupLabelSkeleton} aria-hidden="true" />
-        ) : (
-          choirName ?? ""
-        )}
-      </div>
-      <div className={styles.list}>
+      <div className={styles.frame}>
+        <div className={styles.groupLabel} aria-busy={isChoirNameLoading}>
+          {isChoirNameLoading ? (
+            <span className={styles.groupLabelSkeleton} aria-hidden="true" />
+          ) : (
+            choirName ?? ""
+          )}
+        </div>
+        <div className={styles.list}>
         <NavLink to={`${base}/repertoires`} className={getLinkClassName}>
           Repertoar
         </NavLink>
@@ -59,6 +60,7 @@ export const UserNav = ({ groupName }: UserNavProps) => {
             <span className={styles.badge}>{totalNotifications}</span>
           )}
         </NavLink>
+        </div>
       </div>
     </nav>
   );

@@ -10,6 +10,10 @@
 
 .withMemberTabs {
   --member-subnav-height: 76px;
+
+  @media (min-width: #{$tabletBreakpoint}) {
+    --member-subnav-height: 88px;
+  }
 }
 
 // Logga + medlemsflikar sitter ihop och stannar kvar när sidan scrollar.
@@ -18,7 +22,7 @@
   top: 0;
   z-index: 900;
   flex-shrink: 0;
-  background-color: var(--color-dark-gray);
+  background-color: transparent;
 }
 
 // Nav + Outlet — aldrig täckt av transparenta lager (overlay är syskon, inte här ovanpå)

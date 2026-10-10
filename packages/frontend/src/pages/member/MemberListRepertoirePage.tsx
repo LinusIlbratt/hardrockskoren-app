@@ -69,13 +69,12 @@ export const MemberListRepertoirePage = () => {
     return (
         <div className={styles.page}>
             <header className={styles.header}>
-                <div className={styles.titleRow}>
-                    <h2>Repertoar</h2>
-                </div>
                 <p>Välj en låt för att se allt material.</p>
             </header>
             {groupName && (
-                <RecentlyPlayedWidget groupName={groupName} viewer="member" />
+                <div className={styles.playerSlot}>
+                    <RecentlyPlayedWidget groupName={groupName} viewer="member" />
+                </div>
             )}
 
             {isLoading ? (

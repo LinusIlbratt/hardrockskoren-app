@@ -277,17 +277,23 @@ interface MainNavProps {
               </nav>
             </div>
 
-            <div className={styles.middleSection}>
-              <div className={styles.desktopAttendanceButton}>
-                {AttendanceButton}
+            <div className={styles.navActionsRight}>
+              <div className={styles.choirActions}>
+                {user?.role === 'user' && (
+                  <div className={styles.desktopAttendanceButton}>
+                    {AttendanceButton}
+                  </div>
+                )}
+                {AllChoirsLink}
               </div>
-            </div>
-
-            <div className={styles.rightSection}>
-              {AllChoirsLink}
-              <div className={styles.desktopOnlyUserInfo}>
-                <UserInfoAndLogout />
-              </div>
+              {user && (
+                <>
+                  <span className={styles.navDivider} aria-hidden="true" />
+                  <div className={styles.desktopOnlyUserInfo}>
+                    <UserInfoAndLogout />
+                  </div>
+                </>
+              )}
             </div>
           </>
         )}
