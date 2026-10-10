@@ -54,9 +54,10 @@
 }
 
 .shellBrandTitle {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 1rem;
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--color-text-luxury);
   letter-spacing: -0.01em;
 }
 
@@ -68,20 +69,31 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.07);
-  color: var(--color-text-muted);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-text-luxury-muted);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s ease;
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.14);
-    color: var(--color-text);
-    transform: scale(1.05);
+  &:hover,
+  &:active {
+    background: transparent;
+    box-shadow: none;
+    color: var(--color-text-luxury);
+    transform: none;
+  }
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    background: transparent;
+    box-shadow: none;
   }
 }
 
@@ -813,19 +825,21 @@
 
 .heroEyebrow {
   margin: 0 0 var(--spacing-2xs);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-text-muted);
+  color: var(--color-text-luxury-muted);
 }
 
 .heroTitle {
   margin: 0 0 var(--spacing-xs);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 1.25rem;
   font-weight: 800;
   line-height: 1.2;
-  color: var(--color-text);
+  color: var(--color-text-luxury);
   letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
@@ -1051,7 +1065,7 @@ $trackUiFont:
   outline: none;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.04);
 
     .trackRowMiniArt {
       box-shadow:
@@ -1071,32 +1085,32 @@ $trackUiFont:
   }
 
   &:focus-visible {
-    box-shadow: inset 0 0 0 2px rgba(254, 22, 10, 0.55);
+    box-shadow: inset 0 0 0 2px var(--color-luxury-accent-border);
   }
 }
 
 .rowActive {
-  background: rgba(255, 255, 255, 0.09) !important;
+  background: var(--color-luxury-accent-subtle) !important;
 
   .trackTitleCell {
-    color: var(--color-primary, #fe160a) !important;
+    color: var(--color-text-luxury) !important;
     font-weight: 600;
   }
 
   .colIndex .trackNumber {
-    color: var(--color-primary, #fe160a);
+    color: var(--color-text-luxury);
     font-weight: 600;
   }
 
   .trackRowMiniArt {
-    color: var(--color-text);
+    color: var(--color-text-luxury);
     box-shadow:
-      0 0 0 2px var(--color-primary, #fe160a),
-      0 6px 20px rgba(254, 22, 10, 0.2);
+      0 0 0 2px var(--color-luxury-accent-border),
+      0 6px 20px rgba(0, 0, 0, 0.25);
   }
 
   .trackPlayIcon {
-    color: var(--color-primary, #fe160a);
+    color: var(--color-text-luxury);
     opacity: 1;
   }
 
@@ -1112,7 +1126,7 @@ $trackUiFont:
   font-size: 0.9375rem;
   letter-spacing: -0.01em;
   line-height: 1.35;
-  color: var(--color-text);
+  color: var(--color-text-luxury-muted);
   transition: color 0.18s ease;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1552,8 +1566,8 @@ $trackUiFont:
   }
 
   .closeButton {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
   }
 
   /* Spotify-lik nav: mörk yta, ikon + mikro-label, mjuk aktiv pill */

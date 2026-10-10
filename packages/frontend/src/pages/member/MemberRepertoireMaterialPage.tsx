@@ -202,8 +202,19 @@ const MaterialSection: React.FC<MaterialSectionProps> = ({
 export const MemberRepertoireMaterialPage = () => {
   const { getAuthHeaders } = useAuth();
   const { favoriteMaterialIds, toggleFavoriteOptimistic } = useFavorites();
-  const { open: openMusicOverlay, activeMaterialId, isPlaying, activeGroupName } =
-    useMusicPlayerOverlay();
+  const {
+    open: openMusicOverlay,
+    activeMaterialId,
+    isPlaying,
+    activeGroupName,
+    isOpen,
+    activeTrack,
+    setActiveTrack,
+    setActiveMaterialId,
+    setIsPlaying,
+    setPlaybackProgress,
+    setQueueMeta,
+  } = useMusicPlayerOverlay();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -249,15 +260,45 @@ export const MemberRepertoireMaterialPage = () => {
     (material: Material) => {
       const g = groupName?.trim();
       const rep = repertoireId?.trim();
-      if (!g || !rep || !material.materialId?.trim()) return;
+      const materialId = material.materialId?.trim();
+      if (!g || !rep || !materialId) return;
       if (!material.fileKey || !isPlayableAudioFile(material.fileKey)) return;
+      const keepMinimized = !isOpen && Boolean(activeTrack) && activeGroupName === g;
       /** repertoarId från URL; spelaren hämtar material — libraryQueueMaterials används inte. */
       openMusicOverlay(g, 'member', {
         initialRepertoireId: rep,
-        repertoirePlayback: { type: 'fromMaterialId', materialId: material.materialId.trim() },
+        repertoirePlayback: { type: 'fromMaterialId', materialId },
+        ...(keepMinimized ? { startMinimized: true } : {}),
       });
+      if (!keepMinimized) return;
+
+      const title =
+        formatDisplayTitle(material.title || material.fileKey.split('/').pop() || '') ||
+        material.title?.trim() ||
+        '—';
+      setActiveMaterialId(materialId);
+      setActiveTrack({ title, fileKey: material.fileKey });
+      setIsPlaying(true);
+      setPlaybackProgress({ current: 0, duration: 0 });
+      const queueIndex = audioFiles.findIndex((item) => item.materialId === materialId);
+      if (queueIndex >= 0) {
+        setQueueMeta({ currentIndex: queueIndex, total: audioFiles.length });
+      }
     },
-    [groupName, repertoireId, openMusicOverlay]
+    [
+      groupName,
+      repertoireId,
+      openMusicOverlay,
+      isOpen,
+      activeTrack,
+      activeGroupName,
+      audioFiles,
+      setActiveMaterialId,
+      setActiveTrack,
+      setIsPlaying,
+      setPlaybackProgress,
+      setQueueMeta,
+    ]
   );
 
   const documentFiles = useMemo(

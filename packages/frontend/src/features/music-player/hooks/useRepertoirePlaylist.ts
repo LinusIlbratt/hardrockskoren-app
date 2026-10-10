@@ -322,13 +322,34 @@ export function useRepertoirePlaylist({
     buildTracksFromMaterials,
   ]);
 
+  const resolvedPlayerStartIndex = useMemo(() => {
+    const rid = initialRepertoireId?.trim();
+    if (!repertoirePlaybackIntent || !rid || selectedId !== rid || audioMaterials.length === 0) {
+      return playerStartIndex;
+    }
+    if (repertoirePlaybackIntent.type === 'fromMaterialId') {
+      const idx = audioMaterials.findIndex(
+        (m) => m.materialId === repertoirePlaybackIntent.materialId,
+      );
+      return idx >= 0 ? idx : playerStartIndex;
+    }
+    return Math.min(
+      Math.max(0, repertoirePlaybackIntent.index),
+      audioMaterials.length - 1,
+    );
+  }, [repertoirePlaybackIntent, initialRepertoireId, selectedId, audioMaterials, playerStartIndex]);
+
   const handlePlayTrackAt = useCallback(
     (index: number) => {
       onPlaybackStartRef.current?.();
+      const playable = materials.filter((m) => m.fileKey && isPlayableAudioFile(m.fileKey));
+      if (playable.length > 0) {
+        const safeIndex = Math.min(Math.max(0, index), playable.length - 1);
+        setPlayerStartIndex(safeIndex);
+        setHighlightedTrackIndex(safeIndex);
+      }
       const requestId = ++queueBuildRef.current;
-      void buildTracksFromMaterials(
-        materials.filter((m) => m.fileKey && isPlayableAudioFile(m.fileKey)),
-      ).then((tracks) => {
+      void buildTracksFromMaterials(playable).then((tracks) => {
         if (requestId !== queueBuildRef.current) return;
         if (tracks.length === 0) return;
         const safeIndex = Math.min(Math.max(0, index), tracks.length - 1);
@@ -604,7 +625,7 @@ export function useRepertoirePlaylist({
     materials,
     playerQueue,
     activeQueue: playerQueue,
-    playerStartIndex,
+    playerStartIndex: resolvedPlayerStartIndex,
     highlightedTrackIndex,
     setHighlightedTrackIndex,
     loadingList,

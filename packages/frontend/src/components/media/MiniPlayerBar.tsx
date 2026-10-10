@@ -1,34 +1,14 @@
-import { useState, type CSSProperties } from 'react';
-import {
-  FaPlay,
-  FaPause,
-  FaVolumeUp,
-  FaStepBackward,
-  FaStepForward,
-} from 'react-icons/fa';
-import { Repeat, Repeat1, Heart, ListPlus, Maximize2 } from 'lucide-react';
+import { Pause, Play, SkipBack, SkipForward } from 'lucide-react';
 import {
   useMusicPlayerOverlay,
   useMusicPlayerPlaybackProgress,
 } from '@/context/MusicPlayerOverlayContext';
-import { useFavorites } from '@/hooks/useFavorites';
-import { AddToPlaylistModal } from '@/components/music/AddToPlaylistModal';
-import { TrackTitleMarquee } from '@/components/media/TrackTitleMarquee';
-import type { Material } from '@/types';
 import { formatDisplayTitle } from '@/utils/media';
 import styles from './MediaPlayer.module.scss';
 
-const PLAYBACK_RATES = [0.5, 0.75, 1, 1.25, 1.5, 2] as const;
-
-function formatTime(time: number): string {
-  if (Number.isNaN(time)) return '0:00';
-  const minutes = Math.floor(time / 60);
-  const seconds = Math.floor(time % 60);
-  return `${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
-}
-
 /**
- * Samma layout och SCSS som inbäddad MediaPlayer (playerBar), medan ljudet styrs av dold MediaPlayer via playbackApiRef.
+ * Kompakt bottenlist. Ljudet styrs av dold MediaPlayer via playbackApiRef.
+ * Klick på listen (utanför play) fäller upp overlayn.
  */
 export function MiniPlayerBar() {
   const {
@@ -41,16 +21,8 @@ export function MiniPlayerBar() {
     expandOverlay,
     queueMeta,
     repeatMode,
-    volume,
-    playbackRate,
-    activeMaterialId,
   } = useMusicPlayerOverlay();
   const playbackProgress = useMusicPlayerPlaybackProgress();
-
-  const api = () => playbackApiRef.current;
-
-  const { favoriteMaterialIds, toggleFavoriteOptimistic } = useFavorites();
-  const [playlistModalOpen, setPlaylistModalOpen] = useState(false);
 
   const visible =
     Boolean(activeTrack) && !isOpen && Boolean(activeGroupName) && Boolean(activeViewer);
@@ -63,218 +35,84 @@ export function MiniPlayerBar() {
   const displayTitle =
     formatDisplayTitle(track.title || '') || track.title?.trim() || '—';
   const { current, duration } = playbackProgress;
-
-  const timelineProgressPct =
+  const progressPct =
     duration > 0 && Number.isFinite(duration)
       ? Math.min(100, Math.max(0, (current / duration) * 100))
       : 0;
-  const timelineSliderStyle = {
-    ['--slider-progress' as string]: `${timelineProgressPct}%`,
-  } as CSSProperties;
-
-  const showPrevNext = Boolean(queueMeta && queueMeta.total > 1);
-  const repeatAriaLabel =
-    repeatMode === 'one'
-      ? 'Upprepa ett spår (på)'
-      : repeatMode === 'all'
-        ? 'Upprepa alla (på)'
-        : 'Upprepa av';
+  const subtitle =
+    track.artist?.trim() ||
+    (queueMeta && queueMeta.total > 1
+      ? `Spår ${queueMeta.currentIndex + 1} av ${queueMeta.total}`
+      : '');
+  const hasPrevious = Boolean(queueMeta && queueMeta.currentIndex > 0);
+  const hasNext = Boolean(
+    queueMeta &&
+      (repeatMode === 'all' || queueMeta.currentIndex < queueMeta.total - 1)
+  );
 
   return (
     <div
       role="region"
       aria-label="Miniuppspelare"
       className={`${styles.playerContainer} ${styles.miniPlayerBarDock}`}
+      onClick={() => expandOverlay()}
     >
-      <div className={styles.playerBar}>
-        <div className={styles.playerMainRow}>
-          <div className={styles.sectionNowPlaying}>
-            <div className={styles.artPlaceholder} aria-hidden>
-              {(displayTitle || '?').charAt(0).toUpperCase()}
-            </div>
-            <div className={styles.nowPlayingMain}>
-              <div className={styles.nowPlayingText}>
-                <TrackTitleMarquee text={displayTitle} />
-                {track.artist ? (
-                  <span className={styles.trackMeta}>{track.artist}</span>
-                ) : showPrevNext && queueMeta ? (
-                  <span className={styles.trackMeta}>
-                    Spår {queueMeta.currentIndex + 1} av {queueMeta.total}
-                  </span>
-                ) : null}
-              </div>
-              {activeMaterialId ? (
-                <div className={styles.quickActions}>
-                  <button
-                    type="button"
-                    className={styles.quickActionButton}
-                    onClick={() => {
-                      if (!activeMaterialId) return;
-                      const adding = !favoriteMaterialIds.includes(activeMaterialId);
-                      let hint: Material | undefined;
-                      if (adding && track.fileKey) {
-                        const t =
-                          formatDisplayTitle(track.title || '') ||
-                          track.title?.trim();
-                        hint = {
-                          materialId: activeMaterialId,
-                          fileKey: track.fileKey,
-                          ...(t ? { title: t } : {}),
-                        };
-                      }
-                      toggleFavoriteOptimistic(activeMaterialId, hint);
-                    }}
-                    aria-label={
-                      favoriteMaterialIds.includes(activeMaterialId)
-                        ? 'Ta bort från favoriter'
-                        : 'Lägg till i favoriter'
-                    }
-                    aria-pressed={favoriteMaterialIds.includes(activeMaterialId)}
-                  >
-                    <Heart
-                      size={18}
-                      fill={
-                        favoriteMaterialIds.includes(activeMaterialId)
-                          ? 'currentColor'
-                          : 'none'
-                      }
-                    />
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.quickActionButton}
-                    onClick={() => setPlaylistModalOpen(true)}
-                    aria-label="Lägg till i spellista"
-                  >
-                    <ListPlus size={18} aria-hidden />
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          </div>
-
-          <div className={styles.sectionTransport}>
-            <div className={styles.transportCluster}>
-              <div className={styles.transportSideStart}>
-                {showPrevNext ? (
-                  <button
-                    type="button"
-                    className={styles.iconButton}
-                    onClick={() => api()?.goPrevious()}
-                    disabled={!queueMeta || queueMeta.currentIndex <= 0}
-                    aria-label="Föregående spår"
-                  >
-                    <FaStepBackward size={15} />
-                  </button>
-                ) : null}
-              </div>
-              <button
-                type="button"
-                onClick={() => api()?.togglePlayPause()}
-                className={styles.playPauseButton}
-                aria-label={isPlaying ? 'Paus' : 'Spela'}
-              >
-                {isPlaying ? (
-                  <FaPause size={18} />
-                ) : (
-                  <FaPlay size={18} style={{ marginLeft: 2 }} />
-                )}
-              </button>
-              <div className={styles.transportSideEnd}>
-                {showPrevNext ? (
-                  <button
-                    type="button"
-                    className={styles.iconButton}
-                    onClick={() => api()?.goNext()}
-                    disabled={
-                      !queueMeta ||
-                      (repeatMode !== 'all' &&
-                        queueMeta.currentIndex >= queueMeta.total - 1)
-                    }
-                    aria-label="Nästa spår"
-                  >
-                    <FaStepForward size={15} />
-                  </button>
-                ) : null}
-                <button
-                  type="button"
-                  className={`${styles.iconButton} ${repeatMode !== 'off' ? styles.iconButtonAccent : ''}`}
-                  onClick={() => api()?.cycleRepeat()}
-                  aria-label={repeatAriaLabel}
-                >
-                  {repeatMode === 'one' ? (
-                    <Repeat1 size={18} strokeWidth={2} />
-                  ) : (
-                    <Repeat size={18} strokeWidth={2} />
-                  )}
-                </button>
-                <label className={styles.playbackRateInline}>
-                  <span className={styles.srOnly}>Uppspelningshastighet</span>
-                  <select
-                    className={styles.playbackRateSelectInline}
-                    value={playbackRate}
-                    onChange={(e) => api()?.setPlaybackRate(Number(e.target.value))}
-                    aria-label="Uppspelningshastighet"
-                  >
-                    {PLAYBACK_RATES.map((r) => (
-                      <option key={r} value={r}>
-                        {r === 1 ? '1×' : `${r}×`}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.sectionMeta}>
-            <div className={styles.sectionVolume}>
-              <FaVolumeUp size={16} className={styles.volumeIcon} aria-hidden />
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.01}
-                value={volume}
-                onChange={(e) => api()?.setVolume(Number(e.target.value))}
-                className={styles.volumeSlider}
-                aria-label="Volym"
-              />
-            </div>
-            <button
-              type="button"
-              className={styles.expandFullButton}
-              onClick={() => expandOverlay()}
-              aria-label="Öppna fullskärmsmusik"
-            >
-              <Maximize2 size={20} aria-hidden />
-            </button>
-          </div>
-        </div>
-
-        <div className={styles.playerProgressRow}>
-          <div className={styles.seekBarContainer}>
-            <span className={styles.time}>{formatTime(current)}</span>
-            <input
-              type="range"
-              min={0}
-              max={duration || 0}
-              value={current}
-              onChange={(e) => api()?.seek(Number(e.target.value))}
-              className={styles.timelineSlider}
-              style={timelineSliderStyle}
-              aria-label="Tidslinje"
-            />
-            <span className={styles.time}>{formatTime(duration)}</span>
-          </div>
-        </div>
+      <div className={styles.miniProgressTrack} aria-hidden>
+        <div className={styles.miniProgressFill} style={{ width: `${progressPct}%` }} />
       </div>
 
-      <AddToPlaylistModal
-        isOpen={playlistModalOpen}
-        onClose={() => setPlaylistModalOpen(false)}
-        materialId={playlistModalOpen ? activeMaterialId : null}
-      />
+      <div className={styles.artPlaceholder} aria-hidden>
+        {(displayTitle || '?').charAt(0).toUpperCase()}
+      </div>
+
+      <div className={styles.miniMeta}>
+        <span className={styles.miniTitle}>{displayTitle}</span>
+        {subtitle ? <span className={styles.miniSubtitle}>{subtitle}</span> : null}
+      </div>
+
+      <div className={styles.miniActions}>
+        {hasPrevious ? (
+          <button
+            type="button"
+            className={styles.miniControl}
+            onClick={(event) => {
+              event.stopPropagation();
+              playbackApiRef.current?.goPrevious();
+            }}
+            aria-label="Föregående spår"
+          >
+            <SkipBack size={18} aria-hidden />
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className={styles.miniControl}
+          onClick={(event) => {
+            event.stopPropagation();
+            playbackApiRef.current?.togglePlayPause();
+          }}
+          aria-label={isPlaying ? 'Paus' : 'Spela'}
+        >
+          {isPlaying ? (
+            <Pause size={18} aria-hidden />
+          ) : (
+            <Play size={18} aria-hidden style={{ marginLeft: 2 }} />
+          )}
+        </button>
+        {hasNext ? (
+          <button
+            type="button"
+            className={styles.miniControl}
+            onClick={(event) => {
+              event.stopPropagation();
+              playbackApiRef.current?.goNext();
+            }}
+            aria-label="Nästa spår"
+          >
+            <SkipForward size={18} aria-hidden />
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

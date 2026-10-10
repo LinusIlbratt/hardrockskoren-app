@@ -287,6 +287,14 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
         ? props.materialId
         : undefined;
 
+  const pendingMaterialId =
+    overlayPlayback?.repertoirePlaybackIntent?.type === 'fromMaterialId'
+      ? overlayPlayback.repertoirePlaybackIntent.materialId
+      : null;
+  const holdTrackSync = Boolean(
+    pendingMaterialId && currentMaterialId && currentMaterialId !== pendingMaterialId,
+  );
+
   const repeatAriaLabel =
     repeatMode === 'one'
       ? 'Upprepa ett spår (på)'
@@ -313,25 +321,25 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
   }, [currentMaterialId, activeTrackFileKey, displayTitle]);
 
   useEffect(() => {
-    if (!syncPlayback || !overlaySetActiveTrack) return;
+    if (!syncPlayback || !overlaySetActiveTrack || holdTrackSync) return;
     const t = displayTitle || '';
     overlaySetActiveTrack(
       t ? { title: t, ...(activeTrackFileKey ? { fileKey: activeTrackFileKey } : {}) } : null,
     );
-  }, [syncPlayback, overlaySetActiveTrack, displayTitle, activeTrackFileKey]);
+  }, [syncPlayback, overlaySetActiveTrack, displayTitle, activeTrackFileKey, holdTrackSync]);
 
   useEffect(() => {
-    if (!syncPlayback || !overlaySetIsPlaying) return;
+    if (!syncPlayback || !overlaySetIsPlaying || holdTrackSync) return;
     overlaySetIsPlaying(isPlaying);
-  }, [syncPlayback, overlaySetIsPlaying, isPlaying]);
+  }, [syncPlayback, overlaySetIsPlaying, isPlaying, holdTrackSync]);
 
   useEffect(() => {
-    if (!syncPlayback || !overlaySetPlaybackProgress) return;
+    if (!syncPlayback || !overlaySetPlaybackProgress || holdTrackSync) return;
     overlaySetPlaybackProgress({
       current: currentTime,
       duration: Number.isFinite(duration) ? duration : 0,
     });
-  }, [syncPlayback, overlaySetPlaybackProgress, currentTime, duration]);
+  }, [syncPlayback, overlaySetPlaybackProgress, currentTime, duration, holdTrackSync]);
 
   useEffect(() => {
     if (!syncPlayback || !overlaySetRepeatMode) return;
@@ -349,7 +357,7 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
   }, [syncPlayback, overlaySetPlaybackRate, playbackRate]);
 
   useEffect(() => {
-    if (!syncPlayback || !overlaySetQueueMeta) return;
+    if (!syncPlayback || !overlaySetQueueMeta || holdTrackSync) return;
     if (!queueMode || !tracks?.length) {
       overlaySetQueueMeta(null);
       return;
@@ -358,12 +366,12 @@ export const MediaPlayer = (props: MediaPlayerProps) => {
       currentIndex: currentTrackIndex,
       total: tracks.length,
     });
-  }, [syncPlayback, overlaySetQueueMeta, queueMode, tracks, currentTrackIndex]);
+  }, [syncPlayback, overlaySetQueueMeta, queueMode, tracks, currentTrackIndex, holdTrackSync]);
 
   useEffect(() => {
-    if (!syncPlayback || !overlaySetActiveMaterialId) return;
+    if (!syncPlayback || !overlaySetActiveMaterialId || holdTrackSync) return;
     overlaySetActiveMaterialId(currentMaterialId ?? null);
-  }, [syncPlayback, overlaySetActiveMaterialId, currentMaterialId]);
+  }, [syncPlayback, overlaySetActiveMaterialId, currentMaterialId, holdTrackSync]);
 
   const handlePlaybackRateChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const r = Number(e.target.value);

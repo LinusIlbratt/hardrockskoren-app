@@ -48,6 +48,7 @@
   position: sticky;
   bottom: 0;
   z-index: 5;
+  flex-shrink: 0;
   pointer-events: auto;
   display: flex;
   flex-direction: column;

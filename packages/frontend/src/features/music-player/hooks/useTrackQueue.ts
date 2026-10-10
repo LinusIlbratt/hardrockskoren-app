@@ -82,6 +82,20 @@ export function useTrackQueue({
   const safeInitial =
     queueMode && tracks?.length ? Math.min(initialIndex, tracks.length - 1) : 0;
 
+  const appliedQueueSigRef = useRef<string | null>(null);
+  const appliedInitialRef = useRef(safeInitial);
+  if (queueMode && tracks?.length) {
+    const queueUnchanged = appliedQueueSigRef.current === queueSignature;
+    if (queueUnchanged && appliedInitialRef.current !== safeInitial) {
+      appliedInitialRef.current = safeInitial;
+      setCurrentIndex(safeInitial);
+      pendingSeekRef.current = null;
+    } else if (!queueUnchanged) {
+      appliedQueueSigRef.current = queueSignature;
+      appliedInitialRef.current = safeInitial;
+    }
+  }
+
   /**
    * Spårindex + seek från sessionStorage endast när kön byts (ny queueSignature).
    * Om samma kö men nytt initialIndex (t.ex. radklick) ska lagrat index inte skriva över valet.

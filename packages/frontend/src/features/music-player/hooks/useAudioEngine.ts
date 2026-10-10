@@ -99,6 +99,13 @@ export function useAudioEngine({
   const [playbackRate, setPlaybackRate] = useState(1);
   const [loadError, setLoadError] = useState<string | null>(null);
 
+  const prevAudioSrcRef = useRef(audioSrc);
+  if (prevAudioSrcRef.current !== audioSrc) {
+    prevAudioSrcRef.current = audioSrc;
+    setCurrentTime(0);
+    setDuration(0);
+  }
+
   useEffect(() => {
     setLoadError(null);
   }, [audioSrc]);
