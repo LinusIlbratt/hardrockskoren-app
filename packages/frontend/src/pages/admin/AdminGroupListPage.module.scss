@@ -2,8 +2,9 @@
 
 // Huvudbehållaren för hela sidan
 .page {
-  padding: var(--spacing-xs);
-  padding-bottom: var(--spacing-xxl); // Extra utrymme i botten
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--spacing-xs) 0 var(--spacing-xxl);
 }
 
 .title {
@@ -101,7 +102,7 @@
 // När skärmen blir bredare än vår tablet-brytpunkt...
 @media (min-width: #{$tabletBreakpoint}) {
   .page {
-    padding: var(--spacing-xl);
+    padding: var(--spacing-xl) 0;
   }
 
   .list {

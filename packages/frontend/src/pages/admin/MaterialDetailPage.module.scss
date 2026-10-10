@@ -8,12 +8,21 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
 .page {
   min-height: 100%;
-  padding: var(--spacing-lg) var(--spacing-md);
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--spacing-lg) 0;
   background: radial-gradient(120% 80% at 50% -20%, rgba(254, 22, 10, 0.06), transparent 55%),
     var(--color-background);
 
+  @media (max-width: #{$tabletBreakpoint - 1px}) {
+    margin-top: -2rem;
+    padding-top: 16px;
+    padding-bottom: var(--spacing-lg);
+  }
+
   @media (min-width: #{$tabletBreakpoint}) {
-    padding: var(--spacing-xl) var(--spacing-lg);
+    margin-top: 0;
+    padding: var(--spacing-xl) 0;
   }
 }
 
@@ -26,12 +35,18 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
 .backLink {
   align-self: flex-start;
+  margin-top: 0;
   color: #f5ebd7;
   opacity: 0.7;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 0.95rem;
   font-weight: 500;
   text-decoration: none;
+
+  @media (max-width: #{$tabletBreakpoint - 1px}) {
+    // Kolumngapet är 24px. Negativ marginal lämnar 12px ned till rubriken.
+    margin-bottom: calc(12px - var(--spacing-lg));
+  }
 
   &:hover {
     opacity: 1;
@@ -48,17 +63,35 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
+  gap: 0;
 }
 
-.pageTitle {
+.headerTitleGroup {
+  margin-top: 12px;
+  margin-bottom: 20px;
+
+  @media (max-width: #{$tabletBreakpoint - 1px}) {
+    margin-top: 0;
+  }
+}
+
+.songTitle {
   margin: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 1.25rem;
+  font-size: clamp(20px, 4vw, 28px);
   font-weight: 700;
-  line-height: 1.25;
-  color: #f5ebd7;
+  line-height: 1.2;
+  color: var(--color-text-luxury, #f4efe6);
   word-break: break-word;
+}
+
+.artistName {
+  margin: 4px 0 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
 }
 
 .choirActions {
@@ -235,7 +268,7 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   border: 1px solid $shell-border;
   border-radius: var(--radius-lg);
   box-shadow: $shell-glow, 0 12px 40px rgba(0, 0, 0, 0.35);
-  padding: var(--spacing-sm);
+  padding: 10px 8px;
   overflow: hidden;
 
   @media (min-width: #{$tabletBreakpoint}) {
@@ -402,6 +435,10 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   flex: 1;
   gap: 10px;
   min-width: 0;
+
+  @media (min-width: #{$tabletBreakpoint}) {
+    gap: 12px;
+  }
 }
 
 .itemIconWrap {
@@ -437,8 +474,8 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   min-width: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 500;
-  font-size: 0.88rem;
-  line-height: 1.3;
+  font-size: 15px;
+  line-height: 1.45;
   color: #f5ebd7;
   white-space: normal;
   word-break: break-word;
@@ -448,7 +485,7 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  gap: 6px;
+  gap: 8px;
 }
 
 .hiddenFileInput {
@@ -460,13 +497,21 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  min-width: 36px;
-  min-height: 36px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  min-height: 34px;
   padding: 0;
+  border: none;
   border-radius: 8px;
+  background: transparent;
+  color: rgba(244, 239, 230, 0.55);
   cursor: pointer;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
 
   &:focus-visible {
     outline: 2px solid rgba(185, 28, 28, 0.7);
@@ -480,24 +525,16 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .replaceButton {
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(245, 235, 215, 0.75);
-
   &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.1);
-    color: #f5ebd7;
+    background: rgba(255, 255, 255, 0.06);
+    color: #f4efe6;
   }
 }
 
 .deleteFileButton {
-  border: none;
-  background: transparent;
-  color: rgba(245, 235, 215, 0.55);
-
   &:hover:not(:disabled) {
-    background: rgba(185, 28, 28, 0.2);
-    color: #f5ebd7;
+    background: rgba(185, 28, 28, 0.16);
+    color: #f4efe6;
   }
 }
 

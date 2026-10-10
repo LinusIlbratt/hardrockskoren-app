@@ -1,165 +1,108 @@
-// Importerar dina globala variabler och mixins
 @use '@/styles/variables' as *;
+
+$sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
 .listContainer {
   width: 100%;
-  margin-top: var(--spacing-xl);
+  font-family: $sans;
 }
 
-.listHeader {
-  display: none;
+.memberCard {
+  display: flex;
   align-items: center;
-  border-bottom: 2px solid var(--color-border);
-  color: var(--color-text);
-  opacity: 0.7;
-  font-size: var(--fs-xs);
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 12px 14px;
+  background: #121212;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.memberLead {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--color-text-luxury, #f4efe6);
+  font-family: $sans;
+  font-size: 13px;
   font-weight: 600;
+  line-height: 1;
   text-transform: uppercase;
 }
 
-.listBody {
-  overflow: hidden; 
-}
-
-.listRow {
-  display: grid;
-  align-items: center;
-  grid-template-columns: 32px 1fr auto;
-  grid-template-areas:
-    "avatar name   actions"
-    "avatar email  actions"
-    "avatar role   actions";
-  gap: 0 var(--spacing-md);
-  padding: var(--spacing-md);
-  transition: background-color 0.2s ease;
-
-  &:last-child {
-    border-bottom: none;
-  }
-
-  // Zebra-ränder anpassade för mörkt tema
-  &:nth-child(even) {
-    background-color: var(--color-border);
-  }
-}
-
-// Styling för de individuella cellerna
-.cellName {
-  grid-area: name;
-  align-self: end;
-  font-weight: 500;
-  color: var(--color-text);
+.memberText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
 }
 
-.cellChoir {
-  display: block;
-  margin-top: 2px;
-  font-weight: 400;
-  font-size: var(--fs-sm);
-  opacity: 0.7;
-}
-
-.cellEmail, .cellRole, .cellIndex {
-  color: var(--color-text);
-  opacity: 0.7;
-}
-
-.cellIndex {
-  display: none;
-}
-
-.cellEmail {
-  grid-area: email;
-  font-size: var(--fs-sm);
-  white-space: nowrap;
+.name {
+  font-family: $sans;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--color-text-luxury, #f4efe6);
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.cellRole {
-  grid-area: role;
-  align-self: start;
-  font-size: var(--fs-sm);
-  font-style: italic;
+.email,
+.choir {
+  font-family: $sans;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.cellActions {
-  grid-area: actions;
-  justify-self: end;
-}
-
-.cellAvatar {
-  grid-area: avatar;
-  width: 32px;
-  height: 32px;
-  border-radius: var(--radius-round); // Använder din runda radie
-  background-color: var(--color-dark-gray);
-  color: var(--color-text);
-  font-size: var(--fs-sm);
-  font-weight: 600;
-  text-transform: uppercase;
-  
-  // Använder din @center mixin
-  @include center;
+.role {
+  font-family: $sans;
+  font-size: 12px;
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1.3;
+  color: rgba(244, 239, 230, 0.45);
 }
 
 .editButton {
-  background: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 8px;
+  background: transparent;
   border: none;
+  border-radius: 6px;
+  color: rgba(244, 239, 230, 0.6);
   cursor: pointer;
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-round);
-  color: var(--color-text);
-  opacity: 0.7;
-  
-  // Använder din @center mixin
-  @include center;
+  transition: color 0.2s ease, background 0.2s ease;
 
   &:hover {
-    background-color: var(--color-background-hover);
-    opacity: 1;
-  }
-}
-
-@media (min-width: #{$tabletBreakpoint}) {
-  .listHeader {
-    display: grid;
-    grid-template-columns: 30px 48px 1.5fr 1.5fr 1fr 60px;
-    gap: var(--spacing-md);
-    padding: var(--spacing-sm) var(--spacing-md);
-  }
-
-  .listRow {
-    grid-template-columns: 30px 48px 1.5fr 1.5fr 1fr 60px;
-    grid-template-areas: none;
-    gap: var(--spacing-md);
-    padding: var(--spacing-sm) var(--spacing-md);
-  }
-
-  .cellIndex {
-    display: unset;
-  }
-
-  .cellAvatar,
-  .cellName,
-  .cellEmail,
-  .cellRole,
-  .cellActions {
-    grid-area: auto;
-  }
-
-  .cellName,
-  .cellRole {
-    align-self: auto;
-  }
-
-  .cellEmail,
-  .cellRole {
-    font-size: inherit;
-  }
-
-  .cellRole {
-    font-style: normal;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
   }
 }

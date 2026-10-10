@@ -99,18 +99,16 @@ export const AdminEventPage = () => {
         </div>
         <div className={styles.actions}>
           {event.description && (
-            <button className={styles.iconButton} onClick={() => setEventToShowDescription(event)} title="Visa beskrivning">
-              <IoEyeOutline size={22} />
+            <button type="button" className={styles.iconButton} onClick={() => setEventToShowDescription(event)} aria-label="Visa beskrivning" title="Visa beskrivning">
+              <IoEyeOutline size={18} aria-hidden />
             </button>
           )}
-          <div className={styles.editActions}>
-            <button className={styles.iconButton} onClick={() => handleOpenEditModal(event)} title="Redigera">
-              <FiEdit size={18} />
-            </button>
-            <button className={`${styles.iconButton} ${styles.deleteIcon}`} onClick={() => setEventToDelete(event)} title="Radera">
-              <IoTrashOutline size={20} />
-            </button>
-          </div>
+          <button type="button" className={styles.iconButton} onClick={() => handleOpenEditModal(event)} aria-label="Redigera" title="Redigera">
+            <FiEdit size={16} aria-hidden />
+          </button>
+          <button type="button" className={`${styles.iconButton} ${styles.deleteIcon}`} onClick={() => setEventToDelete(event)} aria-label="Ta bort" title="Ta bort">
+            <IoTrashOutline size={18} aria-hidden />
+          </button>
         </div>
       </li>
     );
@@ -122,8 +120,8 @@ export const AdminEventPage = () => {
         <h2>Hantera Events</h2>
         {activeTab !== 'SHARED' && (
         <div className={styles.buttonGroup}>
-          <Button onClick={handleOpenCreateModal}>Skapa enstaka event</Button>
-          <Button onClick={() => setIsRecurringModalOpen(true)}>Skapa återkommande</Button>
+          <Button className={styles.primaryButton} onClick={handleOpenCreateModal}>Skapa enstaka event</Button>
+          <Button className={styles.secondaryButton} onClick={() => setIsRecurringModalOpen(true)}>Skapa återkommande</Button>
         </div>
         )}
       </div>
@@ -132,12 +130,7 @@ export const AdminEventPage = () => {
       <div className={styles.legend}>
         <IoInformationCircleOutline size={20} className={styles.legendIcon} />
         <p className={styles.legendText}>
-          Tryck på<IoEyeOutline size={20} className={styles.inlineIcon} />
-           för att se information, 
-          <FiEdit size={20} className={styles.inlineIcon} />
-           för att redigera, 
-          <IoTrashOutline size={20} className={styles.inlineIcon} />
-           ta bort ett event.
+          Tryck på <IoEyeOutline size={16} className={styles.inlineIcon} aria-hidden /> för att visa, <FiEdit size={16} className={styles.inlineIcon} aria-hidden /> för att redigera eller <IoTrashOutline size={16} className={styles.inlineIcon} aria-hidden /> för att ta bort ett event.
         </p>
       </div>
       )}

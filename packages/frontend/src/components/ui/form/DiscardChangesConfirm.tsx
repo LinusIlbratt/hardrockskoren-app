@@ -112,16 +112,22 @@ export const DiscardChangesConfirm = ({ onConfirm, onCancel }: DiscardChangesCon
               <p id={descId} className={styles.srOnly}>
                 Välj att fortsätta redigera eller stänga utan att spara.
               </p>
-              <Cluster justify="end" gap="sm">
+              <Cluster justify="end" gap="sm" className={styles.buttonsGroup}>
                 <Button
                   type="button"
-                  variant={ButtonVariant.Primary}
+                  variant={ButtonVariant.Ghost}
+                  className={styles.continueButton}
                   data-discard-cancel
                   onClick={onCancel}
                 >
                   Fortsätt redigera
                 </Button>
-                <Button type="button" variant={ButtonVariant.Destructive} onClick={onConfirm}>
+                <Button
+                  type="button"
+                  variant={ButtonVariant.Destructive}
+                  className={styles.discardButton}
+                  onClick={onConfirm}
+                >
                   Stäng utan att spara
                 </Button>
               </Cluster>

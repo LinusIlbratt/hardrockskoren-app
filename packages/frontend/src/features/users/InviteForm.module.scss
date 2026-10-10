@@ -1,40 +1,113 @@
+@use '@/styles/variables' as *;
+
+$sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
 .form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-lg);
-  }
-  
-  .textarea {
-    min-height: 120px;
-    width: 100%;
-    background-color: rgba(0,0,0,0.2);
-    border: 1px solid var(--color-border);
-    padding: 0.75rem 1rem;
-    border-radius: var(--radius-sm);
-    transition: border-color 0.2s ease;
-    color: var(--color-text);
-    font-family: inherit;
-  
-    &:focus {
-      border-color: var(--color-primary);
-      outline: none;
-    }
-  }
-  
-  .description {
-    font-size: var(--fs-sm);
-    color: #9ca3af;
-    margin-top: var(--margin); // Minska avståndet till textarean
-  }
-  
-  .error {
-    color: var(--color-accent);
-    text-align: center;
+  display: flex;
+  flex-direction: column;
+  font-family: $sans;
+  color: var(--color-text-luxury, #f4efe6);
+}
+
+.textarea {
+  min-height: 120px;
+  width: 100%;
+  margin: 0;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: var(--color-text-luxury, #f4efe6);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.4;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.2s ease;
+
+  &::placeholder {
+    color: rgba(244, 239, 230, 0.45);
+    opacity: 1;
   }
 
-  .buttonGroup {
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--spacing-sm);
-    flex-wrap: wrap;
+  &:focus {
+    border-color: rgba(220, 50, 50, 0.6);
+    outline: none;
   }
+}
+
+.helpText {
+  margin: 8px 0 0;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.7));
+}
+
+.exampleBox {
+  margin: 8px 0 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: rgba(244, 239, 230, 0.5);
+}
+
+.error {
+  margin: 8px 0 0;
+  font-family: inherit;
+  font-size: 13px;
+  text-align: center;
+  color: #e55353;
+}
+
+.buttonGroup {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: nowrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.buttonGroup .cancelButton,
+.buttonGroup .submitButton {
+  height: auto;
+  min-height: 0;
+  flex: 0 0 auto;
+  padding: 9px 16px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  cursor: pointer;
+  color: var(--color-text-luxury, #f4efe6);
+}
+
+.buttonGroup .cancelButton {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: background 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-luxury, #f4efe6);
+  }
+}
+
+.buttonGroup .submitButton {
+  background: rgba(140, 28, 28, 0.45);
+  border: 1px solid rgba(220, 50, 50, 0.55);
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(160, 32, 32, 0.6);
+    border-color: rgba(240, 60, 60, 0.7);
+    color: var(--color-text-luxury, #f4efe6);
+  }
+}

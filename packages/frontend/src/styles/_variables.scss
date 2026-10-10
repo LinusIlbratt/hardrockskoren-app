@@ -187,6 +187,18 @@ $maxWidth: 1100px; // Kan användas för att begränsa bredden på containers.
   /* Sticky huvudnavigering. Feed-headers som fastnar under nav använder samma mått. */
   --nav-height: 70px;
   --focus-ring: 0 0 0 3px rgba(211, 0, 0, 0.35);
+
+  // Horisontell sidmarginal. Layout och körmenyn läser samma värde.
+  --page-padding-x: 16px;
+  --page-max-width: #{$maxWidth};
+
+  @media (min-width: #{$tabletBreakpoint}) {
+    --page-padding-x: 24px;
+  }
+
+  @media (min-width: #{$desktopBreakpoint}) {
+    --page-padding-x: 32px;
+  }
 }
 
 

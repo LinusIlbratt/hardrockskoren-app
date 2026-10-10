@@ -2,19 +2,76 @@
 
 // Grundläggande layout för hela sidan
 .page {
-  padding: var(--spacing-xs);
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--spacing-lg) 0 var(--spacing-xs);
 }
 
 // Sidhuvudet med titel och knappar
+$sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
 .header {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
+  align-items: stretch;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-family: $sans;
 
   h2 {
     margin: 0;
+    font-family: $sans;
+    font-size: 24px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--color-text-luxury, #f4efe6);
+  }
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.buttonGroup .primaryButton,
+.buttonGroup .secondaryButton {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 0;
+  min-width: 0;
+  padding: 10px 8px;
+  border-radius: 8px;
+  font-family: $sans;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: normal;
+  text-align: center;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+.buttonGroup .primaryButton {
+  background: rgba(140, 28, 28, 0.4);
+  border: 1px solid rgba(220, 50, 50, 0.5);
+  color: var(--color-text-luxury, #f4efe6);
+
+  &:hover:not(:disabled) {
+    background: rgba(160, 32, 32, 0.55);
+    border-color: rgba(240, 60, 60, 0.7);
+    color: var(--color-text-luxury, #f4efe6);
+  }
+}
+
+.buttonGroup .secondaryButton {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--color-text-luxury, #f4efe6);
+
+  &:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--color-text-luxury, #f4efe6);
   }
 }
 
@@ -23,36 +80,32 @@
   align-items: flex-start;
   gap: var(--spacing-md);
   padding: var(--spacing-md);
-  background-color: rgba(255, 255, 255, 0.03);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
 }
 
 .legendIcon {
   flex-shrink: 0;
-  color: var(--color-text);
-  margin-top: 3px; // Finjustering för vertikal linjering
+  margin-top: 1px;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
 }
 
 .legendText {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35em;
   margin: 0;
-  font-size: var(--fs-sm);
-  color: var(--color-text-secondary);
-  line-height: 1.6;
-
-  .inlineIcon {
-    vertical-align: middle;
-    margin: 0 0.1em -0.1em 0.2em; // Finjustering för att linjera med texten
-    margin-right: 2px;
-    color: var(--color-text);
-  }
+  font-family: $sans;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
 }
 
-// En behållare för knappar
-.buttonGroup {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
+.inlineIcon {
+  flex-shrink: 0;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
 }
 
 .tabs {
@@ -192,40 +245,58 @@
 // Actions (knapparna)
 .actions {
   display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: var(--spacing-sm);
+  flex-shrink: 0;
+  gap: 8px;
 }
 
 .iconButton {
-  background: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 6px;
+  background: transparent;
   border: none;
+  border-radius: 6px;
+  color: rgba(244, 239, 230, 0.6);
   cursor: pointer;
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-round);
-  color: var(--color-text-muted);
-  display: flex;
-  transition: background-color 0.2s, color 0.2s;
+  transition: color 0.2s ease, background 0.2s ease;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: var(--color-text-strong);
+    background: rgba(255, 255, 255, 0.08);
+    color: #f4efe6;
   }
 }
 
 .deleteIcon:hover {
-  color: var(--color-accent);
+  color: #e55353;
+  background: rgba(229, 83, 83, 0.1);
 }
 
 // Media query för större skärmar
 @media (min-width: #{$tabletBreakpoint}) {
   .page {
-    padding: var(--spacing-xl);
+    padding: var(--spacing-lg) 0 var(--spacing-xl);
   }
 
   .header {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
+  }
+
+  .buttonGroup {
+    width: auto;
+    flex-shrink: 0;
+  }
+
+  .buttonGroup .primaryButton,
+  .buttonGroup .secondaryButton {
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    font-size: 14px;
   }
 }
 

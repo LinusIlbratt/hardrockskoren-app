@@ -1,26 +1,18 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal/Modal';
 import { InviteForm, UserEditModal, UserList } from '@/features/users';
-import { StyledSelect, type SelectOption } from '@/components/ui/select/StyledSelect';
 import type { GroupMember, RoleTypes } from '@/types';
 import { Search } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
 import styles from './AdminUserManagementPage.module.scss';
 
 interface AdminUserManagementPageProps {
   viewerRole: Exclude<RoleTypes, 'user'>;
 }
 
-interface ChoirChoice {
-  slug: string;
-  name: string;
-}
-
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
-const ALL_CHOIRS = '';
 const MAX_MEMBER_PAGES = 50;
 
 function isAbortError(err: unknown): boolean {
@@ -39,12 +31,6 @@ function sortMembersBySurname(members: GroupMember[]): GroupMember[] {
     if (byFirst !== 0) return byFirst;
     return (a.email ?? '').localeCompare(b.email ?? '', 'sv', { sensitivity: 'base' });
   });
-}
-
-function sortChoirs(choirs: ChoirChoice[]): ChoirChoice[] {
-  return [...choirs].sort((a, b) =>
-    a.name.localeCompare(b.name, 'sv', { sensitivity: 'base' }),
-  );
 }
 
 function memberMatchesQuery(member: GroupMember, rawQuery: string): boolean {
@@ -85,12 +71,7 @@ async function fetchGroupMembers(
 
 export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageProps) => {
   const { groupName } = useParams<{ groupName: string }>();
-  const navigate = useNavigate();
-  const { user } = useAuth();
 
-  const [choirs, setChoirs] = useState<ChoirChoice[]>([]);
-  const [choirsReady, setChoirsReady] = useState(false);
-  const [selectedChoir, setSelectedChoir] = useState(groupName ?? ALL_CHOIRS);
   const [allMembers, setAllMembers] = useState<GroupMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -99,64 +80,11 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
   const [selectedUser, setSelectedUser] = useState<GroupMember | null>(null);
 
   useEffect(() => {
-    setSelectedChoir(groupName ?? ALL_CHOIRS);
-  }, [groupName]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadChoirs = async () => {
-      const token = localStorage.getItem('authToken');
-      if (!token) return;
-
-      try {
-        if (viewerRole === 'admin') {
-          const response = await axios.get<Array<{ slug?: string; name?: string }>>(
-            `${API_BASE_URL}/groups`,
-            { headers: { Authorization: `Bearer ${token}` } },
-          );
-          const list = (response.data ?? [])
-            .filter((group): group is { slug: string; name?: string } => Boolean(group.slug))
-            .map((group) => ({ slug: group.slug, name: group.name || group.slug }));
-          if (!cancelled) setChoirs(sortChoirs(list));
-          return;
-        }
-
-        const slugs = user?.groups?.filter(Boolean) ?? [];
-        if (slugs.length === 0) {
-          if (!cancelled && groupName) setChoirs([{ slug: groupName, name: groupName }]);
-          return;
-        }
-
-        const response = await axios.post<Array<{ slug?: string; name?: string }>>(
-          `${API_BASE_URL}/groups/batch-get`,
-          { groupSlugs: slugs },
-          { headers: { Authorization: `Bearer ${token}` } },
-        );
-        const list = (response.data ?? [])
-          .filter((group): group is { slug: string; name?: string } => Boolean(group.slug))
-          .map((group) => ({ slug: group.slug, name: group.name || group.slug }));
-        if (!cancelled) setChoirs(sortChoirs(list.length > 0 ? list : slugs.map((slug) => ({ slug, name: slug }))));
-      } catch (error) {
-        console.error('Failed to fetch choirs:', error);
-        if (!cancelled && groupName) setChoirs([{ slug: groupName, name: groupName }]);
-      }
-    };
-
-    void loadChoirs().finally(() => {
-      if (!cancelled) setChoirsReady(true);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [viewerRole, user, groupName]);
-
-  useEffect(() => {
-    if (!selectedChoir && viewerRole === 'admin' && !choirsReady) {
-      setIsLoading(true);
+    if (!groupName) {
+      setAllMembers([]);
+      setIsLoading(false);
       return;
     }
-    if (!selectedChoir && viewerRole !== 'admin') return;
 
     const controller = new AbortController();
     const token = localStorage.getItem('authToken');
@@ -168,21 +96,9 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
     const load = async () => {
       setIsLoading(true);
       try {
-        if (!selectedChoir) {
-          const merged: GroupMember[] = [];
-          for (const choir of choirs) {
-            const users = await fetchGroupMembers(choir.slug, token, controller.signal);
-            for (const member of users) {
-              merged.push({ ...member, groupSlug: choir.slug, choirName: choir.name });
-            }
-          }
-          if (!controller.signal.aborted) setAllMembers(merged);
-          return;
-        }
-
-        const users = await fetchGroupMembers(selectedChoir, token, controller.signal);
+        const users = await fetchGroupMembers(groupName, token, controller.signal);
         if (!controller.signal.aborted) {
-          setAllMembers(users.map((member) => ({ ...member, groupSlug: selectedChoir })));
+          setAllMembers(users.map((member) => ({ ...member, groupSlug: groupName })));
         }
       } catch (error) {
         if (isAbortError(error) || controller.signal.aborted) return;
@@ -195,33 +111,7 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
 
     void load();
     return () => controller.abort();
-  }, [selectedChoir, choirs, choirsReady, viewerRole, reloadKey]);
-
-  const choirOptions = useMemo<SelectOption[]>(() => {
-    const options = choirs.map((choir) => ({ value: choir.slug, label: choir.name }));
-    if (viewerRole === 'admin') {
-      return [{ value: ALL_CHOIRS, label: 'Alla körer' }, ...options];
-    }
-    return options;
-  }, [choirs, viewerRole]);
-
-  const selectedChoirOption = choirOptions.find((option) => option.value === selectedChoir) ?? null;
-
-  const handleChoirChange = (option: SelectOption | null) => {
-    const value = option ? String(option.value) : ALL_CHOIRS;
-    if (value === ALL_CHOIRS) {
-      setSelectedChoir(ALL_CHOIRS);
-      return;
-    }
-    if (value === groupName) {
-      setSelectedChoir(value);
-      return;
-    }
-    const path = viewerRole === 'admin'
-      ? `/admin/groups/${value}/users`
-      : `/leader/choir/${value}/users`;
-    navigate(path);
-  };
+  }, [groupName, reloadKey]);
 
   const refreshMemberLists = useCallback(() => {
     setReloadKey((key) => key + 1);
@@ -256,26 +146,14 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
       <div className={styles.header}>
         <h2>Hantera medlemmar</h2>
         <div className={styles.buttonGroup}>
-          <Button variant={ButtonVariant.Primary} onClick={() => setRoleToInvite('user')}>Bjud in medlem</Button>
+          <Button className={styles.primaryButton} variant={ButtonVariant.Primary} onClick={() => setRoleToInvite('user')}>Bjud in medlem</Button>
           {viewerRole === 'admin' && (
-            <Button variant={ButtonVariant.Primary} onClick={() => setRoleToInvite('leader')}>Bjud in körledare</Button>
+            <Button className={styles.secondaryButton} variant={ButtonVariant.Primary} onClick={() => setRoleToInvite('leader')}>Bjud in körledare</Button>
           )}
         </div>
       </div>
 
       <div className={styles.filters}>
-        <div className={styles.filterField}>
-          <label className={styles.filterLabel} htmlFor="choir-filter">Kör</label>
-          <StyledSelect
-            inputId="choir-filter"
-            options={choirOptions}
-            value={selectedChoirOption}
-            onChange={handleChoirChange}
-            placeholder="Välj kör"
-            isDisabled={choirOptions.length === 0}
-          />
-        </div>
-
         <div className={styles.searchBar}>
           <Search className={styles.searchIcon} size={20} />
           <input
@@ -290,7 +168,7 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
       </div>
 
       {isLoading ? (
-        <p>Laddar medlemmar...</p>
+        <p className={styles.statusText}>Laddar medlemmar...</p>
       ) : hasAnyFiltered ? (
         <>
           {leaders.length > 0 && (
@@ -317,7 +195,7 @@ export const AdminUserManagementPage = ({ viewerRole }: AdminUserManagementPageP
           <p>
             {isSearchMode
               ? 'Inga medlemmar matchade din sökning.'
-              : selectedChoir
+              : groupName
                 ? 'Inga medlemmar har bjudits in till denna kör ännu.'
                 : 'Inga medlemmar att visa.'}
           </p>

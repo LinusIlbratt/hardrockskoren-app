@@ -131,6 +131,7 @@ const router = createBrowserRouter([
                 path: "groups/:groupName",
                 element: <GroupDashboardLayout />,
                 children: [
+                  { index: true, element: <Navigate to="repertoires" replace /> },
                   { path: "repertoires", element: <AdminRepertoireListPage /> },
                   // ✅ ÄNDRING 1 HÄR:
                   { path: "repertoires/:repertoireId/materials/*", element: <AdminRepertoireMaterialPage /> },

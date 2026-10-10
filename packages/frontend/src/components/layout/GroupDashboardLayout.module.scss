@@ -1,25 +1,86 @@
+@use '@/styles/variables' as *;
+
+$sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
 .dashboardLayout {
-    display: flex;
-    flex-direction: column;
-  }
-  
-.header {
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
 }
 
-.groupNameRow {
+.header {
+  padding-bottom: 0;
+  font-family: $sans;
+}
+
+.topBar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-md);
+  gap: 12px;
+  width: 100%;
+  margin-top: 4px;
+  margin-bottom: 12px;
 }
 
-.groupName {
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
   margin: 0;
-  font-size: var(--fs-lg, 1.25rem);
-  font-weight: 700;
-  color: var(--color-text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
+  text-decoration: none;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--color-text-luxury, #f4efe6);
+    text-decoration: none;
+  }
+}
+
+.choirBadge {
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 46%;
+  margin: 0;
+  padding: 3px 10px;
+  overflow: hidden;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--color-text-luxury, #f4efe6);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+}
+
+.nameSkeleton {
+  display: block;
+  width: 4.5rem;
+  height: 0.9em;
+  border-radius: 999px;
+  background: rgba(245, 235, 215, 0.14);
+}
+
+.content {
+  min-width: 0;
+}
+
+@media (min-width: #{$tabletBreakpoint}) {
+  .topBar {
+    margin-top: 0;
+    margin-bottom: 16px;
+  }
+
+  .choirBadge {
+    max-width: 50%;
+    padding: 4px 12px;
+    font-size: 14px;
+  }
 }

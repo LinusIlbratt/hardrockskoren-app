@@ -82,8 +82,8 @@
   @media (min-width: #{$tabletBreakpoint}) {
     // ...centrera innehållet och ge det en max-bredd för bättre läsbarhet.
     width: 100%;
-    max-width: $maxWidth; // Använder variabeln från _variables.scss
-    margin: 0 auto; // Centrerar blocket horisontellt
+    max-width: var(--page-max-width, #{$maxWidth});
+    margin: 0 auto;
   }
 }
 

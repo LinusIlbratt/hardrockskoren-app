@@ -273,9 +273,9 @@ function MessageRow({
   const timeLabel = formatMessageListTime(message.createdAt);
 
   return (
-    <li className={styles.item}>
-      <article
-        className={`${styles.row} ${message.isRead ? styles.read : styles.unread}`}
+    <li className={`${styles.newsCard} ${message.isRead ? styles.read : styles.unread}`}>
+      <div
+        className={styles.newsContent}
         onClick={() => onOpen(message)}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
@@ -291,38 +291,37 @@ function MessageRow({
             : `Öppna ${message.title} (oläst)`
         }
       >
-        <Cluster align="center" gap="sm" wrap={false} className={styles.rowMain}>
-          {!message.isRead && (
-            <span className={styles.dot} aria-hidden="true" />
-          )}
-          <h3 className={styles.rowTitle}>{message.title}</h3>
-        </Cluster>
-        <Cluster align="baseline" gap="sm" wrap={false} className={styles.rowMeta}>
-          <span className={styles.sender}>{sender}</span>
+        <h3 className={styles.newsTitle}>
+          {!message.isRead && <span className={styles.dot} aria-hidden="true" />}
+          <span>{message.title}</span>
+        </h3>
+        <div className={styles.newsMeta}>
+          <span>{sender}</span>
+          <span className={styles.metaDot} aria-hidden="true">•</span>
           <time dateTime={message.createdAt}>{timeLabel}</time>
-        </Cluster>
-      </article>
+        </div>
+      </div>
       {canManage && (
-        <Cluster gap="2xs" wrap={false} className={styles.actions}>
+        <div className={styles.actions}>
           <button
             type="button"
-            className={styles.iconButton}
+            className={styles.actionButton}
             title="Redigera meddelande"
-            aria-label="Redigera meddelande"
+            aria-label={`Redigera ${message.title}`}
             onClick={() => onEdit(message)}
           >
             <FiEdit size={16} aria-hidden="true" />
           </button>
           <button
             type="button"
-            className={`${styles.iconButton} ${styles.deleteIcon}`}
+            className={styles.deleteButton}
             title="Ta bort meddelande"
-            aria-label="Ta bort meddelande"
+            aria-label={`Ta bort ${message.title}`}
             onClick={() => onDelete(message)}
           >
-            <IoTrashOutline size={17} aria-hidden="true" />
+            <IoTrashOutline size={18} aria-hidden="true" />
           </button>
-        </Cluster>
+        </div>
       )}
     </li>
   );

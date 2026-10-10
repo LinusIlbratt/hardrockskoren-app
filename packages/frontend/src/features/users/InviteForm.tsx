@@ -63,19 +63,19 @@ export const InviteForm = ({ roleToInvite, onSuccess }: InviteFormProps) => {
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
-      <div>
-        <textarea
-          className={styles.textarea}
-          value={emails}
-          onChange={(e) => setEmails(e.target.value)}
-          placeholder="klistra in en eller flera e-postadresser..."
-          required
-        />
-        <p className={styles.description}>Separera flera adresser med kommatecken,
-          och mellanslag. <br></br><br></br>
-          Exempel: <br></br>mail@epost.com, mail@epost.com, mail@epost.com
-        </p>
-      </div>
+      <textarea
+        className={styles.textarea}
+        value={emails}
+        onChange={(e) => setEmails(e.target.value)}
+        placeholder="klistra in en eller flera e-postadresser..."
+        required
+      />
+      <p className={styles.helpText}>
+        Separera flera adresser med kommatecken och mellanslag.
+      </p>
+      <p className={styles.exampleBox}>
+        Exempel: mail@epost.com, mail@epost.com, mail@epost.com
+      </p>
 
       {showDiscardConfirm && (
         <DiscardChangesConfirm onConfirm={confirmDiscard} onCancel={cancelDiscard} />
@@ -84,10 +84,16 @@ export const InviteForm = ({ roleToInvite, onSuccess }: InviteFormProps) => {
       {error && <p className={styles.error}>{error}</p>}
 
       <div className={styles.buttonGroup}>
-        <Button type="button" variant={ButtonVariant.Ghost} onClick={requestClose} disabled={isLoading}>
+        <Button
+          type="button"
+          variant={ButtonVariant.Ghost}
+          className={styles.cancelButton}
+          onClick={requestClose}
+          disabled={isLoading}
+        >
           Avbryt
         </Button>
-        <Button type="submit" isLoading={isLoading}>
+        <Button type="submit" className={styles.submitButton} isLoading={isLoading}>
           Skicka inbjudan till {roleToInvite === 'user' ? 'medlem' : 'körledare'}
         </Button>
       </div>

@@ -6,7 +6,7 @@ import { MusicPlayerOverlayProvider, useMusicPlayerOverlay } from '@/context/Mus
 import { MusicPlayerOverlayHost } from '@/components/music/MusicPlayerOverlay';
 import { MiniPlayerBar } from '@/components/media/MiniPlayerBar';
 import { MainNav } from '../nav/MainNav';
-import { UserNav } from '../nav/UserNav';
+import { ChoirNav } from '../nav/ChoirNav';
 import { GroupNotificationProviders } from '@/context/GroupNotificationProviders';
 import { PageLoader } from '@/components/ui/loader/Loader';
 import styles from './AppLayout.module.scss';
@@ -88,7 +88,7 @@ const AppLayoutContent = memo(function AppLayoutContent() {
         setIsMenuOpen={setIsMenuOpen}
         withMemberTabs
       />
-      <UserNav groupName={memberGroupName} />
+      <ChoirNav groupName={memberGroupName} audience="member" />
     </div>
   ) : (
     <MainNav isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />

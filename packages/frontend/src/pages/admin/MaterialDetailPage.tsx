@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FiFolder, FiMusic, FiFileText, FiFile, FiTrash2, FiRefreshCw, FiInbox } from 'react-icons/fi';
+import { FiFolder, FiTrash2, FiRefreshCw, FiInbox } from 'react-icons/fi';
 import { Cluster } from '@/components/ui/layout/Cluster';
 import { Stack } from '@/components/ui/layout/Stack';
 import { Modal } from '@/components/ui/modal/Modal';
@@ -9,11 +9,15 @@ import { AddLibraryFolderToChoirsModal } from '@/components/media/AddLibraryFold
 import { MAX_FILES_PER_BATCH_UPLOAD, useMaterialFolder, useMaterialUploader } from '@/features/materials';
 import styles from './MaterialDetailPage.module.scss';
 
-const getIconForFile = (fileName: string, iconClass: string) => {
-  if (/\.(mp3|wav|m4a|ogg)$/i.test(fileName)) return <FiMusic className={iconClass} aria-hidden />;
-  if (/\.(pdf|txt|doc|docx)$/i.test(fileName)) return <FiFileText className={iconClass} aria-hidden />;
-  return <FiFile className={iconClass} aria-hidden />;
-};
+function splitSongHeading(raw: string): { songTitle: string; artistName: string } {
+  const value = raw.trim();
+  const parts = value.split(/\s+-\s+/);
+  const artistName = parts.slice(1).join(' - ').trim();
+  if (parts.length >= 2 && parts[0]?.trim() && artistName) {
+    return { songTitle: parts[0].trim(), artistName };
+  }
+  return { songTitle: value || 'Mediabibliotek', artistName: '' };
+}
 
 export const MaterialDetailPage = () => {
   const { folderPath } = useParams<{ folderPath?: string }>();
@@ -53,6 +57,8 @@ export const MaterialDetailPage = () => {
     openBatchDeleteConfirm,
     breadcrumbs,
   } = folder;
+
+  const { songTitle, artistName } = splitSongHeading(breadcrumbs[breadcrumbs.length - 1] || '');
 
   const {
     replacingMaterialId,
@@ -100,7 +106,10 @@ export const MaterialDetailPage = () => {
       </Link>
 
       <header className={styles.headerCard}>
-        <h1 className={styles.pageTitle}>{breadcrumbs[breadcrumbs.length - 1] || 'Mediabibliotek'}</h1>
+        <div className={styles.headerTitleGroup}>
+          <h1 className={styles.songTitle}>{songTitle}</h1>
+          {artistName ? <p className={styles.artistName}>{artistName}</p> : null}
+        </div>
         {breadcrumbs.length === 1 && (
           <div className={styles.choirActions}>
             <button
@@ -392,9 +401,6 @@ export const MaterialDetailPage = () => {
                     onClick={(e) => e.stopPropagation()}
                     aria-label={`Markera ${item.material.title || item.material.filePath.split('/').pop() || 'fil'}`}
                   />
-                  <span className={styles.itemIconWrap} aria-hidden>
-                    {getIconForFile(item.material.filePath, styles.itemIconSvg)}
-                  </span>
                   <span className={styles.itemName}>{item.material.title || item.material.filePath.split('/').pop()}</span>
                 </div>
                 <div className={styles.itemActions}>
@@ -446,7 +452,7 @@ export const MaterialDetailPage = () => {
                     }}
                     aria-label={`Ta bort ${item.material.title || item.material.filePath.split('/').pop()}`}
                   >
-                    {deletingMaterialId === item.material.materialId ? 'Tar bort...' : <FiTrash2 aria-hidden />}
+                    <FiTrash2 aria-hidden size={16} />
                   </button>
                 </div>
               </div>

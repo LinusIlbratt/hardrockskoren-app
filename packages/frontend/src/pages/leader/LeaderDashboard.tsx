@@ -1,50 +1,15 @@
-import { Outlet, useParams } from 'react-router-dom';
+import { Link, Outlet, useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { GroupNotificationProviders } from '@/context/GroupNotificationProviders';
-import { RecentlyPlayedWidget } from '@/components/music/RecentlyPlayedWidget';
-import { LeaderNav } from '@/components/nav/LeaderNav';
+import { ChoirNav } from '@/components/nav/ChoirNav';
+import { useChoirDisplayName } from '@/features/groups/useChoirDisplayName';
 import styles from './LeaderDashboard.module.scss';
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-import type { Group } from '@/types';
-
-const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
 export const LeaderDashboard = () => {
   const { groupName } = useParams<{ groupName: string }>();
   const { user } = useAuth();
-  const [choirDisplayName, setChoirDisplayName] = useState('');
-  const [isLoadingName, setIsLoadingName] = useState(true);
-
-  useEffect(() => {
-    const fetchAndSetChoirName = async () => {
-      if (!groupName) return;
-
-      setIsLoadingName(true);
-      const token = localStorage.getItem('authToken');
-
-      try {
-        const response = await axios.get<Group[]>(`${API_BASE_URL}/groups`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const currentGroup = response.data.find(group => group.slug === groupName);
-
-        if (currentGroup) {
-          setChoirDisplayName(currentGroup.name);
-        } else {
-          setChoirDisplayName(groupName);
-        }
-      } catch (error) {
-        console.error("Failed to fetch group name:", error);
-        setChoirDisplayName(groupName);
-      } finally {
-        setIsLoadingName(false);
-      }
-    };
-
-    fetchAndSetChoirName();
-  }, [groupName]);
+  const { name: choirName, isLoading: isLoadingName } = useChoirDisplayName(groupName);
+  const canReturnToChoirList = (user?.groups?.length ?? 0) > 1;
 
   if (!user) {
     return <div>Kunde inte ladda användardata.</div>;
@@ -53,21 +18,30 @@ export const LeaderDashboard = () => {
   return (
     <GroupNotificationProviders groupSlug={groupName}>
       <div className={styles.layout}>
+        {canReturnToChoirList && (
+          <Link to="/select-group" className={styles.backLink}>
+            ← Tillbaka till körer
+          </Link>
+        )}
         <header className={styles.header}>
           <h2>Välkommen {user.given_name} {user.family_name}</h2>
           <p>
-            <span className={styles.subheadingLabel}>Körledare i
-            {isLoadingName ? ' Laddar...' : ` ${choirDisplayName}`}</span>
+            <span className={styles.subheadingLabel}>
+              Körledare i {isLoadingName ? "…" : (choirName ?? "")}
+            </span>
           </p>
         </header>
 
-        {!isLoadingName && choirDisplayName && groupName && (
-          <div className={styles.groupNameRow}>
-            <h1 className={styles.groupName}>{choirDisplayName}</h1>
-            <RecentlyPlayedWidget groupName={groupName} viewer="leader" />
-          </div>
-        )}
-        <LeaderNav />
+        <div className={styles.groupNameRow}>
+          <h1 className={styles.groupName}>
+            {isLoadingName ? (
+              <span className={styles.nameSkeleton} aria-hidden="true" />
+            ) : (
+              choirName ?? ""
+            )}
+          </h1>
+        </div>
+        <ChoirNav groupName={groupName} audience="leader" showChoirName={false} embedded />
 
         <main className={styles.content}>
           <Outlet />

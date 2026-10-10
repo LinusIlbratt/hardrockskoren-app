@@ -13,6 +13,16 @@ import {
 } from '@/context/MusicPlayerOverlayContext';
 import { isPlayableAudioFile } from '@/utils/media';
 
+function splitSongHeading(raw: string | undefined): { songTitle: string; artistName: string } {
+  const value = raw?.trim() ?? '';
+  const parts = value.split(/\s+-\s+/);
+  const artistName = parts.slice(1).join(' - ').trim();
+  if (parts.length >= 2 && parts[0]?.trim() && artistName) {
+    return { songTitle: parts[0].trim(), artistName };
+  }
+  return { songTitle: value, artistName: '' };
+}
+
 // --- TYPER ---
 // FIX: Lade till 'displayName' för att visa ett städat mappnamn.
 interface FolderItem { 
@@ -237,6 +247,7 @@ export const AdminRepertoireMaterialPage = () => {
   
   const breadcrumbs = useMemo(() => decodedSubPath.split('/').filter(p => p), [decodedSubPath]);
   const currentTitle = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1] : title;
+  const { songTitle, artistName } = splitSongHeading(currentTitle);
 
   const handlePlayMaterial = useCallback(
     (material: Material) => {
@@ -253,16 +264,22 @@ export const AdminRepertoireMaterialPage = () => {
     [groupName, repertoireId, viewer, openMusicOverlay]
   );
 
+  const choirBase = viewer === 'leader'
+    ? `/leader/choir/${groupName}`
+    : `/admin/groups/${groupName}`;
+  const repertoireListPath = `${choirBase}/repertoires`;
+  const materialsBase = `${repertoireListPath}/${repertoireId}/materials`;
+
   const handleSmartBack = () => {
     if (decodedSubPath) {
-      const pathParts = decodedSubPath.split('/').filter(p => p);
-      const parentPath = pathParts.slice(0, -1).join('/');
-      navigate(`/admin/groups/${groupName}/repertoires/${repertoireId}/materials/${parentPath}`, { 
-        state: { repertoireTitle: title } 
+      const pathParts = decodedSubPath.split('/').filter((part) => part);
+      const parentPath = pathParts.slice(0, -1).map(encodeURIComponent).join('/');
+      navigate(parentPath ? `${materialsBase}/${parentPath}` : materialsBase, {
+        state: { repertoireTitle: title },
       });
-    } else {
-      navigate(`/admin/groups/${groupName}/repertoires`);
+      return;
     }
+    navigate(repertoireListPath);
   };
 
   if (isLoading || !title) return <p className={styles.pageState}>Laddar material...</p>;
@@ -270,24 +287,33 @@ export const AdminRepertoireMaterialPage = () => {
 
   return (
     <div className={styles.page}>
-      <nav className={styles.breadcrumbs}>
-        <Link to={`/admin/groups/${groupName}/repertoires`}>Repertoar</Link> / 
-        <Link to={`/admin/groups/${groupName}/repertoires/${repertoireId}/materials`} state={{ repertoireTitle: title }}> {title}</Link>
-        {breadcrumbs.map((part, index) => {
-          const pathSlice = breadcrumbs.slice(0, index + 1);
-          const linkPath = pathSlice.map(encodeURIComponent).join('/');
-          const absoluteLinkPath = `/admin/groups/${groupName}/repertoires/${repertoireId}/materials/${linkPath}`;
-          return <span key={linkPath}> / <Link to={absoluteLinkPath} state={{ repertoireTitle: title }}>{part}</Link></span>;
-        })}
-      </nav>
-
-      <button onClick={handleSmartBack} className={styles.backButton}>
-        <FiArrowLeft />
-        Tillbaka
-      </button>
+      <div className={styles.navBlock}>
+        <button type="button" onClick={handleSmartBack} className={styles.backButton}>
+          <FiArrowLeft aria-hidden="true" />
+          Tillbaka
+        </button>
+        <nav className={styles.breadcrumbs} aria-label="Sökväg">
+          <Link to={repertoireListPath}>Repertoar</Link>
+          <span aria-hidden="true"> / </span>
+          <Link to={materialsBase} state={{ repertoireTitle: title }}>{title}</Link>
+          {breadcrumbs.map((part, index) => {
+            const pathSlice = breadcrumbs.slice(0, index + 1);
+            const linkPath = pathSlice.map(encodeURIComponent).join('/');
+            return (
+              <span key={linkPath}>
+                <span aria-hidden="true"> / </span>
+                <Link to={`${materialsBase}/${linkPath}`} state={{ repertoireTitle: title }}>{part}</Link>
+              </span>
+            );
+          })}
+        </nav>
+      </div>
       
       <div className={styles.header}>
-        <h1 className={styles.repertoireTitle}>{currentTitle}</h1>
+        <div className={styles.headerTitleGroup}>
+          <h1 className={styles.songTitle}>{songTitle}</h1>
+          {artistName ? <p className={styles.artistName}>{artistName}</p> : null}
+        </div>
       </div>
 
       {hasFiles && (
@@ -306,7 +332,12 @@ export const AdminRepertoireMaterialPage = () => {
         {directoryItems.length > 0 ? (
           directoryItems.map(item =>
             item.type === 'folder' ? (
-              <Link to={encodeURIComponent(item.path)} state={{ repertoireTitle: title }} key={item.path} className={styles.itemRow}>
+              <Link
+                to={`${materialsBase}/${item.path.split('/').map(encodeURIComponent).join('/')}`}
+                state={{ repertoireTitle: title }}
+                key={item.path}
+                className={styles.itemRow}
+              >
                 <div className={styles.itemInfo}>
                   <FiFolder className={styles.itemIcon} />
                   {/* FIX: Använder 'displayName' för en renare lista. */}

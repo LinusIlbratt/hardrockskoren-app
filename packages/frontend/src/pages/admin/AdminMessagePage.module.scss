@@ -1,6 +1,9 @@
 @use '@/styles/variables' as *;
 
 .page {
+  width: 100%;
+  box-sizing: border-box;
+  padding-inline: 0;
   @include column(var(--spacing-xl));
 }
 
