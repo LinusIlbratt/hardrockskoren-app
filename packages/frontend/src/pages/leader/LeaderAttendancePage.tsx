@@ -5,12 +5,13 @@ import { Cluster } from '@/components/ui/layout/Cluster';
 import { Stack } from '@/components/ui/layout/Stack';
 import { Modal } from '@/components/ui/modal/Modal';
 import { useAttendanceTracker } from '@/features/attendance';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Info } from 'lucide-react';
 import styles from './LeaderAttendancePage.module.scss';
 
 export const LeaderAttendancePage = () => {
   const { groupName } = useParams<{ groupName: string }>();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isGuideOpen, setGuideOpen] = useState(false);
   const {
     activeSession,
     countdownLabel,
@@ -41,7 +42,18 @@ export const LeaderAttendancePage = () => {
   return (
     <Stack gap="xl" className={styles.page}>
       <Stack gap="md" align="start" className={styles.header}>
-        <h2>Hantera närvaro</h2>
+        <div className={styles.titleRow}>
+          <h2>Hantera närvaro</h2>
+          <button
+            type="button"
+            className={styles.infoButton}
+            onClick={() => setGuideOpen(true)}
+            aria-label="Instruktioner för närvaro"
+            aria-expanded={isGuideOpen}
+          >
+            <Info size={20} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+        </div>
         <Cluster>
           {activeSession ? (
             <Button className={styles.takeButton} variant={ButtonVariant.Primary} onClick={() => setIsModalOpen(true)}>
@@ -79,6 +91,61 @@ export const LeaderAttendancePage = () => {
       ) : (
         !daysError && <p className={styles.emptyState}>Inga närvarolistor har skapats ännu.</p>
       )}
+
+      <Modal
+        isOpen={isGuideOpen}
+        onClose={() => setGuideOpen(false)}
+        title="Så tar du närvaron med appen"
+      >
+        <div className={styles.guideBody}>
+          <ol className={styles.guide}>
+            <li className={styles.guideStep}>
+              <span className={styles.guideNumber}>1</span>
+              <div>
+                <h3 className={styles.guideTitle}>Starta närvaron</h3>
+                <p className={styles.guideText}>
+                  Klicka på knappen &quot;Ta närvaro&quot; (eller &quot;Visa aktiv kod&quot;).
+                </p>
+              </div>
+            </li>
+            <li className={styles.guideStep}>
+              <span className={styles.guideNumber}>2</span>
+              <div>
+                <h3 className={styles.guideTitle}>Ge koden till körmedlemmarna</h3>
+                <p className={styles.guideText}>
+                  En 4-siffrig kod skapas som du ger till kören. Koden är giltig i 20 minuter. Behöver du mer tid genererar du bara en ny kod på samma sätt.
+                </p>
+              </div>
+            </li>
+            <li className={styles.guideStep}>
+              <span className={styles.guideNumber}>3</span>
+              <div>
+                <h3 className={styles.guideTitle}>Medlemmarna knappar in koden</h3>
+                <p className={styles.guideText}>
+                  Körmedlemmarna matar in koden i sin app och blir automatiskt registrerade som närvarande.
+                </p>
+              </div>
+            </li>
+            <li className={styles.guideStep}>
+              <span className={styles.guideNumber}>4</span>
+              <div>
+                <h3 className={styles.guideTitle}>Hämta och kopiera närvarolistan</h3>
+                <p className={styles.guideText}>
+                  Klicka på datumet under listor för att se alla närvarande. Klicka sedan på &quot;Kopiera listan&quot; för att kopiera deltagarna och klistra in dem i ditt eget dokument.
+                </p>
+              </div>
+            </li>
+          </ol>
+          <a
+            href="/lathund-narvaro.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.pdfButton}
+          >
+            📄 Öppna lathund som PDF
+          </a>
+        </div>
+      </Modal>
 
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Närvaroregistrering">
         <Stack gap="md" className={styles.codeModal}>
