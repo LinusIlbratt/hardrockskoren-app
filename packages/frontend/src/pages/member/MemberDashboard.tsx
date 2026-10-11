@@ -10,7 +10,7 @@ export const MemberDashboard = () => {
   }
 
   return (
-    <div className={styles.layout}>
+    <div className={styles.layout} data-choir-page="">
       <Outlet />
     </div>
   );
