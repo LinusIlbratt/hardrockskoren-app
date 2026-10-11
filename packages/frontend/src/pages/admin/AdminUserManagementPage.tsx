@@ -5,6 +5,7 @@ import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal/Modal';
 import { InviteForm, UserEditModal, UserList } from '@/features/users';
 import type { GroupMember, RoleTypes } from '@/types';
+import { compareMembersBySurname } from '@/utils/memberName';
 import { Search } from 'lucide-react';
 import styles from './AdminUserManagementPage.module.scss';
 
@@ -20,17 +21,7 @@ function isAbortError(err: unknown): boolean {
 }
 
 function sortMembersBySurname(members: GroupMember[]): GroupMember[] {
-  return [...members].sort((a, b) => {
-    const lnA = (a.family_name ?? '').toLocaleLowerCase('sv');
-    const lnB = (b.family_name ?? '').toLocaleLowerCase('sv');
-    const byLast = lnA.localeCompare(lnB, 'sv', { sensitivity: 'base' });
-    if (byLast !== 0) return byLast;
-    const fnA = (a.given_name ?? '').toLocaleLowerCase('sv');
-    const fnB = (b.given_name ?? '').toLocaleLowerCase('sv');
-    const byFirst = fnA.localeCompare(fnB, 'sv', { sensitivity: 'base' });
-    if (byFirst !== 0) return byFirst;
-    return (a.email ?? '').localeCompare(b.email ?? '', 'sv', { sensitivity: 'base' });
-  });
+  return [...members].sort(compareMembersBySurname);
 }
 
 function memberMatchesQuery(member: GroupMember, rawQuery: string): boolean {

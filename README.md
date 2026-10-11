@@ -105,7 +105,7 @@ npx serverless deploy --stage dev
 
 Anteckna de utskrivna HTTP API-URL:erna för varje tjänst (auth, admin, event, material).
 
-**concert-api:** Authorizern och `routePermissions` ligger i `admin-api`. Efter ändringar i `packages/core/utils/permissions.ts` — deploya **`admin-api` före `concert-api`**, annars nekas PATCH/DELETE tills authorizern uppdaterats.
+**Authorizer:** `routePermissions` ligger i `admin-api`. Compose deployar `admin-service` före `event-api`, `material-api`, `music-api`, `message-api` och `concert-api`. Deployar du en enskild tjänst efter en ändring i `packages/core/utils/permissions.ts`, deploya `admin-service` först — annars nekas nya routes tills authorizern uppdaterats.
 
 ### 3. Konfigurera frontend
 

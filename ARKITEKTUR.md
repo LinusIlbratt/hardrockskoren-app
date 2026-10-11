@@ -22,7 +22,10 @@ Ingen Turborepo, ingen Nx, ingen Lerna. Rot-`package.json` har inget riktigt
 build-script — varje paket byggs och deployas för sig.
 
 Backend orkestreras av **Serverless Compose** (`packages/serverless-compose.yml`).
-Alla sju API-tjänster har `dependsOn: infra-service`.
+`auth-api` och `admin-service` har `dependsOn: infra-service`. Övriga API:er
+(`event`, `material`, `music`, `message`, `concert`) beror på både
+`infra-service` och `admin-service`, så den centrala authorizern finns innan
+deras routes skapas.
 
 ### Paket
 
@@ -77,7 +80,7 @@ listnings-API — de är legacy och ska inte behandlas som sanning.
    id-token. Sessionen dör när access token går ut.
 3. Frontend sparar token i `localStorage` under nyckeln `authToken` och anropar
    `GET /me` för att fylla `AuthContext`.
-4. `GET /me` läser `custom:role`, namn och `AdminListGroupsForUser` från Cognito.
+4. `GET /me` återanvänder roll, namn och e-post från authorizer-context och hämtar körer med `AdminListGroupsForUser` när grupplistan saknas där.
 
 ### Authorizern
 
@@ -91,8 +94,10 @@ ARN** under authorizer-namnet `centralJwtAuthorizer`, plus en
 `AWS::Lambda::Permission` för invoke. `auth-api` deployar en egen kopia
 (`hrk-apigateway-auth-authorizer-${stage}`).
 
-Konsekvens: admin-api är ett hårt deploy-beroende för alla andra API:er men det
-syns inte i `serverless-compose.yml` (där står bara `dependsOn: infra-service`).
+Konsekvens: admin-api är ett hårt deploy-beroende för alla API:er som använder
+`centralJwtAuthorizer`. Det är uttryckt i `serverless-compose.yml` via
+`dependsOn: admin-service`. `auth-api` beror bara på `infra-service`, eftersom
+den deployar en egen authorizer.
 
 Authorizern gör per anrop:
 
@@ -113,6 +118,7 @@ export interface AuthContext {
   role: RoleTypes;
   given_name?: string;
   family_name?: string;
+  email?: string;
   groups?: string[];
   clientId?: string;
   userPoolId?: string;

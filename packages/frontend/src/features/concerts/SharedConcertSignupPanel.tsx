@@ -133,18 +133,21 @@ export const SharedConcertSignupPanel = ({
 
   return (
     <div className={styles.panel}>
-      <div className={styles.titleRow}>
-        <h2 className={styles.panelTitle}>Gemensamma Gig</h2>
-        <button
-          type="button"
-          className={styles.infoButton}
-          onClick={() => setIsHelpOpen(true)}
-          aria-label="Så fungerar det"
-          aria-expanded={isHelpOpen}
-        >
-          <Info size={20} strokeWidth={1.75} aria-hidden="true" />
-        </button>
-      </div>
+      <header className={styles.heading}>
+        <div className={styles.titleRow}>
+          <h2 className={styles.panelTitle}>Gemensamma Gig</h2>
+          <button
+            type="button"
+            className={styles.infoButton}
+            onClick={() => setIsHelpOpen(true)}
+            aria-label="Så fungerar det"
+            aria-expanded={isHelpOpen}
+          >
+            <Info size={20} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+        </div>
+        <p className={styles.panelLead}>Här anmäler du dig</p>
+      </header>
 
       {isLoadingList && <p className={styles.muted}>Laddar gig…</p>}
       {!isLoadingList && listError && (

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   concertClosesAt,
+  isEventInCurrentWeek,
   isNotificationWindowClosed,
   rehearsalClosesAt,
   stockholmMidnightUtc,
@@ -152,6 +153,61 @@ describe("CONCERT window", () => {
     expect(
       isNotificationWindowClosed(overnight, new Date("2026-10-11T22:00:00.000Z"))
     ).toBe(true);
+  });
+});
+
+describe("current Stockholm week", () => {
+  // Onsdag 7 okt 2026 12:00 CEST. Veckan är mån 5 okt–mån 12 okt.
+  const duringWeek = new Date("2026-10-07T10:00:00.000Z");
+  const nextWeekRehearsal = {
+    eventType: "REHEARSAL",
+    eventDate: "2026-10-13T16:00:00.000Z",
+  };
+  const nextMonthGig = {
+    eventType: "CONCERT",
+    eventDate: "2026-11-14T18:00:00.000Z",
+    endDate: "2026-11-14T21:00:00.000Z",
+  };
+  const thisWeekGig = {
+    eventType: "CONCERT",
+    eventDate: "2026-10-10T18:00:00.000Z",
+    endDate: "2026-10-10T21:00:00.000Z",
+  };
+
+  it("does not notify for rehearsals or gigs in a later week", () => {
+    expect(isEventInCurrentWeek(nextWeekRehearsal, duringWeek)).toBe(false);
+    expect(isNotificationWindowClosed(nextWeekRehearsal, duringWeek)).toBe(true);
+    expect(isEventInCurrentWeek(nextMonthGig, duringWeek)).toBe(false);
+    expect(isNotificationWindowClosed(nextMonthGig, duringWeek)).toBe(true);
+  });
+
+  it("opens a rehearsal when its own week starts, while it is still unread-eligible", () => {
+    const duringItsWeek = new Date("2026-10-13T10:00:00.000Z");
+    expect(isEventInCurrentWeek(nextWeekRehearsal, duringItsWeek)).toBe(true);
+    expect(isNotificationWindowClosed(nextWeekRehearsal, duringItsWeek)).toBe(false);
+  });
+
+  it("keeps a gig inside the current week open until the day-after rule", () => {
+    expect(isEventInCurrentWeek(thisWeekGig, duringWeek)).toBe(true);
+    expect(isNotificationWindowClosed(thisWeekGig, duringWeek)).toBe(false);
+  });
+
+  it("still closes a gig from earlier in the same week the next morning", () => {
+    const sundayMidnight = new Date("2026-10-10T22:00:00.000Z");
+    expect(isEventInCurrentWeek(thisWeekGig, sundayMidnight)).toBe(true);
+    expect(isNotificationWindowClosed(thisWeekGig, sundayMidnight)).toBe(true);
+  });
+
+  it("treats next Monday 00:00 Stockholm as the exclusive end of the week", () => {
+    const nextMondayRehearsal = {
+      eventType: "REHEARSAL",
+      eventDate: "2026-10-11T22:00:00.000Z",
+    };
+    const sundayNight = new Date("2026-10-11T21:59:59.000Z");
+    const mondayMidnight = new Date("2026-10-11T22:00:00.000Z");
+    expect(isNotificationWindowClosed(nextMondayRehearsal, sundayNight)).toBe(true);
+    expect(isEventInCurrentWeek(nextMondayRehearsal, mondayMidnight)).toBe(true);
+    expect(isNotificationWindowClosed(nextMondayRehearsal, mondayMidnight)).toBe(false);
   });
 });
 

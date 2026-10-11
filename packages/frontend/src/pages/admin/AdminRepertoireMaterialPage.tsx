@@ -20,9 +20,12 @@ import {
   compareMaterialLabels,
   displayMaterialLabel,
   materialLabelText,
+  memberMaterialSection,
   parseMaterialLabel,
   VOICE_LABEL_PRESETS,
   washShoutedText,
+  type MaterialNameParts,
+  type MemberMaterialSection,
 } from '@/utils/materialLabel';
 
 function splitSongHeading(raw: string | undefined): { songTitle: string; artistName: string } {
@@ -42,6 +45,13 @@ interface FolderItem {
 }
 interface FileItem { type: 'file'; material: Material; }
 type DirectoryItem = FolderItem | FileItem;
+
+const MATERIAL_SECTIONS: { id: MemberMaterialSection; title: string }[] = [
+  { id: 'stems', title: '🎧 Stämmor' },
+  { id: 'video', title: '🎬 Notfilmer & Video' },
+  { id: 'scores', title: '📄 Noter & Textblad (PDF)' },
+  { id: 'other', title: '🥁 Rytmik & Övrigt' },
+];
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
 const CUSTOM_VOICE = '__custom__';
@@ -211,6 +221,29 @@ export const AdminRepertoireMaterialPage = () => {
     () => parseRepertoireContents(linkedMaterials, title || '', decodedSubPath, repertoireSongTitle),
     [linkedMaterials, title, decodedSubPath, repertoireSongTitle]
   );
+
+  const { folders, fileSections } = useMemo(() => {
+    const folderItems: FolderItem[] = [];
+    const buckets: Record<MemberMaterialSection, { item: FileItem; label: MaterialNameParts }[]> = {
+      stems: [],
+      video: [],
+      scores: [],
+      other: [],
+    };
+    for (const item of directoryItems) {
+      if (item.type === 'folder') {
+        folderItems.push(item);
+        continue;
+      }
+      const label = displayMaterialLabel(item.material, repertoireSongTitle);
+      const section = memberMaterialSection(item.material.fileKey, label.sortRank);
+      buckets[section].push({ item, label });
+    }
+    for (const section of MATERIAL_SECTIONS) {
+      buckets[section.id].sort((a, b) => compareMaterialLabels(a.label, b.label));
+    }
+    return { folders: folderItems, fileSections: buckets };
+  }, [directoryItems, repertoireSongTitle]);
   
   const breadcrumbs = useMemo(() => decodedSubPath.split('/').filter(p => p), [decodedSubPath]);
   const currentTitle = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1] : title;
@@ -343,73 +376,91 @@ export const AdminRepertoireMaterialPage = () => {
         </button>
       </div>
 
-      <div className={styles.itemList}>
-        {directoryItems.length > 0 ? (
-          directoryItems.map(item => {
-            const label = labelForDirectoryItem(item, repertoireSongTitle);
-            const labelText = materialLabelText(label);
-            return item.type === 'folder' ? (
-              <Link
-                to={`${materialsBase}/${item.path.split('/').map(encodeURIComponent).join('/')}`}
-                state={{ repertoireTitle: title }}
-                key={item.path}
-                className={styles.itemRow}
-              >
-                <div className={styles.itemInfo}>
-                  <FiFolder className={styles.itemIcon} />
-                  <MaterialNameLines primary={label.primary} secondary={label.secondary} />
+      {folders.length === 0 && MATERIAL_SECTIONS.every((section) => fileSections[section.id].length === 0) ? (
+        <p>Denna mapp är tom.</p>
+      ) : (
+        <div className={styles.sections}>
+          {folders.length > 0 && (
+            <div className={styles.itemList}>
+              {folders.map((item) => {
+                const label = labelForDirectoryItem(item, repertoireSongTitle);
+                return (
+                  <Link
+                    to={`${materialsBase}/${item.path.split('/').map(encodeURIComponent).join('/')}`}
+                    state={{ repertoireTitle: title }}
+                    key={item.path}
+                    className={styles.itemRow}
+                  >
+                    <div className={styles.itemInfo}>
+                      <FiFolder className={styles.itemIcon} />
+                      <MaterialNameLines primary={label.primary} secondary={label.secondary} />
+                    </div>
+                    <FiChevronRight className={styles.chevronIcon} />
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+          {MATERIAL_SECTIONS.map((section) => {
+            const files = fileSections[section.id];
+            if (files.length === 0) return null;
+            return (
+              <section key={section.id} className={styles.materialSection}>
+                <h2 className={styles.sectionTitle}>{section.title}</h2>
+                <div className={styles.itemList}>
+                  {files.map(({ item, label }) => {
+                    const labelText = materialLabelText(label);
+                    return (
+                      <div key={item.material.materialId} className={styles.itemRow}>
+                        <div className={styles.itemInfo}>
+                          {getIconForFile(item.material.filePath || item.material.fileKey)}
+                          <MaterialNameLines primary={label.primary} secondary={label.secondary} />
+                        </div>
+                        <div className={styles.actions}>
+                          {isAudioFile(item.material.fileKey) && (
+                            <button
+                              onClick={() => handlePlayMaterial(item.material)}
+                              title={`Spela upp ${labelText}`}
+                              aria-label={`Spela upp ${labelText}`}
+                              aria-pressed={
+                                sessionMatchesThisGroup &&
+                                activeMaterialId === item.material.materialId &&
+                                isPlaying
+                              }
+                            >
+                              <FaPlayCircle size={22} />
+                            </button>
+                          )}
+                          {(isDocumentFile(item.material.fileKey) || isVideoFile(item.material.fileKey)) && (
+                            <button
+                              onClick={() => setMaterialToView(item.material)}
+                              className={styles.iconView}
+                              title={`Visa ${labelText}`}
+                              aria-label={`Visa ${labelText}`}
+                            >
+                              <IoEyeOutline size={24} />
+                            </button>
+                          )}
+                          {canEditLabels && (
+                            <button
+                              type="button"
+                              onClick={() => openLabelEdit(item.material)}
+                              title={`Redigera stämma och låtnamn för ${labelText}`}
+                              aria-label={`Redigera stämma och låtnamn för ${labelText}`}
+                            >
+                              <FiEdit2 size={20} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-                <FiChevronRight className={styles.chevronIcon} />
-              </Link>
-            ) : (
-              <div key={item.material.materialId} className={styles.itemRow}>
-                <div className={styles.itemInfo}>
-                  {getIconForFile(item.material.filePath || item.material.fileKey)}
-                  <MaterialNameLines primary={label.primary} secondary={label.secondary} />
-                </div>
-                <div className={styles.actions}>
-                  {isAudioFile(item.material.fileKey) && (
-                    <button
-                      onClick={() => handlePlayMaterial(item.material)}
-                      title={`Spela upp ${labelText}`}
-                      aria-label={`Spela upp ${labelText}`}
-                      aria-pressed={
-                        sessionMatchesThisGroup &&
-                        activeMaterialId === item.material.materialId &&
-                        isPlaying
-                      }
-                    >
-                      <FaPlayCircle size={22} />
-                    </button>
-                  )}
-                  {(isDocumentFile(item.material.fileKey) || isVideoFile(item.material.fileKey)) && (
-                    <button
-                      onClick={() => setMaterialToView(item.material)}
-                      className={styles.iconView}
-                      title={`Visa ${labelText}`}
-                      aria-label={`Visa ${labelText}`}
-                    >
-                      <IoEyeOutline size={24} />
-                    </button>
-                  )}
-                  {canEditLabels && (
-                    <button
-                      type="button"
-                      onClick={() => openLabelEdit(item.material)}
-                      title={`Redigera stämma och låtnamn för ${labelText}`}
-                      aria-label={`Redigera stämma och låtnamn för ${labelText}`}
-                    >
-                      <FiEdit2 size={20} />
-                    </button>
-                  )}
-                </div>
-              </div>
+              </section>
             );
-          })
-        ) : (
-          <p>Denna mapp är tom.</p>
-        )}
-      </div>
+          })}
+        </div>
+      )}
 
       {materialToView && <MediaModal isOpen={!!materialToView} onClose={() => setMaterialToView(null)} material={materialToView} />}
 

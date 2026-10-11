@@ -9,9 +9,9 @@ import { createPortal } from "react-dom";
 import {
   Music,
   Play,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  X,
   Disc3,
   Heart,
   ListPlus,
@@ -388,13 +388,16 @@ export function RepertoireMusicPlayerPanel({
 
   return (
     <div className={styles.musicShell}>
-      {/* ── top bar ── */}
+      <span id={shellTitleId} className={styles.shellTitleSr}>
+        Musik
+      </span>
+      {/* ── top bar (desktop). På mobil ersätts den av flikraden. ── */}
       <header className={styles.shellTop}>
         <Cluster className={styles.shellTopLeft} align="center" gap="sm" wrap={false}>
           <span className={styles.shellBrand} aria-hidden>
             HRK
           </span>
-          <span id={shellTitleId} className={styles.shellBrandTitle}>
+          <span className={styles.shellBrandTitle}>
             Musik
           </span>
         </Cluster>
@@ -405,7 +408,7 @@ export function RepertoireMusicPlayerPanel({
             onClick={onMinimizeOverlay}
             aria-label="Minimera musikspelare"
           >
-            <X size={20} aria-hidden />
+            <ChevronDown size={22} aria-hidden />
           </button>
         </Cluster>
       </header>
@@ -417,11 +420,12 @@ export function RepertoireMusicPlayerPanel({
           className={styles.shellMobileIconRail}
           role="toolbar"
           aria-label="Bibliotek och repertoar"
-          justify="between"
-          align="start"
+          justify="start"
+          align="center"
           gap="2xs"
           wrap={false}
         >
+          <div className={styles.shellMobileIconTabs}>
           <button
             type="button"
             className={`${styles.shellMobileIconBtn} ${
@@ -511,6 +515,15 @@ export function RepertoireMusicPlayerPanel({
               </span>
               <span className={styles.shellMobileIconLabel}>Skapa</span>
             </span>
+          </button>
+          </div>
+          <button
+            type="button"
+            className={styles.shellMobileMinimize}
+            onClick={onMinimizeOverlay}
+            aria-label="Minimera musikspelare"
+          >
+            <ChevronDown size={22} aria-hidden />
           </button>
         </Cluster>
 
@@ -786,28 +799,6 @@ export function RepertoireMusicPlayerPanel({
               />
             </div>
           ) : null}
-          {showMobileBackBar && (
-            <div className={styles.mobileMainNavBar}>
-              <button
-                type="button"
-                className={styles.mobileMainBackButton}
-                onClick={handleMobileBackFromTracks}
-                aria-label={
-                  mobileBrowseMode === "playlists"
-                    ? "Tillbaka till spellistor"
-                    : "Tillbaka till repertoar"
-                }
-              >
-                <ChevronLeft size={20} strokeWidth={2} aria-hidden />
-                <span>
-                  {mobileBrowseMode === "playlists"
-                    ? "Spellistor"
-                    : "Repertoar"}
-                </span>
-              </button>
-            </div>
-          )}
-
           {showMobilePlaylistPicker ? (
             <div className={styles.mobileMainPicker}>
               <header className={styles.mobileMainPickerHead}>
@@ -962,6 +953,20 @@ export function RepertoireMusicPlayerPanel({
           ) : (
             <>
               <div className={styles.hero}>
+                {showMobileBackBar && (
+                  <button
+                    type="button"
+                    className={styles.heroBackButton}
+                    onClick={handleMobileBackFromTracks}
+                    aria-label={
+                      mobileBrowseMode === "playlists"
+                        ? "Tillbaka till spellistor"
+                        : "Tillbaka till repertoar"
+                    }
+                  >
+                    <ChevronLeft size={22} strokeWidth={2} aria-hidden />
+                  </button>
+                )}
                 <div
                   className={`${styles.heroArt} ${isFavoritesView ? styles.heroArtFavorites : ''}`}
                   aria-hidden
