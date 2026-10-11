@@ -29,6 +29,7 @@ import { PracticePage } from "@/pages/PracticePage";
 import { LeaderAttendancePage } from "@/pages/leader/LeaderAttendancePage";
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { pathForViewAs } from '@/utils/rolePreview';
 import { GroupSelectionPage } from '@/pages/GroupSelectionPage';
 import { MaterialDetailPage } from "@/pages/admin/MaterialDetailPage";
 import { PublicChoirListPage } from "@/pages/PublicChoirListPage";
@@ -37,12 +38,17 @@ import { PageLoader } from "@/components/ui/loader/Loader";
 // Denna komponent ersätter din gamla DashboardPage.
 // Dess enda syfte är att omedelbart dirigera användaren till rätt plats.
 const DashboardPage = () => {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, realRole, viewAsRole } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     // Vänta tills vi vet vem användaren är
     if (isLoading || !user) return;
+
+    if (realRole === 'admin' && viewAsRole) {
+      navigate(pathForViewAs(viewAsRole, null), { replace: true });
+      return;
+    }
 
     // Dirigera baserat på roll
     if (user.role === 'admin') {
@@ -61,7 +67,7 @@ const DashboardPage = () => {
         navigate('/select-group', { replace: true });
       }
     }
-  }, [user, isLoading, navigate]);
+  }, [user, isLoading, navigate, realRole, viewAsRole]);
 
   // Visa en enhetlig laddningsindikator medan logiken körs
   return <PageLoader />;
@@ -131,12 +137,13 @@ const router = createBrowserRouter([
                 path: "groups/:groupName",
                 element: <GroupDashboardLayout />,
                 children: [
+                  { index: true, element: <Navigate to="repertoires" replace /> },
                   { path: "repertoires", element: <AdminRepertoireListPage /> },
                   // ✅ ÄNDRING 1 HÄR:
                   { path: "repertoires/:repertoireId/materials/*", element: <AdminRepertoireMaterialPage /> },
                   { path: "aktuellt", element: <MemberAktuelltPage /> },
                   { path: "concerts", element: <AdminEventPage /> },
-                  { path: "practice", element: <PracticePage /> },
+                  { path: "practice", element: <PracticePage viewer="admin" /> },
                   { path: "users", element: <AdminUserManagementPage viewerRole="admin" /> },
                   { path: "attendance", element: <LeaderAttendancePage /> },
                   { path: "music", element: <MusicDeepLinkHandler viewer="admin" /> },
@@ -147,53 +154,57 @@ const router = createBrowserRouter([
             ],
           },
           {
-            // Sektion för Körledare
+            // Sektion för Körledare. Medlem (role user) ska inte kunna montera vyn.
             path: "leader",
-            element: <LeaderLayout />,
+            element: <RequireRole roles={["admin", "leader"]} />,
             children: [
               {
-                path: "choir/:groupName",
-                element: <LeaderDashboard />, 
+                element: <LeaderLayout />,
                 children: [
                   {
-                    index: true,
-                    element: <Navigate to="repertoires" replace /> 
+                    path: "choir/:groupName",
+                    element: <LeaderDashboard />,
+                    children: [
+                      {
+                        index: true,
+                        element: <Navigate to="repertoires" replace />,
+                      },
+                      {
+                        path: "repertoires",
+                        element: <AdminRepertoireListPage />,
+                      },
+                      {
+                        path: "repertoires/:repertoireId/materials/*",
+                        element: <AdminRepertoireMaterialPage />,
+                      },
+                      {
+                        path: "concerts",
+                        element: <AdminEventPage />,
+                      },
+                      {
+                        path: "aktuellt",
+                        element: <MemberAktuelltPage />,
+                      },
+                      {
+                        path: "users",
+                        element: <AdminUserManagementPage viewerRole="leader" />,
+                      },
+                      {
+                        path: "practice",
+                        element: <PracticePage viewer="leader" />,
+                      },
+                      {
+                        path: "music",
+                        element: <MusicDeepLinkHandler viewer="leader" />,
+                      },
+                      {
+                        path: "attendance",
+                        element: <LeaderAttendancePage />,
+                      },
+                    ],
                   },
-                  {
-                    path: "repertoires",
-                    element: <AdminRepertoireListPage />, 
-                  },
-                  {
-                    // ✅ ÄNDRING 2 HÄR:
-                    path: "repertoires/:repertoireId/materials/*",
-                    element: <AdminRepertoireMaterialPage />,
-                  },
-                  {
-                    path: "concerts",
-                    element: <AdminEventPage />,
-                  },
-                  {
-                    path: "aktuellt",
-                    element: <MemberAktuelltPage />,
-                  },
-                  {
-                    path: "users",
-                    element: <AdminUserManagementPage viewerRole="leader" />
-                  },
-                  {
-                    path: "practice",
-                    element: <PracticePage />,
-                  },
-                  {
-                    path: "music",
-                    element: <MusicDeepLinkHandler viewer="leader" />,
-                  },
-                  {
-                    path: "attendance",
-                    element: <LeaderAttendancePage />,
-                  },
-                ]
-              }
+                ],
+              },
             ],
           },
           {
@@ -225,7 +236,7 @@ const router = createBrowserRouter([
                   },
                   {
                     path: "practice",
-                    element: <PracticePage />,
+                    element: <PracticePage viewer="member" />,
                   },
                   {
                     path: "music",

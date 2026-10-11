@@ -2,7 +2,7 @@
 
 Vad appen gör, för vem, och vilka regler som gäller. Icke-teknisk beskrivning.
 
-Senast verifierad mot koden: 2026-10-08.
+Senast verifierad mot koden: 2026-10-11.
 
 ---
 
@@ -39,7 +39,7 @@ Ansvarar för sin kör. Ser sin körs sidor.
 
 - Skapar och tar bort repertoarer i sin kör
 - Kopplar material från biblioteket till sin körs repertoarer
-- Skapar **endast repetitioner** i kalendern, inte konserter
+- Skapar, redigerar och tar bort gig i sin egen körs kalender. Skapar och redigerar även repetitioner. Radering av repetitioner är admin-only
 - Bjuder in medlemmar
 - Ser och hanterar medlemslistan (andra körledare döljs i listan)
 - Skickar meddelanden (Aktuellt) till sin egen kör
@@ -71,7 +71,8 @@ Vanlig körsångare.
 | Skapa repertoar i kören | ✅ | ✅ | — |
 | Koppla material till repertoar | ✅ | ✅ | — |
 | Se repertoar och material | ✅ | ✅ | ✅ |
-| Skapa konsert i kalendern | ✅ | — | — |
+| Skapa, redigera och ta bort gig | ✅ | ✅ (enbart egen kör) | — |
+| Ta bort repetition | ✅ | — | — |
 | Skapa repetition i kalendern | ✅ | ✅ | — |
 | Se kalendern | ✅ | ✅ | ✅ |
 | Skicka meddelande (Aktuellt) | ✅ (en, flera eller alla körer) | ✅ (enbart egen kör) | — |
@@ -145,7 +146,9 @@ per kör.
 **Repertoarer** hör till en specifik kör. En körledare eller admin skapar en
 repertoar (t.ex. "Vårkonsert 2026") och kopplar material från biblioteket till
 den. En låt kan ligga i många körers repertoarer samtidigt utan att filen
-dupliceras.
+dupliceras. På kopplingen mellan repertoar och material kan admin eller
+körledare spara en egen stämma och ett eget låtnamn. Det ändrar bara visningen
+i den kören, inte filen i biblioteket.
 
 Det finns också en synkfunktion: admin kan koppla en hel bibliotekmapp till en
 eller flera körer, så att repertoaren uppdateras när mappens innehåll ändras.
@@ -168,15 +171,23 @@ spår kan läggas till och tas bort.
 Två sorters händelser: **konsert** och **repetition**. Båda har titel, starttid,
 sluttid och valfri beskrivning.
 
-Behörighetsskillnaden: admin får skapa båda, körledare får bara skapa
-repetitioner.
+Admin och körledare får skapa och redigera både gig och repetitioner i
+kören. Körledaren kan bara göra det i en kör hen tillhör. Radering av
+repetitioner är fortfarande bara admin. Körledaren kan ta bort gig i sin
+egen kör.
 
 Systemet håller reda på vad varje medlem redan har sett. När ett event skapas
 eller ändras markeras det som olästt för körens medlemmar, och beskrivningar har
 en egen "ändrad"-markering skild från övriga fältändringar. Det gör att man kan
 se *vad* som ändrats, inte bara *att* något ändrats.
 
-Events kan också skapas i batch — flera repetitioner på en gång.
+Oläst-markeringen slocknar av sig själv när tidsfönstret är slut, utan att
+lässtatusen ändras. En repetition syns till midnatt mellan söndag och måndag
+i den vecka repetitionen ägde rum (måndag 00:00 svensk tid). Ett lokalt gig
+syns till midnatt dagen efter giget (svensk tid), räknat från det senare av
+start- och slutdatum. Gemensamma gig har ingen sådan markering.
+
+Events kan också skapas i batch — flera gig eller repetitioner på en gång.
 
 ### Aktuellt (meddelanden)
 
@@ -205,8 +216,11 @@ Admin har en egen vy över allt som skickats och kan redigera och ta bort alla m
 
 ### Gemensamma konserter och anmälan
 
-Admin skapar en gemensam konsert med titel, datum, plats och beskrivning. Den är
-synlig för alla inloggade oavsett kör.
+Admin skapar en gemensam konsert med titel, datum, plats, beskrivning och
+målgrupp: alla körer, eller en eller flera valda körer. Målgruppen sparas på
+konserten och som en tunn pekare per kör (`GROUP#ALL` eller `GROUP#{slug}`).
+Äldre konserter utan målgrupp syns kvar för alla körer. En medlem ser bara
+konserter för sin egen kör och de som gäller alla. Admin ser hela listan.
 
 Medlemmar anmäler sig med förnamn, efternamn, stämma (Sopran, Alt, Tenor eller Bas) och vilken kör de representerar. Stämman sparas på anmälan. Äldre anmälningar kan sakna den.
 Systemet garanterar att **en person bara kan anmäla sig en gång** per konsert.
@@ -219,8 +233,8 @@ Admin ser anmälningslistan i anmälningsordning, sidvis (20 åt gången, max 50
 Endast admin ser listan — anmälningar är inte offentliga.
 
 Radering av en konsert sker i två steg: konserten markeras först som "raderas"
-och försvinner då direkt ur listorna, sedan städas anmälningarna bort. Det
-förhindrar halvraderade konserter om något går fel mitt i.
+och försvinner då direkt ur listorna, sedan städas anmälningarna och
+körpekarna bort. Det förhindrar halvraderade konserter om något går fel mitt i.
 
 Samtidiga ändringar hanteras: om två administratörer redigerar samma konsert
 samtidigt får den andra ett felmeddelande i stället för att skriva över.

@@ -1,86 +1,131 @@
-@use '@/styles/variables' as *;
+$sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
 .page {
-  // Använder din globala mixin för en konsekvent layout
-  @include column($gap-size: var(--spacing-xl));
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  width: 100%;
+  margin: 0;
+  padding: var(--spacing-lg) 0 0;
+  font-family: $sans;
+
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+    font-family: $sans;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-text-luxury);
+  }
 }
 
 .header {
-  @include column($gap-size: var(--spacing-xs));
-  
-  h2 {
-    margin: 0; // Nollställ default-marginal för rubriker
-    font-size: var(--fs-h2);
-  }
-  
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+
   p {
     margin: 0;
-    color: var(--color-text-secondary);
-    font-size: var(--fs-base);
+    color: var(--color-text-luxury-muted);
+    font-family: $sans;
+    font-size: var(--fs-sm);
+    font-weight: 400;
+    line-height: 1.45;
   }
 }
 
-// Behållaren för hela listan
-.repertoireList {
-  @include column($gap-size: var(--spacing-sm));
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.playerSlot {
+  width: 100%;
+
+  > * {
+    width: 100%;
+    max-width: none;
+  }
 }
 
-// Varje klickbar rad/kort i listan
+.repertoireList {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--color-luxury-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
 .repertoireItem {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--spacing-md);
-  
-  padding: var(--spacing-md) var(--spacing-lg);
-  background-color: var(--color-dark-gray);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  text-decoration: none; // Ta bort understrykning från länken
-  
-  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  gap: var(--spacing-sm);
+  min-height: 56px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+
+  &:last-child {
+    border-bottom: 0;
+  }
 
   &:hover {
-    background-color: var(--color-background-hover);
-    border-color: var(--color-border-hover);
-    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.035);
+    text-decoration: none;
+  }
+
+  &:active {
+    background: rgba(255, 255, 255, 0.035);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
   }
 }
 
-// Behållare för textinnehållet (titel och artist)
 .itemInfo {
-  @include column($gap-size: 0.25rem); // Lite luft mellan titel och artist
-  min-width: 0; // Fixar flexbox-problem med långa texter
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
 }
 
 .itemTitle {
-  font-size: var(--fs-lg);
+  font-family: $sans;
+  font-size: var(--fs-base);
   font-weight: 600;
-  color: var(--color-text);
-  
-  // Hantera långa titlar snyggt
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--color-text-luxury);
+  white-space: normal;
+  word-break: break-word;
 }
 
 .itemArtist {
+  font-family: $sans;
   font-size: var(--fs-sm);
-  color: var(--color-text-secondary);
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--color-text-luxury-muted);
+  white-space: normal;
+  word-break: break-word;
 }
 
-// Pilen till höger
 .itemIcon {
-  flex-shrink: 0; // Se till att ikonen aldrig krymper
-  color: var(--color-primary); // ÄNDRING: Ikonen har nu din primära färg som standard
-  transition: color 0.2s ease;
+  flex-shrink: 0;
+  color: rgba(244, 239, 230, 0.35);
+  transition: color 0.15s ease;
 }
 
-// Ändra färgen på pilen vid hover för extra feedback
 .repertoireItem:hover .itemIcon {
-  color: var(--color-accent-hover); // ÄNDRING: Använder din ljusare accentfärg för hover
+  color: #f4efe6;
 }

@@ -1,0 +1,225 @@
+import { useState, useEffect, useCallback } from "react";
+import { Info } from "lucide-react";
+import { Button, ButtonSize, ButtonVariant } from "@/components/ui/button/Button";
+import { Cluster } from "@/components/ui/layout/Cluster";
+import { Modal } from "@/components/ui/modal/Modal";
+import { listSharedConcerts, type SharedConcert } from "@/services/concertService";
+import {
+  extractApiErrorMessage,
+  SharedConcertSignupModal,
+} from "@/features/concerts/SharedConcertSignupModal";
+import styles from "./SharedConcertSignupPanel.module.scss";
+
+const LIST_PAGE_SIZE = 20;
+
+function formatConcertDate(isoDate: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return isoDate;
+  const [y, m, d] = isoDate.split("-").map(Number);
+  try {
+    return new Intl.DateTimeFormat("sv-SE", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    }).format(new Date(Date.UTC(y, m - 1, d)));
+  } catch {
+    return isoDate;
+  }
+}
+
+type SharedConcertSignupPanelProps = {
+  /** Route choir slug — preselected when user belongs to that choir. */
+  preferredChoirSlug?: string;
+  /** Cognito group slugs the user belongs to. */
+  userGroups: string[];
+  givenName?: string;
+  familyName?: string;
+};
+
+function patchConcertList(
+  prev: SharedConcert[],
+  fresh: SharedConcert
+): SharedConcert[] {
+  return prev.map((c) =>
+    c.concertId === fresh.concertId ? { ...c, ...fresh } : c
+  );
+}
+
+export const SharedConcertSignupPanel = ({
+  preferredChoirSlug,
+  userGroups,
+  givenName = "",
+  familyName = "",
+}: SharedConcertSignupPanelProps) => {
+  const [concerts, setConcerts] = useState<SharedConcert[]>([]);
+  const [listHasMore, setListHasMore] = useState(false);
+  const [listNextBefore, setListNextBefore] = useState<string | null>(null);
+  const [listError, setListError] = useState<string | null>(null);
+  const [isLoadingList, setIsLoadingList] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [selected, setSelected] = useState<SharedConcert | null>(null);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+
+  const choirSlug = preferredChoirSlug?.trim() || userGroups.find((slug) => slug.trim())?.trim() || "";
+
+  const fetchList = useCallback(async () => {
+    setIsLoadingList(true);
+    setListError(null);
+    if (!choirSlug) {
+      setConcerts([]);
+      setListHasMore(false);
+      setListNextBefore(null);
+      setListError("Ingen kör är vald.");
+      setIsLoadingList(false);
+      return;
+    }
+    try {
+      const result = await listSharedConcerts({
+        limit: LIST_PAGE_SIZE,
+        groupSlug: choirSlug,
+      });
+      setConcerts(result.concerts);
+      setListHasMore(result.hasMore);
+      setListNextBefore(result.nextBefore);
+    } catch (error) {
+      console.error("Failed to list shared concerts", error);
+      setConcerts([]);
+      setListHasMore(false);
+      setListNextBefore(null);
+      setListError(
+        extractApiErrorMessage(error, "Kunde inte hämta gemensamma gig.")
+      );
+    } finally {
+      setIsLoadingList(false);
+    }
+  }, [choirSlug]);
+
+  useEffect(() => {
+    fetchList();
+  }, [fetchList]);
+
+  const loadMoreConcerts = async () => {
+    if (isLoadingMore || !listHasMore || !listNextBefore) return;
+    setIsLoadingMore(true);
+    try {
+      const result = await listSharedConcerts({
+        limit: LIST_PAGE_SIZE,
+        before: listNextBefore,
+        groupSlug: choirSlug,
+      });
+      setConcerts((prev) => {
+        const seen = new Set(prev.map((c) => c.concertId));
+        const next = [...prev];
+        for (const c of result.concerts) {
+          if (!seen.has(c.concertId)) next.push(c);
+        }
+        return next;
+      });
+      setListHasMore(result.hasMore);
+      setListNextBefore(result.nextBefore);
+    } catch (error) {
+      console.error("Failed to load more concerts", error);
+      setListError("Kunde inte ladda fler gig.");
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  const handleConcertUpdated = (fresh: SharedConcert) => {
+    setConcerts((prev) => patchConcertList(prev, fresh));
+    setSelected((prev) =>
+      prev?.concertId === fresh.concertId ? { ...prev, ...fresh } : prev
+    );
+  };
+
+  return (
+    <div className={styles.panel}>
+      <div className={styles.titleRow}>
+        <h2 className={styles.panelTitle}>Gemensamma Gig</h2>
+        <button
+          type="button"
+          className={styles.infoButton}
+          onClick={() => setIsHelpOpen(true)}
+          aria-label="Så fungerar det"
+          aria-expanded={isHelpOpen}
+        >
+          <Info size={20} strokeWidth={1.75} aria-hidden="true" />
+        </button>
+      </div>
+
+      {isLoadingList && <p className={styles.muted}>Laddar gig…</p>}
+      {!isLoadingList && listError && (
+        <p className={styles.error}>{listError}</p>
+      )}
+      {!isLoadingList && !listError && concerts.length === 0 && (
+        <p className={styles.muted}>Inga gemensamma gig just nu.</p>
+      )}
+
+      {!isLoadingList && concerts.length > 0 && (
+        <ul className={styles.list}>
+          {concerts.map((c) => (
+            <li key={c.concertId}>
+              <button
+                type="button"
+                className={styles.row}
+                onClick={() => setSelected(c)}
+              >
+                <span className={styles.rowMain}>
+                  <span className={styles.rowTitle}>{c.title}</span>
+                  <span className={styles.rowMeta}>
+                    {formatConcertDate(c.concertDate)}
+                    {c.location ? ` · ${c.location}` : ""}
+                  </span>
+                </span>
+                <span className={styles.rowBadge}>
+                  {c.viewerIsSignedUp ? (
+                    <span className={styles.signedUp}>Anmäld</span>
+                  ) : !c.signupOpen ? (
+                    <span className={styles.closed}>Stängd</span>
+                  ) : (
+                    "Öppen"
+                  )}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {listHasMore && (
+        <Cluster justify="center">
+          <Button
+            type="button"
+            variant={ButtonVariant.Ghost}
+            size={ButtonSize.Small}
+            disabled={isLoadingMore}
+            onClick={loadMoreConcerts}
+          >
+            {isLoadingMore ? "Laddar…" : "Ladda fler"}
+          </Button>
+        </Cluster>
+      )}
+
+      <Modal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        title="Så fungerar det"
+        tone="luxury"
+        size="compact"
+      >
+        <p className={styles.helpText}>
+          Här visas gig för din kör och gig som gäller alla körer. Klicka på ett gig för att läsa mer och anmäla dig.
+        </p>
+      </Modal>
+
+      <SharedConcertSignupModal
+        concert={selected}
+        onClose={() => setSelected(null)}
+        onConcertUpdated={handleConcertUpdated}
+        preferredChoirSlug={preferredChoirSlug}
+        userGroups={userGroups}
+        givenName={givenName}
+        familyName={familyName}
+      />
+    </div>
+  );
+};

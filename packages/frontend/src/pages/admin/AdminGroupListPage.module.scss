@@ -2,55 +2,96 @@
 
 // Huvudbehållaren för hela sidan
 .page {
-  padding: var(--spacing-xs);
-  padding-bottom: var(--spacing-xxl); // Extra utrymme i botten
+  box-sizing: border-box;
+  width: 100%;
+  padding: var(--spacing-xs) 0 var(--spacing-xxl);
 }
 
 .title {
-  color: var(--color-text);
-  margin-bottom: var(--spacing-lg);
+  margin: 0 0 var(--spacing-xl);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: var(--fs-h2);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #f5ebd7;
 }
 
-// Behållaren för filter och "Skapa Kör"-knappen
 .topBar {
   display: flex;
-  flex-direction: column; // Stapla vertikalt på mobil
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-xl);
-}
-
-// Sektionen med filter-ikon och text-input
-.filterSection {
-  display: flex;
+  flex-direction: row;
   align-items: center;
   gap: var(--spacing-sm);
-  background-color: var(--color-dark-gray);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
+  margin-bottom: var(--spacing-md);
+}
 
-  // Styling för sökfältet
+.filterSection {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  height: 42px;
+  padding: 0 14px;
+  background: rgba(18, 18, 20, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+
+  &:focus-within {
+    border-color: rgba(220, 38, 38, 0.6);
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.15);
+  }
+
   input {
-    flex-grow: 1; // Ta upp allt ledigt utrymme
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
     background: none;
     border: none;
     outline: none;
-    color: var(--color-text);
-    font-size: var(--fs-base);
+    color: #f5ebd7;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 1rem;
+
     &::placeholder {
-      color: #9ca3af;
+      color: rgba(245, 235, 215, 0.45);
     }
   }
 }
 
-// Rutnätet som håller alla kör-kort
-.grid {
-  display: grid;
-  gap: var(--spacing-lg);
-  padding: var(--spacing-lg);
+.topBar .createButton {
+  height: 42px;
+  min-height: 42px;
+  padding: 0 14px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, rgba(185, 28, 28, 0.25) 0%, rgba(140, 20, 20, 0.2) 100%);
+  border: 1px solid rgba(220, 38, 38, 0.45);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  color: #f5ebd7;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 
-  // MOBIL (standard): 1 kolumn
-  grid-template-columns: 1fr;
+  &:hover:not(:disabled) {
+    background: rgba(220, 38, 38, 0.35);
+    border-color: rgba(220, 38, 38, 0.7);
+    color: #f5ebd7;
+  }
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.empty {
+  margin: var(--spacing-md) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--fs-sm);
 }
 
 
@@ -60,30 +101,12 @@
 
 // När skärmen blir bredare än vår tablet-brytpunkt...
 @media (min-width: #{$tabletBreakpoint}) {
-  .grid {
-    // ...visa 2 kolumner
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  // (De andra stilarna för .page, .topBar etc. är kvar som de var)
   .page {
-    padding: var(--spacing-xl);
+    padding: var(--spacing-xl) 0;
   }
-  .topBar {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .filterSection {
-  flex-grow: 1; // Tillåt sök-sektionen att växa och ta upp ledigt utrymme
-  margin-right: var(--spacing-xl); // Lägg till lite luft mellan sökfält och knapp
-}
-}
 
-// När skärmen blir bredare än vår desktop-brytpunkt...
-@media (min-width: #{$desktopBreakpoint}) {
-  .grid {
-    // ...visa 3 kolumner
-    grid-template-columns: repeat(3, 1fr);
+  .list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

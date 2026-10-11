@@ -3,6 +3,9 @@
 import { TourProvider, type StepType } from '@reactour/tour';
 import React from 'react';
 
+/** Sätt till true för att visa onboarding-turerna igen. */
+export const ENABLE_ONBOARDING_TOURS = false;
+
 export interface AppTourProviderProps {
   steps: StepType[];
   tourKey: string;
@@ -20,16 +23,18 @@ export function AppTourProvider({
   beforeClose,
   onClickMask,
 }: AppTourProviderProps) {
+  const shouldOpen =
+    ENABLE_ONBOARDING_TOURS &&
+    (typeof defaultOpen === 'boolean'
+      ? defaultOpen
+      : process.env.NODE_ENV === 'development'
+        ? true
+        : !localStorage.getItem(`tour_seen_for_${tourKey}`));
+
   return (
     <TourProvider
       steps={steps}
-      defaultOpen={
-        typeof defaultOpen === 'boolean'
-          ? defaultOpen
-          : process.env.NODE_ENV === 'development'
-            ? true
-            : !localStorage.getItem(`tour_seen_for_${tourKey}`)
-      }
+      defaultOpen={shouldOpen}
       beforeClose={() => {
         if (process.env.NODE_ENV !== 'development') {
           localStorage.setItem(`tour_seen_for_${tourKey}`, 'true');

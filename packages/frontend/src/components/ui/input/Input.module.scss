@@ -4,8 +4,8 @@
   // --- Grundläggande layout och storlek ---
   display: block;
   width: 100%; // Ta upp hela tillgängliga bredden
-  height: 48px; // En bra, tryckvänlig höjd för mobilen
-  padding: 0 var(--spacing-md); // Luft på sidorna inuti fältet
+  height: var(--control-height);
+  padding: 0 var(--spacing-md); // Bara horisontell luft — höjden styrs av --control-height
   
   // --- Utseende ---
   background-color: var(--color-background); // Något ljusare än bakgrunden
@@ -25,7 +25,7 @@
   // Tydliggör vilket fält som är aktivt (har fokus)
   &:focus {
     outline: none; // Ta bort webbläsarens standard-ram
-     box-shadow: 0 0 0 3px rgba(211, 0, 0, 0.3);
+     box-shadow: var(--focus-ring);
   }
 
   // Stil för när fältet är inaktiverat

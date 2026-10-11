@@ -1,0 +1,19 @@
+@use '@/styles/variables' as *;
+
+.stack {
+  display: flex;
+  flex-direction: column;
+}
+
+.gap2xs { gap: var(--spacing-2xs); }
+.gapXs { gap: var(--spacing-xs); }
+.gapSm { gap: var(--spacing-sm); }
+.gapMd { gap: var(--spacing-md); }
+.gapLg { gap: var(--spacing-lg); }
+.gapXl { gap: var(--spacing-xl); }
+.gap2xl { gap: var(--spacing-2xl); }
+
+.alignStart { align-items: flex-start; }
+.alignCenter { align-items: center; }
+.alignEnd { align-items: flex-end; }
+.alignStretch { align-items: stretch; }

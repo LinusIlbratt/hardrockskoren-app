@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/modal/Modal';
-import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { DiscardChangesConfirm } from '@/components/ui/form/DiscardChangesConfirm';
 import { useModalFormGuard } from '@/hooks/useModalFormGuard';
 import { usePlaylists } from '@/hooks/usePlaylists';
 import * as musicService from '@/services/musicService';
+import styles from './AddToPlaylistModal.module.scss';
 
 export interface AddToPlaylistModalProps {
   isOpen: boolean;
@@ -90,70 +90,34 @@ function AddToPlaylistModalBody({ materialId, onClose }: AddToPlaylistModalBodyP
   const combinedError = actionError || playlistsHookError;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div className={styles.body}>
       {combinedError && (
-        <p
-          role="alert"
-          style={{ margin: 0, color: '#b91c1c', fontSize: '0.9rem' }}
-        >
+        <p role="alert" className={styles.error}>
           {combinedError}
         </p>
       )}
 
       <div>
-        <p style={{ margin: '0 0 8px', fontWeight: 600, fontSize: '0.9rem' }}>
-          Dina spellistor
-        </p>
+        <p className={styles.sectionTitle}>Dina spellistor</p>
         {isLoading ? (
-          <p style={{ margin: 0, color: '#666' }}>Laddar spellistor…</p>
+          <p className={styles.hint}>Laddar spellistor…</p>
         ) : playlists.length === 0 ? (
-          <p style={{ margin: 0, color: '#666' }}>
+          <p className={styles.hint}>
             Du har inga spellistor ännu. Skapa en nedan.
           </p>
         ) : (
-          <ul
-            style={{
-              margin: 0,
-              padding: 0,
-              listStyle: 'none',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 6,
-              maxHeight: 220,
-              overflowY: 'auto',
-            }}
-          >
+          <ul className={styles.list}>
             {playlists.map((p) => (
               <li key={p.playlistId}>
                 <button
                   type="button"
+                  className={styles.row}
                   disabled={busyPlaylistId === p.playlistId || creating}
                   onClick={() => void handleSelectPlaylist(p.playlistId)}
-                  style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    padding: '10px 12px',
-                    border: '1px solid #ddd',
-                    borderRadius: 8,
-                    background: '#fafafa',
-                    cursor:
-                      busyPlaylistId === p.playlistId || creating
-                        ? 'wait'
-                        : 'pointer',
-                  }}
                 >
-                  <span style={{ fontWeight: 500 }}>{p.title}</span>
+                  <span>{p.title}</span>
                   {p.description ? (
-                    <span
-                      style={{
-                        display: 'block',
-                        fontSize: '0.8rem',
-                        color: '#666',
-                        marginTop: 4,
-                      }}
-                    >
-                      {p.description}
-                    </span>
+                    <span className={styles.description}>{p.description}</span>
                   ) : null}
                 </button>
               </li>
@@ -162,54 +126,34 @@ function AddToPlaylistModalBody({ materialId, onClose }: AddToPlaylistModalBodyP
         )}
       </div>
 
-      <div
-        style={{
-          borderTop: '1px solid #eee',
-          paddingTop: 12,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 8,
-        }}
-      >
-        <p style={{ margin: 0, fontWeight: 600, fontSize: '0.9rem' }}>
-          Skapa ny spellista
-        </p>
-        <label htmlFor="add-to-playlist-new-title" style={{ fontSize: '0.85rem' }}>
+      <div className={styles.createSection}>
+        <p className={styles.sectionTitle}>Skapa ny spellista</p>
+        <label htmlFor="add-to-playlist-new-title" className={styles.label}>
           Titel
           <input
             id="add-to-playlist-new-title"
+            className={styles.input}
             type="text"
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             disabled={creating}
             placeholder="Min spellista"
-            style={{
-              display: 'block',
-              width: '100%',
-              marginTop: 4,
-              padding: '8px 10px',
-              borderRadius: 6,
-              border: '1px solid #ccc',
-              boxSizing: 'border-box',
-            }}
           />
         </label>
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
-          <Button type="button" variant={ButtonVariant.Ghost} onClick={requestClose} disabled={isBusy}>
-            Avbryt
-          </Button>
+        <div className={styles.actions}>
           <button
             type="button"
+            className={styles.secondary}
+            onClick={requestClose}
+            disabled={isBusy}
+          >
+            Avbryt
+          </button>
+          <button
+            type="button"
+            className={styles.primary}
             disabled={creating}
             onClick={() => void handleCreateAndAdd()}
-            style={{
-              padding: '8px 14px',
-              borderRadius: 8,
-              border: 'none',
-              background: '#1a1a1a',
-              color: '#fff',
-              cursor: creating ? 'wait' : 'pointer',
-            }}
           >
             {creating ? 'Skapar…' : 'Skapa och lägg till'}
           </button>
@@ -233,7 +177,7 @@ export function AddToPlaylistModal({
   }
 
   return (
-    <Modal formMode isOpen={isOpen} onClose={onClose} title="Lägg till i spellista">
+    <Modal formMode tone="library" isOpen={isOpen} onClose={onClose} title="Lägg till i spellista">
       <AddToPlaylistModalBody materialId={materialId} onClose={onClose} />
     </Modal>
   );

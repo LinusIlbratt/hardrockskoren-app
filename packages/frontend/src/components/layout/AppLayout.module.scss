@@ -6,6 +6,108 @@
   flex-direction: column;
   min-height: 100vh; // Se till att layouten alltid fyller minst hela skärmens höjd
   position: relative;
+  padding-top: var(--role-preview-height, 0px);
+}
+
+.withChoirTabs {
+  // Topprad + två rader piller under MainNav. Aktuellt-headern fastnar under den höjden.
+  --member-subnav-height: 148px;
+
+  @media (min-width: #{$tabletBreakpoint}) {
+    --member-subnav-height: 156px;
+  }
+}
+
+// Logga, körhuvud och flikar sitter ihop under menyn för admin, körledare och medlem.
+.choirTopStack {
+  position: sticky;
+  top: var(--role-preview-height, 0px);
+  z-index: 900;
+  flex-shrink: 0;
+  background-color: var(--color-background);
+}
+
+.choirChrome {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--page-max-width, #{$maxWidth});
+  margin: 0 auto;
+  // 8px under menyn, 12px under flikarna. Samma kolumn som Layout .container.
+  padding: 8px var(--page-padding-x, 16px) 12px;
+}
+
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.backLink,
+.identityName {
+  min-width: 0;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  text-decoration: none;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: var(--color-text-luxury, #f4efe6);
+    text-decoration: none;
+  }
+}
+
+.choirBadge {
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 46%;
+  margin: 0;
+  padding: 3px 10px;
+  overflow: hidden;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--color-text-luxury, #f4efe6);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+}
+
+.nameSkeleton {
+  display: block;
+  width: 4.5rem;
+  height: 0.9em;
+  border-radius: 999px;
+  background: rgba(245, 235, 215, 0.14);
+}
+
+@media (min-width: #{$tabletBreakpoint}) {
+  .topBar {
+    margin-bottom: 16px;
+  }
+
+  .choirBadge {
+    max-width: 50%;
+    padding: 4px 12px;
+    font-size: 14px;
+  }
 }
 
 // Nav + Outlet — aldrig täckt av transparenta lager (overlay är syskon, inte här ovanpå)
@@ -48,6 +150,7 @@
   position: sticky;
   bottom: 0;
   z-index: 5;
+  flex-shrink: 0;
   pointer-events: auto;
   display: flex;
   flex-direction: column;
@@ -64,8 +167,8 @@
   @media (min-width: #{$tabletBreakpoint}) {
     // ...centrera innehållet och ge det en max-bredd för bättre läsbarhet.
     width: 100%;
-    max-width: $maxWidth; // Använder variabeln från _variables.scss
-    margin: 0 auto; // Centrerar blocket horisontellt
+    max-width: var(--page-max-width, #{$maxWidth});
+    margin: 0 auto;
   }
 }
 

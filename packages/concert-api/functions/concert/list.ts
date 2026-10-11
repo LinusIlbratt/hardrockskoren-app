@@ -6,13 +6,14 @@ import {
 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
 import type { AuthContext } from "../../../core/types";
+import { requireGroupAccessResponse, normalizeGroupSlug } from "../../../core/utils/requireGroupAccess";
 import {
   clampListLimit,
   decodeListCursor,
   encodeListCursor,
   SHARED_CONCERT_LIST_DEFAULT_LIMIT,
 } from "../lib/keys";
-import { listSharedConcertsPage } from "../lib/store";
+import { listSharedConcertsForChoir, listSharedConcertsPage } from "../lib/store";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
@@ -50,8 +51,27 @@ export const handler = async (
     }
   }
 
+  const groupSlug = normalizeGroupSlug(qs.groupSlug);
+  const role = event.requestContext.authorizer?.lambda?.role?.trim().toLowerCase() ?? "";
+
+  if (groupSlug) {
+    const denied = await requireGroupAccessResponse(
+      event.requestContext.authorizer?.lambda,
+      groupSlug
+    );
+    if (denied) return denied;
+  } else if (role !== "admin") {
+    return sendError(400, "groupSlug is required.");
+  }
+
   try {
-    const page = await listSharedConcertsPage(docClient, tableName, {
+    const page = groupSlug
+      ? await listSharedConcertsForChoir(docClient, tableName, groupSlug, {
+          limit,
+          beforeGsi1Sk,
+          viewerUuid: uuid,
+        })
+      : await listSharedConcertsPage(docClient, tableName, {
       limit,
       beforeGsi1Sk,
       viewerUuid: uuid,

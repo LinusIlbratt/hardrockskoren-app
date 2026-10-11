@@ -12,7 +12,7 @@
 // Styling för "Välj fil"-knappen (när inget är valt)
 .labelButton {
   width: 100%;
-  padding: var(--spacing-md);
+  padding: 0 var(--spacing-md);
   background-color: var(--color-primary);
   color: var(--color-background);
   border: 1px solid var(--color-primary);
@@ -20,7 +20,7 @@
   cursor: pointer;
   font-weight: 600;
   transition: all 0.2s ease;
-  height: 48px;
+  height: var(--control-height);
 
   &:hover {
     background-color: var(--color-primary-hover);
@@ -34,11 +34,11 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-md);
-  padding: var(--spacing-md);
+  padding: 0 var(--spacing-md);
   background-color: var(--color-dark-gray);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  height: 48px;
+  height: var(--control-height);
 }
 
 .fileName {

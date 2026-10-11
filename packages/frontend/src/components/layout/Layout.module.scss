@@ -1,12 +1,15 @@
 @use '@/styles/variables' as *;
 
 .container {
-    // Sätter maxbredden för allt innehåll
-    max-width: $maxWidth;
-    
-    // Centrerar behållaren horisontellt på sidan och lägger till marginal uppe/nere
-    margin: 2rem auto;
-    
-    // Lägger till luft på sidorna på mindre skärmar
-    padding: 0 2rem;
-  }
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--page-max-width, #{$maxWidth});
+  margin: 2rem auto;
+  padding-left: var(--page-padding-x, 16px);
+  padding-right: var(--page-padding-x, 16px);
+}
+
+// Körsidor ritar huvudet i AppLayout. Containern ska inte skjuta ner innehållet under flikarna.
+.container:has([data-choir-page]) {
+  margin-top: 0;
+}

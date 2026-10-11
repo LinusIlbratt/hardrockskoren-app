@@ -321,6 +321,31 @@ listMaterialsInRepertoire:
       Resource:
         - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 
+updateRepertoireMaterial:
+  handler: functions/updateRepertoireMaterial.handler
+  name: hrk-update-repertoire-material-${sls:stage}
+  description: Saves voice and song-title overrides on a repertoire material link.
+  events:
+    - httpApi:
+        method: PATCH
+        path: /groups/{groupName}/repertoires/{repertoireId}/materials/{materialId}
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:UpdateItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
+
 deleteRepertoire:
   handler: functions/deleteRepertoire.handler
   name: hrk-delete-repertoire-${sls:stage}

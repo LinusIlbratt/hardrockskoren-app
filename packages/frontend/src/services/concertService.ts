@@ -1,4 +1,5 @@
-import axios from "axios";
+import { createAuthedClient } from "@/services/apiClient";
+import { getAuthHeaders } from "@/utils/authHeaders";
 
 const API_BASE_URL = import.meta.env.VITE_CONCERT_API_URL as string | undefined;
 
@@ -11,12 +12,11 @@ function requireBaseUrl(): string {
   return API_BASE_URL.replace(/\/$/, "");
 }
 
-function authHeaders(): { Authorization: string } {
-  const token = localStorage.getItem("authToken");
-  if (!token) {
+function client() {
+  if (!getAuthHeaders().Authorization) {
     throw new Error("Authentication token is missing.");
   }
-  return { Authorization: `Bearer ${token}` };
+  return createAuthedClient(requireBaseUrl());
 }
 
 export type SharedConcert = {
@@ -31,7 +31,7 @@ export type SharedConcert = {
   viewerIsSignedUp?: boolean;
   /** Optimistic-lock version for PATCH (from API). */
   version?: number;
-  /** Absent today: every shared gig is for all choirs. */
+  /** Absent on older gigs, which stay visible to every choir. */
   scope?: "all" | "groups";
   targets?: string[];
 };
@@ -56,6 +56,8 @@ export type CreateSharedConcertInput = {
   concertDate: string;
   location: string;
   description?: string;
+  scope?: "all" | "groups";
+  targets?: string[];
 };
 
 export type ListSharedConcertsResult = {
@@ -82,43 +84,38 @@ export type CreateConcertSignupInput = {
 export async function createSharedConcert(
   input: CreateSharedConcertInput
 ): Promise<SharedConcert> {
-  const base = requireBaseUrl();
-  const response = await axios.post<SharedConcert>(
-    `${base}/shared-concerts`,
-    {
-      title: input.title.trim(),
-      concertDate: input.concertDate.trim(),
-      location: input.location.trim(),
-      ...(input.description?.trim()
-        ? { description: input.description.trim() }
-        : {}),
-    },
-    {
-      headers: { ...authHeaders(), "Content-Type": "application/json" },
-    }
-  );
+  const response = await client().post<SharedConcert>("/shared-concerts", {
+    title: input.title.trim(),
+    concertDate: input.concertDate.trim(),
+    location: input.location.trim(),
+    ...(input.description?.trim()
+      ? { description: input.description.trim() }
+      : {}),
+    ...(input.scope ? { scope: input.scope } : {}),
+    ...(input.targets ? { targets: input.targets } : {}),
+  });
   return response.data;
 }
 
 export async function listSharedConcerts(options?: {
   limit?: number;
   before?: string | null;
+  groupSlug?: string | null;
+  signal?: AbortSignal;
 }): Promise<ListSharedConcertsResult> {
-  const base = requireBaseUrl();
-  const params = new URLSearchParams();
-  if (options?.limit !== undefined) {
-    params.set("limit", String(options.limit));
-  }
-  if (options?.before) {
-    params.set("before", options.before);
-  }
-  const qs = params.toString();
-  const response = await axios.get<{
+  const response = await client().get<{
     concerts?: SharedConcert[];
     hasMore?: boolean;
     nextBefore?: string | null;
-  }>(`${base}/shared-concerts${qs ? `?${qs}` : ""}`, {
-    headers: authHeaders(),
+  }>("/shared-concerts", {
+    signal: options?.signal,
+    params: {
+      ...(options?.limit !== undefined ? { limit: options.limit } : {}),
+      ...(options?.before ? { before: options.before } : {}),
+      ...(options?.groupSlug?.trim()
+        ? { groupSlug: options.groupSlug.trim() }
+        : {}),
+    },
   });
   return {
     concerts: Array.isArray(response.data?.concerts)
@@ -135,6 +132,8 @@ export type UpdateSharedConcertInput = {
   location: string;
   description?: string | null;
   version: number;
+  scope?: "all" | "groups";
+  targets?: string[];
 };
 
 export async function updateSharedConcert(
@@ -149,31 +148,45 @@ export async function updateSharedConcert(
     throw new Error("version is required.");
   }
 
-  const base = requireBaseUrl();
   const description = input.description?.trim() ?? "";
-  const response = await axios.patch<SharedConcert>(
-    `${base}/shared-concerts/${encodeURIComponent(id)}`,
+  const response = await client().patch<SharedConcert>(
+    `/shared-concerts/${encodeURIComponent(id)}`,
     {
       version: input.version,
       title: input.title.trim(),
       concertDate: input.concertDate.trim(),
       location: input.location.trim(),
       description: description || null,
-    },
-    {
-      headers: { ...authHeaders(), "Content-Type": "application/json" },
+      ...(input.scope ? { scope: input.scope } : {}),
+      ...(input.targets ? { targets: input.targets } : {}),
     }
   );
   return response.data;
 }
 
+export async function deleteSharedConcert(concertId: string): Promise<void> {
+  const id = concertId.trim();
+  if (!id) {
+    throw new Error("concertId is required.");
+  }
+  await client().delete(`/shared-concerts/${encodeURIComponent(id)}`);
+}
+
 export async function getSharedConcert(
-  concertId: string
+  concertId: string,
+  options?: { groupSlug?: string | null }
 ): Promise<SharedConcert> {
-  const base = requireBaseUrl();
-  const response = await axios.get<SharedConcert>(
-    `${base}/shared-concerts/${encodeURIComponent(concertId)}`,
-    { headers: authHeaders() }
+  const id = concertId.trim();
+  if (!id) {
+    throw new Error("concertId is required.");
+  }
+  const response = await client().get<SharedConcert>(
+    `/shared-concerts/${encodeURIComponent(id)}`,
+    {
+      params: options?.groupSlug?.trim()
+        ? { groupSlug: options.groupSlug.trim() }
+        : undefined,
+    }
   );
   return response.data;
 }
@@ -182,17 +195,17 @@ export async function createConcertSignup(
   concertId: string,
   input: CreateConcertSignupInput
 ): Promise<ConcertSignup> {
-  const base = requireBaseUrl();
-  const response = await axios.post<ConcertSignup>(
-    `${base}/shared-concerts/${encodeURIComponent(concertId)}/signups`,
+  const id = concertId.trim();
+  if (!id) {
+    throw new Error("concertId is required.");
+  }
+  const response = await client().post<ConcertSignup>(
+    `/shared-concerts/${encodeURIComponent(id)}/signups`,
     {
       firstName: input.firstName.trim(),
       lastName: input.lastName.trim(),
       choirSlug: input.choirSlug.trim(),
       voicePart: input.voicePart,
-    },
-    {
-      headers: { ...authHeaders(), "Content-Type": "application/json" },
     }
   );
   return response.data;
@@ -200,22 +213,21 @@ export async function createConcertSignup(
 
 export async function listConcertSignups(
   concertId: string,
-  options?: { limit?: number; before?: string | null }
+  options?: { limit?: number; before?: string | null; signal?: AbortSignal }
 ): Promise<ListConcertSignupsResult> {
-  const base = requireBaseUrl();
-  const params = new URLSearchParams();
-  if (options?.limit !== undefined) {
-    params.set("limit", String(options.limit));
+  const id = concertId.trim();
+  if (!id) {
+    throw new Error("concertId is required.");
   }
-  if (options?.before) {
-    params.set("before", options.before);
-  }
-  const qs = params.toString();
-  const response = await axios.get<ListConcertSignupsResult>(
-    `${base}/shared-concerts/${encodeURIComponent(concertId)}/signups${
-      qs ? `?${qs}` : ""
-    }`,
-    { headers: authHeaders() }
+  const response = await client().get<ListConcertSignupsResult>(
+    `/shared-concerts/${encodeURIComponent(id)}/signups`,
+    {
+      signal: options?.signal,
+      params: {
+        ...(options?.limit !== undefined ? { limit: options.limit } : {}),
+        ...(options?.before ? { before: options.before } : {}),
+      },
+    }
   );
   return {
     concertId: response.data?.concertId ?? concertId,

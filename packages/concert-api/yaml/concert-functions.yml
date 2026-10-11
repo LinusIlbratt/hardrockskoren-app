@@ -1,7 +1,7 @@
 createSharedConcert:
   handler: functions/concert/create.handler
   name: hrk-create-shared-concert-${sls:stage}
-  description: Admin creates a shared concert (canonical META + GSI1 list keys).
+  description: Admin creates a shared concert (META plus thin choir pointers).
   events:
     - httpApi:
         method: POST
@@ -12,13 +12,14 @@ createSharedConcert:
     - Effect: "Allow"
       Action:
         - "dynamodb:PutItem"
+        - "dynamodb:TransactWriteItems"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
 
 listSharedConcerts:
   handler: functions/concert/list.handler
   name: hrk-list-shared-concerts-${sls:stage}
-  description: Lists shared concerts via GSI1; BatchGet enriches viewerIsSignedUp.
+  description: Admin lists via GSI1. Members with groupSlug query choir pointers.
   events:
     - httpApi:
         method: GET
@@ -33,6 +34,11 @@ listSharedConcerts:
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI1"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 
 getSharedConcert:
   handler: functions/concert/get.handler
@@ -50,11 +56,16 @@ getSharedConcert:
         - "dynamodb:GetItem"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 
 updateSharedConcert:
   handler: functions/concert/update.handler
   name: hrk-update-shared-concert-${sls:stage}
-  description: Admin updates a shared concert (META + GSI1SK when date changes).
+  description: Admin updates a shared concert and rewrites choir pointers when audience or date changes.
   events:
     - httpApi:
         method: PATCH
@@ -66,13 +77,16 @@ updateSharedConcert:
       Action:
         - "dynamodb:GetItem"
         - "dynamodb:UpdateItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:DeleteItem"
+        - "dynamodb:TransactWriteItems"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
 
 deleteSharedConcert:
   handler: functions/concert/delete.handler
   name: hrk-delete-shared-concert-${sls:stage}
-  description: Admin deletes a shared concert and all signup rows (cascade).
+  description: Admin deletes a shared concert, signup rows, and choir pointers.
   events:
     - httpApi:
         method: DELETE

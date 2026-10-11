@@ -11,11 +11,20 @@
   min-height: 0;
   height: 100%;
   width: 100%;
-  background: #000;
-  color: #e1e1e1;
+  background: var(--color-surface);
+  color: var(--color-text-luxury);
   box-sizing: border-box;
-  font-family: var(--font-body);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   overflow: hidden;
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
 }
 
 /* ───────── top bar ───────── */
@@ -26,68 +35,74 @@
   flex-shrink: 0;
   min-height: 44px;
   height: auto;
-  padding: 8px 12px;
+  padding: var(--spacing-sm) calc(var(--spacing-sm) + var(--spacing-xs));
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--color-border-subtle);
   z-index: 2;
 }
 
-@media (min-width: 768px) {
+@media (min-width: #{$tabletBreakpoint}) {
   .shellTop {
     height: 48px;
-    padding: 0 16px;
+    padding: 0 var(--spacing-md);
   }
 }
 
 .shellTopLeft {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  min-width: 0;
 }
 
 .shellBrand {
   font-size: 0.65rem;
   font-weight: 800;
   letter-spacing: 0.16em;
-  color: var(--color-primary, #fe160a);
+  color: var(--color-text-luxury-muted);
   text-transform: uppercase;
 }
 
 .shellBrandTitle {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 1rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-text-luxury);
   letter-spacing: -0.01em;
 }
 
 .shellTopRight {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px;
+  flex-shrink: 0;
 }
 
 .closeButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   padding: 0;
   border: none;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.07);
-  color: #a0a0a0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--color-text-luxury-muted);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s ease;
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.14);
-    color: #fff;
-    transform: scale(1.05);
+  &:hover,
+  &:active {
+    background: transparent;
+    box-shadow: none;
+    color: var(--color-text-luxury);
+    transform: none;
+  }
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    background: transparent;
+    box-shadow: none;
   }
 }
 
@@ -112,46 +127,44 @@
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  background: #0d0d0d;
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-border-subtle);
 }
 
 .playlistSidebarTitle {
   flex-shrink: 0;
   margin: 0;
-  padding: 16px 16px 10px;
+  padding: var(--spacing-md) var(--spacing-md) calc(var(--spacing-sm) + var(--spacing-2xs));
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #666;
+  color: var(--color-text-luxury-muted);
 }
 
 .playlistSidebarSection {
   flex-shrink: 0;
-  padding: 0 8px;
-  margin-bottom: 6px;
+  padding: 0 var(--spacing-sm);
+  margin-bottom: calc(var(--spacing-sm) - var(--spacing-2xs));
 }
 
 .playlistSidebarSectionLabel {
   flex-shrink: 0;
   margin: 0;
-  padding: 6px 8px 4px;
+  padding: calc(var(--spacing-sm) - var(--spacing-2xs)) var(--spacing-sm) var(--spacing-xs);
   font-size: 0.58rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #555;
+  color: var(--color-text-luxury-muted);
 }
 
 /* Spellistor: fast överdel + scrollbar endast för listan */
 .playlistSidebarPlaylistsStack {
-  display: flex;
-  flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
-  padding: 0 8px;
+  padding: 0 var(--spacing-sm);
 }
 
 .playlistSidebarPlaylistScroll {
@@ -159,8 +172,8 @@
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding-bottom: 8px;
-  margin-top: 2px;
+  padding-bottom: var(--spacing-sm);
+  margin-top: var(--spacing-2xs);
 
   scrollbar-width: thin;
   scrollbar-color: rgba(110, 110, 110, 0.85) rgba(24, 24, 24, 0.98);
@@ -171,13 +184,13 @@
 
   &::-webkit-scrollbar-track {
     background: rgba(20, 20, 20, 0.95);
-    border-radius: 4px;
-    margin: 2px 0;
+    border-radius: var(--radius-sm);
+    margin: var(--spacing-2xs) 0;
   }
 
   &::-webkit-scrollbar-thumb {
     background: rgba(88, 88, 88, 0.75);
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     border: 1px solid rgba(0, 0, 0, 0.2);
 
     &:hover {
@@ -195,13 +208,13 @@
 .playlistSidebarItem {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
   width: 100%;
-  padding: 7px 10px;
+  padding: 7px calc(var(--spacing-sm) + var(--spacing-2xs));
   border: none;
-  border-radius: 6px;
+  border-radius: calc(var(--spacing-sm) - var(--spacing-2xs));
   background: transparent;
-  color: #b3b3b3;
+  color: var(--color-text-luxury);
   text-align: left;
   cursor: pointer;
   font-size: 0.78rem;
@@ -209,20 +222,20 @@
   transition: background 0.12s, color 0.12s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #fff;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--color-text-luxury);
   }
 }
 
 .playlistSidebarItemActive {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #fff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--color-text-luxury) !important;
 }
 
 .playlistSidebarItemIcon {
   flex-shrink: 0;
-  color: var(--color-primary, #fe160a);
-  opacity: 0.8;
+  color: var(--color-text-luxury-muted);
+  opacity: 1;
 }
 
 .playlistSidebarItemLabel {
@@ -237,11 +250,11 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 4px;
+  gap: var(--spacing-xs);
   margin: 0;
-  padding: 2px 4px 2px 2px;
+  padding: var(--spacing-2xs) var(--spacing-xs) var(--spacing-2xs) var(--spacing-2xs);
   list-style: none;
-  border-radius: 6px;
+  border-radius: calc(var(--spacing-sm) - var(--spacing-2xs));
   transition: background 0.15s ease;
 
   &:hover {
@@ -339,9 +352,9 @@
 
 /* Portal till document.body — undviker overflow-klippning i sidopanel */
 .playlistSidebarDropdownPortal {
-  padding: 4px;
-  border-radius: 8px;
-  background: #171717;
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-elevated);
   border: 1px solid rgba(55, 55, 55, 0.95);
   box-shadow:
     0 20px 40px rgba(0, 0, 0, 0.55),
@@ -351,11 +364,11 @@
 .playlistSidebarDropdownPortalItem {
   display: block;
   width: 100%;
-  padding: 9px 12px;
+  padding: 9px calc(var(--spacing-sm) + var(--spacing-xs));
   border: none;
-  border-radius: 6px;
+  border-radius: calc(var(--spacing-sm) - var(--spacing-2xs));
   background: transparent;
-  color: #e8e8e8;
+  color: var(--color-text);
   font-size: 0.8rem;
   text-align: left;
   cursor: pointer;
@@ -380,11 +393,11 @@
   position: absolute;
   right: 0;
   top: 100%;
-  margin-top: 4px;
+  margin-top: var(--spacing-xs);
   z-index: 30;
   min-width: 168px;
-  padding: 4px;
-  border-radius: 8px;
+  padding: var(--spacing-xs);
+  border-radius: var(--radius-md);
   background: #1e1e1e;
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
@@ -393,11 +406,11 @@
 .playlistSidebarDropdownItem {
   display: block;
   width: 100%;
-  padding: 8px 10px;
+  padding: var(--spacing-sm) calc(var(--spacing-sm) + var(--spacing-2xs));
   border: none;
-  border-radius: 6px;
+  border-radius: calc(var(--spacing-sm) - var(--spacing-2xs));
   background: transparent;
-  color: #e5e5e5;
+  color: var(--color-text);
   font-size: 0.78rem;
   text-align: left;
   cursor: pointer;
@@ -419,48 +432,57 @@
 
 .playlistRenameLabel {
   display: block;
-  margin-bottom: 8px;
-  font-size: 0.82rem;
-  color: #ccc;
+  margin-bottom: var(--spacing-sm);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.85rem;
+  color: var(--color-text-luxury-muted);
 }
 
 .playlistRenameInput {
   width: 100%;
   box-sizing: border-box;
-  padding: 8px 10px;
-  font-size: 0.9rem;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: #1a1a1a;
-  color: #f0f0f0;
-  font-family: inherit;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-luxury);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  &::placeholder {
+    color: var(--color-text-luxury-dim);
+  }
 
   &:focus {
-    outline: 1px solid var(--color-primary, #fe160a);
-    border-color: transparent;
+    outline: none;
+    border-color: var(--color-luxury-accent-border);
   }
 }
 
 .playlistRenameModalFooter {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
   width: 100%;
 }
 
 .playlistRenameModalButtonSecondary {
-  padding: 8px 14px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
   background: transparent;
-  color: #ccc;
-  font-size: 0.85rem;
+  color: var(--color-text-luxury-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
-  font-family: inherit;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.06);
-    color: #fff;
+    background: transparent;
+    color: var(--color-text-luxury);
   }
 
   &:disabled {
@@ -470,18 +492,20 @@
 }
 
 .playlistRenameModalButtonPrimary {
-  padding: 8px 14px;
-  border-radius: 6px;
-  border: none;
-  background: var(--color-primary, #fe160a);
-  color: #fff;
-  font-size: 0.85rem;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--color-luxury-accent-border);
+  background: var(--color-luxury-accent-active);
+  color: var(--color-text-luxury);
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  font-family: inherit;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
   &:hover:not(:disabled) {
-    filter: brightness(1.08);
+    filter: none;
+    background: var(--color-luxury-accent-solid);
   }
 
   &:disabled {
@@ -509,8 +533,8 @@
   width: 100%;
   max-width: 400px;
   padding: 1.5rem;
-  border-radius: 12px;
-  background: #171717;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-elevated);
   border: 1px solid rgba(55, 55, 55, 0.95);
   box-shadow:
     0 24px 48px rgba(0, 0, 0, 0.55),
@@ -518,10 +542,10 @@
 }
 
 .deleteConfirmTitle {
-  margin: 0 0 12px;
+  margin: 0 0 calc(var(--spacing-sm) + var(--spacing-xs));
   font-size: 1.15rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-text);
   letter-spacing: -0.02em;
 }
 
@@ -529,22 +553,19 @@
   margin: 0 0 1.5rem;
   font-size: 0.9rem;
   line-height: 1.5;
-  color: #9ca3af;
+  color: var(--color-text-muted);
 }
 
 .deleteConfirmActions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 10px;
+  width: 100%;
 }
 
 .deleteConfirmButtonCancel {
-  padding: 9px 16px;
-  border-radius: 8px;
+  padding: 9px var(--spacing-md);
+  border-radius: var(--radius-md);
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: transparent;
-  color: #e5e5e5;
+  color: var(--color-text);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -553,7 +574,7 @@
 
   &:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.08);
-    color: #fff;
+    color: var(--color-text);
   }
 
   &:disabled {
@@ -563,11 +584,11 @@
 }
 
 .deleteConfirmButtonDelete {
-  padding: 9px 16px;
-  border-radius: 8px;
+  padding: 9px var(--spacing-md);
+  border-radius: var(--radius-md);
   border: none;
   background: #dc2626;
-  color: #fff;
+  color: var(--color-text);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
@@ -586,28 +607,27 @@
 
 .playlistSidebarCreate {
   flex-shrink: 0;
-  padding: 6px 0 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: calc(var(--spacing-sm) - var(--spacing-2xs)) 0 var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border-subtle);
 }
 
 .playlistSidebarCreateRow {
-  display: flex;
-  gap: 6px;
+  min-width: 0;
 }
 
 .playlistSidebarInput {
   flex: 1;
   min-width: 0;
-  padding: 6px 8px;
+  padding: calc(var(--spacing-sm) - var(--spacing-2xs)) var(--spacing-sm);
   font-size: 0.75rem;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: #1a1a1a;
-  color: #e8e8e8;
+  border-radius: calc(var(--spacing-sm) - var(--spacing-2xs));
+  border: 1px solid var(--color-border-subtle);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text-luxury);
   font-family: inherit;
 
-  &::placeholder { color: #555; }
-  &:focus { outline: 1px solid var(--color-primary, #fe160a); border-color: transparent; }
+  &::placeholder { color: var(--color-text-luxury-dim); }
+  &:focus { outline: none; border-color: var(--color-luxury-accent-border); }
 }
 
 .playlistSidebarCreateButton {
@@ -615,15 +635,15 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  padding: 6px;
-  border: none;
-  border-radius: 6px;
-  background: var(--color-primary, #fe160a);
-  color: #fff;
+  padding: calc(var(--spacing-sm) - var(--spacing-2xs));
+  border: 1px solid var(--color-luxury-accent-border);
+  border-radius: 8px;
+  background: var(--color-luxury-accent-active);
+  color: var(--color-text-luxury);
   cursor: pointer;
-  transition: filter 0.12s, transform 0.1s;
+  transition: background 0.12s, transform 0.1s;
 
-  &:hover { filter: brightness(1.12); transform: scale(1.05); }
+  &:hover { background: var(--color-luxury-accent-solid); transform: none; }
   &:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 }
 
@@ -631,8 +651,8 @@
 .sidebar {
   display: flex;
   flex-direction: column;
-  background: #0d0d0d;
-  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border-subtle);
   overflow: hidden;
   min-height: 0;
 }
@@ -640,36 +660,36 @@
 .sidebarTitle {
   flex-shrink: 0;
   margin: 0;
-  padding: 16px 16px 10px;
+  padding: var(--spacing-md) var(--spacing-md) calc(var(--spacing-sm) + var(--spacing-2xs));
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #666;
+  color: var(--color-text-luxury-muted);
 }
 
 .folderList {
   list-style: none;
   margin: 0;
-  padding: 0 6px 10px;
+  padding: 0 calc(var(--spacing-sm) - var(--spacing-2xs)) calc(var(--spacing-sm) + var(--spacing-2xs));
   overflow-y: auto;
   flex: 1 1 auto;
   min-height: 0;
 
   &::-webkit-scrollbar { width: 4px; }
-  &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: 4px; }
+  &::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.08); border-radius: var(--radius-sm); }
 }
 
 .folderButton {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: calc(var(--spacing-sm) + var(--spacing-2xs));
   width: 100%;
-  padding: 8px 10px;
+  padding: var(--spacing-sm) calc(var(--spacing-sm) + var(--spacing-2xs));
   border: none;
-  border-radius: 6px;
+  border-radius: calc(var(--spacing-sm) - var(--spacing-2xs));
   background: transparent;
-  color: #b3b3b3;
+  color: var(--color-text-luxury);
   text-align: left;
   cursor: pointer;
   font-size: 0.82rem;
@@ -677,20 +697,20 @@
   transition: background 0.12s, color 0.12s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.06);
-    color: #fff;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--color-text-luxury);
   }
 }
 
 .folderButtonActive {
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #fff !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--color-text-luxury) !important;
 }
 
 .folderIcon {
   flex-shrink: 0;
-  color: var(--color-primary, #fe160a);
-  opacity: 0.8;
+  color: var(--color-text-luxury-muted);
+  opacity: 1;
 }
 
 .folderLabel {
@@ -767,13 +787,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
-  padding: 24px 20px;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg) 20px;
 }
 
 .trackSurfaceLoadingText {
   margin: 0;
-  color: #888;
+  color: var(--color-text-muted);
   font-size: 0.9rem;
 }
 
@@ -783,34 +803,40 @@
   z-index: 1;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: var(--spacing-md);
   flex-shrink: 0;
-  padding: 20px 24px 16px;
+  padding: 20px var(--spacing-lg) var(--spacing-md);
 }
 
 .heroArt {
   width: 80px;
   height: 80px;
-  border-radius: 4px;
-  background: linear-gradient(
-    145deg,
-    var(--color-primary, #fe160a) 0%,
-    #3d0a0a 60%,
-    #111 100%
-  );
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-subtle);
+  background: rgba(255, 255, 255, 0.04);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 2rem;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--color-text-luxury-muted);
   flex-shrink: 0;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: none;
   user-select: none;
 }
 
+.heroArtFavorites {
+  background: var(--color-luxury-accent-subtle);
+  border-color: var(--color-luxury-accent-border);
+
+  .heroArtIcon {
+    color: var(--color-text-luxury);
+  }
+}
+
 .heroArtIcon {
-  color: rgba(255, 255, 255, 0.95);
+  color: var(--color-text-luxury-muted);
   stroke-width: 2.1;
 }
 
@@ -824,20 +850,22 @@
 }
 
 .heroEyebrow {
-  margin: 0 0 2px;
+  margin: 0 0 var(--spacing-2xs);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 0.65rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #999;
+  color: var(--color-text-luxury-muted);
 }
 
 .heroTitle {
-  margin: 0 0 4px;
+  margin: 0 0 var(--spacing-xs);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 1.25rem;
   font-weight: 800;
   line-height: 1.2;
-  color: #fff;
+  color: var(--color-text-luxury);
   letter-spacing: -0.01em;
   white-space: nowrap;
   overflow: hidden;
@@ -846,7 +874,8 @@
 
 .heroMeta {
   margin: 0;
-  color: #888;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--color-text-luxury-muted);
   font-size: 0.75rem;
 }
 
@@ -874,7 +903,7 @@ $trackUiFont:
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding: 0 16px 28px;
+  padding: 0 var(--spacing-md) 28px;
 
   &::-webkit-scrollbar {
     width: 8px;
@@ -882,7 +911,7 @@ $trackUiFont:
 
   &::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     border: 2px solid transparent;
     background-clip: padding-box;
   }
@@ -904,8 +933,8 @@ $trackUiFont:
 
 .trackTableHead th {
   text-align: left;
-  padding: 10px 12px 14px;
-  color: #a7a7a7;
+  padding: calc(var(--spacing-sm) + var(--spacing-2xs)) calc(var(--spacing-sm) + var(--spacing-xs)) 14px;
+  color: var(--color-text-luxury-muted);
   font-weight: 600;
   font-size: 0.6875rem;
   letter-spacing: 0.12em;
@@ -921,7 +950,7 @@ $trackUiFont:
 }
 
 .trackTable tbody tr {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--color-border-subtle);
   transition: background 0.18s ease;
 }
 
@@ -930,7 +959,7 @@ $trackUiFont:
 }
 
 .trackTable td {
-  padding: 6px 10px;
+  padding: calc(var(--spacing-sm) - var(--spacing-2xs)) calc(var(--spacing-sm) + var(--spacing-2xs));
   vertical-align: middle;
 }
 
@@ -949,22 +978,22 @@ $trackUiFont:
   align-items: center;
   gap: 14px;
   min-width: 0;
-  padding: 4px 0;
+  padding: var(--spacing-xs) 0;
 }
 
 .trackRowMiniArt {
   flex-shrink: 0;
   width: 48px;
   height: 48px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.125rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: #c4c4c4;
-  background: linear-gradient(145deg, #2a2a2a 0%, #1a1a1a 55%, #141414 100%);
+  color: var(--color-text-muted);
+  background: linear-gradient(145deg, #2a2a2a 0%, var(--color-surface) 55%, #141414 100%);
   box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.06);
@@ -980,7 +1009,7 @@ $trackUiFont:
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 2px;
+  gap: var(--spacing-2xs);
 }
 
 .trackRowActions {
@@ -989,7 +1018,7 @@ $trackUiFont:
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
-  gap: 2px;
+  gap: var(--spacing-2xs);
 }
 
 .trackRowPopoverAnchor {
@@ -1002,26 +1031,26 @@ $trackUiFont:
   right: 0;
   top: 100%;
   z-index: 50;
-  margin-top: 6px;
-  padding: 6px;
+  margin-top: calc(var(--spacing-sm) - var(--spacing-2xs));
+  padding: calc(var(--spacing-sm) - var(--spacing-2xs));
   min-width: 200px;
   background: #282828;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
   box-shadow:
     0 12px 32px rgba(0, 0, 0, 0.55),
     0 0 0 1px rgba(0, 0, 0, 0.2);
 }
 
 .trackRowPlaylistMenuError {
-  margin: 0 0 8px;
+  margin: 0 0 var(--spacing-sm);
   color: #f87171;
   font-size: 0.8rem;
 }
 
 .trackRowPlaylistMenuMuted {
   margin: 0;
-  color: #aaa;
+  color: var(--color-text-muted);
   font-size: 0.85rem;
 }
 
@@ -1031,17 +1060,17 @@ $trackUiFont:
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 .trackRowPlaylistMenuItem {
   width: 100%;
   text-align: left;
-  padding: 10px 12px;
+  padding: calc(var(--spacing-sm) + var(--spacing-2xs)) calc(var(--spacing-sm) + var(--spacing-xs));
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: transparent;
-  color: #eee;
+  color: var(--color-text);
   cursor: pointer;
   font-size: 0.875rem;
   font-family: $trackUiFont;
@@ -1063,7 +1092,7 @@ $trackUiFont:
   outline: none;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.04);
 
     .trackRowMiniArt {
       box-shadow:
@@ -1083,32 +1112,32 @@ $trackUiFont:
   }
 
   &:focus-visible {
-    box-shadow: inset 0 0 0 2px rgba(254, 22, 10, 0.55);
+    box-shadow: inset 0 0 0 2px var(--color-luxury-accent-border);
   }
 }
 
 .rowActive {
-  background: rgba(255, 255, 255, 0.09) !important;
+  background: var(--color-luxury-accent-subtle) !important;
 
   .trackTitleCell {
-    color: var(--color-primary, #fe160a) !important;
+    color: var(--color-text-luxury) !important;
     font-weight: 600;
   }
 
   .colIndex .trackNumber {
-    color: var(--color-primary, #fe160a);
+    color: var(--color-text-luxury);
     font-weight: 600;
   }
 
   .trackRowMiniArt {
-    color: #fff;
+    color: var(--color-text-luxury);
     box-shadow:
-      0 0 0 2px var(--color-primary, #fe160a),
-      0 6px 20px rgba(254, 22, 10, 0.2);
+      0 0 0 2px var(--color-luxury-accent-border),
+      0 6px 20px rgba(0, 0, 0, 0.25);
   }
 
   .trackPlayIcon {
-    color: var(--color-primary, #fe160a);
+    color: var(--color-text-luxury);
     opacity: 1;
   }
 
@@ -1124,7 +1153,7 @@ $trackUiFont:
   font-size: 0.9375rem;
   letter-spacing: -0.01em;
   line-height: 1.35;
-  color: #f5f5f5;
+  color: var(--color-text-luxury);
   transition: color 0.18s ease;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1134,9 +1163,9 @@ $trackUiFont:
 /* track number / play icon swap */
 .colIndex {
   width: 48px;
-  padding-left: 4px !important;
-  padding-right: 4px !important;
-  color: #a7a7a7;
+  padding-left: var(--spacing-xs) !important;
+  padding-right: var(--spacing-xs) !important;
+  color: var(--color-text-muted);
   font-size: 0.8125rem;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -1154,7 +1183,7 @@ $trackUiFont:
   left: 50%;
   transform: translate(-50%, -50%);
   opacity: 0;
-  color: #fff;
+  color: var(--color-text);
   transition: opacity 0.18s ease;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.4));
 }
@@ -1168,11 +1197,11 @@ $trackUiFont:
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px;
+  padding: var(--spacing-sm);
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: #c4c4c4;
+  color: var(--color-text-muted);
   cursor: pointer;
   opacity: 0;
   transition:
@@ -1188,7 +1217,7 @@ $trackUiFont:
 
   &:hover {
     background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+    color: var(--color-text);
     opacity: 1 !important;
     transform: scale(1.06);
   }
@@ -1196,10 +1225,10 @@ $trackUiFont:
 
 /* ───────── empty / muted states ───────── */
 .muted {
-  color: #555;
+  color: var(--color-text-muted);
   margin: 0;
   font-size: 0.82rem;
-  padding: 16px;
+  padding: var(--spacing-md);
 }
 
 .emptyMain {
@@ -1210,24 +1239,24 @@ $trackUiFont:
   flex: 1;
   min-height: 120px;
   text-align: center;
-  padding: 32px 20px;
-  gap: 12px;
+  padding: var(--spacing-xl) 20px;
+  gap: calc(var(--spacing-sm) + var(--spacing-xs));
 }
 
 .emptyIcon {
-  color: #333;
+  color: var(--color-text-muted);
 }
 
 .emptyTitle {
   margin: 0;
   font-size: 1.2rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-text);
 }
 
 .emptyDescription {
   margin: 0;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 0.82rem;
   max-width: 280px;
   line-height: 1.5;
@@ -1237,7 +1266,7 @@ $trackUiFont:
 .errorBanner {
   color: #ff6b6b;
   margin: 0;
-  padding: 8px 16px;
+  padding: var(--spacing-sm) var(--spacing-md);
   flex-shrink: 0;
   background: rgba(255, 80, 80, 0.06);
   border-top: 1px solid rgba(255, 80, 80, 0.15);
@@ -1254,24 +1283,24 @@ $trackUiFont:
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: calc(var(--spacing-sm) + var(--spacing-2xs));
   height: 64px;
-  padding: 0 16px;
-  background: #0d0d0d;
-  color: #444;
+  padding: 0 var(--spacing-md);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
   font-size: 0.78rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: 1px solid var(--color-border-subtle);
 
   p { margin: 0; }
 }
 
 .emptyPlayerIcon {
   flex-shrink: 0;
-  color: #333;
+  color: var(--color-text-muted);
 }
 
 /* Mobil: ikonrad över huvudinnehåll (desktop dold) */
-.shellMobileIconRail {
+.musicShell .shellMobileIconRail {
   display: none;
 }
 
@@ -1295,10 +1324,10 @@ $trackUiFont:
   gap: 14px;
   width: 100%;
   min-height: 58px;
-  padding: 10px 12px;
+  padding: calc(var(--spacing-sm) + var(--spacing-2xs)) calc(var(--spacing-sm) + var(--spacing-xs));
   margin: 0;
   border: none;
-  border-radius: 10px;
+  border-radius: calc(var(--spacing-sm) + var(--spacing-2xs));
   background: transparent;
   color: inherit;
   text-align: left;
@@ -1338,7 +1367,7 @@ $trackUiFont:
   flex-shrink: 0;
   width: 52px;
   height: 52px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1349,24 +1378,17 @@ $trackUiFont:
 }
 
 .mobilePickerRowArtPlaylist {
-  background: linear-gradient(
-    148deg,
-    var(--color-primary, #fe160a) 0%,
-    #6b1510 38%,
-    #1a1515 72%,
-    #0d0d0d 100%
-  );
+  background: var(--color-luxury-accent-subtle);
+  border: 1px solid var(--color-luxury-accent-border);
+  color: var(--color-text-luxury);
+  box-shadow: none;
 }
 
 .mobilePickerRowArtRepertoire {
-  background: linear-gradient(
-    148deg,
-    rgba(110, 130, 200, 0.95) 0%,
-    #2a3148 42%,
-    #161820 78%,
-    #0c0d12 100%
-  );
-  color: rgba(255, 255, 255, 0.94);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-luxury-muted);
+  box-shadow: none;
 }
 
 .mobilePickerRowText {
@@ -1374,14 +1396,14 @@ $trackUiFont:
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 .mobilePickerRowTitle {
   font-size: 0.94rem;
   font-weight: 600;
   letter-spacing: -0.025em;
-  color: #fff;
+  color: var(--color-text-luxury);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1392,7 +1414,7 @@ $trackUiFont:
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.36);
+  color: var(--color-text-luxury-muted);
 }
 
 .mobilePickerRowChevron {
@@ -1421,8 +1443,8 @@ $trackUiFont:
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  padding: 10px 14px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: calc(var(--spacing-sm) + var(--spacing-2xs)) 14px calc(var(--spacing-sm) + var(--spacing-xs));
+  border-bottom: 1px solid var(--color-border-subtle);
   background: linear-gradient(180deg, rgba(18, 18, 18, 0.97) 0%, rgba(10, 10, 10, 0.88) 100%);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -1432,13 +1454,13 @@ $trackUiFont:
 .mobileMainBackButton {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px 8px 6px;
-  margin: 0 -6px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) calc(var(--spacing-sm) + var(--spacing-xs)) var(--spacing-sm) calc(var(--spacing-sm) - var(--spacing-2xs));
+  margin: 0 -calc(var(--spacing-sm) - var(--spacing-2xs));
   border: none;
-  border-radius: 10px;
+  border-radius: calc(var(--spacing-sm) + var(--spacing-2xs));
   background: transparent;
-  color: #fff;
+  color: var(--color-text);
   font-size: 0.92rem;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -1450,7 +1472,7 @@ $trackUiFont:
 
   &:hover {
     background: rgba(255, 255, 255, 0.07);
-    color: #fff;
+    color: var(--color-text);
   }
 }
 
@@ -1461,7 +1483,7 @@ $trackUiFont:
   min-height: 0;
   display: flex;
   flex-direction: column;
-  padding: 16px 14px 24px;
+  padding: var(--spacing-md) 14px var(--spacing-lg);
   overflow: hidden;
   isolation: isolate;
 
@@ -1490,26 +1512,26 @@ $trackUiFont:
 
 .mobileMainPickerHead {
   flex-shrink: 0;
-  padding: 4px 4px 22px;
+  padding: var(--spacing-xs) var(--spacing-xs) 22px;
 }
 
 .mobileMainPickerEyebrow {
-  margin: 0 0 10px;
+  margin: 0 0 calc(var(--spacing-sm) + var(--spacing-2xs));
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--color-text-luxury-muted);
 }
 
 .mobileMainPickerTitle {
-  margin: 0 0 8px;
+  margin: 0 0 var(--spacing-sm);
   padding-top: 0;
   font-size: clamp(1.7rem, 6.5vw, 2.05rem);
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.08;
-  color: #fff;
+  color: var(--color-text-luxury);
 }
 
 .mobileMainPickerSub {
@@ -1525,8 +1547,8 @@ $trackUiFont:
   min-height: 0;
   max-height: none;
   overflow-y: auto;
-  padding: 4px 2px 8px;
-  margin: 0 -4px;
+  padding: var(--spacing-xs) var(--spacing-2xs) var(--spacing-sm);
+  margin: 0 -var(--spacing-xs);
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
 
@@ -1547,7 +1569,7 @@ $trackUiFont:
 /* ═══════════════════════════════════════════
    MOBILE: stacked layout, horizontal library
    ═══════════════════════════════════════════ */
-@media (max-width: 767px) {
+@media (max-width: #{$tabletBreakpoint - 1px}) {
   .shellBody {
     display: flex;
     flex-direction: column;
@@ -1555,7 +1577,7 @@ $trackUiFont:
   }
 
   .shellTop {
-    padding: 6px 10px;
+    padding: calc(var(--spacing-sm) - var(--spacing-2xs)) calc(var(--spacing-sm) + var(--spacing-2xs));
     min-height: 42px;
   }
 
@@ -1563,25 +1585,21 @@ $trackUiFont:
     font-size: 0.92rem;
   }
 
-  .shellTopRight {
-    gap: 4px;
-  }
-
   .closeButton {
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
   }
 
   /* Spotify-lik nav: mörk yta, ikon + mikro-label, mjuk aktiv pill */
-  .shellMobileIconRail {
+  .musicShell .shellMobileIconRail {
     display: flex;
     flex-shrink: 0;
     align-items: stretch;
     justify-content: space-between;
-    gap: 2px;
-    padding: 8px 10px 12px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    background: linear-gradient(180deg, #181818 0%, #121212 55%, #0f0f0f 100%);
+    gap: var(--spacing-2xs);
+    padding: var(--spacing-sm) calc(var(--spacing-sm) + var(--spacing-2xs)) calc(var(--spacing-sm) + var(--spacing-xs));
+    border-bottom: 1px solid var(--color-border-subtle);
+    background: linear-gradient(180deg, var(--color-surface-elevated) 0%, var(--color-surface) 55%, var(--color-background) 100%);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.06),
       0 8px 24px rgba(0, 0, 0, 0.35);
@@ -1597,18 +1615,22 @@ $trackUiFont:
     flex-direction: column;
     align-items: center;
     justify-content: flex-start;
-    padding: 2px 2px 0;
+    padding: var(--spacing-2xs) var(--spacing-2xs) 0;
     border: none;
     border-radius: 0;
     background: transparent;
-    color: #b3b3b3;
+    color: var(--color-text-luxury-muted);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
     transition: color 0.22s ease, transform 0.18s ease;
 
+    &:hover .shellMobileIconBtnInner {
+      background: rgba(255, 255, 255, 0.04);
+    }
+
     &:active {
       transform: scale(0.97);
-      color: #fff;
+      color: var(--color-text-luxury);
     }
   }
 
@@ -1617,10 +1639,11 @@ $trackUiFont:
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: calc(var(--spacing-sm) - var(--spacing-2xs));
     width: 100%;
-    padding: 8px 6px 6px;
-    border-radius: 10px;
+    padding: var(--spacing-sm) calc(var(--spacing-sm) - var(--spacing-2xs)) calc(var(--spacing-sm) - var(--spacing-2xs));
+    border: 1px solid transparent;
+    border-radius: calc(var(--spacing-sm) + var(--spacing-2xs));
     transition:
       background 0.22s ease,
       box-shadow 0.22s ease;
@@ -1641,7 +1664,7 @@ $trackUiFont:
   .shellMobileIconLabel {
     display: block;
     max-width: 100%;
-    padding: 0 2px;
+    padding: 0 var(--spacing-2xs);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -1661,13 +1684,12 @@ $trackUiFont:
   }
 
   .shellMobileIconBtnActive {
-    color: #fff;
+    color: var(--color-text-luxury);
 
     .shellMobileIconBtnInner {
-      background: rgba(255, 255, 255, 0.12);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.1),
-        0 4px 14px rgba(0, 0, 0, 0.25);
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--color-border-subtle);
+      box-shadow: none;
     }
 
     .shellMobileIconLabel {
@@ -1675,22 +1697,20 @@ $trackUiFont:
     }
 
     .shellMobileIconGlyph svg {
-      color: #fff;
-      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.12));
+      color: var(--color-text-luxury);
+      filter: none;
     }
   }
 
-  /* Diskret HRK-accent på aktiv favorit-flik */
   .shellMobileIconFavoritesActive.shellMobileIconBtnActive .shellMobileIconBtnInner {
-    background: rgba(254, 22, 10, 0.14);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 120, 100, 0.18),
-      0 4px 16px rgba(254, 22, 10, 0.12);
+    background: var(--color-luxury-accent-subtle);
+    border: 1px solid var(--color-border-subtle);
+    box-shadow: none;
   }
 
   .shellMobileIconFavoritesActive.shellMobileIconBtnActive .shellMobileIconGlyph svg {
-    color: var(--color-primary, #fe160a);
-    filter: drop-shadow(0 0 12px rgba(254, 22, 10, 0.35));
+    color: var(--color-text-luxury);
+    filter: none;
   }
 
   /* Vänster/höger sidolist dold; spellistor/repertoar i huvudytan (ingen modal) */
@@ -1712,8 +1732,8 @@ $trackUiFont:
 
   /* Kompakt hero — mindre omslag, titel högre */
   .hero {
-    padding: 8px 12px 10px;
-    gap: 10px;
+    padding: var(--spacing-sm) calc(var(--spacing-sm) + var(--spacing-xs)) calc(var(--spacing-sm) + var(--spacing-2xs));
+    gap: calc(var(--spacing-sm) + var(--spacing-2xs));
     align-items: flex-start;
   }
 
@@ -1721,8 +1741,8 @@ $trackUiFont:
     width: 48px;
     height: 48px;
     font-size: 1.25rem;
-    border-radius: 4px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
+    border-radius: var(--radius-sm);
+    box-shadow: none;
   }
 
   .heroText {
@@ -1736,7 +1756,7 @@ $trackUiFont:
 
   .heroTitle {
     font-size: 0.95rem;
-    margin: 0 0 2px;
+    margin: 0 0 var(--spacing-2xs);
     line-height: 1.2;
     white-space: normal;
     overflow: visible;
@@ -1752,7 +1772,7 @@ $trackUiFont:
 
   /* track list — samma Spotify-känsla, kompakt rad med miniatyr */
   .trackScroll {
-    padding: 0 12px 20px;
+    padding: 0 calc(var(--spacing-sm) + var(--spacing-xs)) 20px;
   }
 
   .shellMainWatermark {
@@ -1768,14 +1788,14 @@ $trackUiFont:
     }
 
     .trackTableHead th {
-      padding: 8px 0 12px;
+      padding: var(--spacing-sm) 0 calc(var(--spacing-sm) + var(--spacing-xs));
       font-size: 0.6rem;
     }
 
     td {
       min-height: 0;
       height: auto;
-      padding: 8px 0;
+      padding: var(--spacing-sm) 0;
       vertical-align: middle;
     }
   }
@@ -1784,7 +1804,7 @@ $trackUiFont:
     width: 44px;
     height: 44px;
     font-size: 1rem;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
   }
 
   .trackTitleCell {
@@ -1799,8 +1819,8 @@ $trackUiFont:
   .trackRowFlex {
     flex-direction: row;
     align-items: center;
-    gap: 12px;
-    padding: 6px 0;
+    gap: calc(var(--spacing-sm) + var(--spacing-xs));
+    padding: calc(var(--spacing-sm) - var(--spacing-2xs)) 0;
   }
 
   .trackRowTextBlock {
@@ -1821,7 +1841,7 @@ $trackUiFont:
   .playRowButton {
     min-width: 44px;
     min-height: 44px;
-    padding: 10px;
+    padding: calc(var(--spacing-sm) + var(--spacing-2xs));
     opacity: 0.88;
     border-radius: 50%;
   }
@@ -1829,8 +1849,8 @@ $trackUiFont:
   /* empty states */
   .emptyMain {
     min-height: 100px;
-    padding: 24px 16px;
-    gap: 8px;
+    padding: var(--spacing-lg) var(--spacing-md);
+    gap: var(--spacing-sm);
   }
 
   .emptyTitle {

@@ -1,13 +1,22 @@
 import {
+  ALL_AUDIENCE_TARGET,
   FIELD_LIMITS,
+  MAX_CHOIR_SLUG_LENGTH,
+  MAX_SHARED_CONCERT_TARGETS,
   isValidConcertDate,
   isVoicePart,
   normalizeBoundedString,
   VOICE_PARTS,
+  type ConcertAudienceScope,
   type SharedConcertRecord,
   type ConcertSignupRecord,
   type VoicePart,
 } from "./keys";
+
+export type ConcertAudience = {
+  scope: ConcertAudienceScope;
+  targets: string[];
+};
 
 export type ParseCreateConcertResult =
   | {
@@ -16,6 +25,8 @@ export type ParseCreateConcertResult =
       concertDate: string;
       location: string;
       description?: string;
+      scope: ConcertAudienceScope;
+      targets: string[];
     }
   | { ok: false; message: string };
 
@@ -24,6 +35,8 @@ const UPDATE_CONCERT_FIELDS = [
   "concertDate",
   "location",
   "description",
+  "scope",
+  "targets",
 ] as const;
 
 export type UpdateConcertFields = {
@@ -32,6 +45,8 @@ export type UpdateConcertFields = {
   location?: string;
   /** `null` removes description; string sets/replaces it. */
   description?: string | null;
+  scope?: ConcertAudienceScope;
+  targets?: string[];
 };
 
 export type ParseUpdateConcertResult =
@@ -89,12 +104,17 @@ export function parseCreateConcertBody(
     if (trimmed) description = trimmed;
   }
 
+  const audience = parseAudienceFields(body, { defaultAll: true });
+  if (audience.ok === false) return audience;
+
   return {
     ok: true,
     title,
     concertDate: body.concertDate,
     location,
     ...(description ? { description } : {}),
+    scope: audience.audience.scope,
+    targets: audience.audience.targets,
   };
 }
 
@@ -183,6 +203,25 @@ export function parseUpdateConcertBody(
     }
   }
 
+  if (
+    Object.prototype.hasOwnProperty.call(body, "scope") ||
+    Object.prototype.hasOwnProperty.call(body, "targets")
+  ) {
+    const audience = parseAudienceFields(body, { defaultAll: false });
+    if (audience.ok === false) return audience;
+    const next = audience.audience;
+    const currentScope = existing.scope;
+    const currentTargets = existing.targets ?? [];
+    const same =
+      next.scope === currentScope &&
+      next.targets.length === currentTargets.length &&
+      next.targets.every((slug, index) => slug === currentTargets[index]);
+    if (!same) {
+      updates.scope = next.scope;
+      updates.targets = next.targets;
+    }
+  }
+
   if (Object.keys(updates).length === 0) {
     return {
       ok: false,
@@ -191,6 +230,102 @@ export function parseUpdateConcertBody(
   }
 
   return { ok: true, updates, expectedVersion };
+}
+
+const SLUG_RE = /^[A-Za-z0-9][A-Za-z0-9_-]*$/;
+
+function parseAudienceFields(
+  body: Record<string, unknown>,
+  options: { defaultAll: boolean }
+): { ok: true; audience: ConcertAudience } | { ok: false; message: string } {
+  const hasScope = Object.prototype.hasOwnProperty.call(body, "scope");
+  const hasTargets = Object.prototype.hasOwnProperty.call(body, "targets");
+
+  if (!hasScope && !hasTargets) {
+    if (!options.defaultAll) {
+      return { ok: false, message: "scope or targets is required." };
+    }
+    return { ok: true, audience: { scope: "all", targets: [ALL_AUDIENCE_TARGET] } };
+  }
+
+  let scope: ConcertAudienceScope | undefined;
+  if (hasScope) {
+    if (body.scope !== "all" && body.scope !== "groups") {
+      return { ok: false, message: 'scope must be "all" or "groups".' };
+    }
+    scope = body.scope;
+  }
+
+  let targets: string[] | undefined;
+  if (hasTargets) {
+    if (!Array.isArray(body.targets)) {
+      return { ok: false, message: "targets must be an array of choir slugs." };
+    }
+    if (body.targets.length === 0) {
+      return { ok: false, message: "targets must contain at least one entry." };
+    }
+    if (body.targets.length > MAX_SHARED_CONCERT_TARGETS) {
+      return {
+        ok: false,
+        message: `targets may contain at most ${MAX_SHARED_CONCERT_TARGETS} choirs.`,
+      };
+    }
+    const normalized: string[] = [];
+    for (let i = 0; i < body.targets.length; i += 1) {
+      const raw = body.targets[i];
+      if (typeof raw !== "string" || !raw.trim()) {
+        return { ok: false, message: `targets[${i}] must be a non-empty string.` };
+      }
+      const slug = raw.trim();
+      if (slug.toUpperCase() === ALL_AUDIENCE_TARGET) {
+        normalized.push(ALL_AUDIENCE_TARGET);
+        continue;
+      }
+      if (slug.length > MAX_CHOIR_SLUG_LENGTH || !SLUG_RE.test(slug)) {
+        return {
+          ok: false,
+          message: `targets[${i}] must be a choir slug (letters, digits, _ or -).`,
+        };
+      }
+      normalized.push(slug);
+    }
+    targets = Array.from(new Set(normalized));
+  }
+
+  const hasAll = targets?.includes(ALL_AUDIENCE_TARGET) ?? false;
+  const choirSlugs = (targets ?? []).filter((slug) => slug !== ALL_AUDIENCE_TARGET);
+
+  if (hasAll && choirSlugs.length > 0) {
+    return {
+      ok: false,
+      message: 'Cannot combine "ALL" with specific choir slugs.',
+    };
+  }
+
+  if (scope === "all" || (!scope && hasAll)) {
+    if (hasTargets && choirSlugs.length > 0) {
+      return {
+        ok: false,
+        message: 'scope "all" only allows targets ["ALL"].',
+      };
+    }
+    return { ok: true, audience: { scope: "all", targets: [ALL_AUDIENCE_TARGET] } };
+  }
+
+  if (scope === "groups" || (!scope && choirSlugs.length > 0)) {
+    if (choirSlugs.length === 0) {
+      return {
+        ok: false,
+        message: 'scope "groups" requires at least one choir slug in targets.',
+      };
+    }
+    return { ok: true, audience: { scope: "groups", targets: choirSlugs } };
+  }
+
+  return {
+    ok: false,
+    message: 'scope "groups" requires targets, or send targets ["ALL"] for every choir.',
+  };
 }
 
 function parseExpectedVersion(raw: unknown): number | null {
@@ -260,6 +395,9 @@ export type PublicSharedConcert = {
   version: number;
   /** Set by list API when viewer identity is known (BatchGet enrichment). */
   viewerIsSignedUp?: boolean;
+  /** Absent on legacy concerts, which stay visible to every choir. */
+  scope?: ConcertAudienceScope;
+  targets?: string[];
 };
 
 export function toPublicConcert(
@@ -284,6 +422,12 @@ export function toPublicConcert(
       item.version >= 1
         ? item.version
         : 1,
+    ...(item.scope === "all" || item.scope === "groups"
+      ? {
+          scope: item.scope,
+          targets: Array.isArray(item.targets) ? item.targets.map(String) : [],
+        }
+      : {}),
   };
 }
 

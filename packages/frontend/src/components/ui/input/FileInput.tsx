@@ -10,6 +10,7 @@ import { FiFile, FiXCircle } from 'react-icons/fi';
 interface SingleFileProps {
   id?: string;
   label?: string;
+  className?: string;
   isFolderPicker?: false;
   onFileSelect: (file: File | null) => void;
   disabled?: boolean;
@@ -19,6 +20,7 @@ interface SingleFileProps {
 interface FolderPickerProps {
   id?: string;
   label?: string;
+  className?: string;
   isFolderPicker: true;
   onFileSelect: (files: FileList | null) => void;
   disabled?: boolean;
@@ -82,9 +84,10 @@ export const FileInput = (props: FileInputProps) => {
 
       {/* Använd den nya variabeln för att styra vad som visas */}
       {isValueEmpty ? (
-        <Button 
+        <Button
           type="button"
           variant={ButtonVariant.Primary}
+          className={props.className}
           onClick={handleButtonClick}
           disabled={disabled}
         >

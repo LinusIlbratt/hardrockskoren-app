@@ -3,11 +3,9 @@ import {
   useEffect,
   useLayoutEffect,
   useCallback,
-  useMemo,
   useRef,
 } from "react";
 import { createPortal } from "react-dom";
-import axios from "axios";
 import {
   Music,
   Play,
@@ -24,53 +22,34 @@ import {
   Plus,
   Trash2,
 } from "lucide-react";
+import { MediaPlayer } from "@/components/media/MediaPlayer";
 import {
-  MediaPlayer,
-  type MediaPlayerTrack,
-} from "@/components/media/MediaPlayer";
+  LIBRARY_SELECTED_ID,
+  useRepertoirePlaylist,
+} from "@/features/music-player/hooks/useRepertoirePlaylist";
 import type { Material } from "@/types";
 import {
-  useMusicPlayerOverlay,
   type LibraryPlaybackIntent,
   type MusicPlayerViewer,
   type RepertoirePlaybackIntent,
 } from "@/context/MusicPlayerOverlayContext";
-import { useAuth } from "@/context/AuthContext";
-import { saveRecentPlayback } from "@/utils/recentPlayback";
-import { sortBySwedishTitle } from "@/utils/sortBySwedishTitle";
-import {
-  formatDisplayTitle,
-  isPlayableAudioFile,
-} from "@/utils/media";
-import {
-  buildMediaPlayerTracks,
-  hashTrackQueueKey,
-} from "@/services/mediaUrlService";
-import { useFavorites } from "@/hooks/useFavorites";
-import { usePlaylists } from "@/hooks/usePlaylists";
-import {
-  getPlaylistItems,
-  addPlaylistItem,
-  removePlaylistItem,
-} from "@/services/musicService";
+import { displayMaterialLabel, materialLabelText } from "@/utils/materialLabel";
+import { formatDisplayTitle, isPlayableAudioFile } from "@/utils/media";
+import { addPlaylistItem } from "@/services/musicService";
 import { CreatePlaylistModal, RenamePlaylistModal } from '@/components/music/PlaylistTitleModals';
 import { Loader, LoaderSize } from "@/components/ui/loader/Loader";
+import { Cluster } from "@/components/ui/layout/Cluster";
+import { Stack } from "@/components/ui/layout/Stack";
 /** Watermark asset — replace with e.g. `import tracklistWatermarkLogo from '@/assets/logo.svg'` when added. */
 import tracklistWatermarkLogo from "@/assets/images/hrk-logo.webp";
 import styles from "./RepertoireMusicPlayerPage.module.scss";
 
-const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
-
-const LIBRARY_SELECTED_ID = "__library__";
-
 /** Bredd för spelliste-kebab (portal) — används till positionering */
 const PLAYLIST_MENU_WIDTH_PX = 180;
 
-interface RepertoireItem {
-  repertoireId: string;
-  title: string;
-  artist?: string;
-}
+/** Samma gräns som $tabletBreakpoint i styles/_variables.scss. Mobil är strikt under den. */
+const TABLET_MIN_PX = 768;
+const BELOW_TABLET_QUERY = `(max-width: ${TABLET_MIN_PX - 1}px)`;
 
 export interface RepertoireMusicPlayerPanelProps {
   groupName: string;
@@ -91,6 +70,7 @@ export interface RepertoireMusicPlayerPanelProps {
 
 export function RepertoireMusicPlayerPanel({
   groupName,
+  viewer,
   onMinimizeOverlay,
   shellTitleId,
   libraryQueueMaterials = null,
@@ -100,35 +80,6 @@ export function RepertoireMusicPlayerPanel({
   initialPlaylistId = null,
   repertoirePlaybackIntent = null,
 }: RepertoireMusicPlayerPanelProps) {
-  const { getAuthHeaders } = useAuth();
-  const { pendingResume, clearPendingResume, clearInitialRepertoireLaunch } =
-    useMusicPlayerOverlay();
-  const { favoriteMaterialIds, favoriteMaterials, toggleFavoriteOptimistic } =
-    useFavorites();
-  const {
-    playlists,
-    createNewPlaylist,
-    renamePlaylist,
-    deletePlaylist,
-    isLoading: playlistsLoading,
-    fetchPlaylists,
-    error: playlistsHookError,
-  } = usePlaylists();
-  const [newPlaylistTitle, setNewPlaylistTitle] = useState("");
-  const [creatingPlaylist, setCreatingPlaylist] = useState(false);
-  const [repertoires, setRepertoires] = useState<RepertoireItem[]>([]);
-  const sortedRepertoires = useMemo(
-    () => sortBySwedishTitle(repertoires),
-    [repertoires],
-  );
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [materials, setMaterials] = useState<Material[]>([]);
-  const [loadingList, setLoadingList] = useState(true);
-  const [loadingTracks, setLoadingTracks] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [playerQueue, setPlayerQueue] = useState<MediaPlayerTrack[]>([]);
-  const [playerStartIndex, setPlayerStartIndex] = useState(0);
-  const [highlightedTrackIndex, setHighlightedTrackIndex] = useState(0);
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [playlistAddBusyId, setPlaylistAddBusyId] = useState<string | null>(
     null,
@@ -155,24 +106,69 @@ export function RepertoireMusicPlayerPanel({
     string | null
   >(null);
   const [deletePlaylistBusy, setDeletePlaylistBusy] = useState(false);
-  /** Mobil (max 767px): spellistor/repertoar i mitten utan modal */
+  /** Mobil under $tabletBreakpoint (768px): spellistor/repertoar i mitten utan modal */
   const [mobileBrowseMode, setMobileBrowseMode] = useState<
     null | "playlists" | "repertoires"
   >(null);
-  const [mobileCreatePlaylistOpen, setMobileCreatePlaylistOpen] =
-    useState(false);
   const [isMobileShell, setIsMobileShell] = useState(
     () =>
       typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 767px)").matches,
+      window.matchMedia(BELOW_TABLET_QUERY).matches,
   );
 
-  const hasLibraryPlaybackQueue = Boolean(libraryQueueMaterials?.length);
-  const isStandaloneLibrarySession =
-    hasLibraryPlaybackQueue && !libraryPlaybackWithRepertoire;
+  const {
+    sortedRepertoires,
+    repertoires,
+    playlists,
+    playlistsLoading,
+    playlistsHookError,
+    fetchPlaylists,
+    selectedId,
+    materials,
+    playerQueue,
+    playerStartIndex,
+    highlightedTrackIndex,
+    setHighlightedTrackIndex,
+    loadingList,
+    loadingTracks,
+    error,
+    audioMaterials,
+    mediaPlayerMountKey,
+    persistProgressKey,
+    hasLibraryPlaybackQueue,
+    isStandaloneLibrarySession,
+    favoriteMaterialIds,
+    favoriteMaterials,
+    toggleFavoriteOptimistic,
+    newPlaylistTitle,
+    setNewPlaylistTitle,
+    creatingPlaylist,
+    mobileCreatePlaylistOpen,
+    setMobileCreatePlaylistOpen,
+    handleSelectRepertoire,
+    handleSelectPlaylist,
+    handlePlayTrackAt,
+    handlePlayFavorites,
+    handleCreatePlaylistInSidebar,
+    handleCreatePlaylistMobile,
+    deletePlaylist,
+    renamePlaylist,
+    clearSelection,
+    handleRemoveFromPlaylist,
+  } = useRepertoirePlaylist({
+    groupName,
+    viewer,
+    libraryQueueMaterials,
+    libraryPlaybackIntent,
+    libraryPlaybackWithRepertoire,
+    initialRepertoireId,
+    initialPlaylistId,
+    repertoirePlaybackIntent,
+    onPlaybackStart: () => setActiveDropdownId(null),
+  });
 
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
+    const mq = window.matchMedia(BELOW_TABLET_QUERY);
     const onChange = () => setIsMobileShell(mq.matches);
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
@@ -197,8 +193,6 @@ export function RepertoireMusicPlayerPanel({
       setMobileBrowseMode("repertoires");
     }
   }, [isMobileShell, isStandaloneLibrarySession, isPlaylistSelected, isRepertoireSelected]);
-  const resumeAttemptKeyRef = useRef<string | null>(null);
-  const repertoireBootstrapKeyRef = useRef<string | null>(null);
 
   const closePlaylistMenu = useCallback(() => {
     setPlaylistMenuOpenId(null);
@@ -217,269 +211,22 @@ export function RepertoireMusicPlayerPanel({
     setPlaylistMenuCoords({ top: r.bottom + 4, left });
   }, []);
 
-  const audioMaterials = useMemo(
-    () =>
-      (materials || []).filter(
-        (m) => m.fileKey && isPlayableAudioFile(m.fileKey),
-      ),
-    [materials],
-  );
-
-  const buildTracksFromMaterials = useCallback(
-    async (items: Material[]): Promise<MediaPlayerTrack[]> => {
-      return buildMediaPlayerTracks(items, getAuthHeaders());
-    },
-    [getAuthHeaders],
-  );
-
-  /** Byt key bara när köns identitet ändras — inte vid spårbyte (samma lista), så MediaPlayer kan följa initialTrackIndex utan remount. */
-  const mediaPlayerMountKey = useMemo(() => {
-    if (hasLibraryPlaybackQueue && playerQueue.length > 0) {
-      const sig = hashTrackQueueKey(playerQueue);
-      return `lib-${groupName}-${sig}`;
-    }
-    if (!selectedId || playerQueue.length === 0) return "idle";
-    const sig = hashTrackQueueKey(playerQueue);
-    return `${selectedId}-${sig}`;
-  }, [hasLibraryPlaybackQueue, groupName, selectedId, playerQueue]);
-
-  const persistProgressKey = useMemo(() => {
-    if (hasLibraryPlaybackQueue) {
-      if (libraryPlaybackWithRepertoire) {
-        const ids =
-          libraryQueueMaterials?.map((m) => m.materialId).join("-") ?? "";
-        return `library-practice-${groupName}-${ids}`;
-      }
-      return `library-favorites-${groupName}`;
-    }
-    if (selectedId && selectedId !== LIBRARY_SELECTED_ID) {
-      const isPlaylistSelection = playlists.some(
-        (p) => p.playlistId === selectedId,
-      );
-      if (isPlaylistSelection) {
-        return `grp-${groupName}-pl-${selectedId}`;
-      }
-      return `grp-${groupName}-rep-${selectedId}`;
-    }
-    return undefined;
-  }, [
-    hasLibraryPlaybackQueue,
-    libraryPlaybackWithRepertoire,
-    libraryQueueMaterials,
-    groupName,
-    selectedId,
-    playlists,
-  ]);
-
-  const fetchRepertoires = useCallback(async () => {
-    if (!groupName) return;
-    setLoadingList(true);
-    setError(null);
-    try {
-      const res = await axios.get<RepertoireItem[]>(
-        `${API_BASE_URL}/groups/${groupName}/repertoires`,
-        { headers: { ...getAuthHeaders() } },
-      );
-      setRepertoires(res.data ?? []);
-    } catch (e) {
-      console.error(e);
-      setError("Kunde inte hämta repertoaren.");
-    } finally {
-      setLoadingList(false);
-    }
-  }, [groupName, getAuthHeaders]);
-
-  useEffect(() => {
-    if (isStandaloneLibrarySession) return;
-    fetchRepertoires();
-  }, [isStandaloneLibrarySession, fetchRepertoires]);
-
-  const fetchMaterials = useCallback(
-    async (repertoireId: string) => {
-      if (!groupName) return;
-      setLoadingTracks(true);
-      setError(null);
-      try {
-        const res = await axios.get<Material[]>(
-          `${API_BASE_URL}/groups/${groupName}/repertoires/${repertoireId}/materials`,
-          { headers: { ...getAuthHeaders() } },
-        );
-        setMaterials(res.data ?? []);
-      } catch (e) {
-        console.error(e);
-        setError("Kunde inte hämta ljudfiler för låten.");
-        setMaterials([]);
-      } finally {
-        setLoadingTracks(false);
-      }
-    },
-    [groupName, getAuthHeaders],
-  );
-
-  /** Hydrerade material för en spellista (music-api GET /playlists/{id}/items). */
-  const fetchPlaylistMaterials = useCallback(async (playlistId: string) => {
-    const items = await getPlaylistItems(playlistId);
-    return items.map((row) => row.material);
-  }, []);
-
-  const handleSelectPlaylist = useCallback(
-    async (playlistId: string) => {
-      const id = playlistId?.trim();
-      if (!id) return;
-      setSelectedId(id);
-      setPlayerQueue([]);
-      setLoadingTracks(true);
-      setError(null);
-      try {
-        const mats = await fetchPlaylistMaterials(id);
-        setMaterials(mats);
-      } catch (e) {
-        console.error(e);
-        setError("Kunde inte hämta spellistan.");
-        setMaterials([]);
-      } finally {
-        setLoadingTracks(false);
-      }
-    },
-    [fetchPlaylistMaterials],
-  );
-
-  const handleSelectRepertoire = (id: string) => {
-    setSelectedId(id);
-    setPlayerQueue([]);
-    fetchMaterials(id);
-  };
-
-  useEffect(() => {
-    if (!libraryQueueMaterials?.length) return;
-
-    setMaterials(libraryQueueMaterials);
-    setSelectedId(LIBRARY_SELECTED_ID);
-    setLoadingList(false);
-    setLoadingTracks(false);
-    setError(null);
-    if (!libraryPlaybackWithRepertoire) {
-      setRepertoires([]);
-    }
-
-    const intent: LibraryPlaybackIntent = libraryPlaybackIntent ?? "browse";
-
-    let cancelled = false;
-
-    void buildTracksFromMaterials(libraryQueueMaterials).then((tracks) => {
-      if (cancelled) return;
-
-      if (tracks.length === 0 || intent === "browse") {
-        setPlayerQueue([]);
-        return;
-      }
-
-      if (intent === "playAll") {
-        setPlayerStartIndex(0);
-        setHighlightedTrackIndex(0);
-        setPlayerQueue(tracks);
-        return;
-      }
-
-      if (intent.type === "fromIndex") {
-        const safe = Math.min(Math.max(0, intent.index), tracks.length - 1);
-        setPlayerStartIndex(safe);
-        setHighlightedTrackIndex(safe);
-        setPlayerQueue(tracks);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    libraryQueueMaterials,
-    libraryPlaybackIntent,
-    libraryPlaybackWithRepertoire,
-    buildTracksFromMaterials,
-  ]);
-
-  const handlePlayTrackAt = (index: number) => {
-    setActiveDropdownId(null);
-    void buildTracksFromMaterials(
-      materials.filter((m) => m.fileKey && isPlayableAudioFile(m.fileKey)),
-    ).then((tracks) => {
-      if (tracks.length === 0) return;
-      const safeIndex = Math.min(Math.max(0, index), tracks.length - 1);
-      setPlayerStartIndex(safeIndex);
-      setHighlightedTrackIndex(safeIndex);
-      setPlayerQueue(tracks);
-    });
-  };
-
-  const handlePlayFavorites = () => {
-    const playable = favoriteMaterials.filter(
-      (m) => m.fileKey && isPlayableAudioFile(m.fileKey),
-    );
-    setSelectedId(LIBRARY_SELECTED_ID);
-    setMaterials(playable);
-    setPlayerQueue([]);
-    setPlayerStartIndex(0);
-    setHighlightedTrackIndex(0);
-  };
-
-  const handleCreatePlaylistInSidebar = async () => {
-    const title = newPlaylistTitle.trim();
-    if (!title) return;
-    setCreatingPlaylist(true);
-    try {
-      await createNewPlaylist(title);
-      setNewPlaylistTitle("");
-    } catch {
-      // error handled in hook
-    } finally {
-      setCreatingPlaylist(false);
-    }
-  };
-
-  const handleCreatePlaylistMobile = async () => {
-    const title = newPlaylistTitle.trim();
-    if (!title) return;
-    setCreatingPlaylist(true);
-    try {
-      await createNewPlaylist(title);
-      setNewPlaylistTitle("");
-      setMobileCreatePlaylistOpen(false);
-    } catch {
-      // error handled in hook
-    } finally {
-      setCreatingPlaylist(false);
-    }
-  };
-
   const openMobilePlaylistBrowse = useCallback(() => {
     setMobileBrowseMode("playlists");
-    setSelectedId(null);
-    setMaterials([]);
-    setPlayerQueue([]);
-    setPlayerStartIndex(0);
-    setHighlightedTrackIndex(0);
+    clearSelection();
     closePlaylistMenu();
-  }, [closePlaylistMenu]);
+  }, [clearSelection, closePlaylistMenu]);
 
   const openMobileRepertoireBrowse = useCallback(() => {
     setMobileBrowseMode("repertoires");
-    setSelectedId(null);
-    setMaterials([]);
-    setPlayerQueue([]);
-    setPlayerStartIndex(0);
-    setHighlightedTrackIndex(0);
+    clearSelection();
     closePlaylistMenu();
-  }, [closePlaylistMenu]);
+  }, [clearSelection, closePlaylistMenu]);
 
   const handleMobileBackFromTracks = useCallback(() => {
-    setSelectedId(null);
-    setMaterials([]);
-    setPlayerQueue([]);
-    setPlayerStartIndex(0);
-    setHighlightedTrackIndex(0);
+    clearSelection();
     closePlaylistMenu();
-  }, [closePlaylistMenu]);
+  }, [clearSelection, closePlaylistMenu]);
 
   useEffect(() => {
     if (!playlistRenameTarget) {
@@ -566,18 +313,14 @@ export function RepertoireMusicPlayerPanel({
       setShowDeleteConfirm(false);
       setDeleteConfirmPlaylistId(null);
       if (selectedId === playlistId) {
-        setSelectedId(null);
-        setMaterials([]);
-        setPlayerQueue([]);
-        setPlayerStartIndex(0);
-        setHighlightedTrackIndex(0);
+        clearSelection();
       }
     } catch {
       /* hook sets error */
     } finally {
       setDeletePlaylistBusy(false);
     }
-  }, [deleteConfirmPlaylistId, deletePlaylist, selectedId]);
+  }, [deleteConfirmPlaylistId, deletePlaylist, selectedId, clearSelection]);
 
   useEffect(() => {
     if (!showDeleteConfirm) return;
@@ -587,203 +330,6 @@ export function RepertoireMusicPlayerPanel({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [showDeleteConfirm, closeDeletePlaylistConfirm]);
-
-  useEffect(() => {
-    if (!groupName?.trim() || isStandaloneLibrarySession) return;
-    if (!selectedId || selectedId === LIBRARY_SELECTED_ID) return;
-    if (playerQueue.length === 0) return;
-    const isPlaylist = playlists.some((p) => p.playlistId === selectedId);
-    const m = audioMaterials[highlightedTrackIndex];
-    if (!m?.materialId) return;
-    const title =
-      formatDisplayTitle(
-        (m.title && String(m.title).trim()) ||
-          (m.fileKey && m.fileKey.split("/").pop()) ||
-          "",
-      ) || "Okänt spår";
-    if (isPlaylist) {
-      saveRecentPlayback({
-        groupSlug: groupName.trim(),
-        kind: "playlist",
-        playlistId: selectedId,
-        materialId: m.materialId,
-        title,
-      });
-    } else {
-      saveRecentPlayback({
-        groupSlug: groupName.trim(),
-        kind: "repertoire",
-        repertoireId: selectedId,
-        materialId: m.materialId,
-        title,
-      });
-    }
-  }, [
-    groupName,
-    isStandaloneLibrarySession,
-    selectedId,
-    playlists,
-    playerQueue.length,
-    audioMaterials,
-    highlightedTrackIndex,
-  ]);
-
-  useEffect(() => {
-    if (!pendingResume) {
-      resumeAttemptKeyRef.current = null;
-    }
-  }, [pendingResume]);
-
-  useEffect(() => {
-    if (!pendingResume || isStandaloneLibrarySession) return;
-
-    const key =
-      pendingResume.source === "repertoire"
-        ? `rep:${pendingResume.repertoireId}:${pendingResume.materialId}`
-        : `pl:${pendingResume.playlistId}:${pendingResume.materialId}`;
-
-    if (resumeAttemptKeyRef.current === key) return;
-
-    if (pendingResume.source === "repertoire") {
-      const { repertoireId, materialId } = pendingResume;
-      if (selectedId !== repertoireId) {
-        handleSelectRepertoire(repertoireId);
-        return;
-      }
-      if (loadingTracks) return;
-      const idx = audioMaterials.findIndex((m) => m.materialId === materialId);
-      if (idx >= 0) {
-        handlePlayTrackAt(idx);
-        clearPendingResume();
-        resumeAttemptKeyRef.current = key;
-      } else {
-        clearPendingResume();
-        resumeAttemptKeyRef.current = key;
-      }
-      return;
-    }
-
-    const { playlistId, materialId } = pendingResume;
-    if (selectedId !== playlistId) {
-      void handleSelectPlaylist(playlistId);
-      return;
-    }
-    if (loadingTracks) return;
-    const idx = audioMaterials.findIndex((m) => m.materialId === materialId);
-    if (idx >= 0) {
-      handlePlayTrackAt(idx);
-      clearPendingResume();
-      resumeAttemptKeyRef.current = key;
-    } else {
-      clearPendingResume();
-      resumeAttemptKeyRef.current = key;
-    }
-  }, [
-    pendingResume,
-    isStandaloneLibrarySession,
-    selectedId,
-    loadingTracks,
-    audioMaterials,
-    clearPendingResume,
-    handleSelectPlaylist,
-  ]);
-
-  useEffect(() => {
-    if (!initialRepertoireId?.trim() && !initialPlaylistId?.trim()) {
-      repertoireBootstrapKeyRef.current = null;
-    }
-  }, [initialRepertoireId, initialPlaylistId]);
-
-  /**
-   * Välj repertoar eller spellista direkt (inte library mode). Valfritt: spela spår när material laddats.
-   * Körs inte när pendingResume eller library-läge är aktivt.
-   */
-  useEffect(() => {
-    if (isStandaloneLibrarySession || pendingResume) return;
-    const rid = initialRepertoireId?.trim();
-    const plid = initialPlaylistId?.trim();
-    if (!rid && !plid) return;
-
-    const isPlaylistBootstrap = Boolean(plid);
-    const targetId = isPlaylistBootstrap ? plid! : rid!;
-
-    const keyBase = repertoirePlaybackIntent
-      ? `${targetId}:${isPlaylistBootstrap ? "pl" : "rep"}:${repertoirePlaybackIntent.type}:${
-          repertoirePlaybackIntent.type === "fromMaterialId"
-            ? repertoirePlaybackIntent.materialId
-            : String(repertoirePlaybackIntent.index)
-        }`
-      : `${targetId}:${isPlaylistBootstrap ? "pl" : "rep"}:browse`;
-
-    if (selectedId !== targetId) {
-      if (isPlaylistBootstrap) void handleSelectPlaylist(targetId);
-      else handleSelectRepertoire(targetId);
-      return;
-    }
-
-    if (loadingTracks) return;
-
-    if (!repertoirePlaybackIntent) {
-      if (repertoireBootstrapKeyRef.current !== keyBase) {
-        clearInitialRepertoireLaunch();
-        repertoireBootstrapKeyRef.current = keyBase;
-      }
-      return;
-    }
-
-    if (repertoireBootstrapKeyRef.current === keyBase) return;
-
-    if (audioMaterials.length === 0) {
-      clearInitialRepertoireLaunch();
-      repertoireBootstrapKeyRef.current = keyBase;
-      return;
-    }
-
-    if (repertoirePlaybackIntent.type === "fromMaterialId") {
-      const idx = audioMaterials.findIndex(
-        (m) => m.materialId === repertoirePlaybackIntent.materialId,
-      );
-      if (idx >= 0) {
-        handlePlayTrackAt(idx);
-      }
-    } else {
-      const safe = Math.min(
-        Math.max(0, repertoirePlaybackIntent.index),
-        audioMaterials.length - 1,
-      );
-      handlePlayTrackAt(safe);
-    }
-    clearInitialRepertoireLaunch();
-    repertoireBootstrapKeyRef.current = keyBase;
-  }, [
-    isStandaloneLibrarySession,
-    pendingResume,
-    initialRepertoireId,
-    initialPlaylistId,
-    repertoirePlaybackIntent,
-    selectedId,
-    loadingTracks,
-    audioMaterials,
-    clearInitialRepertoireLaunch,
-    handleSelectPlaylist,
-  ]);
-
-  const handleRemoveFromPlaylist = useCallback(
-    async (materialId: string) => {
-      const sid = selectedId?.trim();
-      if (!sid) return;
-      try {
-        await removePlaylistItem(sid, materialId);
-        setMaterials((prev) => prev.filter((m) => m.materialId !== materialId));
-        setPlayerQueue((prev) =>
-          prev.filter((t) => t.materialId !== materialId),
-        );
-      } catch (e) {
-        console.error("handleRemoveFromPlaylist failed", e);
-      }
-    },
-    [selectedId],
-  );
 
   useEffect(() => {
     if (!activeDropdownId) return;
@@ -844,15 +390,15 @@ export function RepertoireMusicPlayerPanel({
     <div className={styles.musicShell}>
       {/* ── top bar ── */}
       <header className={styles.shellTop}>
-        <div className={styles.shellTopLeft}>
+        <Cluster className={styles.shellTopLeft} align="center" gap="sm" wrap={false}>
           <span className={styles.shellBrand} aria-hidden>
             HRK
           </span>
           <span id={shellTitleId} className={styles.shellBrandTitle}>
             Musik
           </span>
-        </div>
-        <div className={styles.shellTopRight}>
+        </Cluster>
+        <Cluster className={styles.shellTopRight} justify="end" align="center" gap="sm" wrap>
           <button
             type="button"
             className={styles.closeButton}
@@ -861,16 +407,20 @@ export function RepertoireMusicPlayerPanel({
           >
             <X size={20} aria-hidden />
           </button>
-        </div>
+        </Cluster>
       </header>
 
       {/* ── body ── */}
       <div className={shellBodyClass}>
         {/* Mobil: ikonrad — spellistor/repertoar öppnar listor i huvudytan */}
-        <div
+        <Cluster
           className={styles.shellMobileIconRail}
           role="toolbar"
           aria-label="Bibliotek och repertoar"
+          justify="between"
+          align="start"
+          gap="2xs"
+          wrap={false}
         >
           <button
             type="button"
@@ -962,13 +512,13 @@ export function RepertoireMusicPlayerPanel({
               <span className={styles.shellMobileIconLabel}>Skapa</span>
             </span>
           </button>
-        </div>
+        </Cluster>
 
         {/* ── playlist sidebar (left) ── */}
         <aside className={styles.playlistSidebar} aria-label="Dina spellistor">
           <h2 className={styles.playlistSidebarTitle}>Mitt bibliotek</h2>
 
-          <div className={styles.playlistSidebarSection}>
+          <Stack className={styles.playlistSidebarSection} gap="xs">
             <p className={styles.playlistSidebarSectionLabel}>Favoriter</p>
             <ul className={styles.playlistSidebarList}>
               <li>
@@ -994,13 +544,13 @@ export function RepertoireMusicPlayerPanel({
                 </button>
               </li>
             </ul>
-          </div>
+          </Stack>
 
-          <div className={styles.playlistSidebarPlaylistsStack}>
+          <Stack className={styles.playlistSidebarPlaylistsStack} gap="xs">
             <p className={styles.playlistSidebarSectionLabel}>Spellistor</p>
 
             <div className={styles.playlistSidebarCreate}>
-              <div className={styles.playlistSidebarCreateRow}>
+              <Cluster className={styles.playlistSidebarCreateRow} align="center" gap="sm" wrap={false}>
                 <input
                   type="text"
                   className={styles.playlistSidebarInput}
@@ -1021,7 +571,7 @@ export function RepertoireMusicPlayerPanel({
                 >
                   <Plus size={16} aria-hidden />
                 </button>
-              </div>
+              </Cluster>
             </div>
 
             <div
@@ -1117,7 +667,7 @@ export function RepertoireMusicPlayerPanel({
                 )}
               </ul>
             </div>
-          </div>
+          </Stack>
         </aside>
 
         {playlistMenuOpenId &&
@@ -1195,7 +745,7 @@ export function RepertoireMusicPlayerPanel({
                   Är du säker på att du vill ta bort spellistan? Detta går inte
                   att ångra.
                 </p>
-                <div className={styles.deleteConfirmActions}>
+                <Cluster className={styles.deleteConfirmActions} justify="end" align="center" gap="sm" wrap>
                   <button
                     type="button"
                     className={styles.deleteConfirmButtonCancel}
@@ -1218,7 +768,7 @@ export function RepertoireMusicPlayerPanel({
                   >
                     {deletePlaylistBusy ? "Tar bort…" : "Ta bort"}
                   </button>
-                </div>
+                </Cluster>
               </div>
             </div>,
             document.body,
@@ -1412,7 +962,10 @@ export function RepertoireMusicPlayerPanel({
           ) : (
             <>
               <div className={styles.hero}>
-                <div className={styles.heroArt} aria-hidden>
+                <div
+                  className={`${styles.heroArt} ${isFavoritesView ? styles.heroArtFavorites : ''}`}
+                  aria-hidden
+                >
                   {isFavoritesView ? (
                     <Heart size={34} className={styles.heroArtIcon} />
                   ) : selectedPlaylistTitle ? (
@@ -1483,10 +1036,19 @@ export function RepertoireMusicPlayerPanel({
                     </thead>
                     <tbody>
                       {audioMaterials.map((m, index) => {
-                        const label =
+                        const fallback =
                           formatDisplayTitle(
                             m.title || m.fileKey?.split("/").pop() || "",
                           ) || "Okänd";
+                        const label =
+                          (m.voiceLabel?.trim() || m.songTitle?.trim()
+                            ? materialLabelText(
+                                displayMaterialLabel(
+                                  m,
+                                  selectedRepertoireTitle?.split(/\s+-\s+/)[0],
+                                ),
+                              )
+                            : "") || fallback;
                         const isRowActive =
                           playerQueue.length > 0 &&
                           !!selectedId &&

@@ -8,6 +8,7 @@ import { AuthContext } from "../../../core/types";
 import { cognito } from "../../../core/services/cognito";
 import { requireGroupAccessResponse } from "../../../core/utils/requireGroupAccess";
 import middy from "@middy/core";
+import { isNotificationWindowClosed } from "./notificationWindow";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
@@ -46,47 +47,50 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler
         IndexName: "GSI1",
         KeyConditionExpression: "GSI1PK = :pk",
         ExpressionAttributeValues: { ":pk": { S: `GROUP#${groupSlug}` } },
-        ProjectionExpression: "eventId, updatedAt, descriptionUpdatedAt, lastUpdatedFields",
+        ProjectionExpression:
+          "eventId, updatedAt, descriptionUpdatedAt, lastUpdatedFields, eventDate, endDate, eventType",
       });
 
       const { Items } = await dbClient.send(queryCommand);
       
       const newEventIds: string[] = [];
       const updatedEvents: Record<string, string[]> = {};
+      const now = new Date();
 
       if (Items && Items.length > 0) {
         const events = Items.map(item => unmarshall(item));
-        for (const event of events) {
-          if (!event.eventId || !event.updatedAt) continue;
+        for (const calendarEvent of events) {
+          if (!calendarEvent.eventId || !calendarEvent.updatedAt) continue;
+          if (isNotificationWindowClosed(calendarEvent, now)) continue;
 
           let isNew = false;
           const actualUpdates: string[] = [];
           
           // Steg 1: Kolla om eventet är nytt
-          if (!readEventIds.has(event.eventId)) {
+          if (!readEventIds.has(calendarEvent.eventId)) {
             isNew = true;
-            newEventIds.push(event.eventId);
+            newEventIds.push(calendarEvent.eventId);
           }
           
           // Steg 2: Kolla ALLTID efter olästa uppdateringar (även för nya event)
-          const lastSeenGeneral = seenGeneralUpdates[event.eventId];
-          const lastSeenDescription = seenDescriptionUpdates[event.eventId];
+          const lastSeenGeneral = seenGeneralUpdates[calendarEvent.eventId];
+          const lastSeenDescription = seenDescriptionUpdates[calendarEvent.eventId];
 
           // Har beskrivningen en oläst uppdatering?
-          if (event.descriptionUpdatedAt && (!lastSeenDescription || new Date(event.descriptionUpdatedAt) > new Date(lastSeenDescription))) {
+          if (calendarEvent.descriptionUpdatedAt && (!lastSeenDescription || new Date(calendarEvent.descriptionUpdatedAt) > new Date(lastSeenDescription))) {
             actualUpdates.push('description');
           }
 
           // Har andra fält en oläst uppdatering? (Körs ej för helt nya event)
-          if (!isNew && (!lastSeenGeneral || new Date(event.updatedAt) > new Date(lastSeenGeneral))) {
-            const otherFields = (event.lastUpdatedFields || []).filter((field: string) => field !== 'description');
+          if (!isNew && (!lastSeenGeneral || new Date(calendarEvent.updatedAt) > new Date(lastSeenGeneral))) {
+            const otherFields = (calendarEvent.lastUpdatedFields || []).filter((field: string) => field !== 'description');
             if (otherFields.length > 0) {
               actualUpdates.push(...otherFields);
             }
           }
 
           if (actualUpdates.length > 0) {
-            updatedEvents[event.eventId] = [...new Set(actualUpdates)];
+            updatedEvents[calendarEvent.eventId] = [...new Set(actualUpdates)];
           }
         }
       }

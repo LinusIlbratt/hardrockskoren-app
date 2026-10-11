@@ -23,12 +23,7 @@ export const handler = async (
     const { eventType, title, eventDate, endDate, description } = body;
     const userRole = event.requestContext.authorizer?.lambda?.role;
 
-    if (userRole === 'admin') {
-    } else if (userRole === 'leader') {
-      if (eventType !== 'REHEARSAL') {
-        return sendError(403, "Forbidden: You only have permission to create rehearsals.");
-      }
-    } else {
+    if (userRole !== "admin" && userRole !== "leader") {
       return sendError(403, "Forbidden: You do not have permission to perform this action.");
     }
 

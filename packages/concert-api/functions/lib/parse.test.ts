@@ -30,6 +30,8 @@ describe("parseCreateConcertBody", () => {
       concertDate: "2026-12-13",
       location: "Stockholm",
       description: "Välkommen",
+      scope: "all",
+      targets: ["ALL"],
     });
   });
 

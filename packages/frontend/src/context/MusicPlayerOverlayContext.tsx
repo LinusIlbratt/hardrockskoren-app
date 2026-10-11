@@ -9,12 +9,15 @@ import {
   type ReactNode,
 } from 'react';
 import type { Material } from '@/types';
+import type { MusicPlaybackApi } from '@/features/music-player';
 import type {
   MusicResumePayload,
   OpenMusicOptions,
   OpenMusicPlaybackIntent,
   RepertoirePlaybackIntent,
 } from '@/utils/recentPlayback';
+
+export type { MusicPlaybackApi };
 
 export type {
   MusicResumePayload,
@@ -42,18 +45,6 @@ export interface ActiveTrackMeta {
 export interface PlaybackQueueMeta {
   currentIndex: number;
   total: number;
-}
-
-export interface MusicPlaybackApi {
-  togglePlayPause: () => void;
-  /** Maps to MediaPlayer goToPrevious */
-  goPrevious: () => void;
-  /** Maps to MediaPlayer goToNext */
-  goNext: () => void;
-  cycleRepeat: () => void;
-  seek: (seconds: number) => void;
-  setPlaybackRate: (rate: number) => void;
-  setVolume: (v: number) => void;
 }
 
 export interface PlaybackProgressSnapshot {
@@ -168,6 +159,8 @@ function notifyListeners(set: Set<() => void>) {
 
 export function MusicPlayerOverlayProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<MusicPlayerOverlayState>(initialState);
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const [activeTrack, setActiveTrack] = useState<ActiveTrackMeta | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [queueMeta, setQueueMeta] = useState<PlaybackQueueMeta | null>(null);
@@ -234,7 +227,13 @@ export function MusicPlayerOverlayProvider({ children }: { children: ReactNode }
     (groupName: string, viewer: MusicPlayerViewer, options?: OpenMusicOptions) => {
       const g = groupName.trim();
       if (!g) return;
-      resetPlaybackMeta();
+      const current = stateRef.current;
+      const sameSession = current.groupName === g && current.viewer === viewer;
+      const stayMinimized =
+        options?.startMinimized === true || (sameSession && !current.isOpen);
+      if (!sameSession) {
+        resetPlaybackMeta();
+      }
 
       const browse = options?.playbackIntent === 'browse';
       const hasResume = Boolean(options?.resume);
@@ -247,7 +246,7 @@ export function MusicPlayerOverlayProvider({ children }: { children: ReactNode }
           const r = options.resume;
           if (r.source === 'repertoire') {
             setState({
-              isOpen: options?.startMinimized ? false : true,
+              isOpen: stayMinimized ? false : true,
               groupName: g,
               viewer,
               libraryMaterials: null,
@@ -259,7 +258,7 @@ export function MusicPlayerOverlayProvider({ children }: { children: ReactNode }
             });
           } else {
             setState({
-              isOpen: options?.startMinimized ? false : true,
+              isOpen: stayMinimized ? false : true,
               groupName: g,
               viewer,
               libraryMaterials: null,
@@ -273,7 +272,7 @@ export function MusicPlayerOverlayProvider({ children }: { children: ReactNode }
           return;
         }
         setState({
-          isOpen: options?.startMinimized ? false : true,
+          isOpen: stayMinimized ? false : true,
           groupName: g,
           viewer,
           libraryMaterials: null,
@@ -299,7 +298,7 @@ export function MusicPlayerOverlayProvider({ children }: { children: ReactNode }
       }
 
       setState({
-        isOpen: options?.startMinimized ? false : true,
+        isOpen: stayMinimized ? false : true,
         groupName: g,
         viewer,
         libraryMaterials: null,
