@@ -1,6 +1,7 @@
 import { memo, useCallback, useEffect, useRef, useState, type RefCallback } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useChoirDisplayName } from '@/features/groups/useChoirDisplayName';
 import { FavoritesProvider } from '@/context/FavoritesContext';
 import { MusicPlayerOverlayProvider, useMusicPlayerOverlay } from '@/context/MusicPlayerOverlayContext';
 import { MusicPlayerOverlayHost } from '@/components/music/MusicPlayerOverlay';
@@ -24,6 +25,7 @@ function memberGroupFromPath(pathname: string): string | undefined {
 const AppLayoutContent = memo(function AppLayoutContent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [musicOverlayMount, setMusicOverlayMount] = useState<HTMLDivElement | null>(null);
+  const { user } = useAuth();
   const { activeTrack, isOpen, activeGroupName, activeViewer, closeOverlay, closeSession } = useMusicPlayerOverlay();
   const location = useLocation();
   const isOpenRef = useRef(isOpen);
@@ -32,6 +34,8 @@ const AppLayoutContent = memo(function AppLayoutContent() {
   const hasSession = Boolean(activeGroupName) && Boolean(activeViewer);
   const showMiniBar = Boolean(activeTrack) && !isOpen && hasSession;
   const memberGroupName = memberGroupFromPath(location.pathname);
+  const { name: choirName, isLoading: isChoirNameLoading } = useChoirDisplayName(memberGroupName);
+  const hasSeveralChoirs = (user?.groups?.length ?? 0) > 1;
 
   useEffect(() => {
     isOpenRef.current = isOpen;
@@ -88,7 +92,32 @@ const AppLayoutContent = memo(function AppLayoutContent() {
         setIsMenuOpen={setIsMenuOpen}
         withMemberTabs
       />
-      <ChoirNav groupName={memberGroupName} audience="member" />
+      <div className={styles.memberChoirChrome}>
+        <div className={styles.topBar}>
+          {hasSeveralChoirs ? (
+            <Link to="/select-group" className={styles.backLink}>
+              ← Tillbaka till körer
+            </Link>
+          ) : (
+            <span className={styles.memberName}>
+              {user?.given_name} {user?.family_name}
+            </span>
+          )}
+          <div className={styles.choirBadge} aria-busy={isChoirNameLoading}>
+            {isChoirNameLoading ? (
+              <span className={styles.nameSkeleton} aria-hidden="true" />
+            ) : (
+              choirName ?? ""
+            )}
+          </div>
+        </div>
+        <ChoirNav
+          groupName={memberGroupName}
+          audience="member"
+          showChoirName={false}
+          embedded
+        />
+      </div>
     </div>
   ) : (
     <MainNav isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />

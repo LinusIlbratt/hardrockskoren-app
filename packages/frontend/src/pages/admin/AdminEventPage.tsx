@@ -7,8 +7,9 @@ import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal/Modal';
 import { Tab, Tabs } from '@/components/ui/tabs/Tabs';
 import { CreateEventForm, CreateRecurringEventForm } from '@/features/events';
+import { Info } from 'lucide-react';
 import { FiEdit, FiClock } from 'react-icons/fi';
-import { IoTrashOutline, IoEyeOutline, IoInformationCircleOutline } from 'react-icons/io5';
+import { IoTrashOutline, IoEyeOutline } from 'react-icons/io5';
 import type { Event } from '@/types';
 import styles from './AdminEventPage.module.scss';
 import { useAuth } from '@/context/AuthContext';
@@ -27,6 +28,7 @@ export const AdminEventPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
   const [eventToShowDescription, setEventToShowDescription] = useState<Event | null>(null);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const fetchEvents = useCallback(async () => {
     const token = localStorage.getItem('authToken');
@@ -117,7 +119,18 @@ export const AdminEventPage = () => {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h2>Hantera Events</h2>
+        <div className={styles.titleRow}>
+          <h2>Hantera Events</h2>
+          <button
+            type="button"
+            className={styles.infoButton}
+            onClick={() => setIsHelpOpen(true)}
+            aria-label="Så fungerar det"
+            aria-expanded={isHelpOpen}
+          >
+            <Info size={20} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+        </div>
         {activeTab !== 'SHARED' && (
         <div className={styles.buttonGroup}>
           <Button className={styles.primaryButton} onClick={handleOpenCreateModal}>Skapa enstaka event</Button>
@@ -125,15 +138,6 @@ export const AdminEventPage = () => {
         </div>
         )}
       </div>
-
-      {activeTab !== 'SHARED' && (
-      <div className={styles.legend}>
-        <IoInformationCircleOutline size={20} className={styles.legendIcon} />
-        <p className={styles.legendText}>
-          Tryck på <IoEyeOutline size={16} className={styles.inlineIcon} aria-hidden /> för att visa, <FiEdit size={16} className={styles.inlineIcon} aria-hidden /> för att redigera eller <IoTrashOutline size={16} className={styles.inlineIcon} aria-hidden /> för att ta bort ett event.
-        </p>
-      </div>
-      )}
 
       <Tabs label="Gig och repdatum" className={styles.tabs}>
         <Tab active={activeTab === 'REHEARSAL'} onSelect={() => setActiveTab('REHEARSAL')}>Rep</Tab>
@@ -160,6 +164,18 @@ export const AdminEventPage = () => {
         )}
       </section>
       )}
+
+      <Modal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        title="Så fungerar det"
+        tone="luxury"
+        size="compact"
+      >
+        <p className={styles.helpText}>
+          Tryck på ikonen <IoEyeOutline size={18} aria-hidden="true" /> för att visa, <FiEdit size={18} aria-hidden="true" /> för att redigera eller <IoTrashOutline size={18} aria-hidden="true" /> för att ta bort ett event.
+        </p>
+      </Modal>
 
       <Modal
         formMode

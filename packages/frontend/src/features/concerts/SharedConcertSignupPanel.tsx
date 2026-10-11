@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
+import { Info } from "lucide-react";
 import { Button, ButtonSize, ButtonVariant } from "@/components/ui/button/Button";
 import { Cluster } from "@/components/ui/layout/Cluster";
+import { Modal } from "@/components/ui/modal/Modal";
 import { listSharedConcerts, type SharedConcert } from "@/services/concertService";
 import {
   extractApiErrorMessage,
@@ -55,6 +57,7 @@ export const SharedConcertSignupPanel = ({
   const [isLoadingList, setIsLoadingList] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [selected, setSelected] = useState<SharedConcert | null>(null);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const fetchList = useCallback(async () => {
     setIsLoadingList(true);
@@ -116,10 +119,18 @@ export const SharedConcertSignupPanel = ({
 
   return (
     <div className={styles.panel}>
-      <p className={styles.intro}>
-        Gemensamma gig för alla körer. Klicka på ett gig för att läsa
-        mer och anmäla dig.
-      </p>
+      <div className={styles.titleRow}>
+        <h2 className={styles.panelTitle}>Gemensamma Gig</h2>
+        <button
+          type="button"
+          className={styles.infoButton}
+          onClick={() => setIsHelpOpen(true)}
+          aria-label="Så fungerar det"
+          aria-expanded={isHelpOpen}
+        >
+          <Info size={20} strokeWidth={1.75} aria-hidden="true" />
+        </button>
+      </div>
 
       {isLoadingList && <p className={styles.muted}>Laddar gig…</p>}
       {!isLoadingList && listError && (
@@ -173,6 +184,18 @@ export const SharedConcertSignupPanel = ({
           </Button>
         </Cluster>
       )}
+
+      <Modal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        title="Så fungerar det"
+        tone="luxury"
+        size="compact"
+      >
+        <p className={styles.helpText}>
+          Gemensamma gig för alla körer. Klicka på ett gig för att läsa mer och anmäla dig.
+        </p>
+      </Modal>
 
       <SharedConcertSignupModal
         concert={selected}

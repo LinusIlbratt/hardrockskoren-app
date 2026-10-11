@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { Bell, Calendar, Mic, Music, UserCheck, Users, type LucideIcon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useEventNotification } from "@/hooks/useEventNotification";
 import { useMessageUnread } from "@/hooks/useMessageUnread";
@@ -11,6 +12,7 @@ export type ChoirAudience = "member" | "leader" | "admin";
 interface ChoirTab {
   segment: string;
   label: string;
+  icon: LucideIcon;
   audiences: readonly ChoirAudience[];
   /** Tom lista = alla roller som redan får se vyn. Annars måste rollen finnas med. */
   roles?: readonly RoleTypes[];
@@ -20,12 +22,12 @@ interface ChoirTab {
 }
 
 const CHOIR_TABS: readonly ChoirTab[] = [
-  { segment: "repertoires", label: "Repertoar", audiences: ["member", "leader", "admin"], tourId: "group-nav-repertoires" },
-  { segment: "practice", label: "Sjung upp", audiences: ["member", "leader", "admin"], tourId: "group-nav-practice" },
-  { segment: "aktuellt", label: "Aktuellt", audiences: ["member", "leader", "admin"], tourId: "group-nav-aktuellt" },
-  { segment: "concerts", label: "Gig & Rep", audiences: ["member", "leader", "admin"], end: true, tourId: "group-nav-concerts" },
-  { segment: "users", label: "Användare", audiences: ["admin", "leader"], roles: ["admin"], tourId: "group-nav-users" },
-  { segment: "attendance", label: "Närvaro", audiences: ["admin", "leader"], tourId: "group-nav-attendance" },
+  { segment: "repertoires", label: "Repertoar", icon: Music, audiences: ["member", "leader", "admin"], tourId: "group-nav-repertoires" },
+  { segment: "practice", label: "Sjung upp", icon: Mic, audiences: ["member", "leader", "admin"], tourId: "group-nav-practice" },
+  { segment: "aktuellt", label: "Aktuellt", icon: Bell, audiences: ["member", "leader", "admin"], tourId: "group-nav-aktuellt" },
+  { segment: "concerts", label: "Gig & Rep", icon: Calendar, audiences: ["member", "leader", "admin"], end: true, tourId: "group-nav-concerts" },
+  { segment: "users", label: "Användare", icon: Users, audiences: ["admin", "leader"], roles: ["admin"], tourId: "group-nav-users" },
+  { segment: "attendance", label: "Närvaro", icon: UserCheck, audiences: ["admin", "leader"], tourId: "group-nav-attendance" },
 ];
 
 const BASE_PATH: Record<ChoirAudience, (groupName: string) => string> = {
@@ -38,7 +40,7 @@ interface ChoirNavProps {
   /** URL-slug. Används bara som nyckel, aldrig som visningsnamn. */
   groupName: string | undefined;
   audience: ChoirAudience;
-  /** Medlemsvyn visar körnamnet här. Admin och ledare har namnet i sidhuvudet. */
+  /** Körnamnet ritas i sidans topprad. Av när badgen sitter utanför navet. */
   showChoirName?: boolean;
   /** Inuti en redan begränsad innehållskolumn, så flikarna inte får en extra sidindragning. */
   embedded?: boolean;
@@ -62,7 +64,7 @@ export function ChoirNav({
   }
 
   const role = user?.role;
-  const tabs = CHOIR_TABS.filter((tab) => {
+  const visibleTabs = CHOIR_TABS.filter((tab) => {
     if (!tab.audiences.includes(audience)) return false;
     if (tab.roles && (!role || !tab.roles.includes(role))) return false;
     return true;
@@ -92,24 +94,28 @@ export function ChoirNav({
             )}
           </div>
         )}
-        <div className={styles.list}>
-          {tabs.map((tab) => (
-            <NavLink
-              key={tab.segment}
-              to={`${base}/${tab.segment}`}
-              end={tab.end}
-              className={getLinkClassName}
-              data-tour={audience === "admin" ? tab.tourId : undefined}
-            >
-              {tab.label}
-              {tab.segment === "aktuellt" && unreadStatus.hasUnread && (
-                <span className={styles.unreadDot} aria-label="Olästa meddelanden" />
-              )}
-              {tab.segment === "concerts" && notificationData.hasNotification && totalNotifications > 0 && (
-                <span className={styles.badge}>{totalNotifications}</span>
-              )}
-            </NavLink>
-          ))}
+        <div className={visibleTabs.length === 4 ? `${styles.list} ${styles.gridFour}` : styles.list}>
+          {visibleTabs.map((tab) => {
+            const TabIcon = tab.icon;
+            return (
+              <NavLink
+                key={tab.segment}
+                to={`${base}/${tab.segment}`}
+                end={tab.end}
+                className={getLinkClassName}
+                data-tour={audience === "admin" ? tab.tourId : undefined}
+              >
+                <TabIcon size={14} aria-hidden="true" />
+                <span className={styles.label}>{tab.label}</span>
+                {tab.segment === "aktuellt" && unreadStatus.hasUnread && (
+                  <span className={styles.unreadDot} aria-label="Olästa meddelanden" />
+                )}
+                {tab.segment === "concerts" && notificationData.hasNotification && totalNotifications > 0 && (
+                  <span className={styles.badge}>{totalNotifications}</span>
+                )}
+              </NavLink>
+            );
+          })}
         </div>
       </div>
     </nav>

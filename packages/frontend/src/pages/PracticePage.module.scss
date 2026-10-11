@@ -75,6 +75,10 @@
   line-height: 1.6;
   color: var(--color-text-luxury, #f4efe6);
 
+  & + & {
+    margin-top: 0.75rem;
+  }
+
   svg {
     display: inline-block;
     width: 18px;

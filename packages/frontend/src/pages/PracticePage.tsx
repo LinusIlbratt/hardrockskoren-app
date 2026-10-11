@@ -72,7 +72,6 @@ export const PracticePage = ({ viewer }: PracticePageProps) => {
             <Info size={20} strokeWidth={1.75} aria-hidden="true" />
           </button>
         </div>
-        <p>Här hittar du övningsmaterial för den här veckan och tidigare veckor.</p>
       </Stack>
 
       {weeklyMaterials.length > 0 ? (
@@ -107,6 +106,9 @@ export const PracticePage = ({ viewer }: PracticePageProps) => {
         tone="luxury"
         size="compact"
       >
+        <p className={styles.helpText}>
+          Här hittar du övningsmaterial för den här veckan och tidigare veckor.
+        </p>
         <p className={styles.helpText}>
           Tryck på ikonerna <IoEyeOutline size={18} aria-hidden="true" /> och <FaPlayCircle size={18} aria-hidden="true" /> för att öppna eller spela upp filen.
           Ljud spelas i samma musikspelare som under Material, med minispelaren längst ned.

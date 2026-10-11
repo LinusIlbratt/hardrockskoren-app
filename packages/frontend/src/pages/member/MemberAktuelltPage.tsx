@@ -1,4 +1,6 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
+import { Info } from "lucide-react";
 import { FiEdit } from "react-icons/fi";
 import { IoTrashOutline } from "react-icons/io5";
 import { LinkifiedText } from "@/components/ui/LinkifiedText";
@@ -26,6 +28,7 @@ function sortNewestFirst(a: FeedMessage, b: FeedMessage): number {
 export const MemberAktuelltPage = () => {
   const { groupName } = useParams<{ groupName: string }>();
   const feed = useMemberFeed(groupName);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   if (!groupName) {
     return null;
@@ -41,12 +44,21 @@ export const MemberAktuelltPage = () => {
       <Cluster align="start" gap="xs" className={styles.stickyHeader}>
         <div className={styles.titleRow}>
           <h1 className={styles.title}>Aktuellt</h1>
+          <button
+            type="button"
+            className={styles.infoButton}
+            onClick={() => setIsHelpOpen(true)}
+            aria-label="Så fungerar det"
+            aria-expanded={isHelpOpen}
+          >
+            <Info size={20} strokeWidth={1.75} aria-hidden="true" />
+          </button>
         </div>
-        <p className={styles.subtitle}>
-          {unread.length > 0
-            ? `${unread.length} olästa · tryck för att läsa${unreadHint}`
-            : "Tryck för att läsa hela meddelandet"}
-        </p>
+        {unread.length > 0 && (
+          <p className={styles.subtitle}>
+            {`${unread.length} olästa${unreadHint}`}
+          </p>
+        )}
         {feed.canCreate && (
           <Button
             type="button"
@@ -211,6 +223,18 @@ export const MemberAktuelltPage = () => {
             {feed.formError && <p className={styles.error}>{feed.formError}</p>}
           </Stack>
         </form>
+      </Modal>
+
+      <Modal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        title="Så fungerar det"
+        tone="luxury"
+        size="compact"
+      >
+        <p className={styles.helpText}>
+          Tryck på ett meddelande i listan för att läsa hela inlägget.
+        </p>
       </Modal>
 
       <Modal

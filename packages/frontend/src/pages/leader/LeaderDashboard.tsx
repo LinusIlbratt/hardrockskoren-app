@@ -9,38 +9,36 @@ export const LeaderDashboard = () => {
   const { groupName } = useParams<{ groupName: string }>();
   const { user } = useAuth();
   const { name: choirName, isLoading: isLoadingName } = useChoirDisplayName(groupName);
-  const canReturnToChoirList = (user?.groups?.length ?? 0) > 1;
 
   if (!user) {
     return <div>Kunde inte ladda användardata.</div>;
   }
 
+  const hasSeveralChoirs = (user.groups?.length ?? 0) > 1;
+
   return (
     <GroupNotificationProviders groupSlug={groupName}>
       <div className={styles.layout}>
-        {canReturnToChoirList && (
-          <Link to="/select-group" className={styles.backLink}>
-            ← Tillbaka till körer
-          </Link>
-        )}
-        <header className={styles.header}>
-          <h2>Välkommen {user.given_name} {user.family_name}</h2>
-          <p>
-            <span className={styles.subheadingLabel}>
-              Körledare i {isLoadingName ? "…" : (choirName ?? "")}
+        <div className={styles.topBar}>
+          {hasSeveralChoirs ? (
+            <Link to="/select-group" className={styles.backLink}>
+              ← Tillbaka till körer
+            </Link>
+          ) : (
+            <span className={styles.leaderName}>
+              {user.given_name} {user.family_name}
             </span>
-          </p>
-        </header>
+          )}
 
-        <div className={styles.groupNameRow}>
-          <h1 className={styles.groupName}>
+          <div className={styles.choirBadge}>
             {isLoadingName ? (
               <span className={styles.nameSkeleton} aria-hidden="true" />
             ) : (
               choirName ?? ""
             )}
-          </h1>
+          </div>
         </div>
+
         <ChoirNav groupName={groupName} audience="leader" showChoirName={false} embedded />
 
         <main className={styles.content}>
