@@ -8,3 +8,8 @@
   padding-left: var(--page-padding-x, 16px);
   padding-right: var(--page-padding-x, 16px);
 }
+
+// Körsidor ritar huvudet i AppLayout. Containern ska inte skjuta ner innehållet under flikarna.
+.container:has([data-choir-page]) {
+  margin-top: 0;
+}

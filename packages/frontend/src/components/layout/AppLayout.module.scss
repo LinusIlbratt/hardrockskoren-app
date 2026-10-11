@@ -9,7 +9,7 @@
   padding-top: var(--role-preview-height, 0px);
 }
 
-.withMemberTabs {
+.withChoirTabs {
   // Topprad + två rader piller under MainNav. Aktuellt-headern fastnar under den höjden.
   --member-subnav-height: 148px;
 
@@ -18,8 +18,8 @@
   }
 }
 
-// Logga + medlemsflikar sitter ihop och stannar kvar när sidan scrollar.
-.memberTopStack {
+// Logga, körhuvud och flikar sitter ihop under menyn för admin, körledare och medlem.
+.choirTopStack {
   position: sticky;
   top: var(--role-preview-height, 0px);
   z-index: 900;
@@ -27,11 +27,12 @@
   background-color: var(--color-background);
 }
 
-.memberChoirChrome {
+.choirChrome {
   box-sizing: border-box;
   width: 100%;
   max-width: var(--page-max-width, #{$maxWidth});
   margin: 0 auto;
+  // 8px under menyn, 12px under flikarna. Samma kolumn som Layout .container.
   padding: 8px var(--page-padding-x, 16px) 12px;
 }
 
@@ -45,7 +46,7 @@
 }
 
 .backLink,
-.memberName {
+.identityName {
   min-width: 0;
   overflow: hidden;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;

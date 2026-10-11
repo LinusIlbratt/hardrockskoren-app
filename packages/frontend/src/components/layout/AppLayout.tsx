@@ -7,20 +7,20 @@ import { MusicPlayerOverlayProvider, useMusicPlayerOverlay } from '@/context/Mus
 import { MusicPlayerOverlayHost } from '@/components/music/MusicPlayerOverlay';
 import { MiniPlayerBar } from '@/components/media/MiniPlayerBar';
 import { MainNav } from '../nav/MainNav';
-import { ChoirNav } from '../nav/ChoirNav';
+import { ChoirNav, type ChoirAudience } from '../nav/ChoirNav';
 import { RolePreviewBanner } from '@/components/auth/RolePreviewBanner';
 import { GroupNotificationProviders } from '@/context/GroupNotificationProviders';
 import { PageLoader } from '@/components/ui/loader/Loader';
+import { choirSlugFromPath } from '@/utils/rolePreview';
 import styles from './AppLayout.module.scss';
 
-function memberGroupFromPath(pathname: string): string | undefined {
-  const match = pathname.match(/^\/user\/me\/([^/]+)/);
-  if (!match?.[1]) return undefined;
-  try {
-    return decodeURIComponent(match[1]);
-  } catch {
-    return match[1];
-  }
+function choirFromPath(pathname: string): { slug: string; audience: ChoirAudience } | null {
+  const slug = choirSlugFromPath(pathname);
+  if (!slug) return null;
+  if (pathname.startsWith('/admin/groups/')) return { slug, audience: 'admin' };
+  if (pathname.startsWith('/leader/choir/')) return { slug, audience: 'leader' };
+  if (pathname.startsWith('/user/me/')) return { slug, audience: 'member' };
+  return null;
 }
 
 const AppLayoutContent = memo(function AppLayoutContent() {
@@ -34,9 +34,11 @@ const AppLayoutContent = memo(function AppLayoutContent() {
 
   const hasSession = Boolean(activeGroupName) && Boolean(activeViewer);
   const showMiniBar = Boolean(activeTrack) && !isOpen && hasSession;
-  const memberGroupName = memberGroupFromPath(location.pathname);
-  const { name: choirName, isLoading: isChoirNameLoading } = useChoirDisplayName(memberGroupName);
+  const choir = choirFromPath(location.pathname);
+  const { name: choirName, isLoading: isChoirNameLoading } = useChoirDisplayName(choir?.slug);
   const hasSeveralChoirs = (user?.groups?.length ?? 0) > 1;
+  const showBackToChoirs = choir?.audience === 'admin' || hasSeveralChoirs;
+  const backToChoirs = choir?.audience === 'admin' ? '/admin/groups' : '/select-group';
 
   useEffect(() => {
     isOpenRef.current = isOpen;
@@ -86,21 +88,21 @@ const AppLayoutContent = memo(function AppLayoutContent() {
     setMusicOverlayMount((prev) => (prev === el ? prev : el));
   }, []);
 
-  const topNav = memberGroupName ? (
-    <div className={styles.memberTopStack}>
+  const topNav = choir ? (
+    <div className={styles.choirTopStack}>
       <MainNav
         isMenuOpen={isMenuOpen}
         setIsMenuOpen={setIsMenuOpen}
         withMemberTabs
       />
-      <div className={styles.memberChoirChrome}>
+      <div className={styles.choirChrome}>
         <div className={styles.topBar}>
-          {hasSeveralChoirs ? (
-            <Link to="/select-group" className={styles.backLink}>
+          {showBackToChoirs ? (
+            <Link to={backToChoirs} className={styles.backLink}>
               ← Tillbaka till körer
             </Link>
           ) : (
-            <span className={styles.memberName}>
+            <span className={styles.identityName}>
               {user?.given_name} {user?.family_name}
             </span>
           )}
@@ -113,8 +115,8 @@ const AppLayoutContent = memo(function AppLayoutContent() {
           </div>
         </div>
         <ChoirNav
-          groupName={memberGroupName}
-          audience="member"
+          groupName={choir.slug}
+          audience={choir.audience}
           showChoirName={false}
           embedded
         />
@@ -134,13 +136,13 @@ const AppLayoutContent = memo(function AppLayoutContent() {
 
   return (
     <div
-      className={`${styles.appLayout} ${memberGroupName ? styles.withMemberTabs : ''}`}
+      className={`${styles.appLayout} ${choir ? styles.withChoirTabs : ''}`}
       data-mini-player-visible={showMiniBar ? 'true' : undefined}
     >
       <RolePreviewBanner />
       <div className={styles.appBody}>
-        {memberGroupName ? (
-          <GroupNotificationProviders groupSlug={memberGroupName}>
+        {choir ? (
+          <GroupNotificationProviders groupSlug={choir.slug}>
             {topNav}
             {page}
           </GroupNotificationProviders>
