@@ -189,7 +189,7 @@ GSI `AttendanceCodeIndex` (`attendanceCode`) och `GroupDateIndex`
 | Kör (metadata) | `GROUP#{slug}` | `METADATA` | — | — |
 | Event | `GROUP#{slug}` | `EVENT#{eventId}` | `GROUP#{slug}` | ISO-startdatum |
 | Repertoar | `GROUP#{slug}` | `REPERTOIRE#{id}` | — | — |
-| Repertoar↔material | `GROUP#{slug}#REPERTOIRE#{repId}` | `MATERIAL#{matId}` | — | — |
+| Repertoar↔material | `REPERTOIRE#{repId}` | `MATERIAL#{matId}` | — | — |
 | Globalt material | `MATERIAL#{id}` | `MATERIAL#{id}` | `MATERIALS` | createdAt |
 | Sjung-upp-material | `SJUNGUPP#MATERIALS` | `MATERIAL#{id}` | — | — |
 | Spellista | `USER#{uuid}` | `PLAYLIST#{id}` | — | — |
@@ -198,9 +198,12 @@ GSI `AttendanceCodeIndex` (`attendanceCode`) och `GroupDateIndex`
 | Meddelande-pekare | `GROUP#{slug}` eller `GROUP#ALL` | `MSG#{createdAt}#{id}` | — | — |
 | Läskvitto | `USER#{uuid}` | `MSGREAD#{messageId}` | — | — |
 | Gemensam konsert | `SHARED_CONCERT#{id}` | `META` | `SHARED_CONCERT#LIST#{år}` | `{datum}#{id}` |
+| Konsert-pekare | `GROUP#{slug}` eller `GROUP#ALL` | `SHAREDCONCERT#{datum}#{id}` | — | — |
 | Konsertanmälan | `SHARED_CONCERT#{id}` | `SIGNUP#{createdAt}#{uuid}` | — | — |
 | Anmälnings-ref (unikhet) | `SHARED_CONCERT#{id}` | `SIGNUPREF#{uuid}` | — | — |
 | Kör↔användare (legacy) | `GROUP#{slug}` | `USER#{email}` | — | — |
+
+Repertoarlänken kan ha `voiceLabel` och `songTitle`. De ändrar bara visningen i den repertoaren.
 
 Sista raden: skrivs av invite-flödet men läses inte av något API. Betrakta som
 död data.
@@ -225,7 +228,9 @@ pekarna som listas i `targets`.
 
 **Årsshardning i `concert-api`.** `GSI1PK = SHARED_CONCERT#LIST#{år}` sprider
 last i stället för en enda het partition. Listningen frågar 5 år bakåt plus den
-gamla oshardade partitionen `SHARED_CONCERT#LIST`.
+gamla oshardade partitionen `SHARED_CONCERT#LIST`. Admin läser den listan.
+Medlemmar med `groupSlug` läser i stället tunna pekare på `GROUP#{slug}` och
+`GROUP#ALL`. Gig utan `scope` är äldre och räknas som tillgängliga för alla.
 
 ---
 

@@ -33,6 +33,7 @@ import {
   type MusicPlayerViewer,
   type RepertoirePlaybackIntent,
 } from "@/context/MusicPlayerOverlayContext";
+import { displayMaterialLabel, materialLabelText } from "@/utils/materialLabel";
 import { formatDisplayTitle, isPlayableAudioFile } from "@/utils/media";
 import { addPlaylistItem } from "@/services/musicService";
 import { CreatePlaylistModal, RenamePlaylistModal } from '@/components/music/PlaylistTitleModals';
@@ -1035,10 +1036,19 @@ export function RepertoireMusicPlayerPanel({
                     </thead>
                     <tbody>
                       {audioMaterials.map((m, index) => {
-                        const label =
+                        const fallback =
                           formatDisplayTitle(
                             m.title || m.fileKey?.split("/").pop() || "",
                           ) || "Okänd";
+                        const label =
+                          (m.voiceLabel?.trim() || m.songTitle?.trim()
+                            ? materialLabelText(
+                                displayMaterialLabel(
+                                  m,
+                                  selectedRepertoireTitle?.split(/\s+-\s+/)[0],
+                                ),
+                              )
+                            : "") || fallback;
                         const isRowActive =
                           playerQueue.length > 0 &&
                           !!selectedId &&

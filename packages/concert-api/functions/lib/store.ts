@@ -10,11 +10,15 @@ import {
 import {
   LIST_GSI1_PK_LEGACY,
   LIST_SHARD_LOOKBACK_YEARS,
+  SHARED_CONCERT_REF_SK_PREFIX,
   SIGNUP_SK_PREFIX,
   SIGNUP_CHILD_SK_END,
   clampListLimit,
+  concertVisibleToChoir,
+  groupAudiencePk,
   sharedConcertPk,
   sharedConcertMetaSk,
+  sharedConcertRefSk,
   concertSignupRefSk,
   legacyConcertSignupSk,
   listGsi1PkForYear,
@@ -22,10 +26,12 @@ import {
   todayInStockholm,
   isConcertOpenForSignup,
   isSharedConcertVisible,
+  ALL_AUDIENCE_TARGET,
   type SharedConcertRecord,
   type ConcertSignupRecord,
   type ConcertSignupRefRecord,
 } from "./keys";
+import { pointerKeysForConcert } from "./audienceWrite";
 import { toPublicConcert, type PublicSharedConcert } from "./parse";
 
 export type ConcertListPage = {
@@ -43,13 +49,14 @@ const BATCH_GET_MAX_ATTEMPTS = 8;
 
 /** List overview fields only — omit description (fetched via GetItem on detail). */
 const LIST_PROJECTION_EXPRESSION =
-  "concertId, title, concertDate, #location, createdAt, signupCount, #version, GSI1SK, #status, #type";
+  "concertId, title, concertDate, #location, createdAt, signupCount, #version, GSI1SK, #status, #type, #scope, targets";
 
 const LIST_PROJECTION_NAMES = {
   "#location": "location",
   "#status": "status",
   "#type": "type",
   "#version": "version",
+  "#scope": "scope",
 } as const;
 
 function sleep(ms: number): Promise<void> {
@@ -551,11 +558,311 @@ async function markConcertDeleting(
  * Tombstone META (status=deleting), delete all signup/ref children, then META.
  * Prevents new signups during cleanup via atomic META conditions in createSignup.
  */
+/**
+ * Choir feed: thin pointers under GROUP#{slug} and GROUP#ALL, plus legacy
+ * META rows that have no scope (still visible to every choir). No Scan.
+ */
+export async function listSharedConcertsForChoir(
+  docClient: DynamoDBDocumentClient,
+  tableName: string,
+  groupSlug: string,
+  options?: {
+    limit?: unknown;
+    beforeGsi1Sk?: string | null;
+    viewerUuid?: string | null;
+  }
+): Promise<ConcertListPage> {
+  const limit = clampListLimit(options?.limit);
+  const before = options?.beforeGsi1Sk?.trim() || null;
+  const fetchLimit = limit + 1;
+  const viewerUuid = options?.viewerUuid?.trim() || null;
+
+  const [choirIds, allIds, legacyRows] = await Promise.all([
+    queryAudienceConcertIds(docClient, tableName, groupAudiencePk(groupSlug), {
+      before,
+      limit: fetchLimit,
+    }),
+    queryAudienceConcertIds(
+      docClient,
+      tableName,
+      groupAudiencePk(ALL_AUDIENCE_TARGET),
+      { before, limit: fetchLimit }
+    ),
+    queryLegacyConcerts(docClient, tableName, { before, limit: fetchLimit }),
+  ]);
+
+  const pointerIds = Array.from(new Set([...choirIds.ids, ...allIds.ids]));
+  const pointed = await batchGetConcerts(docClient, tableName, pointerIds);
+  const visiblePointed = pointed.filter(
+    (row) =>
+      isSharedConcertVisible(row) &&
+      concertVisibleToChoir(row, groupSlug) &&
+      (!before || String(row.GSI1SK || "") < before)
+  );
+
+  const byId = new Map<string, SharedConcertRecord>();
+  for (const row of [...visiblePointed, ...legacyRows]) {
+    if (!row.concertId || !isSharedConcertVisible(row)) continue;
+    if (!concertVisibleToChoir(row, groupSlug)) continue;
+    byId.set(String(row.concertId), row);
+  }
+
+  let rows = Array.from(byId.values()).sort((a, b) =>
+    String(b.GSI1SK || "").localeCompare(String(a.GSI1SK || ""))
+  );
+  if (before) {
+    rows = rows.filter((row) => String(row.GSI1SK || "") < before);
+  }
+
+  const hasMore =
+    rows.length > limit || choirIds.truncated || allIds.truncated || legacyRows.length > limit;
+  const page = rows.slice(0, limit);
+  const last = page[page.length - 1];
+  const nextBefore = hasMore && last?.GSI1SK ? String(last.GSI1SK) : null;
+
+  const signedUpIds = viewerUuid
+    ? await resolveViewerSignedUpConcertIds(
+        docClient,
+        tableName,
+        page.map((concert) => String(concert.concertId)),
+        viewerUuid
+      )
+    : null;
+
+  return {
+    items: page.map((concert) => {
+      const pub = toPublicConcert(
+        concert,
+        isConcertOpenForSignup(String(concert.concertDate))
+      );
+      if (!signedUpIds) return pub;
+      return {
+        ...pub,
+        viewerIsSignedUp: signedUpIds.has(String(concert.concertId)),
+      };
+    }),
+    hasMore,
+    nextBefore,
+  };
+}
+
+async function queryAudienceConcertIds(
+  docClient: DynamoDBDocumentClient,
+  tableName: string,
+  pk: string,
+  options: { before: string | null; limit: number }
+): Promise<{ ids: string[]; truncated: boolean }> {
+  const values: Record<string, string> = {
+    ":pk": pk,
+    ":skStart": SHARED_CONCERT_REF_SK_PREFIX,
+  };
+  let keyCondition = "PK = :pk AND begins_with(SK, :skStart)";
+  const cursorSk = options.before
+    ? `${SHARED_CONCERT_REF_SK_PREFIX}${options.before}`
+    : null;
+  if (cursorSk) {
+    keyCondition = "PK = :pk AND SK BETWEEN :skStart AND :skEnd";
+    values[":skEnd"] = cursorSk;
+  }
+
+  const result = await docClient.send(
+    new QueryCommand({
+      TableName: tableName,
+      KeyConditionExpression: keyCondition,
+      ExpressionAttributeValues: values,
+      ProjectionExpression: "concertId, SK",
+      ScanIndexForward: false,
+      Limit: options.limit + (cursorSk ? 1 : 0),
+    })
+  );
+
+  const ids: string[] = [];
+  for (const item of result.Items ?? []) {
+    if (cursorSk && String(item.SK) >= cursorSk) continue;
+    const concertId =
+      typeof item.concertId === "string" && item.concertId.trim()
+        ? item.concertId.trim()
+        : concertIdFromRefSk(typeof item.SK === "string" ? item.SK : "");
+    if (concertId) ids.push(concertId);
+  }
+
+  return { ids, truncated: Boolean(result.LastEvaluatedKey) };
+}
+
+function concertIdFromRefSk(sk: string): string | null {
+  if (!sk.startsWith(SHARED_CONCERT_REF_SK_PREFIX)) return null;
+  const rest = sk.slice(SHARED_CONCERT_REF_SK_PREFIX.length);
+  const hash = rest.indexOf("#");
+  if (hash < 0) return null;
+  const id = rest.slice(hash + 1).trim();
+  return id || null;
+}
+
+async function queryLegacyConcerts(
+  docClient: DynamoDBDocumentClient,
+  tableName: string,
+  options: { before: string | null; limit: number }
+): Promise<SharedConcertRecord[]> {
+  const currentYear = Number(todayInStockholm().slice(0, 4));
+  const startYear = options.before
+    ? (yearFromGsi1Sk(options.before) ?? currentYear + 1)
+    : currentYear + 1;
+  const minYear = currentYear - LIST_SHARD_LOOKBACK_YEARS;
+  const shardPks: string[] = [];
+  for (let year = startYear; year >= minYear; year -= 1) {
+    shardPks.push(listGsi1PkForYear(year));
+  }
+  shardPks.push(LIST_GSI1_PK_LEGACY);
+
+  const collected: SharedConcertRecord[] = [];
+  for (const gsi1Pk of shardPks) {
+    if (collected.length >= options.limit) break;
+    const rows = await queryLegacyShard(docClient, tableName, gsi1Pk, {
+      before: options.before,
+      limit: options.limit - collected.length,
+    });
+    collected.push(...rows);
+  }
+
+  return collected.filter(
+    (row) => row.scope !== "all" && row.scope !== "groups"
+  );
+}
+
+async function queryLegacyShard(
+  docClient: DynamoDBDocumentClient,
+  tableName: string,
+  gsi1Pk: string,
+  options: { before: string | null; limit: number }
+): Promise<SharedConcertRecord[]> {
+  const rows: SharedConcertRecord[] = [];
+  let exclusiveStartKey: Record<string, unknown> | undefined;
+  let pages = 0;
+
+  while (rows.length < options.limit && pages < 6) {
+    const values: Record<string, string> = {
+      ":pk": gsi1Pk,
+      ":concertType": "SharedConcert",
+    };
+    let keyCondition = "GSI1PK = :pk";
+    if (options.before) {
+      keyCondition = "GSI1PK = :pk AND GSI1SK < :before";
+      values[":before"] = options.before;
+    }
+
+    const result = await docClient.send(
+      new QueryCommand({
+        TableName: tableName,
+        IndexName: "GSI1",
+        KeyConditionExpression: keyCondition,
+        FilterExpression:
+          "attribute_not_exists(#scope) AND #type = :concertType AND (attribute_not_exists(#status) OR #status <> :deleting)",
+        ExpressionAttributeValues: { ...values, ":deleting": "deleting" },
+        ExpressionAttributeNames: { ...LIST_PROJECTION_NAMES },
+        ProjectionExpression: LIST_PROJECTION_EXPRESSION,
+        ScanIndexForward: false,
+        Limit: Math.max(options.limit, 25),
+        ExclusiveStartKey: exclusiveStartKey,
+      })
+    );
+    pages += 1;
+
+    for (const item of result.Items ?? []) {
+      if (item.type !== "SharedConcert" || !isSharedConcertVisible(item)) continue;
+      if (item.scope === "all" || item.scope === "groups") continue;
+      rows.push(item as SharedConcertRecord);
+      if (rows.length >= options.limit) break;
+    }
+
+    exclusiveStartKey = result.LastEvaluatedKey as
+      | Record<string, unknown>
+      | undefined;
+    if (!exclusiveStartKey) break;
+  }
+
+  return rows;
+}
+
+async function batchGetConcerts(
+  docClient: DynamoDBDocumentClient,
+  tableName: string,
+  concertIds: string[]
+): Promise<SharedConcertRecord[]> {
+  const unique = Array.from(new Set(concertIds.filter(Boolean)));
+  const found: SharedConcertRecord[] = [];
+
+  for (let i = 0; i < unique.length; i += BATCH_GET_MAX_KEYS) {
+    let pending: Array<{ PK: string; SK: string }> = unique
+      .slice(i, i + BATCH_GET_MAX_KEYS)
+      .map((concertId) => ({
+        PK: sharedConcertPk(concertId),
+        SK: sharedConcertMetaSk(),
+      }));
+    let attempt = 0;
+
+    while (pending.length > 0) {
+      if (attempt >= BATCH_GET_MAX_ATTEMPTS) {
+        throw new Error(
+          `batchGetConcerts: ${pending.length} UnprocessedKeys remain after ${BATCH_GET_MAX_ATTEMPTS} attempts (table=${tableName}).`
+        );
+      }
+      if (attempt > 0) {
+        const baseMs = 50 * 2 ** (attempt - 1);
+        const jitter = Math.floor(Math.random() * baseMs * 0.5);
+        await sleep(baseMs + jitter);
+      }
+
+      const result = await docClient.send(
+        new BatchGetCommand({
+          RequestItems: {
+            [tableName]: {
+              Keys: pending,
+              ProjectionExpression: LIST_PROJECTION_EXPRESSION,
+              ExpressionAttributeNames: { ...LIST_PROJECTION_NAMES },
+            },
+          },
+        })
+      );
+
+      for (const item of result.Responses?.[tableName] ?? []) {
+        if (item.type === "SharedConcert") found.push(item as SharedConcertRecord);
+      }
+
+      const unprocessed = result.UnprocessedKeys?.[tableName]?.Keys;
+      pending = Array.isArray(unprocessed)
+        ? (unprocessed as Array<{ PK: string; SK: string }>)
+        : [];
+      attempt += 1;
+    }
+  }
+
+  return found;
+}
+
 export async function deleteSharedConcertCascade(
   docClient: DynamoDBDocumentClient,
   tableName: string,
   concertId: string
 ): Promise<{ deletedSignupCount: number } | null> {
+  const existing = await docClient.send(
+    new GetCommand({
+      TableName: tableName,
+      Key: {
+        PK: sharedConcertPk(concertId),
+        SK: sharedConcertMetaSk(),
+      },
+    })
+  );
+  const meta = existing.Item;
+  if (!meta || meta.type !== "SharedConcert") return null;
+
+  const pointerKeys = pointerKeysForConcert({
+    concertId,
+    concertDate: String(meta.concertDate ?? ""),
+    scope: typeof meta.scope === "string" ? meta.scope : undefined,
+    targets: Array.isArray(meta.targets) ? meta.targets.map(String) : undefined,
+  });
+
   const tombstone = await markConcertDeleting(docClient, tableName, concertId);
   if (tombstone === "missing") return null;
 
@@ -570,6 +877,9 @@ export async function deleteSharedConcertCascade(
 
   if (childKeys.length > 0) {
     await batchDeleteKeys(docClient, tableName, childKeys);
+  }
+  if (pointerKeys.length > 0) {
+    await batchDeleteKeys(docClient, tableName, pointerKeys);
   }
 
   const pk = sharedConcertPk(concertId);

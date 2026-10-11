@@ -59,11 +59,24 @@ export const SharedConcertSignupPanel = ({
   const [selected, setSelected] = useState<SharedConcert | null>(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
+  const choirSlug = preferredChoirSlug?.trim() || userGroups.find((slug) => slug.trim())?.trim() || "";
+
   const fetchList = useCallback(async () => {
     setIsLoadingList(true);
     setListError(null);
+    if (!choirSlug) {
+      setConcerts([]);
+      setListHasMore(false);
+      setListNextBefore(null);
+      setListError("Ingen kör är vald.");
+      setIsLoadingList(false);
+      return;
+    }
     try {
-      const result = await listSharedConcerts({ limit: LIST_PAGE_SIZE });
+      const result = await listSharedConcerts({
+        limit: LIST_PAGE_SIZE,
+        groupSlug: choirSlug,
+      });
       setConcerts(result.concerts);
       setListHasMore(result.hasMore);
       setListNextBefore(result.nextBefore);
@@ -78,7 +91,7 @@ export const SharedConcertSignupPanel = ({
     } finally {
       setIsLoadingList(false);
     }
-  }, []);
+  }, [choirSlug]);
 
   useEffect(() => {
     fetchList();
@@ -91,6 +104,7 @@ export const SharedConcertSignupPanel = ({
       const result = await listSharedConcerts({
         limit: LIST_PAGE_SIZE,
         before: listNextBefore,
+        groupSlug: choirSlug,
       });
       setConcerts((prev) => {
         const seen = new Set(prev.map((c) => c.concertId));
@@ -193,7 +207,7 @@ export const SharedConcertSignupPanel = ({
         size="compact"
       >
         <p className={styles.helpText}>
-          Gemensamma gig för alla körer. Klicka på ett gig för att läsa mer och anmäla dig.
+          Här visas gig för din kör och gig som gäller alla körer. Klicka på ett gig för att läsa mer och anmäla dig.
         </p>
       </Modal>
 

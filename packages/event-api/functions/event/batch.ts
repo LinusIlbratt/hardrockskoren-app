@@ -58,14 +58,11 @@ export const handler = async (
       return sendError(400, "Request body is required.");
     }
     const body: BatchCreateBody = JSON.parse(event.body);
-    const { eventType } = body;
-    if (userRole === 'admin') {
-    } else if (userRole === 'leader') {
-      if (eventType !== 'REHEARSAL') {
-        return sendError(403, "Forbidden: You only have permission to batch-create rehearsals.");
-      }
-    } else {
+    if (userRole !== "admin" && userRole !== "leader") {
       return sendError(403, "Forbidden: You do not have permission for this action.");
+    }
+    if (body.eventType !== "CONCERT" && body.eventType !== "REHEARSAL") {
+      return sendError(400, "eventType must be either 'CONCERT' or 'REHEARSAL'.");
     }
     const { groupSlug } = event.pathParameters || {};
     const authDenied = await requireGroupAccessResponse(

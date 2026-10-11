@@ -31,7 +31,7 @@ export type SharedConcert = {
   viewerIsSignedUp?: boolean;
   /** Optimistic-lock version for PATCH (from API). */
   version?: number;
-  /** Absent today: every shared gig is for all choirs. */
+  /** Absent on older gigs, which stay visible to every choir. */
   scope?: "all" | "groups";
   targets?: string[];
 };
@@ -56,6 +56,8 @@ export type CreateSharedConcertInput = {
   concertDate: string;
   location: string;
   description?: string;
+  scope?: "all" | "groups";
+  targets?: string[];
 };
 
 export type ListSharedConcertsResult = {
@@ -89,6 +91,8 @@ export async function createSharedConcert(
     ...(input.description?.trim()
       ? { description: input.description.trim() }
       : {}),
+    ...(input.scope ? { scope: input.scope } : {}),
+    ...(input.targets ? { targets: input.targets } : {}),
   });
   return response.data;
 }
@@ -96,6 +100,7 @@ export async function createSharedConcert(
 export async function listSharedConcerts(options?: {
   limit?: number;
   before?: string | null;
+  groupSlug?: string | null;
   signal?: AbortSignal;
 }): Promise<ListSharedConcertsResult> {
   const response = await client().get<{
@@ -107,6 +112,9 @@ export async function listSharedConcerts(options?: {
     params: {
       ...(options?.limit !== undefined ? { limit: options.limit } : {}),
       ...(options?.before ? { before: options.before } : {}),
+      ...(options?.groupSlug?.trim()
+        ? { groupSlug: options.groupSlug.trim() }
+        : {}),
     },
   });
   return {
@@ -124,6 +132,8 @@ export type UpdateSharedConcertInput = {
   location: string;
   description?: string | null;
   version: number;
+  scope?: "all" | "groups";
+  targets?: string[];
 };
 
 export async function updateSharedConcert(
@@ -147,20 +157,36 @@ export async function updateSharedConcert(
       concertDate: input.concertDate.trim(),
       location: input.location.trim(),
       description: description || null,
+      ...(input.scope ? { scope: input.scope } : {}),
+      ...(input.targets ? { targets: input.targets } : {}),
     }
   );
   return response.data;
 }
 
+export async function deleteSharedConcert(concertId: string): Promise<void> {
+  const id = concertId.trim();
+  if (!id) {
+    throw new Error("concertId is required.");
+  }
+  await client().delete(`/shared-concerts/${encodeURIComponent(id)}`);
+}
+
 export async function getSharedConcert(
-  concertId: string
+  concertId: string,
+  options?: { groupSlug?: string | null }
 ): Promise<SharedConcert> {
   const id = concertId.trim();
   if (!id) {
     throw new Error("concertId is required.");
   }
   const response = await client().get<SharedConcert>(
-    `/shared-concerts/${encodeURIComponent(id)}`
+    `/shared-concerts/${encodeURIComponent(id)}`,
+    {
+      params: options?.groupSlug?.trim()
+        ? { groupSlug: options.groupSlug.trim() }
+        : undefined,
+    }
   );
   return response.data;
 }

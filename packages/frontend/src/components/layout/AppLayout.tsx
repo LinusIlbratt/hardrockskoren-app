@@ -8,6 +8,7 @@ import { MusicPlayerOverlayHost } from '@/components/music/MusicPlayerOverlay';
 import { MiniPlayerBar } from '@/components/media/MiniPlayerBar';
 import { MainNav } from '../nav/MainNav';
 import { ChoirNav } from '../nav/ChoirNav';
+import { RolePreviewBanner } from '@/components/auth/RolePreviewBanner';
 import { GroupNotificationProviders } from '@/context/GroupNotificationProviders';
 import { PageLoader } from '@/components/ui/loader/Loader';
 import styles from './AppLayout.module.scss';
@@ -136,6 +137,7 @@ const AppLayoutContent = memo(function AppLayoutContent() {
       className={`${styles.appLayout} ${memberGroupName ? styles.withMemberTabs : ''}`}
       data-mini-player-visible={showMiniBar ? 'true' : undefined}
     >
+      <RolePreviewBanner />
       <div className={styles.appBody}>
         {memberGroupName ? (
           <GroupNotificationProviders groupSlug={memberGroupName}>

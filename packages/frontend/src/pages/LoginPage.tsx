@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
 import { Button, ButtonRadius, ButtonSize } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
+import { PasswordInput } from '@/components/ui/input/PasswordInput';
 import { FormGroup } from '@/components/ui/form/FormGroup';
 import { LoginPoster } from '@/components/layout/LoginPoster';
 import { ForgotPasswordModal } from '@/features/auth';
@@ -65,7 +66,7 @@ export const LoginPage = () => {
               </FormGroup>
 
               <FormGroup label="Lösenord" htmlFor="password" className={`${styles.formField} ${styles.lastFormField}`}>
-                <Input id="password" type="password" placeholder="••••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
+                <PasswordInput id="password" placeholder="••••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
               </FormGroup>
 
               {/* NYTT: Länk för att öppna modalen */}

@@ -40,8 +40,26 @@ export const handler = async (
       return sendError(400, "Request body with fields to update is required.");
     }
     const updatesFromClient = JSON.parse(event.body);
-    if (Object.keys(updatesFromClient).length === 0) {
+    if (!updatesFromClient || typeof updatesFromClient !== "object" || Array.isArray(updatesFromClient)) {
+      return sendError(400, "Request body must be a JSON object.");
+    }
+    const clientKeys = Object.keys(updatesFromClient);
+    if (clientKeys.length === 0) {
         return sendError(400, "Request body cannot be empty.");
+    }
+
+    const updatableFields = ["title", "eventDate", "endDate", "description", "eventType"];
+    for (const key of clientKeys) {
+      if (!updatableFields.includes(key)) {
+        return sendError(400, `Field '${key}' cannot be updated.`);
+      }
+    }
+    if (
+      Object.prototype.hasOwnProperty.call(updatesFromClient, "eventType") &&
+      updatesFromClient.eventType !== "CONCERT" &&
+      updatesFromClient.eventType !== "REHEARSAL"
+    ) {
+      return sendError(400, "eventType must be either 'CONCERT' or 'REHEARSAL'.");
     }
 
     // --- NY SMART LOGIK START ---

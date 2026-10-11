@@ -27,6 +27,13 @@ export const MAX_FIRST_NAME_LENGTH = 80;
 export const MAX_LAST_NAME_LENGTH = 80;
 export const MAX_CHOIR_SLUG_LENGTH = 80;
 
+/** Thin audience pointers per concert. TransactWrite: 1 META + N pointers ≤ 100. */
+export const MAX_SHARED_CONCERT_TARGETS = 50;
+export const ALL_AUDIENCE_TARGET = "ALL";
+export const SHARED_CONCERT_REF_SK_PREFIX = "SHAREDCONCERT#";
+
+export type ConcertAudienceScope = "all" | "groups";
+
 /** List page size defaults (enforced in API). */
 export const SHARED_CONCERT_LIST_DEFAULT_LIMIT = 20;
 export const SHARED_CONCERT_LIST_MAX_LIMIT = 50;
@@ -73,6 +80,13 @@ export type SharedConcertRecord = {
   version?: number;
   /** Omit or "active" = normal; "deleting" = tombstone during cascade delete. */
   status?: SharedConcertStatus;
+  /**
+   * Who may see the concert. Omitted on legacy rows — those stay visible to every choir.
+   * `all` stores targets `["ALL"]` and one pointer under `GROUP#ALL`.
+   */
+  scope?: ConcertAudienceScope;
+  /** Choir slugs, or `["ALL"]` when scope is `all`. */
+  targets?: string[];
   /** Year-sharded list partition, e.g. SHARED_CONCERT#LIST#2026 */
   GSI1PK: string;
   GSI1SK: string;
@@ -131,6 +145,15 @@ export function concertSignupRefSk(userUuid: string): string {
   return `${SIGNUPREF_SK_PREFIX}${userUuid}`;
 }
 
+export function groupAudiencePk(groupSlug: string): string {
+  return `GROUP#${groupSlug}`;
+}
+
+/** Thin pointer SK. Date prefix sorts newest-first with ScanIndexForward=false. */
+export function sharedConcertRefSk(concertDate: string, concertId: string): string {
+  return `${SHARED_CONCERT_REF_SK_PREFIX}${concertDate}#${concertId}`;
+}
+
 export function listGsi1Sk(concertDate: string, concertId: string): string {
   return `${concertDate}#${concertId}`;
 }
@@ -164,6 +187,17 @@ export function todayInStockholm(now: Date = new Date()): string {
     month: "2-digit",
     day: "2-digit",
   }).format(now);
+}
+
+/** Legacy rows without scope/targets are visible to every choir. */
+export function concertVisibleToChoir(
+  record: { scope?: ConcertAudienceScope | string; targets?: string[] },
+  groupSlug: string
+): boolean {
+  if (record.scope !== "all" && record.scope !== "groups") return true;
+  const targets = Array.isArray(record.targets) ? record.targets : [];
+  if (record.scope === "all" || targets.includes(ALL_AUDIENCE_TARGET)) return true;
+  return targets.includes(groupSlug);
 }
 
 export function isSharedConcertVisible(record: {

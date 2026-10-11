@@ -1,5 +1,5 @@
-import { DynamoDBClient, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
-import { marshall } from "@aws-sdk/util-dynamodb";
+import { DynamoDBClient, DeleteItemCommand, GetItemCommand } from "@aws-sdk/client-dynamodb";
+import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
 import type { AuthContext } from "../../../core/types";
@@ -19,7 +19,7 @@ export const handler = async (
 
   try {
     const userRole = event.requestContext.authorizer?.lambda?.role;
-    if (userRole !== 'admin') {
+    if (userRole !== "admin" && userRole !== "leader") {
       return sendError(403, "Forbidden: You do not have permission to perform this action.");
     }
 
@@ -34,13 +34,35 @@ export const handler = async (
     );
     if (authDenied) return authDenied;
 
+    const key = marshall({
+      PK: `GROUP#${groupSlug}`,
+      SK: `EVENT#${eventId}`,
+    });
+
+    const { Item: existingItemRaw } = await dbClient.send(
+      new GetItemCommand({
+        TableName: MAIN_TABLE,
+        Key: key,
+      })
+    );
+    if (!existingItemRaw) {
+      return sendError(404, "Not Found: The event you are trying to delete does not exist.");
+    }
+    const existingEvent = unmarshall(existingItemRaw);
+    if (userRole === "leader" && existingEvent.eventType !== "CONCERT") {
+      return sendError(403, "Forbidden: You only have permission to delete concerts.");
+    }
+
     const command = new DeleteItemCommand({
         TableName: MAIN_TABLE,
-        Key: marshall({
-            PK: `GROUP#${groupSlug}`,
-            SK: `EVENT#${eventId}`
-        }),
-        ConditionExpression: "attribute_exists(PK)"
+        Key: key,
+        ConditionExpression:
+          userRole === "leader"
+            ? "attribute_exists(PK) AND eventType = :concert"
+            : "attribute_exists(PK)",
+        ...(userRole === "leader"
+          ? { ExpressionAttributeValues: marshall({ ":concert": "CONCERT" }) }
+          : {}),
     });
 
     await dbClient.send(command);

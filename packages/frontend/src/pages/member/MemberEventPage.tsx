@@ -4,6 +4,7 @@ import { Info } from "lucide-react";
 import { IoEyeOutline } from "react-icons/io5";
 import { format, isPast } from "date-fns";
 import { sv } from "date-fns/locale";
+import { MarkdownText } from "@/components/ui/markdown/MarkdownText";
 import { Stack } from "@/components/ui/layout/Stack";
 import { Modal } from "@/components/ui/modal/Modal";
 import { Tab, Tabs } from "@/components/ui/tabs/Tabs";
@@ -192,7 +193,10 @@ export const MemberEventPage = () => {
         onClose={() => setEventToShowDescription(null)}
         title={eventToShowDescription?.title || "Eventbeskrivning"}
       >
-        <pre className={styles.descriptionText}>{eventToShowDescription?.description}</pre>
+        <MarkdownText
+          className={styles.descriptionText}
+          text={eventToShowDescription?.description ?? ""}
+        />
       </Modal>
     </Stack>
   );

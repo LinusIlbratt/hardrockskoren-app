@@ -73,6 +73,8 @@ export const routePermissions: Record<string, RoleTypes[]> = {
     RoleGroups.MANAGEMENT,
   "DELETE /groups/{groupName}/repertoires/{repertoireId}/materials/{materialId}":
     RoleGroups.MANAGEMENT,
+  "PATCH /groups/{groupName}/repertoires/{repertoireId}/materials/{materialId}":
+    RoleGroups.MANAGEMENT,
   "POST /practice/upload-url": RoleGroups.ADMIN_ONLY,
   "POST /practice/batch-delete": RoleGroups.ADMIN_ONLY,
   "POST /materials/prepare-batch-upload": RoleGroups.ADMIN_ONLY,

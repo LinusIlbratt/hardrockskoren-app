@@ -257,6 +257,47 @@ export async function getLibraryFolderChoirStatus(
   };
 }
 
+export type RepertoireMaterialOverrides = {
+  voiceLabel?: string | null;
+  songTitle?: string | null;
+};
+
+export type UpdatedRepertoireMaterial = {
+  materialId: string;
+  voiceLabel?: string;
+  songTitle?: string;
+};
+
+export async function updateRepertoireMaterial(
+  groupName: string,
+  repertoireId: string,
+  materialId: string,
+  overrides: RepertoireMaterialOverrides,
+): Promise<UpdatedRepertoireMaterial> {
+  const group = requireNonEmpty(groupName, 'groupName').trim();
+  const repertoire = requireNonEmpty(repertoireId, 'repertoireId').trim();
+  const material = requireNonEmpty(materialId, 'materialId').trim();
+  const body: RepertoireMaterialOverrides = {};
+  if ('voiceLabel' in overrides) body.voiceLabel = overrides.voiceLabel ?? null;
+  if ('songTitle' in overrides) body.songTitle = overrides.songTitle ?? null;
+  if (!('voiceLabel' in body) && !('songTitle' in body)) {
+    throw new Error('Inget att spara.');
+  }
+  const response = await client().patch(
+    `/groups/${encodeURIComponent(group)}/repertoires/${encodeURIComponent(repertoire)}/materials/${encodeURIComponent(material)}`,
+    body,
+  );
+  const data = response.data;
+  if (!data || typeof data !== 'object' || typeof data.materialId !== 'string') {
+    throw new Error('Svaret från sparad stämma hade ett oväntat format.');
+  }
+  return {
+    materialId: data.materialId,
+    ...(typeof data.voiceLabel === 'string' ? { voiceLabel: data.voiceLabel } : {}),
+    ...(typeof data.songTitle === 'string' ? { songTitle: data.songTitle } : {}),
+  };
+}
+
 export async function addLibraryFolderToChoirs(
   folderPath: string,
   groupSlugs: string[]

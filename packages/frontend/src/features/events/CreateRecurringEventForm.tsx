@@ -3,6 +3,7 @@ import { StyledSelect, type SelectOption } from '@/components/ui/select/StyledSe
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
 import { FormGroup } from '@/components/ui/form/FormGroup';
+import { MarkdownTextarea } from '@/components/ui/markdown/MarkdownTextarea';
 import { DiscardChangesConfirm } from '@/components/ui/form/DiscardChangesConfirm';
 import { useModalFormGuard } from '@/hooks/useModalFormGuard';
 import { serializeFormState } from '@/utils/formState';
@@ -92,13 +93,13 @@ export const CreateRecurringEventForm = ({
 
   const eventTypeOptions = useMemo((): SelectOption[] => {
     const options: SelectOption[] = [{ value: 'REHEARSAL', label: 'Rep' }];
-    if (user?.role === 'admin') {
+    if (user?.role === 'admin' || user?.role === 'leader') {
       options.push({ value: 'CONCERT', label: 'Gig' });
     }
     return options;
   }, [user]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
@@ -271,8 +272,15 @@ export const CreateRecurringEventForm = ({
         />
       </FormGroup>
 
-      <FormGroup label="Information (valfri)">
-        <textarea name="description" value={formData.description} onChange={handleInputChange} className={styles.textarea} />
+      <FormGroup label="Information (valfri)" htmlFor="recurring-event-description">
+        <MarkdownTextarea
+          id="recurring-event-description"
+          value={formData.description}
+          rows={4}
+          placeholder="Skriv information om giget eller repet…"
+          disabled={isSubmitting}
+          onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))}
+        />
       </FormGroup>
 
       {showDiscardConfirm && (

@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/button/Button";
 import { FormGroup } from "@/components/ui/form/FormGroup";
 import { Input } from "@/components/ui/input/Input";
-import { LinkifiedText } from "@/components/ui/LinkifiedText";
+import { MarkdownText } from "@/components/ui/markdown/MarkdownText";
 import { Cluster } from "@/components/ui/layout/Cluster";
 import { Modal } from "@/components/ui/modal/Modal";
 import {
@@ -225,7 +225,9 @@ export const SharedConcertSignupModal = ({
     setSignupMessage(null);
     setIsLoadingDetail(true);
 
-    getSharedConcert(concertId)
+    getSharedConcert(concertId, {
+      groupSlug: preferredChoirSlug?.trim() || userGroups.find((slug) => slug.trim()),
+    })
       .then((fresh) => {
         if (cancelled) return;
         setSelected(fresh);
@@ -356,9 +358,10 @@ export const SharedConcertSignupModal = ({
             {selected.description ? (
               <div className={styles.eventDescription}>
                 <h3 className={styles.eventDescriptionLabel}>Om giget</h3>
-                <p className={`${styles.eventDescriptionText} whitespace-pre-wrap`}>
-                  <LinkifiedText text={selected.description} />
-                </p>
+                <MarkdownText
+                  className={styles.eventDescriptionText}
+                  text={selected.description}
+                />
               </div>
             ) : null}
           </article>

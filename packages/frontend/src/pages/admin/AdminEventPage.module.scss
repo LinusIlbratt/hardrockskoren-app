@@ -334,7 +334,6 @@ $sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .descriptionText {
-  white-space: pre-wrap;
   font-family: var(--font-body);
   color: var(--color-text-secondary);
   font-size: var(--fs-sm);

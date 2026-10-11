@@ -75,9 +75,10 @@ export function useSharedConcertDetail({
     resetRef.current();
   };
 
-  const openDetail = async (concert: SharedConcert) => {
+  const openDetail = async (concert: SharedConcert): Promise<SharedConcert | undefined> => {
     const requestId = ++detailRequestRef.current;
     const stillOpen = () => detailRequestRef.current === requestId;
+    let freshConcert: SharedConcert | undefined;
 
     setSelected(concert);
     setDetailTab("signups");
@@ -124,6 +125,7 @@ export function useSharedConcertDetail({
     const detailTask = getSharedConcert(concert.concertId)
       .then((fresh) => {
         if (!stillOpen()) return;
+        freshConcert = fresh;
         setSelected((prev) => {
           if (!prev || prev.concertId !== concert.concertId) return prev;
           return {
@@ -152,6 +154,7 @@ export function useSharedConcertDetail({
       });
 
     await Promise.all([signupsTask, detailTask]);
+    return stillOpen() ? freshConcert : undefined;
   };
 
   const loadMoreSignups = async () => {

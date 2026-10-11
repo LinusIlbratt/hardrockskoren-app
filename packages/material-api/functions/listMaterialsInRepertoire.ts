@@ -1,4 +1,9 @@
-import { DynamoDBClient, QueryCommand, BatchGetItemCommand } from "@aws-sdk/client-dynamodb";
+import {
+  AttributeValue,
+  BatchGetItemCommand,
+  DynamoDBClient,
+  QueryCommand,
+} from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../core/utils/http";
@@ -6,6 +11,63 @@ import { requireGroupAccessResponse } from "./lib/requireGroupAccess";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
+const BATCH_GET_LIMIT = 100;
+
+type DynamoKey = Record<string, AttributeValue>;
+
+type LinkLabel = {
+  materialId: string;
+  voiceLabel?: string;
+  songTitle?: string;
+};
+
+function textOrEmpty(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
+function linkLabel(item: Record<string, AttributeValue>): LinkLabel | null {
+  const row = unmarshall(item) as {
+    materialId?: unknown;
+    SK?: unknown;
+    voiceLabel?: unknown;
+    songTitle?: unknown;
+  };
+  let materialId = textOrEmpty(row.materialId);
+  const sortKey = textOrEmpty(row.SK);
+  if (!materialId && sortKey.startsWith("MATERIAL#")) {
+    materialId = sortKey.slice("MATERIAL#".length).trim();
+  }
+  if (!materialId || materialId.includes("#")) return null;
+  const voiceLabel = textOrEmpty(row.voiceLabel);
+  const songTitle = textOrEmpty(row.songTitle);
+  return {
+    materialId,
+    ...(voiceLabel ? { voiceLabel } : {}),
+    ...(songTitle ? { songTitle } : {}),
+  };
+}
+
+async function batchGetMaterials(tableName: string, keys: DynamoKey[]): Promise<Record<string, AttributeValue>[]> {
+  const found: Record<string, AttributeValue>[] = [];
+  for (let offset = 0; offset < keys.length; offset += BATCH_GET_LIMIT) {
+    let pending = keys.slice(offset, offset + BATCH_GET_LIMIT);
+    for (let attempt = 0; pending.length > 0 && attempt < 5; attempt += 1) {
+      const response = await dbClient.send(
+        new BatchGetItemCommand({
+          RequestItems: {
+            [tableName]: { Keys: pending },
+          },
+        })
+      );
+      found.push(...(response.Responses?.[tableName] ?? []));
+      pending = (response.UnprocessedKeys?.[tableName]?.Keys ?? []) as DynamoKey[];
+    }
+    if (pending.length > 0) {
+      throw new Error("BatchGetItem left unprocessed material keys.");
+    }
+  }
+  return found;
+}
 
 export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResultV2> => {
   if (!MAIN_TABLE) {
@@ -44,29 +106,31 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
       return sendResponse([], 200);
     }
 
-    // STEG 2: Plocka ut alla materialId:n (denna logik är redan korrekt)
-    const materialKeysToGet = linkItems.map(item => {
-      const materialId = unmarshall(item).materialId; 
-      // Antagande: Material-objekten har en PK/SK-struktur som 'MATERIAL#<id>'
+    const labelsById = new Map<string, LinkLabel>();
+    const materialKeysToGet: DynamoKey[] = [];
+    for (const item of linkItems) {
+      const label = linkLabel(item);
+      if (!label || labelsById.has(label.materialId)) continue;
+      labelsById.set(label.materialId, label);
+      materialKeysToGet.push({
+        PK: { S: `MATERIAL#${label.materialId}` },
+        SK: { S: `MATERIAL#${label.materialId}` },
+      });
+    }
+
+    const materialItems = await batchGetMaterials(MAIN_TABLE, materialKeysToGet);
+    const materials = materialItems.map((item) => {
+      const material = unmarshall(item) as { materialId?: unknown; title?: unknown };
+      const materialId = textOrEmpty(material.materialId);
+      const label = labelsById.get(materialId);
       return {
-        PK: { S: `MATERIAL#${materialId}` },
-        SK: { S: `MATERIAL#${materialId}` },
+        ...material,
+        ...(label?.voiceLabel ? { voiceLabel: label.voiceLabel } : {}),
+        ...(label?.songTitle ? { songTitle: label.songTitle } : {}),
       };
     });
 
-    // STEG 3: Hämta alla material-detaljer (denna logik är redan korrekt)
-    const batchGetCommand = new BatchGetItemCommand({
-      RequestItems: {
-        [MAIN_TABLE]: {
-          Keys: materialKeysToGet,
-        },
-      },
-    });
-
-    const { Responses } = await dbClient.send(batchGetCommand);
-    const materials = Responses?.[MAIN_TABLE].map(item => unmarshall(item)) || [];
-    
-    materials.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    materials.sort((a, b) => textOrEmpty(a.title).localeCompare(textOrEmpty(b.title)));
 
     return sendResponse(materials, 200);
 
