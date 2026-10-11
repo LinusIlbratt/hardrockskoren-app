@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { nanoid } from "nanoid";
 import {
   APIGatewayProxyEventV2WithLambdaAuthorizer,
@@ -16,6 +16,7 @@ import {
   type SharedConcertRecord,
 } from "../lib/keys";
 import { parseCreateConcertBody, parseJsonBody, toPublicConcert } from "../lib/parse";
+import { audienceTargetsFor, pointerItem, transactInChunks } from "../lib/audienceWrite";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
@@ -56,6 +57,8 @@ export const handler = async (
     concertDate: content.concertDate,
     location: content.location,
     ...(content.description ? { description: content.description } : {}),
+    scope: content.scope,
+    targets: content.targets,
     createdAt,
     createdByUuid: uuid,
     signupCount: 0,
@@ -65,13 +68,19 @@ export const handler = async (
   };
 
   try {
-    await docClient.send(
-      new PutCommand({
-        TableName: tableName,
-        Item: item,
-        ConditionExpression: "attribute_not_exists(PK)",
-      })
+    const pointerPuts = audienceTargetsFor(content.scope, content.targets).map((slug) =>
+      pointerItem(tableName, slug, content.concertDate, concertId)
     );
+    await transactInChunks(docClient, [
+      ...pointerPuts,
+      {
+        Put: {
+          TableName: tableName,
+          Item: item,
+          ConditionExpression: "attribute_not_exists(PK)",
+        },
+      },
+    ]);
 
     return sendResponse(
       toPublicConcert(item, isConcertOpenForSignup(item.concertDate)),
@@ -83,7 +92,16 @@ export const handler = async (
       err && typeof err === "object" && "name" in err
         ? String((err as { name: unknown }).name)
         : "";
-    if (name === "ConditionalCheckFailedException") {
+    const reasons =
+      err && typeof err === "object" && "CancellationReasons" in err
+        ? (err as { CancellationReasons?: { Code?: string }[] }).CancellationReasons
+        : undefined;
+    if (
+      name === "ConditionalCheckFailedException" ||
+      (name === "TransactionCanceledException" &&
+        Array.isArray(reasons) &&
+        reasons.some((reason) => reason.Code === "ConditionalCheckFailed"))
+    ) {
       return sendError(409, "Could not create concert due to a write conflict. Please try again.");
     }
     return sendError(500, "Failed to create shared concert.");

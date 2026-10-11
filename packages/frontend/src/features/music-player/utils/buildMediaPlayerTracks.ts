@@ -1,6 +1,7 @@
 import type { Material } from '@/types';
 import type { MediaPlayerTrack } from '@/features/music-player/types';
 import { getMediaDownloadUrls } from '@/services/mediaUrlService';
+import { displayMaterialLabel, materialLabelText } from '@/utils/materialLabel';
 import { formatDisplayTitle, isPlayableAudioFile } from '@/utils/media';
 
 export async function buildMediaPlayerTracks(
@@ -17,7 +18,12 @@ export async function buildMediaPlayerTracks(
     .filter((m) => urls[m.fileKey.trim()])
     .map((m) => ({
       src: urls[m.fileKey.trim()],
-      title: formatDisplayTitle(m.title || m.fileKey?.split('/').pop() || '') || 'Okänd',
+      title:
+        (m.voiceLabel?.trim() || m.songTitle?.trim()
+          ? materialLabelText(displayMaterialLabel(m))
+          : '') ||
+        formatDisplayTitle(m.title || m.fileKey?.split('/').pop() || '') ||
+        'Okänd',
       materialId: m.materialId,
     }));
 }

@@ -1,8 +1,8 @@
 import { useRef, useState, forwardRef } from "react";
 import DatePicker, { registerLocale } from "react-datepicker";
 import { sv } from "date-fns/locale";
-import { ChevronRight } from "lucide-react";
 import { FiEdit } from "react-icons/fi";
+import { IoEyeOutline, IoTrashOutline } from "react-icons/io5";
 import {
   Button,
   ButtonSize,
@@ -11,15 +11,17 @@ import {
 import { FormGroup } from "@/components/ui/form/FormGroup";
 import { Cluster } from "@/components/ui/layout/Cluster";
 import { Input } from "@/components/ui/input/Input";
-import { Textarea } from "@/components/ui/textarea/Textarea";
-import { LinkifiedText } from "@/components/ui/LinkifiedText";
+import { StyledSelect, type SelectOption } from "@/components/ui/select/StyledSelect";
+import { MarkdownText } from "@/components/ui/markdown/MarkdownText";
+import { MarkdownTextarea } from "@/components/ui/markdown/MarkdownTextarea";
 import { Modal } from "@/components/ui/modal/Modal";
 import {
   useSharedConcertDetail,
   useSharedConcertForm,
   useSharedConcertList,
 } from "@/features/concerts";
-import type { SharedConcert } from "@/services/concertService";
+import { deleteSharedConcert, type SharedConcert } from "@/services/concertService";
+import { extractSharedConcertError } from "@/features/concerts/hooks/sharedConcertError";
 import styles from "./AdminSharedConcertPage.module.scss";
 
 registerLocale("sv", sv);
@@ -46,15 +48,27 @@ const CustomDateInput = forwardRef<
 ));
 CustomDateInput.displayName = "CustomDateInput";
 
-/** Shared gigs have no choir targets today; every gig is for all choirs. */
-function formatConcertAudience(concert: SharedConcert): string {
+function formatConcertAudience(
+  concert: SharedConcert,
+  names: Map<string, string>
+): string {
   if (concert.scope === "groups" && concert.targets && concert.targets.length > 0) {
-    const names = concert.targets
+    const labels = concert.targets
       .map((target) => target.trim())
-      .filter((target) => target && target.toUpperCase() !== "ALL");
-    if (names.length > 0) return names.join(", ");
+      .filter((target) => target && target.toUpperCase() !== "ALL")
+      .map((target) => names.get(target) ?? target);
+    if (labels.length > 0) return labels.join(", ");
   }
   return "Alla körer";
+}
+
+function selectedChoirOptions(
+  slugs: string[],
+  options: SelectOption[]
+): SelectOption[] {
+  return slugs.map(
+    (slug) => options.find((option) => option.value === slug) ?? { value: slug, label: slug }
+  );
 }
 
 function formatConcertDate(isoDate: string): string {
@@ -147,6 +161,18 @@ export const AdminSharedConcertPage = () => {
     saveConcertEdit,
     resetConcertEditor,
     startEditing,
+    audienceMode,
+    setAudienceMode,
+    targetSlugs,
+    setTargetSlugs,
+    editAudienceMode,
+    setEditAudienceMode,
+    editTargetSlugs,
+    setEditTargetSlugs,
+    groupOptions,
+    groupsBySlug,
+    groupsError,
+    isLoadingGroups,
   } = useSharedConcertForm({
     selected,
     setSelected,
@@ -157,32 +183,86 @@ export const AdminSharedConcertPage = () => {
 
   resetEditorRef.current = resetConcertEditor;
 
+  const [concertToDelete, setConcertToDelete] = useState<SharedConcert | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const confirmDelete = async () => {
+    if (!concertToDelete || isDeleting) return;
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteSharedConcert(concertToDelete.concertId);
+      if (selected?.concertId === concertToDelete.concertId) closeDetail();
+      setConcertToDelete(null);
+      await fetchList();
+    } catch (error) {
+      console.error("Failed to delete shared concert", error);
+      setDeleteError(extractSharedConcertError(error, "Kunde inte ta bort giget."));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const renderConcertRow = (c: SharedConcert, tone: "current" | "past") => (
-    <li key={c.concertId}>
-      <button
-        type="button"
-        className={
-          tone === "past"
-            ? `${styles.historyRow} ${styles.historyRowPast}`
-            : `${styles.historyRow} ${styles.historyRowCurrent}`
-        }
-        onClick={() => openDetail(c)}
-      >
-        <span className={styles.historyRowMain}>
-          <span className={styles.historyItemTitle}>{c.title}</span>
-          <span className={styles.historyMetaLine}>
-            {formatConcertDate(c.concertDate)}
-            {c.location ? ` · ${c.location}` : ""}
-          </span>
+    <li
+      key={c.concertId}
+      className={
+        tone === "past"
+          ? `${styles.historyRow} ${styles.historyRowPast}`
+          : `${styles.historyRow} ${styles.historyRowCurrent}`
+      }
+    >
+      <span className={styles.historyRowMain}>
+        <span className={styles.historyItemTitle}>{c.title}</span>
+        <span className={styles.historyMetaLine}>
+          {formatConcertDate(c.concertDate)}
+          {c.location ? ` · ${c.location}` : ""}
+          {` · ${formatConcertAudience(c, groupsBySlug)}`}
         </span>
-        <span className={styles.historyRowMeta}>
-          <span className={styles.countBadge}>
-            {c.signupCount}{" "}
-            {c.signupCount === 1 ? "anmäld" : "anmälda"}
-          </span>
-          <ChevronRight className={styles.chevron} size={20} aria-hidden="true" />
+      </span>
+      <span className={styles.historyRowMeta}>
+        <span className={styles.countBadge}>
+          {c.signupCount} {c.signupCount === 1 ? "anmäld" : "anmälda"}
         </span>
-      </button>
+        <span className={styles.rowActions}>
+          <button
+            type="button"
+            className={styles.iconButton}
+            aria-label="Visa gig"
+            title="Visa gig"
+            onClick={() => openDetail(c)}
+          >
+            <IoEyeOutline size={18} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className={styles.iconButton}
+            aria-label="Redigera gig"
+            title="Redigera gig"
+            onClick={() => {
+              void openDetail(c).then(() => {
+                setDetailTab("info");
+                startEditing(c);
+              });
+            }}
+          >
+            <FiEdit size={16} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className={`${styles.iconButton} ${styles.deleteIcon}`}
+            aria-label="Ta bort gig"
+            title="Ta bort gig"
+            onClick={() => {
+              setDeleteError(null);
+              setConcertToDelete(c);
+            }}
+          >
+            <IoTrashOutline size={18} aria-hidden />
+          </button>
+        </span>
+      </span>
     </li>
   );
 
@@ -265,6 +345,61 @@ export const AdminSharedConcertPage = () => {
               />
             </FormGroup>
 
+            <fieldset className={styles.audienceFieldset}>
+              <legend className={styles.audienceLegend}>Målgrupp</legend>
+              <div className={styles.recipientRadioGroup} role="radiogroup" aria-label="Välj målgrupp">
+                <label className={styles.radioOption}>
+                  <input
+                    type="radio"
+                    name="concert-audience"
+                    value="all"
+                    checked={audienceMode === "all"}
+                    onChange={() => setAudienceMode("all")}
+                    disabled={isSubmitting}
+                    className={styles.radioInput}
+                  />
+                  <span className={styles.radioCircle} />
+                  <span className={styles.radioLabel}>Alla körer</span>
+                </label>
+                <label className={styles.radioOption}>
+                  <input
+                    type="radio"
+                    name="concert-audience"
+                    value="selected"
+                    checked={audienceMode === "selected"}
+                    onChange={() => setAudienceMode("selected")}
+                    disabled={isSubmitting}
+                    className={styles.radioInput}
+                  />
+                  <span className={styles.radioCircle} />
+                  <span className={styles.radioLabel}>Valda körer</span>
+                </label>
+              </div>
+            </fieldset>
+
+            {audienceMode === "selected" && (
+              <FormGroup
+                label="Körer"
+                htmlFor="shared-concert-targets"
+                error={groupsError && groupOptions.length === 0 ? groupsError : null}
+              >
+                <StyledSelect
+                  inputId="shared-concert-targets"
+                  isMulti
+                  options={groupOptions}
+                  value={selectedChoirOptions(targetSlugs, groupOptions)}
+                  onChange={(opts) =>
+                    setTargetSlugs(opts ? opts.map((option) => String(option.value)) : [])
+                  }
+                  placeholder={isLoadingGroups ? "Laddar körer…" : "Välj en eller flera körer…"}
+                  isDisabled={isSubmitting || isLoadingGroups || groupOptions.length === 0}
+                  isLoading={isLoadingGroups}
+                  closeMenuOnSelect={false}
+                  noOptionsMessage={() => "Inga körer att välja"}
+                />
+              </FormGroup>
+            )}
+
             <FormGroup label="Stad / plats" htmlFor="shared-concert-location">
               <Input
                 id="shared-concert-location"
@@ -280,7 +415,7 @@ export const AdminSharedConcertPage = () => {
               label="Beskrivning (valfritt)"
               htmlFor="shared-concert-desc"
             >
-              <Textarea
+              <MarkdownTextarea
                 id="shared-concert-desc"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -591,13 +726,69 @@ export const AdminSharedConcertPage = () => {
                       />
                     </FormGroup>
 
+                    <fieldset className={styles.audienceFieldset}>
+                      <legend className={styles.audienceLegend}>Målgrupp</legend>
+                      <div className={styles.recipientRadioGroup} role="radiogroup" aria-label="Välj målgrupp">
+                        <label className={styles.radioOption}>
+                          <input
+                            type="radio"
+                            name="edit-concert-audience"
+                            value="all"
+                            checked={editAudienceMode === "all"}
+                            onChange={() => setEditAudienceMode("all")}
+                            disabled={isSavingEdit}
+                            className={styles.radioInput}
+                          />
+                          <span className={styles.radioCircle} />
+                          <span className={styles.radioLabel}>Alla körer</span>
+                        </label>
+                        <label className={styles.radioOption}>
+                          <input
+                            type="radio"
+                            name="edit-concert-audience"
+                            value="selected"
+                            checked={editAudienceMode === "selected"}
+                            onChange={() => setEditAudienceMode("selected")}
+                            disabled={isSavingEdit}
+                            className={styles.radioInput}
+                          />
+                          <span className={styles.radioCircle} />
+                          <span className={styles.radioLabel}>Valda körer</span>
+                        </label>
+                      </div>
+                    </fieldset>
+
+                    {editAudienceMode === "selected" && (
+                      <FormGroup
+                        label="Körer"
+                        htmlFor="edit-shared-concert-targets"
+                        error={groupsError && groupOptions.length === 0 ? groupsError : null}
+                      >
+                        <StyledSelect
+                          inputId="edit-shared-concert-targets"
+                          isMulti
+                          options={groupOptions}
+                          value={selectedChoirOptions(editTargetSlugs, groupOptions)}
+                          onChange={(opts) =>
+                            setEditTargetSlugs(
+                              opts ? opts.map((option) => String(option.value)) : []
+                            )
+                          }
+                          placeholder={isLoadingGroups ? "Laddar körer…" : "Välj en eller flera körer…"}
+                          isDisabled={isSavingEdit || isLoadingGroups || groupOptions.length === 0}
+                          isLoading={isLoadingGroups}
+                          closeMenuOnSelect={false}
+                          noOptionsMessage={() => "Inga körer att välja"}
+                        />
+                      </FormGroup>
+                    )}
+
                     <FormGroup
                       label="Beskrivning (valfritt)"
                       htmlFor="edit-shared-concert-desc"
                     >
-                      <Textarea
+                      <MarkdownTextarea
                         id="edit-shared-concert-desc"
-                        className="whitespace-pre-wrap"
                         value={editDescription}
                         onChange={(e) => setEditDescription(e.target.value)}
                         maxLength={4000}
@@ -654,7 +845,7 @@ export const AdminSharedConcertPage = () => {
                       <div className={styles.detailRow}>
                         <dt className={styles.detailLabel}>Körer</dt>
                         <dd className={styles.detailValue}>
-                          {formatConcertAudience(selected)}
+                          {formatConcertAudience(selected, groupsBySlug)}
                         </dd>
                       </div>
                     </dl>
@@ -665,11 +856,10 @@ export const AdminSharedConcertPage = () => {
                         {detailError}
                       </p>
                     ) : selected.description ? (
-                      <p
-                        className={`${styles.modalDescription} whitespace-pre-wrap`}
-                      >
-                        <LinkifiedText text={selected.description} />
-                      </p>
+                      <MarkdownText
+                        className={styles.modalDescription}
+                        text={selected.description}
+                      />
                     ) : (
                       <p className={styles.muted}>Ingen beskrivning.</p>
                     )}
@@ -679,6 +869,52 @@ export const AdminSharedConcertPage = () => {
             )}
           </div>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={Boolean(concertToDelete)}
+        onClose={() => {
+          if (isDeleting) return;
+          setConcertToDelete(null);
+          setDeleteError(null);
+        }}
+        title="Ta bort gig?"
+        tone="luxury"
+        size="compact"
+      >
+        <p className={styles.confirmText}>
+          {concertToDelete
+            ? `“${concertToDelete.title}” tas bort för alla körer, tillsammans med anmälningarna.`
+            : "Giget tas bort."}
+        </p>
+        {deleteError && (
+          <p className={styles.error} role="alert">
+            {deleteError}
+          </p>
+        )}
+        <Cluster justify="end" gap="sm">
+          <Button
+            type="button"
+            variant={ButtonVariant.Ghost}
+            size={ButtonSize.Small}
+            disabled={isDeleting}
+            onClick={() => {
+              setConcertToDelete(null);
+              setDeleteError(null);
+            }}
+          >
+            Avbryt
+          </Button>
+          <Button
+            type="button"
+            variant={ButtonVariant.Primary}
+            size={ButtonSize.Small}
+            disabled={isDeleting}
+            onClick={() => void confirmDelete()}
+          >
+            {isDeleting ? "Tar bort…" : "Ta bort"}
+          </Button>
+        </Cluster>
       </Modal>
     </div>
   );

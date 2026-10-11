@@ -4,6 +4,7 @@ import { format, isPast } from 'date-fns';
 import { sv } from 'date-fns/locale';
 import * as eventService from '@/services/eventService';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
+import { MarkdownText } from '@/components/ui/markdown/MarkdownText';
 import { Modal } from '@/components/ui/modal/Modal';
 import { Tab, Tabs } from '@/components/ui/tabs/Tabs';
 import { CreateEventForm, CreateRecurringEventForm } from '@/features/events';
@@ -108,9 +109,11 @@ export const AdminEventPage = () => {
           <button type="button" className={styles.iconButton} onClick={() => handleOpenEditModal(event)} aria-label="Redigera" title="Redigera">
             <FiEdit size={16} aria-hidden />
           </button>
-          <button type="button" className={`${styles.iconButton} ${styles.deleteIcon}`} onClick={() => setEventToDelete(event)} aria-label="Ta bort" title="Ta bort">
-            <IoTrashOutline size={18} aria-hidden />
-          </button>
+          {(user?.role === 'admin' || event.eventType === 'CONCERT') && (
+            <button type="button" className={`${styles.iconButton} ${styles.deleteIcon}`} onClick={() => setEventToDelete(event)} aria-label="Ta bort" title="Ta bort">
+              <IoTrashOutline size={18} aria-hidden />
+            </button>
+          )}
         </div>
       </li>
     );
@@ -218,7 +221,10 @@ export const AdminEventPage = () => {
 
       <Modal isOpen={!!eventToShowDescription} onClose={() => setEventToShowDescription(null)} title={eventToShowDescription?.title || "Eventbeskrivning"}>
         <div>
-          <pre className={`${styles.descriptionText} whitespace-pre-wrap`}>{eventToShowDescription?.description}</pre>
+          <MarkdownText
+            className={styles.descriptionText}
+            text={eventToShowDescription?.description ?? ''}
+          />
         </div>
       </Modal>
     </div>

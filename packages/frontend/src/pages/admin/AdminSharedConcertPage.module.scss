@@ -231,23 +231,8 @@
   border-radius: 10px;
   background: linear-gradient(145deg, rgba(32, 32, 36, 0.85) 0%, rgba(20, 20, 22, 0.95) 100%);
   color: inherit;
-  cursor: pointer;
   text-align: left;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  transition: border-color 0.15s ease, transform 0.15s ease;
-
-  &:hover {
-    border-color: rgba(220, 38, 38, 0.4);
-  }
-
-  &:active {
-    transform: scale(0.99);
-  }
-
-  &:focus-visible {
-    outline: 2px solid rgba(185, 28, 28, 0.7);
-    outline-offset: 2px;
-  }
 }
 
 .historyRowCurrent {
@@ -285,6 +270,112 @@
   flex-shrink: 0;
   align-items: center;
   gap: 8px;
+}
+
+.rowActions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #f5ebd7;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(185, 28, 28, 0.7);
+    outline-offset: 2px;
+  }
+}
+
+.deleteIcon:hover {
+  color: #f5ebd7;
+  background: rgba(185, 28, 28, 0.28);
+}
+
+.confirmText {
+  margin: 0 0 16px;
+  color: #f5ebd7;
+  line-height: 1.5;
+}
+
+.audienceFieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.audienceLegend {
+  display: block;
+  margin: 0 0 8px;
+  padding: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgba(245, 235, 215, 0.85);
+}
+
+.recipientRadioGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 20px;
+}
+
+.radioOption {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.form .radioInput {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.radioCircle {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.radioOption:has(.radioInput:checked) .radioCircle {
+  border-color: #b32626;
+  box-shadow: inset 0 0 0 5px #0a0a0a, inset 0 0 0 10px #e63946;
+}
+
+.radioLabel {
+  color: #f5ebd7;
+  font-size: 15px;
+  font-weight: 600;
 }
 
 .countBadge {
@@ -521,7 +612,6 @@
 
 .modalDescription {
   margin: 0;
-  white-space: pre-wrap;
   line-height: 1.5;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: 0.95rem;

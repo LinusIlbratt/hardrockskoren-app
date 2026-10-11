@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 import axios from 'axios';
 import { Modal } from '@/components/ui/modal/Modal';
 import { Input } from '@/components/ui/input/Input';
+import { PasswordInput } from '@/components/ui/input/PasswordInput';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { FormGroup } from '@/components/ui/form/FormGroup';
 import { DiscardChangesConfirm } from '@/components/ui/form/DiscardChangesConfirm';
@@ -184,9 +185,8 @@ function ForgotPasswordModalContent({ onClose }: { onClose: () => void }) {
               <Input type="text" value={code} onChange={(e) => setCode(e.target.value)} placeholder="123456" required />
             </FormGroup>
             <FormGroup label="Nytt lösenord" htmlFor="new-password" error={passwordError}>
-              <Input
+              <PasswordInput
                 id="new-password"
-                type="password"
                 value={newPassword}
                 onChange={(e) => {
                   setNewPassword(e.target.value);
@@ -201,9 +201,8 @@ function ForgotPasswordModalContent({ onClose }: { onClose: () => void }) {
               </p>
             </FormGroup>
             <FormGroup label="Bekräfta nytt lösenord" htmlFor="confirm-password" error={error}>
-              <Input
+              <PasswordInput
                 id="confirm-password"
-                type="password"
                 value={confirmPassword}
                 onChange={(e) => {
                   setConfirmPassword(e.target.value);

@@ -3,14 +3,14 @@ import { useParams } from "react-router-dom";
 import { Info } from "lucide-react";
 import { FiEdit } from "react-icons/fi";
 import { IoTrashOutline } from "react-icons/io5";
-import { LinkifiedText } from "@/components/ui/LinkifiedText";
+import { MarkdownText } from "@/components/ui/markdown/MarkdownText";
+import { MarkdownTextarea } from "@/components/ui/markdown/MarkdownTextarea";
 import { Button, ButtonSize, ButtonVariant } from "@/components/ui/button/Button";
 import { FormGroup } from "@/components/ui/form/FormGroup";
 import { Input } from "@/components/ui/input/Input";
 import { Cluster } from "@/components/ui/layout/Cluster";
 import { Stack } from "@/components/ui/layout/Stack";
 import { Modal } from "@/components/ui/modal/Modal";
-import { Textarea } from "@/components/ui/textarea/Textarea";
 import { useMemberFeed } from "@/features/messages/hooks/useMemberFeed";
 import type { FeedMessage } from "@/services/messageService";
 import {
@@ -157,9 +157,7 @@ export const MemberAktuelltPage = () => {
                 {new Date(feed.selected.createdAt).toLocaleString("sv-SE")}
               </time>
             </Cluster>
-            <p className={styles.modalContent}>
-              <LinkifiedText text={feed.selected.body} />
-            </p>
+            <MarkdownText className={styles.modalContent} text={feed.selected.body} />
           </Stack>
         )}
       </Modal>
@@ -211,7 +209,7 @@ export const MemberAktuelltPage = () => {
               />
             </FormGroup>
             <FormGroup label="Meddelande" htmlFor="aktuellt-body">
-              <Textarea
+              <MarkdownTextarea
                 id="aktuellt-body"
                 className={styles.composerField}
                 value={feed.draftBody}

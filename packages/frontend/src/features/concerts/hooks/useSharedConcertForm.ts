@@ -5,6 +5,7 @@ import {
   updateSharedConcert,
   type SharedConcert,
 } from "@/services/concertService";
+import { useMessageTargetGroups } from "@/features/messages/useMessageTargetGroups";
 import { extractSharedConcertError } from "@/features/concerts/hooks/sharedConcertError";
 import type {
   PatchSharedConcert,
@@ -15,6 +16,28 @@ function dateFromConcertDate(isoDate: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return null;
   const [y, m, d] = isoDate.split("-").map(Number);
   return new Date(y, m - 1, d);
+}
+
+type AudienceMode = "all" | "selected";
+
+function audienceFromConcert(concert: SharedConcert): {
+  mode: AudienceMode;
+  slugs: string[];
+} {
+  const slugs = (concert.targets ?? []).filter(
+    (slug) => slug.trim() && slug.toUpperCase() !== "ALL"
+  );
+  if (concert.scope === "groups" && slugs.length > 0) {
+    return { mode: "selected", slugs };
+  }
+  return { mode: "all", slugs: [] };
+}
+
+function sameSlugList(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return false;
+  const a = [...left].sort();
+  const b = [...right].sort();
+  return a.every((slug, index) => slug === b[index]);
 }
 
 type UseSharedConcertFormOptions = {
@@ -36,6 +59,16 @@ export function useSharedConcertForm({
   const [concertDate, setConcertDate] = useState<Date | null>(null);
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
+  const [audienceMode, setAudienceMode] = useState<AudienceMode>("all");
+  const [targetSlugs, setTargetSlugs] = useState<string[]>([]);
+  const [editAudienceMode, setEditAudienceMode] = useState<AudienceMode>("all");
+  const [editTargetSlugs, setEditTargetSlugs] = useState<string[]>([]);
+  const {
+    groupsError,
+    isLoadingGroups,
+    groupOptions,
+    groupsBySlug,
+  } = useMessageTargetGroups();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{
@@ -68,6 +101,9 @@ export function useSharedConcertForm({
     setEditDate(dateFromConcertDate(concert.concertDate));
     setEditLocation(concert.location);
     setEditDescription(concert.description ?? "");
+    const audience = audienceFromConcert(concert);
+    setEditAudienceMode(audience.mode);
+    setEditTargetSlugs(audience.slugs);
     setEditError(null);
     setIsEditingConcert(true);
   };
@@ -103,14 +139,22 @@ export function useSharedConcertForm({
       setEditError("Beskrivningen får vara högst 4000 tecken.");
       return;
     }
+    if (editAudienceMode === "selected" && editTargetSlugs.length === 0) {
+      setEditError("Välj minst en kör, eller välj alla körer.");
+      return;
+    }
 
     const concertDateIso = format(editDate, "yyyy-MM-dd");
     const previousDescription = selected.description?.trim() ?? "";
+    const previousAudience = audienceFromConcert(selected);
     const unchanged =
       trimmedTitle === selected.title.trim() &&
       concertDateIso === selected.concertDate &&
       trimmedLocation === selected.location.trim() &&
-      trimmedDescription === previousDescription;
+      trimmedDescription === previousDescription &&
+      editAudienceMode === previousAudience.mode &&
+      (editAudienceMode === "all" ||
+        sameSlugList(editTargetSlugs, previousAudience.slugs));
     if (unchanged) {
       setIsEditingConcert(false);
       setEditError(null);
@@ -126,6 +170,9 @@ export function useSharedConcertForm({
         location: trimmedLocation,
         description: trimmedDescription || null,
         version: selected.version ?? 1,
+        scope: editAudienceMode === "selected" ? "groups" : "all",
+        targets:
+          editAudienceMode === "selected" ? editTargetSlugs : ["ALL"],
       });
       const next: SharedConcert = {
         ...selected,
@@ -164,6 +211,13 @@ export function useSharedConcertForm({
       setStatusMessage({ type: "error", message: "Stad/plats krävs." });
       return;
     }
+    if (audienceMode === "selected" && targetSlugs.length === 0) {
+      setStatusMessage({
+        type: "error",
+        message: "Välj minst en kör, eller välj alla körer.",
+      });
+      return;
+    }
 
     const concertDateIso = format(concertDate, "yyyy-MM-dd");
 
@@ -175,11 +229,15 @@ export function useSharedConcertForm({
         concertDate: concertDateIso,
         location: trimmedLocation,
         description: description.trim() || undefined,
+        scope: audienceMode === "selected" ? "groups" : "all",
+        targets: audienceMode === "selected" ? targetSlugs : ["ALL"],
       });
       setTitle("");
       setConcertDate(null);
       setLocation("");
       setDescription("");
+      setAudienceMode("all");
+      setTargetSlugs([]);
       setStatusMessage({
         type: "success",
         message: "Giget har skapats.",
@@ -206,6 +264,18 @@ export function useSharedConcertForm({
     setLocation,
     description,
     setDescription,
+    audienceMode,
+    setAudienceMode,
+    targetSlugs,
+    setTargetSlugs,
+    editAudienceMode,
+    setEditAudienceMode,
+    editTargetSlugs,
+    setEditTargetSlugs,
+    groupOptions,
+    groupsBySlug,
+    groupsError,
+    isLoadingGroups,
     isSubmitting,
     statusMessage,
     handleSubmit,

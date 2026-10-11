@@ -16,6 +16,7 @@ import { buildMediaPlayerTracks } from '@/features/music-player/utils/buildMedia
 import { hashTrackQueueKey } from '@/features/music-player/utils/hashTrackQueueKey';
 import { saveRecentPlayback } from '@/utils/recentPlayback';
 import { sortBySwedishTitle } from '@/utils/sortBySwedishTitle';
+import { displayMaterialLabel, materialLabelText } from '@/utils/materialLabel';
 import { formatDisplayTitle, isPlayableAudioFile } from '@/utils/media';
 import { getApiErrorMessage, isAbortError } from '@/utils/apiError';
 
@@ -434,10 +435,14 @@ export function useRepertoirePlaylist({
     const isPlaylist = playlists.some((p) => p.playlistId === selectedId);
     const m = audioMaterials[highlightedTrackIndex];
     if (!m?.materialId) return;
-    const title =
+    const fallback =
       formatDisplayTitle(
         (m.title && String(m.title).trim()) || (m.fileKey && m.fileKey.split('/').pop()) || '',
       ) || 'Okänt spår';
+    const title =
+      (m.voiceLabel?.trim() || m.songTitle?.trim()
+        ? materialLabelText(displayMaterialLabel(m))
+        : '') || fallback;
     if (isPlaylist) {
       saveRecentPlayback({
         groupSlug: groupName.trim(),

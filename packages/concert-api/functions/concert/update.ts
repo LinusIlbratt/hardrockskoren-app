@@ -21,6 +21,7 @@ import {
   type UpdateConcertFields,
 } from "../lib/parse";
 import { getSharedConcert } from "../lib/store";
+import { pointerRewriteItems, transactInChunks } from "../lib/audienceWrite";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
@@ -76,6 +77,14 @@ function buildUpdateExpression(
     setParts.push("#location = :location");
     names["#location"] = "location";
     values[":location"] = updates.location;
+  }
+
+  if (updates.scope !== undefined) {
+    setParts.push("#scope = :scope", "#targets = :targets");
+    names["#scope"] = "scope";
+    names["#targets"] = "targets";
+    values[":scope"] = updates.scope;
+    values[":targets"] = updates.targets ?? [];
   }
 
   if (updates.description === null) {
@@ -143,6 +152,49 @@ export const handler = async (
         content.expectedVersion
       );
 
+    const nextScope = content.updates.scope ?? existing.scope;
+    const nextTargets = content.updates.targets ?? existing.targets ?? [];
+    const nextDate = content.updates.concertDate ?? existing.concertDate;
+    const hadAudience = existing.scope === "all" || existing.scope === "groups";
+    const willHaveAudience = nextScope === "all" || nextScope === "groups";
+    const syncPointers =
+      (content.updates.scope !== undefined ||
+        content.updates.concertDate !== undefined) &&
+      (hadAudience || willHaveAudience);
+
+    if (syncPointers && (nextScope === "all" || nextScope === "groups")) {
+      const pointerItems = pointerRewriteItems(
+        tableName,
+        concertId,
+        existing,
+        { concertDate: nextDate, scope: nextScope, targets: nextTargets }
+      );
+      await transactInChunks(docClient, [
+        ...pointerItems,
+        {
+          Update: {
+            TableName: tableName,
+            Key: {
+              PK: sharedConcertPk(concertId),
+              SK: sharedConcertMetaSk(),
+            },
+            UpdateExpression: updateExpression,
+            ConditionExpression: conditionExpression,
+            ExpressionAttributeNames: names,
+            ExpressionAttributeValues: values,
+          },
+        },
+      ]);
+
+      const fresh = await getSharedConcert(docClient, tableName, concertId);
+      if (!fresh) {
+        return sendError(404, "Konserten hittades inte.");
+      }
+      return sendResponse(
+        toPublicConcert(fresh, isConcertOpenForSignup(String(fresh.concertDate)))
+      );
+    }
+
     const result = await docClient.send(
       new UpdateCommand({
         TableName: tableName,
@@ -175,7 +227,16 @@ export const handler = async (
       err && typeof err === "object" && "name" in err
         ? String((err as { name: unknown }).name)
         : "";
-    if (name === "ConditionalCheckFailedException") {
+    const reasons =
+      err && typeof err === "object" && "CancellationReasons" in err
+        ? (err as { CancellationReasons?: { Code?: string }[] }).CancellationReasons
+        : undefined;
+    const conditionalCancel =
+      name === "ConditionalCheckFailedException" ||
+      (name === "TransactionCanceledException" &&
+        Array.isArray(reasons) &&
+        reasons.some((reason) => reason.Code === "ConditionalCheckFailed"));
+    if (conditionalCancel) {
       const stillThere = await getSharedConcert(docClient, tableName, concertId);
       if (!stillThere) {
         return sendError(404, "Konserten hittades inte.");

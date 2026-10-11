@@ -8,8 +8,8 @@ import {
 } from "@/components/ui/button/Button";
 import { FormGroup } from "@/components/ui/form/FormGroup";
 import { Input } from "@/components/ui/input/Input";
-import { Textarea } from "@/components/ui/textarea/Textarea";
-import { LinkifiedText } from "@/components/ui/LinkifiedText";
+import { MarkdownText } from "@/components/ui/markdown/MarkdownText";
+import { MarkdownTextarea } from "@/components/ui/markdown/MarkdownTextarea";
 import { Cluster } from "@/components/ui/layout/Cluster";
 import { Modal } from "@/components/ui/modal/Modal";
 import { StyledSelect } from "@/components/ui/select/StyledSelect";
@@ -273,7 +273,7 @@ export const AdminMessagePage = () => {
         </FormGroup>
 
         <FormGroup label="Meddelande" htmlFor="message-body">
-          <Textarea
+          <MarkdownTextarea
             id="message-body"
             value={editing ? draftBody : body}
             onChange={(e) =>
@@ -422,9 +422,7 @@ export const AdminMessagePage = () => {
                 {new Date(selectedSent.createdAt).toLocaleString("sv-SE")}
               </time>
             </Cluster>
-            <p className={`${styles.modalContent} whitespace-pre-wrap`}>
-              <LinkifiedText text={selectedSent.body} />
-            </p>
+            <MarkdownText className={styles.modalContent} text={selectedSent.body} />
           </div>
         )}
       </Modal>

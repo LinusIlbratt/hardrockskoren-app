@@ -1,0 +1,68 @@
+.root {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+
+  p {
+    margin: 0 0 0.75em;
+  }
+
+  p:last-child,
+  h1:last-child,
+  h2:last-child,
+  ul:last-child,
+  ol:last-child {
+    margin-bottom: 0;
+  }
+
+  h1,
+  h2 {
+    margin: 0 0 0.5em;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  small {
+    font-size: 0.95rem;
+  }
+
+  u {
+    text-underline-offset: 3px;
+  }
+
+  ul,
+  ol {
+    margin: 0 0 0.75em;
+    padding-left: 1.25em;
+  }
+
+  li + li {
+    margin-top: 0.2em;
+  }
+
+  strong {
+    font-weight: 700;
+  }
+
+  em {
+    font-style: italic;
+  }
+
+  a {
+    color: var(--color-luxury-accent-solid, var(--color-primary));
+    text-decoration: underline;
+    text-underline-offset: 3px;
+
+    &:hover {
+      color: var(--color-text-luxury, var(--color-text));
+    }
+  }
+}

@@ -24,6 +24,9 @@ export interface Material {
   fileType?: string;
   filePath?: string;
   createdAt?: string;
+  /** Visningsnamn sparat på repertoarlänken, inte i biblioteket. */
+  voiceLabel?: string;
+  songTitle?: string;
 }
 
 export interface Event {

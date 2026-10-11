@@ -4,7 +4,7 @@ import axios from 'axios';
 import { Info } from 'lucide-react';
 import { IoEyeOutline } from 'react-icons/io5';
 import { FaPlayCircle } from "react-icons/fa";
-import { FiFolder, FiMusic, FiFileText, FiFile, FiChevronRight, FiArrowLeft } from 'react-icons/fi';
+import { FiFolder, FiMusic, FiFileText, FiFile, FiChevronRight, FiArrowLeft, FiEdit2 } from 'react-icons/fi';
 import styles from './AdminRepertoireMaterialPage.module.scss';
 import type { Material } from '@/types';
 import { MediaModal } from '@/components/media/MediaModal';
@@ -13,7 +13,17 @@ import {
   useMusicPlayerOverlay,
   type MusicPlayerViewer,
 } from '@/context/MusicPlayerOverlayContext';
+import { MaterialNameLines } from '@/components/materials/MaterialNameLines';
 import { isPlayableAudioFile } from '@/utils/media';
+import { updateRepertoireMaterial } from '@/services/materialService';
+import {
+  compareMaterialLabels,
+  displayMaterialLabel,
+  materialLabelText,
+  parseMaterialLabel,
+  VOICE_LABEL_PRESETS,
+  washShoutedText,
+} from '@/utils/materialLabel';
 
 function splitSongHeading(raw: string | undefined): { songTitle: string; artistName: string } {
   const value = raw?.trim() ?? '';
@@ -25,18 +35,25 @@ function splitSongHeading(raw: string | undefined): { songTitle: string; artistN
   return { songTitle: value, artistName: '' };
 }
 
-// --- TYPER ---
-// FIX: Lade till 'displayName' för att visa ett städat mappnamn.
-interface FolderItem { 
-  type: 'folder'; 
-  name: string; // Det fullständiga, ursprungliga namnet
-  path: string; 
-  displayName: string; // Det "städade" namnet för visning
+interface FolderItem {
+  type: 'folder';
+  name: string;
+  path: string;
 }
 interface FileItem { type: 'file'; material: Material; }
 type DirectoryItem = FolderItem | FileItem;
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
+const CUSTOM_VOICE = '__custom__';
+
+function voiceChoiceFromSaved(voiceLabel: string | undefined): { choice: string; custom: string } {
+  const saved = voiceLabel?.trim() ?? '';
+  if (!saved) return { choice: '', custom: '' };
+  if ((VOICE_LABEL_PRESETS as readonly string[]).includes(saved)) {
+    return { choice: saved, custom: '' };
+  }
+  return { choice: CUSTOM_VOICE, custom: saved };
+}
 
 function musicViewerFromPathname(pathname: string): MusicPlayerViewer {
   if (pathname.startsWith('/leader/')) return 'leader';
@@ -55,59 +72,18 @@ const isAudioFile = (fileKey: string = '') => /\.(mp3|wav|m4a|ogg)$/i.test(fileK
 const isVideoFile = (fileKey: string = '') => /\.(mp4|mov|webm|avi)$/i.test(fileKey);
 const isDocumentFile = (fileKey: string = '') => /\.(pdf|txt|doc|docx)$/i.test(fileKey);
 
-const STEM_PRIORITY = [
-  'sopran',
-  'alt',
-  'tenor',
-  'bas',
-  'kor',
-  'backtrack',
-] as const;
-
-const STEM_ALIASES: Record<(typeof STEM_PRIORITY)[number], string[]> = {
-  sopran: ['sopran', 'soprano', 'sop', 'sop1', 'sop2'],
-  alt: ['alt', 'alto', 'alt1', 'alt2'],
-  tenor: ['tenor', 'ten', 'ten1', 'ten2'],
-  bas: ['bas', 'bass', 'bariton'],
-  kor: ['kor', 'kör', 'choir', 'alla'],
-  backtrack: ['backtrack', 'backingtrack', 'instrumental', 'karaoke', 'bt'],
-};
-
-function normalizeForStemSort(raw: string): string {
-  return raw
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/\.(mp3|wav|m4a|ogg|pdf|txt|doc|docx|mp4|mov|webm|avi)$/i, '')
-    .replace(/[_-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-function getStemPriority(rawName: string): number {
-  const normalized = normalizeForStemSort(rawName);
-  if (!normalized) return 999;
-
-  for (let i = 0; i < STEM_PRIORITY.length; i += 1) {
-    const key = STEM_PRIORITY[i];
-    const aliases = STEM_ALIASES[key];
-    if (aliases.some((alias) => normalized.includes(alias))) {
-      return i;
-    }
+function labelForDirectoryItem(item: DirectoryItem, songTitle: string) {
+  if (item.type === 'folder') {
+    return parseMaterialLabel({ title: item.name, songTitle });
   }
-  return 999;
+  return displayMaterialLabel(item.material, songTitle);
 }
 
-function getItemSortName(item: DirectoryItem): string {
-  if (item.type === 'folder') return item.displayName || item.name;
-  return item.material.title || item.material.filePath || item.material.fileKey || '';
-}
-
-// FIX: Uppdaterad funktion för att skapa och sortera på 'displayName'.
 const parseRepertoireContents = (
   materials: Material[],
   repertoireTitle: string,
-  currentSubPath: string
+  currentSubPath: string,
+  songTitle: string,
 ): DirectoryItem[] => {
   const directoryMap = new Map<string, DirectoryItem>();
   const basePath = repertoireTitle;
@@ -131,20 +107,10 @@ const parseRepertoireContents = (
         return;
       }
       if (!directoryMap.has(subFolderName)) {
-        
-        let displayName = subFolderName;
-        const prefixRegex = new RegExp(`^${repertoireTitle}\\s*[-_]?\\s*`, 'i');
-        displayName = subFolderName.replace(prefixRegex, '');
-
-        if (!displayName) {
-          displayName = subFolderName;
-        }
-
         directoryMap.set(subFolderName, {
           type: 'folder',
           name: subFolderName,
           path: `${currentSubPath ? `${currentSubPath}/` : ''}${subFolderName}`,
-          displayName: displayName,
         });
       }
     } else {
@@ -160,17 +126,10 @@ const parseRepertoireContents = (
 
   return Array.from(directoryMap.values()).sort((a, b) => {
     if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
-
-    const aName = getItemSortName(a);
-    const bName = getItemSortName(b);
-    const aPriority = getStemPriority(aName);
-    const bPriority = getStemPriority(bName);
-
-    if (aPriority !== bPriority) {
-      return aPriority - bPriority;
-    }
-
-    return aName.localeCompare(bName, 'sv', { sensitivity: 'base' });
+    return compareMaterialLabels(
+      labelForDirectoryItem(a, songTitle),
+      labelForDirectoryItem(b, songTitle),
+    );
   });
 };
 
@@ -191,6 +150,15 @@ export const AdminRepertoireMaterialPage = () => {
 
   const [materialToView, setMaterialToView] = useState<Material | null>(null);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [labelEdit, setLabelEdit] = useState<{
+    material: Material;
+    voiceChoice: string;
+    customVoice: string;
+    songTitle: string;
+  } | null>(null);
+  const [labelSaving, setLabelSaving] = useState(false);
+  const [labelError, setLabelError] = useState<string | null>(null);
+  const canEditLabels = viewer === 'admin' || viewer === 'leader';
 
   const sessionMatchesThisGroup =
     Boolean(groupName?.trim()) && activeGroupName === groupName?.trim();
@@ -238,14 +206,17 @@ export const AdminRepertoireMaterialPage = () => {
   }, [groupName, repertoireId, title, fetchLinkedMaterials]);
 
   const decodedSubPath = useMemo(() => splat ? decodeURIComponent(splat) : '', [splat]);
+  const repertoireSongTitle = splitSongHeading(title).songTitle;
   const directoryItems = useMemo(
-    () => parseRepertoireContents(linkedMaterials, title || '', decodedSubPath),
-    [linkedMaterials, title, decodedSubPath]
+    () => parseRepertoireContents(linkedMaterials, title || '', decodedSubPath, repertoireSongTitle),
+    [linkedMaterials, title, decodedSubPath, repertoireSongTitle]
   );
   
   const breadcrumbs = useMemo(() => decodedSubPath.split('/').filter(p => p), [decodedSubPath]);
   const currentTitle = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1] : title;
-  const { songTitle, artistName } = splitSongHeading(currentTitle);
+  const heading = splitSongHeading(currentTitle);
+  const songTitle = washShoutedText(heading.songTitle);
+  const artistName = washShoutedText(heading.artistName);
 
   const handlePlayMaterial = useCallback(
     (material: Material) => {
@@ -261,6 +232,54 @@ export const AdminRepertoireMaterialPage = () => {
     },
     [groupName, repertoireId, viewer, openMusicOverlay]
   );
+
+  const openLabelEdit = (material: Material) => {
+    const voice = voiceChoiceFromSaved(material.voiceLabel);
+    setLabelError(null);
+    setLabelEdit({
+      material,
+      voiceChoice: voice.choice,
+      customVoice: voice.custom,
+      songTitle: material.songTitle?.trim() ?? '',
+    });
+  };
+
+  const saveLabelEdit = async () => {
+    if (!labelEdit || !groupName || !repertoireId || labelSaving) return;
+    const voiceLabel = labelEdit.voiceChoice === CUSTOM_VOICE
+      ? labelEdit.customVoice.trim()
+      : labelEdit.voiceChoice.trim();
+    if (labelEdit.voiceChoice === CUSTOM_VOICE && !voiceLabel) {
+      setLabelError('Skriv en egen stämma, eller välj en i listan.');
+      return;
+    }
+    const songTitle = labelEdit.songTitle.trim();
+    setLabelSaving(true);
+    setLabelError(null);
+    try {
+      const saved = await updateRepertoireMaterial(
+        groupName,
+        repertoireId,
+        labelEdit.material.materialId,
+        { voiceLabel, songTitle },
+      );
+      setLinkedMaterials((prev) => prev.map((item) => {
+        if (item.materialId !== saved.materialId) return item;
+        const next = { ...item };
+        if (saved.voiceLabel) next.voiceLabel = saved.voiceLabel;
+        else delete next.voiceLabel;
+        if (saved.songTitle) next.songTitle = saved.songTitle;
+        else delete next.songTitle;
+        return next;
+      }));
+      setLabelEdit(null);
+    } catch (err) {
+      const message = axios.isAxiosError(err) ? err.response?.data?.message : null;
+      setLabelError(typeof message === 'string' && message.trim() ? message : 'Kunde inte spara.');
+    } finally {
+      setLabelSaving(false);
+    }
+  };
 
   const choirBase = viewer === 'leader'
     ? `/leader/choir/${groupName}`
@@ -293,14 +312,15 @@ export const AdminRepertoireMaterialPage = () => {
         <nav className={styles.breadcrumbs} aria-label="Sökväg">
           <Link to={repertoireListPath}>Repertoar</Link>
           <span aria-hidden="true"> / </span>
-          <Link to={materialsBase} state={{ repertoireTitle: title }}>{title}</Link>
+          <Link to={materialsBase} state={{ repertoireTitle: title }}>{washShoutedText(title)}</Link>
           {breadcrumbs.map((part, index) => {
             const pathSlice = breadcrumbs.slice(0, index + 1);
             const linkPath = pathSlice.map(encodeURIComponent).join('/');
+            const crumb = parseMaterialLabel({ title: part, songTitle: repertoireSongTitle }).primary;
             return (
               <span key={linkPath}>
                 <span aria-hidden="true"> / </span>
-                <Link to={`${materialsBase}/${linkPath}`} state={{ repertoireTitle: title }}>{part}</Link>
+                <Link to={`${materialsBase}/${linkPath}`} state={{ repertoireTitle: title }}>{crumb}</Link>
               </span>
             );
           })}
@@ -325,8 +345,10 @@ export const AdminRepertoireMaterialPage = () => {
 
       <div className={styles.itemList}>
         {directoryItems.length > 0 ? (
-          directoryItems.map(item =>
-            item.type === 'folder' ? (
+          directoryItems.map(item => {
+            const label = labelForDirectoryItem(item, repertoireSongTitle);
+            const labelText = materialLabelText(label);
+            return item.type === 'folder' ? (
               <Link
                 to={`${materialsBase}/${item.path.split('/').map(encodeURIComponent).join('/')}`}
                 state={{ repertoireTitle: title }}
@@ -335,8 +357,7 @@ export const AdminRepertoireMaterialPage = () => {
               >
                 <div className={styles.itemInfo}>
                   <FiFolder className={styles.itemIcon} />
-                  {/* FIX: Använder 'displayName' för en renare lista. */}
-                  <span className={styles.itemName}>{item.displayName}</span>
+                  <MaterialNameLines primary={label.primary} secondary={label.secondary} />
                 </div>
                 <FiChevronRight className={styles.chevronIcon} />
               </Link>
@@ -344,14 +365,14 @@ export const AdminRepertoireMaterialPage = () => {
               <div key={item.material.materialId} className={styles.itemRow}>
                 <div className={styles.itemInfo}>
                   {getIconForFile(item.material.filePath || item.material.fileKey)}
-                  <span className={styles.itemName}>{item.material.title || (item.material.filePath || item.material.fileKey || '').split('/').pop()}</span>
+                  <MaterialNameLines primary={label.primary} secondary={label.secondary} />
                 </div>
                 <div className={styles.actions}>
                   {isAudioFile(item.material.fileKey) && (
                     <button
                       onClick={() => handlePlayMaterial(item.material)}
-                      title={`Spela upp ${item.material.title || (item.material.filePath || item.material.fileKey || '').split('/').pop()}`}
-                      aria-label={`Spela upp ${item.material.title || (item.material.filePath || item.material.fileKey || '').split('/').pop()}`}
+                      title={`Spela upp ${labelText}`}
+                      aria-label={`Spela upp ${labelText}`}
                       aria-pressed={
                         sessionMatchesThisGroup &&
                         activeMaterialId === item.material.materialId &&
@@ -365,16 +386,26 @@ export const AdminRepertoireMaterialPage = () => {
                     <button
                       onClick={() => setMaterialToView(item.material)}
                       className={styles.iconView}
-                      title={`Visa ${item.material.title || (item.material.filePath || item.material.fileKey || '').split('/').pop()}`}
-                      aria-label={`Visa ${item.material.title || (item.material.filePath || item.material.fileKey || '').split('/').pop()}`}
+                      title={`Visa ${labelText}`}
+                      aria-label={`Visa ${labelText}`}
                     >
                       <IoEyeOutline size={24} />
                     </button>
                   )}
+                  {canEditLabels && (
+                    <button
+                      type="button"
+                      onClick={() => openLabelEdit(item.material)}
+                      title={`Redigera stämma och låtnamn för ${labelText}`}
+                      aria-label={`Redigera stämma och låtnamn för ${labelText}`}
+                    >
+                      <FiEdit2 size={20} />
+                    </button>
+                  )}
                 </div>
               </div>
-            )
-          )
+            );
+          })
         ) : (
           <p>Denna mapp är tom.</p>
         )}
@@ -391,7 +422,90 @@ export const AdminRepertoireMaterialPage = () => {
       >
         <p className={styles.helpText}>
           Klicka på play-ikonen för att spela upp ljudfiler och ögat för att förhandsvisa videor och dokument.
+          Pennan ändrar stämma och låtnamn för den här kören, utan att filen i biblioteket byts ut.
         </p>
+      </Modal>
+
+      <Modal
+        formMode
+        tone="luxury"
+        size="compact"
+        isOpen={Boolean(labelEdit)}
+        onClose={() => {
+          if (!labelSaving) setLabelEdit(null);
+        }}
+        title="Stämma och låtnamn"
+      >
+        {labelEdit && (
+          <form
+            className={styles.labelForm}
+            onSubmit={(event) => {
+              event.preventDefault();
+              void saveLabelEdit();
+            }}
+          >
+            <label className={styles.labelField} htmlFor="repertoire-voice-label">
+              Stämma
+              <select
+                id="repertoire-voice-label"
+                value={labelEdit.voiceChoice}
+                onChange={(event) => {
+                  const voiceChoice = event.target.value;
+                  setLabelEdit((current) => current ? { ...current, voiceChoice } : current);
+                }}
+              >
+                <option value="">Automatisk, från filnamnet</option>
+                {VOICE_LABEL_PRESETS.map((preset) => (
+                  <option key={preset} value={preset}>{preset}</option>
+                ))}
+                <option value={CUSTOM_VOICE}>Egen text</option>
+              </select>
+            </label>
+            {labelEdit.voiceChoice === CUSTOM_VOICE && (
+              <label className={styles.labelField} htmlFor="repertoire-voice-custom">
+                Egen stämma
+                <input
+                  id="repertoire-voice-custom"
+                  type="text"
+                  maxLength={60}
+                  value={labelEdit.customVoice}
+                  onChange={(event) => {
+                    const customVoice = event.target.value;
+                    setLabelEdit((current) => current ? { ...current, customVoice } : current);
+                  }}
+                />
+              </label>
+            )}
+            <label className={styles.labelField} htmlFor="repertoire-song-title">
+              Låtnamn
+              <input
+                id="repertoire-song-title"
+                type="text"
+                maxLength={120}
+                value={labelEdit.songTitle}
+                placeholder="Lämna tomt för att använda det tolkade namnet"
+                onChange={(event) => {
+                  const songTitle = event.target.value;
+                  setLabelEdit((current) => current ? { ...current, songTitle } : current);
+                }}
+              />
+            </label>
+            {labelError ? <p className={styles.labelError}>{labelError}</p> : null}
+            <div className={styles.labelActions}>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                disabled={labelSaving}
+                onClick={() => setLabelEdit(null)}
+              >
+                Avbryt
+              </button>
+              <button type="submit" className={styles.primaryButton} disabled={labelSaving}>
+                {labelSaving ? 'Sparar…' : 'Spara'}
+              </button>
+            </div>
+          </form>
+        )}
       </Modal>
     </div>
   );

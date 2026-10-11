@@ -6,7 +6,8 @@ import {
 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
 import type { AuthContext } from "../../../core/types";
-import { isConcertOpenForSignup } from "../lib/keys";
+import { requireGroupAccessResponse, normalizeGroupSlug } from "../../../core/utils/requireGroupAccess";
+import { concertVisibleToChoir, isConcertOpenForSignup } from "../lib/keys";
 import { parsePathId, toPublicConcert } from "../lib/parse";
 import { getSharedConcert, getViewerSignup } from "../lib/store";
 
@@ -33,9 +34,21 @@ export const handler = async (
     return sendError(400, "Concert id is required in the path.");
   }
 
+  const groupSlug = normalizeGroupSlug(event.queryStringParameters?.groupSlug);
+  const role = event.requestContext.authorizer?.lambda?.role?.trim().toLowerCase() ?? "";
+  if (groupSlug) {
+    const denied = await requireGroupAccessResponse(
+      event.requestContext.authorizer?.lambda,
+      groupSlug
+    );
+    if (denied) return denied;
+  } else if (role !== "admin") {
+    return sendError(400, "groupSlug is required.");
+  }
+
   try {
     const concert = await getSharedConcert(docClient, tableName, concertId);
-    if (!concert) {
+    if (!concert || (groupSlug && !concertVisibleToChoir(concert, groupSlug))) {
       return sendError(404, "Konserten hittades inte.");
     }
 

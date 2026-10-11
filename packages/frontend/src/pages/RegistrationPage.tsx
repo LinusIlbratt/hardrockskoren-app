@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Button, ButtonRadius, ButtonSize } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
+import { PasswordInput } from '@/components/ui/input/PasswordInput';
 import { FormGroup } from '@/components/ui/form/FormGroup';
 import { LoginPoster } from '@/components/layout/LoginPoster';
 import styles from './RegistrationPage.module.scss';
@@ -162,7 +163,7 @@ export const RegistrationPage = () => {
             <Input id="email" type="email" value={inviteDetails.email || ''} disabled />
           </FormGroup>
           <FormGroup label="Välj ett lösenord" htmlFor="password" error={formErrors.password}>
-            <Input id="password" type="password" value={formData.password} onChange={handleChange} />
+            <PasswordInput id="password" value={formData.password} onChange={handleChange} autoComplete="new-password" />
             <p className={styles.passwordHint}>Minst 8 tecken, med stor bokstav, liten bokstav och siffror.</p>
           </FormGroup>
           {apiError && <p className={styles.formError}>{apiError}</p>}

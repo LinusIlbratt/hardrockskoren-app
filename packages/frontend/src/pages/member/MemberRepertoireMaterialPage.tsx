@@ -14,14 +14,23 @@ import {
 import axios from 'axios';
 import styles from './MemberRepertoireMaterialPage.module.scss';
 import type { Material } from '@/types/index';
+import { MaterialNameLines } from '@/components/materials/MaterialNameLines';
 import { useAuth } from '@/context/AuthContext';
 import { useMusicPlayerOverlay } from '@/context/MusicPlayerOverlayContext';
 import {
-  formatDisplayTitle,
   getMaterialFileCategory,
   isModalPreviewableFile,
   isPlayableAudioFile,
 } from '@/utils/media';
+import {
+  compareMaterialLabels,
+  displayMaterialLabel,
+  materialLabelText,
+  memberMaterialSection,
+  washShoutedText,
+  type MaterialNameParts,
+  type MemberMaterialSection,
+} from '@/utils/materialLabel';
 import { useFavorites } from '@/hooks/useFavorites';
 import { AddToPlaylistModal } from '@/components/music/AddToPlaylistModal';
 
@@ -45,9 +54,14 @@ function isHiddenSystemFile(material: Material): boolean {
   return base.startsWith('.') || /^thumbs\.db$/i.test(base);
 }
 
+type LabeledMaterial = {
+  material: Material;
+  label: MaterialNameParts;
+};
+
 interface MaterialSectionProps {
   title: string;
-  files: Material[];
+  files: LabeledMaterial[];
   /** Spela via musik-overlay: initialRepertoireId + repertoirePlayback (ingen libraryQueueMaterials). */
   onPlayMaterial?: (material: Material) => void;
   onView: (material: Material) => void;
@@ -76,7 +90,7 @@ const MaterialSection: React.FC<MaterialSectionProps> = ({
 
   const getFileIcon = (fileKey: string = '') => {
     const cat = getMaterialFileCategory(fileKey);
-    if (cat === 'audio') return <Music size={20} className={styles.fileIcon} />;
+    if (cat === 'audio' || /\.ogg$/i.test(fileKey)) return <Music size={20} className={styles.fileIcon} />;
     if (cat === 'video') return <Video size={20} className={styles.fileIcon} />;
     if (cat === 'document') return <FileText size={20} className={styles.fileIcon} />;
     return <FileText size={20} className={styles.fileIcon} />;
@@ -86,12 +100,9 @@ const MaterialSection: React.FC<MaterialSectionProps> = ({
     <section className={styles.materialSection}>
       <h2 className={styles.sectionTitle}>{title}</h2>
       <div className={styles.materialList}>
-        {files.map(material => {
+        {files.map(({ material, label }) => {
           if (!material.fileKey) return null;
-          const displayName =
-            formatDisplayTitle(
-              material.title || material.fileKey.split('/').pop() || '',
-            ) || 'Okänd titel';
+          const displayName = materialLabelText(label);
 
           const isAudio = isPlayableAudioFile(material.fileKey);
           const canPreview = isModalPreviewableFile(material.fileKey) && !isAudio;
@@ -124,7 +135,7 @@ const MaterialSection: React.FC<MaterialSectionProps> = ({
                 ) : (
                   getFileIcon(material.fileKey)
                 )}
-                <span className={styles.displayName}>{displayName}</span>
+                <MaterialNameLines primary={label.primary} secondary={label.secondary} />
               </span>
               {canPreview && <Eye size={18} className={styles.viewHint} aria-hidden />}
             </>
@@ -225,6 +236,7 @@ export const MemberRepertoireMaterialPage = () => {
   const location = useLocation();
   const rawTitle = typeof location.state?.title === 'string' ? location.state.title : undefined;
   const heading = splitRepertoireHeading(rawTitle);
+  const songTitle = rawTitle ? heading.title : undefined;
 
   const sessionMatchesThisGroup =
     Boolean(groupName?.trim()) && activeGroupName === groupName?.trim();
@@ -273,9 +285,7 @@ export const MemberRepertoireMaterialPage = () => {
       if (!keepMinimized) return;
 
       const title =
-        formatDisplayTitle(material.title || material.fileKey.split('/').pop() || '') ||
-        material.title?.trim() ||
-        '—';
+        materialLabelText(displayMaterialLabel(material, songTitle)) || '—';
       setActiveMaterialId(materialId);
       setActiveTrack({ title, fileKey: material.fileKey });
       setIsPlaying(true);
@@ -298,24 +308,27 @@ export const MemberRepertoireMaterialPage = () => {
       setIsPlaying,
       setPlaybackProgress,
       setQueueMeta,
+      songTitle,
     ]
   );
 
-  const documentFiles = useMemo(
-    () => visibleMaterials.filter((m) => getMaterialFileCategory(m.fileKey) === 'document'),
-    [visibleMaterials]
-  );
-  const videoFiles = useMemo(
-    () => visibleMaterials.filter((m) => getMaterialFileCategory(m.fileKey) === 'video'),
-    [visibleMaterials]
-  );
-  const otherFiles = useMemo(
-    () =>
-      visibleMaterials.filter(
-        (m) => !audioFiles.includes(m) && !documentFiles.includes(m) && !videoFiles.includes(m)
-      ),
-    [visibleMaterials, audioFiles, documentFiles, videoFiles]
-  );
+  const groupedMaterials = useMemo(() => {
+    const buckets: Record<MemberMaterialSection, LabeledMaterial[]> = {
+      stems: [],
+      video: [],
+      scores: [],
+      other: [],
+    };
+    for (const material of visibleMaterials) {
+      const label = displayMaterialLabel(material, songTitle);
+      const section = memberMaterialSection(material.fileKey, label.sortRank);
+      buckets[section].push({ material, label });
+    }
+    (Object.keys(buckets) as MemberMaterialSection[]).forEach((section) => {
+      buckets[section].sort((a, b) => compareMaterialLabels(a.label, b.label));
+    });
+    return buckets;
+  }, [visibleMaterials, songTitle]);
 
   return (
     <div className={styles.page}>
@@ -325,8 +338,8 @@ export const MemberRepertoireMaterialPage = () => {
       </Link>
 
       <header className={styles.header}>
-        <h1 className={styles.repertoireTitle}>{heading.title}</h1>
-        {heading.artist ? <p className={styles.repertoireArtist}>{heading.artist}</p> : null}
+        <h1 className={styles.repertoireTitle}>{washShoutedText(heading.title)}</h1>
+        {heading.artist ? <p className={styles.repertoireArtist}>{washShoutedText(heading.artist)}</p> : null}
       </header>
 
       {isLoading && <p>Laddar material...</p>}
@@ -335,10 +348,9 @@ export const MemberRepertoireMaterialPage = () => {
 
       {!isLoading && !error && visibleMaterials.length > 0 && (
         <div className={styles.sectionsContainer}>
-          <MaterialSection title="Noter & Texter" files={documentFiles} onView={setSelectedMaterial} />
           <MaterialSection
-            title="Ljudfiler"
-            files={audioFiles}
+            title="🎧 Stämmor"
+            files={groupedMaterials.stems}
             onPlayMaterial={handlePlayAudioMaterial}
             onView={setSelectedMaterial}
             activeMaterialId={sessionMatchesThisGroup ? activeMaterialId : null}
@@ -347,8 +359,19 @@ export const MemberRepertoireMaterialPage = () => {
             onToggleFavorite={toggleFavoriteOptimistic}
             onOpenAddToPlaylist={(id) => setPlaylistModalMaterialId(id)}
           />
-          <MaterialSection title="Videor" files={videoFiles} onView={setSelectedMaterial} />
-          <MaterialSection title="Övrigt" files={otherFiles} onView={setSelectedMaterial} />
+          <MaterialSection title="🎬 Notfilmer & Video" files={groupedMaterials.video} onView={setSelectedMaterial} />
+          <MaterialSection title="📄 Noter & Textblad (PDF)" files={groupedMaterials.scores} onView={setSelectedMaterial} />
+          <MaterialSection
+            title="🥁 Rytmik & Övrigt"
+            files={groupedMaterials.other}
+            onPlayMaterial={handlePlayAudioMaterial}
+            onView={setSelectedMaterial}
+            activeMaterialId={sessionMatchesThisGroup ? activeMaterialId : null}
+            isPlaying={sessionMatchesThisGroup ? isPlaying : false}
+            favoriteMaterialIds={favoriteMaterialIds}
+            onToggleFavorite={toggleFavoriteOptimistic}
+            onOpenAddToPlaylist={(id) => setPlaylistModalMaterialId(id)}
+          />
         </div>
       )}
       <MediaModal isOpen={!!selectedMaterial} onClose={() => setSelectedMaterial(null)} material={selectedMaterial} />
