@@ -241,9 +241,9 @@ export const AdminSharedConcertPage = () => {
             aria-label="Redigera gig"
             title="Redigera gig"
             onClick={() => {
-              void openDetail(c).then(() => {
+              void openDetail(c).then((freshConcert) => {
                 setDetailTab("info");
-                startEditing(c);
+                startEditing(freshConcert ?? c);
               });
             }}
           >
