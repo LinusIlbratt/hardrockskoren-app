@@ -11,6 +11,13 @@
   }
 }
 
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  width: 100%;
+}
+
 .titleRow {
   display: flex;
   align-items: center;
@@ -27,6 +34,13 @@
   font-weight: 600;
   line-height: 1.2;
   color: var(--color-text-luxury, #f4efe6);
+}
+
+.panelLead {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--color-text-luxury-muted);
 }
 
 .infoButton {

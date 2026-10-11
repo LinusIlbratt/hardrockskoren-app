@@ -71,6 +71,16 @@ function renderHtmlNodes(nodes: Node[], keyPrefix: string): ReactNode[] {
       );
     }
     if (element.tagName === 'P') return <p key={key}>{children}</p>;
+    if (element.tagName === 'SPAN') {
+      const font = element.getAttribute('data-font');
+      const size = element.getAttribute('data-size');
+      if (!font && !size) return <span key={key}>{children}</span>;
+      return (
+        <span key={key} data-font={font ?? undefined} data-size={size ?? undefined}>
+          {children}
+        </span>
+      );
+    }
     return <span key={key}>{children}</span>;
   });
 }
@@ -82,7 +92,7 @@ function renderStoredHtml(html: string): ReactNode {
   return renderHtmlNodes(Array.from(parsed.body.childNodes), 'html');
 }
 
-/** Visar sparad text. Ny HTML (rubrik, understrykning, liten) och äldre Markdown. */
+/** Visar sparad text. Ny HTML (rubrik, understrykning, typsnitt, storlek) och äldre Markdown. */
 export function MarkdownText({ text, className }: MarkdownTextProps) {
   const source = text ?? '';
   const classNames = [styles.root, className].filter(Boolean).join(' ');

@@ -5,10 +5,11 @@ import LinkExtension from '@tiptap/extension-link';
 import Underline from '@tiptap/extension-underline';
 import { EditorContent, useEditor, useEditorState } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { Bold, ChevronDown, Italic, Link, List, ListOrdered, Redo2, Underline as UnderlineIcon, Undo2 } from 'lucide-react';
+import { Bold, ChevronDown, Italic, Link, List, ListOrdered, Maximize2, Redo2, Underline as UnderlineIcon, Undo2 } from 'lucide-react';
 import { Button, ButtonSize, ButtonVariant } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
 import { Small } from '@/components/ui/markdown/smallMark';
+import { TextAppearance, type AppearanceFont } from '@/components/ui/markdown/textAppearance';
 import { looksLikeMarkdown, markdownToHtml, toSafeHttpUrl } from '@/utils/markdown';
 import { editorHtmlFromStored, sanitizeRichHtml } from '@/utils/richText';
 import styles from './MarkdownTextarea.module.scss';
@@ -25,14 +26,41 @@ type MarkdownTextareaProps = {
   required?: boolean;
 };
 
-const STYLES = [
-  { id: 'normal', label: 'Vanlig text', menu: 'Vanlig text' },
-  { id: 'xl', label: 'Stor rubrik', menu: 'Stor rubrik (H1)' },
-  { id: 'lg', label: 'Mellanrubrik', menu: 'Mellanrubrik (H2)' },
-  { id: 'sm', label: 'Liten text', menu: 'Liten text' },
+const FONT_CHOICES = [
+  { id: 'standard', label: 'Standard', menu: 'Standard' },
+  { id: 'arial', label: 'Arial', menu: 'Arial' },
+  { id: 'verdana', label: 'Verdana', menu: 'Verdana' },
+  { id: 'trebuchet', label: 'Trebuchet MS', menu: 'Trebuchet MS' },
+  { id: 'tahoma', label: 'Tahoma', menu: 'Tahoma' },
+  { id: 'times', label: 'Times New Roman', menu: 'Times New Roman' },
+  { id: 'georgia', label: 'Georgia', menu: 'Georgia' },
+  { id: 'garamond', label: 'Garamond', menu: 'Garamond' },
+  { id: 'comic', label: 'Comic Sans', menu: 'Comic Sans' },
+  { id: 'impact', label: 'Impact', menu: 'Impact' },
+  { id: 'courier', label: 'Fast bredd', menu: 'Fast bredd (Courier)' },
 ] as const;
 
-type TextSize = (typeof STYLES)[number]['id'];
+const FONT_SIZES = [12, 14, 16, 18, 20, 24, 28, 32] as const;
+const DEFAULT_FONT_SIZE = 16;
+
+const FONT_LABELS: Record<string, string> = {
+  standard: 'Standard',
+  sans: 'Standard',
+  arial: 'Arial',
+  verdana: 'Verdana',
+  trebuchet: 'Trebuchet MS',
+  tahoma: 'Tahoma',
+  times: 'Times New Roman',
+  georgia: 'Georgia',
+  garamond: 'Garamond',
+  comic: 'Comic Sans',
+  impact: 'Impact',
+  courier: 'Fast bredd',
+  mono: 'Fast bredd',
+};
+
+type FontChoice = (typeof FONT_CHOICES)[number]['id'];
+type OpenMenu = 'font' | 'size';
 
 function ToolButton({
   label,
@@ -75,6 +103,9 @@ function emitChange(onChange: MarkdownTextareaProps['onChange'], value: string) 
   onChange?.({ target: { value }, currentTarget: { value } } as ChangeEvent<HTMLTextAreaElement>);
 }
 
+/** ProseMirror collapses runs of spaces unless parsing keeps them. setContent does not inherit this from the editor. */
+const PRESERVE_WHITESPACE = { preserveWhitespace: 'full' as const };
+
 function linkLabel(href: string): string {
   return href.replace(/^https?:\/\//, '').replace(/\/$/, '') || href;
 }
@@ -94,11 +125,15 @@ export function MarkdownTextarea({
   const editorRef = useRef<Editor | null>(null);
   const linkInputRef = useRef<HTMLInputElement>(null);
   const linkPopoverId = useId();
-  const styleMenuId = useId();
-  const styleButtonRef = useRef<HTMLButtonElement>(null);
+  const fontMenuId = useId();
+  const sizeMenuId = useId();
+  const expandTitleId = useId();
+  const fontButtonRef = useRef<HTMLButtonElement>(null);
+  const sizeButtonRef = useRef<HTMLButtonElement>(null);
   const styleMenuRef = useRef<HTMLDivElement>(null);
-  const [styleOpen, setStyleOpen] = useState(false);
-  const [styleBox, setStyleBox] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [openMenu, setOpenMenu] = useState<OpenMenu | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [styleBox, setStyleBox] = useState<{ top?: number; bottom?: number; left: number; width: number; maxHeight: number } | null>(null);
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState('https://');
   const [linkError, setLinkError] = useState<string | null>(null);
@@ -118,6 +153,7 @@ export function MarkdownTextarea({
       }),
       Underline,
       Small,
+      TextAppearance,
       LinkExtension.configure({
         openOnClick: false,
         autolink: true,
@@ -132,6 +168,7 @@ export function MarkdownTextarea({
       }),
     ],
     content: editorHtmlFromStored(value),
+    parseOptions: PRESERVE_WHITESPACE,
     editable: !disabled,
     editorProps: {
       attributes: {
@@ -156,7 +193,10 @@ export function MarkdownTextarea({
         next.length > maxLength &&
         next.length > markdownRef.current.length;
       if (overLimit) {
-        current.commands.setContent(editorHtmlFromStored(markdownRef.current), { emitUpdate: false });
+        current.commands.setContent(editorHtmlFromStored(markdownRef.current), {
+          emitUpdate: false,
+          parseOptions: PRESERVE_WHITESPACE,
+        });
         return;
       }
       if (next === markdownRef.current) return;
@@ -181,16 +221,25 @@ export function MarkdownTextarea({
           empty: true,
           canUndo: false,
           canRedo: false,
-          size: 'normal' as TextSize,
+          font: 'standard' as FontChoice | AppearanceFont,
+          textSize: DEFAULT_FONT_SIZE,
         };
       }
-      const size: TextSize = current.isActive('heading', { level: 1 })
-        ? 'xl'
-        : current.isActive('heading', { level: 2 })
-          ? 'lg'
-          : current.isActive('small')
-            ? 'sm'
-            : 'normal';
+      const appearance = current.getAttributes('textAppearance');
+      const font: FontChoice | AppearanceFont =
+        appearance.font === 'arial' ||
+        appearance.font === 'comic' ||
+        appearance.font === 'times' ||
+        appearance.font === 'courier' ||
+        appearance.font === 'mono' ||
+        appearance.font === 'georgia'
+          ? appearance.font
+          : 'standard';
+      const parsedSize = Number(appearance.size);
+      const textSize =
+        Number.isInteger(parsedSize) && parsedSize >= 10 && parsedSize <= 48
+          ? parsedSize
+          : DEFAULT_FONT_SIZE;
       return {
         bold: current.isActive('bold'),
         italic: current.isActive('italic'),
@@ -201,7 +250,8 @@ export function MarkdownTextarea({
         empty: current.isEmpty,
         canUndo: current.can().undo(),
         canRedo: current.can().redo(),
-        size,
+        font,
+        textSize,
       };
     },
   });
@@ -215,8 +265,32 @@ export function MarkdownTextarea({
     if (!editor) return;
     if (value === markdownRef.current) return;
     markdownRef.current = value;
-    editor.commands.setContent(editorHtmlFromStored(value), { emitUpdate: false });
+    editor.commands.setContent(editorHtmlFromStored(value), {
+      emitUpdate: false,
+      parseOptions: PRESERVE_WHITESPACE,
+    });
   }, [editor, value]);
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    editor?.commands.focus('end');
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isFullscreen, editor]);
+
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape' || openMenu) return;
+      event.preventDefault();
+      setIsFullscreen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [isFullscreen, openMenu]);
 
   useEffect(() => {
     if (!linkOpen) return;
@@ -225,22 +299,36 @@ export function MarkdownTextarea({
   }, [linkOpen]);
 
   useEffect(() => {
-    if (!styleOpen) return;
+    if (!openMenu) return;
+    const anchor = openMenu === 'font' ? fontButtonRef : sizeButtonRef;
     const place = () => {
-      const rect = styleButtonRef.current?.getBoundingClientRect();
+      const rect = anchor.current?.getBoundingClientRect();
       if (!rect) return;
-      const width = Math.max(rect.width, 196);
+      const width = Math.max(rect.width, openMenu === 'font' ? 248 : 196);
       const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
-      setStyleBox({ top: rect.bottom + 4, left, width });
+      const spaceBelow = window.innerHeight - rect.bottom - 8;
+      const spaceAbove = rect.top - 8;
+      const cap = Math.min(window.innerHeight * 0.7, 28 * 16);
+      const openUp = spaceBelow < 220 && spaceAbove > spaceBelow;
+      const maxHeight = Math.max(120, Math.min(cap, openUp ? spaceAbove : spaceBelow));
+      setStyleBox(
+        openUp
+          ? { bottom: window.innerHeight - rect.top + 4, left, width, maxHeight }
+          : { top: rect.bottom + 4, left, width, maxHeight },
+      );
     };
     place();
     const closeOnOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (styleButtonRef.current?.contains(target) || styleMenuRef.current?.contains(target)) return;
-      setStyleOpen(false);
+      const insideAnchor =
+        fontButtonRef.current?.contains(target) ||
+        sizeButtonRef.current?.contains(target) ||
+        styleMenuRef.current?.contains(target);
+      if (insideAnchor) return;
+      setOpenMenu(null);
     };
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setStyleOpen(false);
+      if (event.key === 'Escape') setOpenMenu(null);
     };
     document.addEventListener('mousedown', closeOnOutside);
     document.addEventListener('keydown', closeOnEscape);
@@ -252,30 +340,23 @@ export function MarkdownTextarea({
       window.removeEventListener('resize', place);
       window.removeEventListener('scroll', place, true);
     };
-  }, [styleOpen]);
+  }, [openMenu]);
 
-  const applySize = (size: TextSize) => {
+  const chooseFont = (font: FontChoice) => {
     if (!editor || disabled) return;
-    const chain = editor.chain().focus();
-    if (size === 'xl') {
-      chain.unsetMark('small').setHeading({ level: 1 }).run();
-      return;
-    }
-    if (size === 'lg') {
-      chain.unsetMark('small').setHeading({ level: 2 }).run();
-      return;
-    }
-    if (size === 'sm') {
-      if (editor.isActive('heading')) chain.setParagraph();
-      chain.setMark('small').run();
-      return;
-    }
-    chain.unsetMark('small').setParagraph().run();
+    editor.chain().focus().setAppearanceFont(font === 'standard' ? null : font).run();
+    setOpenMenu(null);
   };
 
-  const chooseStyle = (size: TextSize) => {
-    applySize(size);
-    setStyleOpen(false);
+  const chooseTextSize = (size: number) => {
+    if (!editor || disabled) return;
+    editor.chain().focus().setAppearanceSize(size).run();
+    setOpenMenu(null);
+  };
+
+  const toggleMenu = (menu: OpenMenu) => {
+    setOpenMenu((current) => (current === menu ? null : menu));
+    setLinkOpen(false);
   };
 
   const closeLink = () => {
@@ -316,11 +397,26 @@ export function MarkdownTextarea({
 
   const minHeight = `${Math.max(rows, 3) * 1.6}em`;
   const shellClass = [styles.shell, className].filter(Boolean).join(' ');
-  const currentStyle = STYLES.find((item) => item.id === marks.size) ?? STYLES[0];
+  const currentFontLabel = FONT_LABELS[marks.font] ?? 'Standard';
   const controlsDisabled = disabled || !editor;
 
-  return (
-    <div className={styles.field}>
+  const field = (
+    <div className={styles.field} data-expanded={isFullscreen ? 'true' : undefined}>
+      {isFullscreen && (
+        <div className={styles.expandHeader}>
+          <h2 className={styles.expandTitle} id={expandTitleId}>
+            Redigera beskrivning
+          </h2>
+          <Button
+            type="button"
+            size={ButtonSize.Small}
+            variant={ButtonVariant.Primary}
+            onClick={() => setIsFullscreen(false)}
+          >
+            Klar
+          </Button>
+        </div>
+      )}
       {id && (
         <input
           id={id}
@@ -354,21 +450,37 @@ export function MarkdownTextarea({
           </ToolButton>
         </div>
         <span className={styles.divider} aria-hidden="true" />
-        <div className={styles.group}>
+        <div className={styles.appearanceGroup}>
           <button
-            ref={styleButtonRef}
+            ref={fontButtonRef}
             type="button"
-            className={[styles.styleButton, styleOpen ? styles.toolActive : ''].filter(Boolean).join(' ')}
-            title="Textformat"
-            aria-label={`Textformat, ${currentStyle.label}`}
+            className={[styles.styleButton, openMenu === 'font' ? styles.toolActive : ''].filter(Boolean).join(' ')}
+            title="Typsnitt"
+            aria-label={`Typsnitt, ${currentFontLabel}`}
             aria-haspopup="listbox"
-            aria-expanded={styleOpen}
-            aria-controls={styleOpen ? styleMenuId : undefined}
+            aria-expanded={openMenu === 'font'}
+            aria-controls={openMenu === 'font' ? fontMenuId : undefined}
             disabled={controlsDisabled}
             onMouseDown={(event) => event.preventDefault()}
-            onClick={() => setStyleOpen((open) => !open)}
+            onClick={() => toggleMenu('font')}
           >
-            <span className={styles.styleLabel}>{currentStyle.label}</span>
+            <span className={styles.styleLabel}>{currentFontLabel}</span>
+            <ChevronDown size={16} strokeWidth={2.25} aria-hidden />
+          </button>
+          <button
+            ref={sizeButtonRef}
+            type="button"
+            className={[styles.styleButton, styles.sizeButton, openMenu === 'size' ? styles.toolActive : ''].filter(Boolean).join(' ')}
+            title="Textstorlek"
+            aria-label={`Textstorlek, ${marks.textSize}`}
+            aria-haspopup="listbox"
+            aria-expanded={openMenu === 'size'}
+            aria-controls={openMenu === 'size' ? sizeMenuId : undefined}
+            disabled={controlsDisabled}
+            onMouseDown={(event) => event.preventDefault()}
+            onClick={() => toggleMenu('size')}
+          >
+            <span className={styles.styleLabel}>{marks.textSize}</span>
             <ChevronDown size={16} strokeWidth={2.25} aria-hidden />
           </button>
         </div>
@@ -408,12 +520,26 @@ export function MarkdownTextarea({
               setLinkUrl(typeof href === 'string' && href ? href : 'https://');
               setLinkError(null);
               setLinkOpen(true);
-              setStyleOpen(false);
+              setOpenMenu(null);
             }}
           >
             <Link size={18} strokeWidth={2.25} aria-hidden />
           </ToolButton>
         </div>
+        {!isFullscreen && (
+          <ToolButton
+            label="Öppna i fullskärm"
+            className={styles.expand}
+            disabled={controlsDisabled}
+            onClick={() => {
+              setOpenMenu(null);
+              setLinkOpen(false);
+              setIsFullscreen(true);
+            }}
+          >
+            <Maximize2 size={18} strokeWidth={2.25} aria-hidden />
+          </ToolButton>
+        )}
         </div>
       </div>
 
@@ -459,7 +585,7 @@ export function MarkdownTextarea({
 
       <div
         className={styles.surface}
-        style={{ minHeight }}
+        style={isFullscreen ? undefined : { minHeight }}
         onMouseDown={(event) => {
           if (disabled || !editor) return;
           if (event.target === event.currentTarget || (event.target as HTMLElement).classList.contains(styles.placeholder)) {
@@ -472,34 +598,67 @@ export function MarkdownTextarea({
         <EditorContent editor={editor} />
       </div>
       </div>
-      {styleOpen &&
+      {openMenu &&
         styleBox &&
         createPortal(
           <div
             ref={styleMenuRef}
-            id={styleMenuId}
+            id={openMenu === 'font' ? fontMenuId : sizeMenuId}
             className={styles.styleMenu}
             role="listbox"
-            aria-label="Textformat"
-            style={{ top: styleBox.top, left: styleBox.left, width: styleBox.width }}
+            aria-label={openMenu === 'font' ? 'Typsnitt' : 'Textstorlek'}
+            style={{
+              top: styleBox.top,
+              bottom: styleBox.bottom,
+              left: styleBox.left,
+              width: styleBox.width,
+              maxHeight: styleBox.maxHeight,
+            }}
           >
-            {STYLES.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                role="option"
-                aria-selected={marks.size === item.id}
-                className={[styles.styleOption, marks.size === item.id ? styles.toolActive : ''].filter(Boolean).join(' ')}
-                data-style={item.id}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => chooseStyle(item.id)}
-              >
-                {item.menu}
-              </button>
-            ))}
+            {openMenu === 'font' &&
+              FONT_CHOICES.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  role="option"
+                  aria-selected={marks.font === item.id}
+                  className={[styles.styleOption, marks.font === item.id ? styles.toolActive : ''].filter(Boolean).join(' ')}
+                  data-font={item.id === 'standard' ? undefined : item.id}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => chooseFont(item.id)}
+                >
+                  {item.menu}
+                </button>
+              ))}
+            {openMenu === 'size' &&
+              FONT_SIZES.map((size) => (
+                <button
+                  key={size}
+                  type="button"
+                  role="option"
+                  aria-selected={marks.textSize === size}
+                  className={[styles.styleOption, marks.textSize === size ? styles.toolActive : ''].filter(Boolean).join(' ')}
+                  data-size={size}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => chooseTextSize(size)}
+                >
+                  {size}
+                </button>
+              ))}
           </div>,
           document.body,
         )}
     </div>
   );
+
+  if (isFullscreen) {
+    return createPortal(
+      <div className={styles.overlay} role="dialog" aria-modal="true" aria-labelledby={expandTitleId}>
+        <div className={styles.panel}>{field}</div>
+      </div>,
+      document.body,
+    );
+  }
+
+  return field;
 }

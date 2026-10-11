@@ -370,6 +370,35 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  width: 100%;
+}
+
+.materialSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: var(--color-luxury-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+}
+
+.sectionTitle {
+  margin: 0;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: var(--fs-h4);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--color-text-luxury, #f4efe6);
+}
+
 // --- Lista ---
 .itemList {
   gap: 10px;

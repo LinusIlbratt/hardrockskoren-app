@@ -1,4 +1,5 @@
 import type { GroupMember } from '@/types';
+import { formatMemberName, memberNameInitials, parseMemberName } from '@/utils/memberName';
 import { translateRole } from '@/utils/translations';
 import styles from './UserList.module.scss';
 import { FiEdit } from 'react-icons/fi';
@@ -13,12 +14,13 @@ export const UserList = ({ members, onEditUser }: UserListProps) => {
     return (
         <div className={styles.listContainer}>
             {members.map((member) => {
-                const displayName = `${member.given_name ?? ''} ${member.family_name ?? ''}`.trim();
+                const parsedName = parseMemberName(member);
+                const displayName = formatMemberName(parsedName);
                 return (
                     <article key={member.groupSlug ? `${member.groupSlug}:${member.id}` : member.id} className={styles.memberCard}>
                         <div className={styles.memberLead}>
                             <div className={styles.avatar} aria-hidden="true">
-                                {(member.given_name ?? '').charAt(0)}{(member.family_name ?? '').charAt(0)}
+                                {memberNameInitials(parsedName)}
                             </div>
                             <div className={styles.memberText}>
                                 <span className={styles.name}>{displayName}</span>
