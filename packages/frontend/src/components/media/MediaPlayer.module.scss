@@ -43,6 +43,15 @@
   box-shadow:
     0 -8px 32px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.035);
+  padding-top: var(--spacing-2xs);
+
+  .playerBar {
+    gap: 0;
+  }
+
+  .playerProgressRow {
+    margin-top: 0;
+  }
 }
 
 /* MiniPlayerBar: kompakt list i layoutflödet. Högre specificitet än mobilreglerna för .playerContainer. */
@@ -578,23 +587,32 @@
   min-width: 0;
   -webkit-appearance: none;
   appearance: none;
-  height: 5px;
-  border-radius: 3px;
+  /* 44px träffyta; det synliga spåret ritas på track-pseudon och är 5px. */
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 0;
   outline: none;
   cursor: pointer;
-  background: linear-gradient(
-    to right,
-    #ffffff 0%,
-    #ffffff var(--slider-progress, 0%),
-    rgba(255, 255, 255, 0.14) var(--slider-progress, 0%),
-    rgba(255, 255, 255, 0.14) 100%
-  );
-  box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.35),
-    0 1px 0 rgba(255, 255, 255, 0.06);
-  transition:
-    height 0.15s ease,
-    box-shadow 0.15s ease;
+  background: transparent;
+  box-shadow: none;
+  touch-action: none;
+
+  &::-webkit-slider-runnable-track {
+    height: 5px;
+    border-radius: 3px;
+    background: linear-gradient(
+      to right,
+      #ffffff 0%,
+      #ffffff var(--slider-progress, 0%),
+      rgba(255, 255, 255, 0.14) var(--slider-progress, 0%),
+      rgba(255, 255, 255, 0.14) 100%
+    );
+    box-shadow:
+      inset 0 0 0 1px rgba(0, 0, 0, 0.35),
+      0 1px 0 rgba(255, 255, 255, 0.06);
+  }
 
   &::-webkit-slider-thumb {
     -webkit-appearance: none;
@@ -610,12 +628,8 @@
     transition: transform 0.12s ease;
   }
 
-  &:hover {
-    height: 6px;
-
-    &::-webkit-slider-thumb {
-      transform: scale(1.12);
-    }
+  &:hover::-webkit-slider-thumb {
+    transform: scale(1.12);
   }
 
   &::-moz-range-track {
@@ -642,20 +656,13 @@
       0 0 0 2px rgba(10, 10, 10, 0.5);
   }
 
-  @supports (-moz-appearance: none) {
-    background: transparent;
-    box-shadow: none;
-  }
-
   @media (prefers-reduced-motion: reduce) {
-    transition: none;
+    &::-webkit-slider-thumb {
+      transition: none;
+    }
 
-    &:hover {
-      height: 5px;
-
-      &::-webkit-slider-thumb {
-        transform: none;
-      }
+    &:hover::-webkit-slider-thumb {
+      transform: none;
     }
   }
 }
@@ -720,7 +727,25 @@
   }
 
   .playerEmbedded {
-    padding: var(--spacing-sm) calc(var(--spacing-sm) + var(--spacing-xs));
+    padding: var(--spacing-2xs) calc(var(--spacing-sm) + var(--spacing-xs));
+    padding-bottom: max(1.25rem, calc(env(safe-area-inset-bottom) + 0.75rem));
+
+    .playerBar {
+      gap: 0;
+    }
+
+    .playerMainRow {
+      gap: var(--spacing-2xs);
+    }
+
+    .playerProgressRow {
+      margin-top: 0;
+    }
+
+    .transportSideStart,
+    .transportSideEnd {
+      min-height: 40px;
+    }
   }
 
   /* Tempo flyttad till transport-raden — göm tom högerkolumn (volym dold) */

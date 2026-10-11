@@ -1,4 +1,4 @@
-import { Pause, Play, SkipBack, SkipForward } from 'lucide-react';
+import { Pause, Play, SkipBack, SkipForward, X } from 'lucide-react';
 import {
   useMusicPlayerOverlay,
   useMusicPlayerPlaybackProgress,
@@ -8,7 +8,7 @@ import styles from './MediaPlayer.module.scss';
 
 /**
  * Kompakt bottenlist. Ljudet styrs av dold MediaPlayer via playbackApiRef.
- * Klick på listen (utanför play) fäller upp overlayn.
+ * Klick på listen (utanför kontrollerna) fäller upp overlayn. Krysset stänger sessionen.
  */
 export function MiniPlayerBar() {
   const {
@@ -19,6 +19,7 @@ export function MiniPlayerBar() {
     isPlaying,
     playbackApiRef,
     expandOverlay,
+    closeSession,
     queueMeta,
     repeatMode,
   } = useMusicPlayerOverlay();
@@ -112,6 +113,22 @@ export function MiniPlayerBar() {
             <SkipForward size={18} aria-hidden />
           </button>
         ) : null}
+        <button
+          type="button"
+          className={styles.miniControl}
+          onClick={(event) => {
+            event.stopPropagation();
+            const api = playbackApiRef.current;
+            if (isPlaying) {
+              api?.togglePlayPause();
+            }
+            api?.seek(0);
+            closeSession();
+          }}
+          aria-label="Stäng spelare"
+        >
+          <X size={18} aria-hidden />
+        </button>
       </div>
     </div>
   );

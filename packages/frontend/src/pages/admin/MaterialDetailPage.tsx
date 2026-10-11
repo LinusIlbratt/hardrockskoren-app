@@ -7,7 +7,22 @@ import { Modal } from '@/components/ui/modal/Modal';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { AddLibraryFolderToChoirsModal } from '@/components/media/AddLibraryFolderToChoirsModal';
 import { MAX_FILES_PER_BATCH_UPLOAD, useMaterialFolder, useMaterialUploader } from '@/features/materials';
+import type { LibraryMaterial } from '@/services/materialService';
+import {
+  compareMaterialLabels,
+  memberMaterialSection,
+  parseMaterialLabel,
+  type MaterialNameParts,
+  type MemberMaterialSection,
+} from '@/utils/materialLabel';
 import styles from './MaterialDetailPage.module.scss';
+
+const MATERIAL_SECTIONS: { id: MemberMaterialSection; title: string }[] = [
+  { id: 'stems', title: '🎧 Stämmor' },
+  { id: 'video', title: '🎬 Notfilmer & Video' },
+  { id: 'scores', title: '📄 Noter & Textblad (PDF)' },
+  { id: 'other', title: '🥁 Rytmik & Övrigt' },
+];
 
 function splitSongHeading(raw: string): { songTitle: string; artistName: string } {
   const value = raw.trim();
@@ -75,6 +90,37 @@ export const MaterialDetailPage = () => {
 
   const replaceStatus = folderStatusAt >= uploaderStatusAt ? folderStatus : uploaderStatus;
   const rowBusy = isUploaderBusy || !!deletingMaterialId || isBatchDeleting;
+
+  const { folders, fileSections } = useMemo(() => {
+    const folderItems: { name: string; path: string }[] = [];
+    const buckets: Record<MemberMaterialSection, { material: LibraryMaterial; label: MaterialNameParts }[]> = {
+      stems: [],
+      video: [],
+      scores: [],
+      other: [],
+    };
+    for (const item of directoryItems) {
+      if (item.type === 'folder') {
+        folderItems.push({ name: item.name, path: item.path });
+        continue;
+      }
+      const file = item.material;
+      const label = parseMaterialLabel({
+        title: file.title,
+        filePath: file.filePath,
+        fileKey: file.fileKey,
+      });
+      const section = memberMaterialSection(file.fileKey || file.filePath, label.sortRank);
+      buckets[section].push({ material: file, label });
+    }
+    for (const section of MATERIAL_SECTIONS) {
+      buckets[section.id].sort((a, b) => compareMaterialLabels(a.label, b.label));
+    }
+    return { folders: folderItems, fileSections: buckets };
+  }, [directoryItems]);
+
+  const hasVisibleItems =
+    folders.length > 0 || MATERIAL_SECTIONS.some((section) => fileSections[section.id].length > 0);
 
   if (isLoading) {
     return (
@@ -374,102 +420,116 @@ export const MaterialDetailPage = () => {
           Ta bort markerade ({selectedMaterialIds.length})
         </button>
       ) : null}
-      <Stack gap="sm" className={styles.itemList}>
-        {directoryItems.length > 0 ? (
-          directoryItems.map(item => (
-            item.type === 'folder' ? (
-              <Link to={`/admin/globalMaterial/${encodeURIComponent(item.path)}`} key={item.path} className={`${styles.itemRow} ${styles.itemRowFolder}`}>
-                <span className={`${styles.itemIconWrap} ${styles.itemIconWrapFolder}`} aria-hidden>
-                  <FiFolder className={styles.itemIconSvg} />
-                </span>
-                <span className={styles.itemName}>{item.name}</span>
-              </Link>
-            ) : (
-              <div
-                key={item.material.materialId}
-                className={`${styles.itemRow} ${styles.itemRowFile} ${
-                  selectedMaterialIds.includes(item.material.materialId) ? styles.itemRowSelected : ''
-                }`}
-              >
-                <div className={styles.fileLead}>
-                  <input
-                    type="checkbox"
-                    className={styles.rowSelectCheckbox}
-                    checked={selectedMaterialIds.includes(item.material.materialId)}
-                    disabled={rowBusy}
-                    onChange={() => toggleMaterialSelected(item.material.materialId)}
-                    onClick={(e) => e.stopPropagation()}
-                    aria-label={`Markera ${item.material.title || item.material.filePath.split('/').pop() || 'fil'}`}
-                  />
-                  <span className={styles.itemName}>{item.material.title || item.material.filePath.split('/').pop()}</span>
-                </div>
-                <div className={styles.itemActions}>
-                  <input
-                    ref={(el) => {
-                      fileInputRefs.current[item.material.materialId] = el;
-                    }}
-                    className={styles.hiddenFileInput}
-                    type="file"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0] || null;
-                      void handleReplaceFile(item.material, f);
-                      e.currentTarget.value = '';
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className={styles.replaceButton}
-                    disabled={
-                      replacingMaterialId === item.material.materialId ||
-                      deletingMaterialId === item.material.materialId ||
-                      isBatchDeleting
-                    }
-                    aria-label={
-                      replacingMaterialId === item.material.materialId
-                        ? 'Ersätter fil'
-                        : 'Ersätt fil'
-                    }
-                    title="Ersätt fil"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      fileInputRefs.current[item.material.materialId]?.click();
-                    }}
-                  >
-                    <FiRefreshCw aria-hidden size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    className={styles.deleteFileButton}
-                    disabled={
-                      deletingMaterialId === item.material.materialId ||
-                      replacingMaterialId === item.material.materialId ||
-                      isBatchDeleting
-                    }
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setBatchDeleteTargets([]);
-                      setMaterialPendingDelete(item.material);
-                    }}
-                    aria-label={`Ta bort ${item.material.title || item.material.filePath.split('/').pop()}`}
-                  >
-                    <FiTrash2 aria-hidden size={16} />
-                  </button>
-                </div>
-              </div>
-            )
-          ))
-        ) : (
-          <div className={styles.emptyState}>
-            <span className={styles.emptyStateIcon} aria-hidden>
-              <FiInbox />
-            </span>
-            <p className={styles.emptyStateTitle}>Inget här ännu</p>
-            <p className={styles.emptyStateHint}>
-              Lägg till filer med knappen ovan, eller öppna en annan mapp.
-            </p>
-          </div>
-        )}
-      </Stack>
+      {hasVisibleItems ? (
+        <div className={styles.sections}>
+          {folders.length > 0 ? (
+            <Stack gap="sm" className={styles.itemList}>
+              {folders.map((item) => (
+                <Link to={`/admin/globalMaterial/${encodeURIComponent(item.path)}`} key={item.path} className={`${styles.itemRow} ${styles.itemRowFolder}`}>
+                  <span className={`${styles.itemIconWrap} ${styles.itemIconWrapFolder}`} aria-hidden>
+                    <FiFolder className={styles.itemIconSvg} />
+                  </span>
+                  <span className={styles.itemName}>{item.name}</span>
+                </Link>
+              ))}
+            </Stack>
+          ) : null}
+          {MATERIAL_SECTIONS.map((section) => {
+            const files = fileSections[section.id];
+            if (files.length === 0) return null;
+            return (
+              <section key={section.id} className={styles.materialSection}>
+                <h2 className={styles.sectionTitle}>{section.title}</h2>
+                <Stack gap="sm" className={styles.itemList}>
+                  {files.map(({ material }) => (
+                    <div
+                      key={material.materialId}
+                      className={`${styles.itemRow} ${styles.itemRowFile} ${
+                        selectedMaterialIds.includes(material.materialId) ? styles.itemRowSelected : ''
+                      }`}
+                    >
+                      <div className={styles.fileLead}>
+                        <input
+                          type="checkbox"
+                          className={styles.rowSelectCheckbox}
+                          checked={selectedMaterialIds.includes(material.materialId)}
+                          disabled={rowBusy}
+                          onChange={() => toggleMaterialSelected(material.materialId)}
+                          onClick={(e) => e.stopPropagation()}
+                          aria-label={`Markera ${material.title || material.filePath.split('/').pop() || 'fil'}`}
+                        />
+                        <span className={styles.itemName}>{material.title || material.filePath.split('/').pop()}</span>
+                      </div>
+                      <div className={styles.itemActions}>
+                        <input
+                          ref={(el) => {
+                            fileInputRefs.current[material.materialId] = el;
+                          }}
+                          className={styles.hiddenFileInput}
+                          type="file"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0] || null;
+                            void handleReplaceFile(material, f);
+                            e.currentTarget.value = '';
+                          }}
+                        />
+                        <button
+                          type="button"
+                          className={styles.replaceButton}
+                          disabled={
+                            replacingMaterialId === material.materialId ||
+                            deletingMaterialId === material.materialId ||
+                            isBatchDeleting
+                          }
+                          aria-label={
+                            replacingMaterialId === material.materialId
+                              ? 'Ersätter fil'
+                              : 'Ersätt fil'
+                          }
+                          title="Ersätt fil"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            fileInputRefs.current[material.materialId]?.click();
+                          }}
+                        >
+                          <FiRefreshCw aria-hidden size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.deleteFileButton}
+                          disabled={
+                            deletingMaterialId === material.materialId ||
+                            replacingMaterialId === material.materialId ||
+                            isBatchDeleting
+                          }
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setBatchDeleteTargets([]);
+                            setMaterialPendingDelete(material);
+                          }}
+                          aria-label={`Ta bort ${material.title || material.filePath.split('/').pop()}`}
+                        >
+                          <FiTrash2 aria-hidden size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </Stack>
+              </section>
+            );
+          })}
+        </div>
+      ) : (
+        <div className={styles.emptyState}>
+          <span className={styles.emptyStateIcon} aria-hidden>
+            <FiInbox />
+          </span>
+          <p className={styles.emptyStateTitle}>Inget här ännu</p>
+          <p className={styles.emptyStateHint}>
+            Lägg till filer med knappen ovan, eller öppna en annan mapp.
+          </p>
+        </div>
+      )}
       </section>
       </div>
     </div>

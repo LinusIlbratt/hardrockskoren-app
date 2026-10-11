@@ -3,10 +3,12 @@
  * utgångna event utelämnas bara från notification-status-svaret.
  *
  * Tider är väggklocka i Europe/Stockholm.
- * - REHEARSAL: öppen till och med söndag 23:59:59 i repetitionens vecka
- *   (måndag–söndag). Stängd från måndag 00:00:00 veckan efter.
- * - CONCERT: öppen under gigets kalenderdygn. Stängd från 00:00:00
- *   dagen efter det senare av eventDate och endDate.
+ * Notiser gäller bara innevarande vecka: måndag 00:00:00 till nästa
+ * måndag 00:00:00 (exklusivt, alltså hela söndagen t.o.m. 23:59:59).
+ * Event som börjar senare är stängda tills den veckan infaller.
+ * - REHEARSAL: inom veckan öppen till måndag 00:00:00 veckan efter repets datum.
+ * - CONCERT: inom veckan öppen till 00:00:00 dagen efter det senare av
+ *   eventDate och endDate.
  */
 
 const STOCKHOLM = "Europe/Stockholm";
@@ -28,16 +30,48 @@ export function isNotificationWindowClosed(
   if (event.eventType === "REHEARSAL") {
     const anchor = stockholmYmd(parseInstant(event.eventDate));
     if (!anchor) return false;
+    if (isStartAfterCurrentWeek(anchor, now)) return true;
     return now.getTime() >= rehearsalClosesAt(anchor).getTime();
   }
 
   if (event.eventType === "CONCERT") {
+    const start = stockholmYmd(parseInstant(event.eventDate));
+    if (!start) return false;
+    if (isStartAfterCurrentWeek(start, now)) return true;
     const anchor = laterStockholmDate(event.eventDate, event.endDate);
     if (!anchor) return false;
     return now.getTime() >= concertClosesAt(anchor).getTime();
   }
 
   return false;
+}
+
+/** True när eventets startdatum ligger måndag–söndag i veckan som `now` tillhör. */
+export function isEventInCurrentWeek(
+  event: NotificationWindowEvent,
+  now: Date = new Date()
+): boolean {
+  if (Number.isNaN(now.getTime())) return false;
+  const start = stockholmYmd(parseInstant(event.eventDate));
+  const week = currentStockholmWeek(now);
+  if (!start || !week) return false;
+  return compareYmd(start, week.start) >= 0 && compareYmd(start, week.endExclusive) < 0;
+}
+
+function isStartAfterCurrentWeek(startDay: Ymd, now: Date): boolean {
+  const week = currentStockholmWeek(now);
+  if (!week) return false;
+  return compareYmd(startDay, week.endExclusive) >= 0;
+}
+
+/** Måndag 00:00 ingår. Nästa måndag 00:00 är exklusiv slutgräns. */
+function currentStockholmWeek(now: Date): { start: Ymd; endExclusive: Ymd } | null {
+  const today = stockholmYmd(now);
+  if (!today) return null;
+  const weekday = weekdayOf(today);
+  const daysSinceMonday = weekday === 0 ? 6 : weekday - 1;
+  const start = addDays(today, -daysSinceMonday);
+  return { start, endExclusive: addDays(start, 7) };
 }
 
 /** Måndag 00:00:00 Stockholm i veckan efter repetitionens kalenderdatum. */
