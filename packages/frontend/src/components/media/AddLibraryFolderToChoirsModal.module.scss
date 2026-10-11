@@ -5,24 +5,27 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #f5ebd7;
 
   > p {
     margin: 0;
-    line-height: 1.6;
-    color: var(--color-text);
+    line-height: 1.45;
+    color: rgba(245, 235, 215, 0.85);
   }
 
   strong {
-    color: #fff;
-    font-weight: 700;
+    color: #f5ebd7;
+    font-weight: 600;
   }
 }
 
 .hint {
   margin: 0;
-  font-size: var(--fs-sm);
-  line-height: 1.5;
-  color: var(--color-text-secondary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgba(245, 235, 215, 0.7);
 }
 
 .linkedList {
@@ -30,9 +33,10 @@
   padding: var(--spacing-sm) var(--spacing-md);
   max-height: 8rem;
   overflow-y: auto;
-  font-size: var(--fs-sm);
-  line-height: 1.5;
-  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: rgba(245, 235, 215, 0.85);
   list-style: none;
   border-radius: var(--radius-md);
   background: rgba(0, 0, 0, 0.35);
@@ -67,9 +71,10 @@
 
 .audienceLegend {
   padding: 0;
-  font-size: var(--fs-sm);
+  font-family: inherit;
+  font-size: 0.9rem;
   font-weight: 600;
-  color: var(--color-text);
+  color: #f5ebd7;
 }
 
 .audienceOptions {
@@ -83,8 +88,10 @@
   align-items: center;
   gap: var(--spacing-xs);
   cursor: pointer;
-  color: var(--color-text);
-  font-size: var(--fs-sm);
+  color: rgba(245, 235, 215, 0.85);
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.45;
 
   input {
     accent-color: var(--color-primary);
@@ -99,11 +106,7 @@
 }
 
 .actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-sm);
   margin-top: var(--spacing-md);
-  flex-wrap: wrap;
   padding-top: var(--spacing-sm);
   border-top: 1px solid rgba(255, 255, 255, 0.08);
 }

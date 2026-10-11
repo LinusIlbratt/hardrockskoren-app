@@ -1,77 +1,89 @@
 @use '@/styles/variables' as *;
 
 .page {
-  @include column($gap-size: var(--spacing-xl));
+  width: 100%;
+  margin: 0;
+  padding: var(--spacing-lg) 0 0;
+}
+
+.page .header {
+  gap: var(--spacing-sm);
+  margin: 0;
 }
 
 .header {
-  @include column($gap-size: var(--spacing-md));
   width: 100%;
 
   h2 {
     margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: var(--fs-h2);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--color-text-luxury);
+  }
+
+  p {
+    margin: 0;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: var(--fs-sm);
+    font-weight: 400;
+    line-height: 1.45;
+    color: var(--color-text-luxury-muted);
   }
 }
 
-.legend {
+.titleRow {
   display: flex;
-  align-items: flex-start;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  background-color: rgba(255, 255, 255, 0.03);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
-}
-
-.legendIcon {
-  flex-shrink: 0;
-  color: var(--color-text);
-  margin-top: 3px; // Finjustering för vertikal linjering
-}
-
-.legendText {
-  margin: 0;
-  font-size: var(--fs-sm);
-  color: var(--color-text-secondary);
-  line-height: 1.6;
-
-  .inlineIcon {
-    color: var(--color-text); // Använder din befintliga färg för ögat
-    vertical-align: middle;
-    margin: 0 0.1em -0.2em 0.2em; // Finjustering för att linjera med texten
-  }
-}
-
-.tabs {
-  display: flex;
-  gap: var(--spacing-lg);
-  border-bottom: 1px solid var(--color-border);
+  justify-content: space-between;
+  align-items: center;
   width: 100%;
+  min-height: 44px;
 }
 
-.tabButton {
-  background: none;
+.infoButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
   border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
   cursor: pointer;
-  padding: var(--spacing-sm) 0;
-  padding-bottom: var(--spacing-md);
-  font-size: var(--fs-sm);
-  font-family: var(--font-heading);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: var(--color-text-secondary);
-  border-bottom: 3px solid transparent;
-  transition: color 0.2s, border-color 0.2s;
-  margin-bottom: -1px; // Justerar så ramen ligger snyggt
+  transition: color 0.2s ease, background-color 0.2s ease;
 
-  &:hover {
-    color: var(--color-text);
+  &:hover,
+  &:active {
+    color: var(--color-text-luxury);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
   }
 }
 
-.activeTab {
-  color: var(--color-text);
-  border-bottom-color: var(--color-text);
+.helpText {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--color-text-luxury, #f4efe6);
+
+  svg {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    vertical-align: middle;
+    margin: 0 0.2em;
+    color: var(--color-text-luxury-muted);
+  }
 }
 
 .listSection {
@@ -79,7 +91,6 @@
 }
 
 .eventList {
-  @include column($gap-size: var(--spacing-sm));
   list-style: none;
   padding: 0;
   margin: 0;
@@ -90,9 +101,9 @@
   align-items: center;
   gap: var(--spacing-md);
   padding: var(--spacing-md);
-  background-color: var(--color-dark-gray);
-  border-radius: var(--radius-lg);
-  border: 1px solid transparent;
+  background-color: var(--color-luxury-surface);
+  border-radius: 12px;
+  border: 1px solid var(--color-border-subtle);
   transition: opacity 0.3s ease, background-color 0.2s ease, border-color 0.2s ease;
 
   // NYTT: Klass för att göra raden klickbar
@@ -106,12 +117,12 @@
 
 .tabBadge {
   display: inline-block;
-  width: 8px;
-  height: 8px;
-  margin-left: 8px;
-  background-color: var(--color-primary); // Använder din temafärg
-  border-radius: 50%;
-  animation: pulseScale 1.5s infinite; // Samma pulsering som ögat-ikonen
+  width: var(--spacing-sm);
+  height: var(--spacing-sm);
+  margin-left: var(--spacing-sm);
+  background-color: var(--color-luxury-accent-solid);
+  border-radius: var(--radius-full);
+  animation: pulseScale 1.5s infinite;
 }
 
 // Stil för helt nya event
@@ -132,12 +143,13 @@
 
 // NYTT: Stil för det röda, pulserande ögat
 .pulsingRedEye {
-  color: var(--color-text), !important; 
+  color: var(--color-luxury-accent-solid);
   animation: pulseScale 1.5s infinite;
 }
 
 .nextUpcomingEvent {
-  box-shadow: 0 0 8px -2px var(--color-text);
+  border-color: var(--color-luxury-accent-border);
+  box-shadow: 0 0 0 1px var(--color-luxury-accent-border);
 }
 
 .pastEvent {
@@ -150,39 +162,25 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  background-color: rgba(255, 255, 255, 0.05);
+  width: calc(var(--spacing-2xl) + var(--spacing-xs));
+  height: calc(var(--spacing-2xl) + var(--spacing-xs));
+  background-color: rgba(255, 255, 255, 0.04);
   border-radius: var(--radius-md);
-  color: var(--color-text);
-  border: 1px solid var(--color-border);
-
-  .month {
-    font-size: var(--fs-xs);
-    text-transform: uppercase;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    transition: color 0.3s ease;
-  }
-  .day {
-    font-size: var(--fs-lg);
-    font-weight: 700;
-    line-height: 1.1;
-    color: var(--color-text-strong);
-    transition: color 0.3s ease;
-  }
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-luxury);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .itemDetails {
-  @include column($gap-size: 0.25rem);
   flex-grow: 1;
   min-width: 0;
 }
 
 .itemTitle {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 600;
   font-size: var(--fs-lg);
-  color: var(--color-text);
+  color: var(--color-text-luxury);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -190,8 +188,9 @@
 }
 
 .itemTime {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: var(--fs-sm);
-  color: var(--color-text-secondary);
+  color: var(--color-text-luxury-muted);
   transition: color 0.3s ease;
 }
 
@@ -204,21 +203,22 @@
   border: none;
   cursor: pointer;
   padding: var(--spacing-xs);
-  border-radius: var(--radius-round);
-  color: var(--color-text);
+  border-radius: 8px;
+  color: var(--color-text-luxury-muted);
   display: flex;
-  transition: color 0.2s, background-color 0.2s;
+  transition: color 0.2s ease;
 
   &:hover {
-    color: var(--color-icon-view-hover);
-    background-color: var(--color-background-hover-accent);
+    color: var(--color-text-luxury);
+    background-color: transparent;
   }
 }
 
 .descriptionText {
   white-space: pre-wrap;
-  font-family: var(--font-body);
-  color: var(--color-text-secondary);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  color: var(--color-text-luxury);
   font-size: var(--fs-sm);
 }
 

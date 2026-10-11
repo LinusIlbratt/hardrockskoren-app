@@ -1,88 +1,125 @@
 @use '@/styles/variables' as *;
 
+$sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
 // --- Generell sidlayout ---
 .page {
-  // FÖRBÄTTRING: Använder logiska egenskaper för padding.
-  padding-block: var(--spacing-md);
-  padding-inline: var(--spacing-lg);
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--spacing-lg) 0 0;
+  font-family: $sans;
+  color: var(--color-text-luxury, #f4efe6);
 
-  @include column(var(--spacing-lg)); // Denna mixin hanterar nu allt vertikalt avstånd mellan sektioner.
+  @include column(16px);
+}
+
+.navBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 // --- Brödsmulor (navigering) ---
 .breadcrumbs {
-  font-size: var(--fs-sm);
-  color: var(--color-text-secondary);
+  margin: 0 0 8px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
 
   a {
-    color: var(--color-text-secondary);
+    color: inherit;
+    font-family: inherit;
     text-decoration: none;
     transition: color 0.2s ease;
-    &:hover {
-      color: var(--color-primary);
-      text-decoration: underline;
-    }
-  }
 
-  span {
-    // FÖRBÄTTRING: Använder logisk egenskap.
-    padding-inline: var(--spacing-xs);
+    &:hover {
+      color: var(--color-text-luxury, #f4efe6);
+      text-decoration: none;
+    }
   }
 }
 
 // --- Header ---
 .header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--spacing-md);
   flex-wrap: wrap;
 }
 
-.legend {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md);
-  background-color: rgba(255, 255, 255, 0.03);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
+.headerTitleGroup {
+  margin: 0;
 }
 
-.legendIcon {
+.songTitle {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: clamp(20px, 4vw, 28px);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-text-luxury, #f4efe6);
+  word-break: break-word;
+}
+
+.artistName {
+  margin: 4px 0 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
+}
+
+.infoButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
-  color: var(--color-text);
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+
+  &:hover,
+  &:active {
+    color: var(--color-text-luxury);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
 }
 
-.legendText {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.4em;
+.helpText {
   margin: 0;
-  font-size: var(--fs-sm);
-  color: var(--color-text-secondary);
+  font-family: $sans;
+  font-size: 15px;
   line-height: 1.6;
-}
-
-.repertoireTitle {
-  margin: 0;
-  font-size: var(--fs-h2);
-}
-
-.headerSubtitle {
-  margin: 0;
-  color: var(--color-text-secondary);
-  font-style: italic;
+  color: var(--color-text-luxury, #f4efe6);
 }
 
 // --- Laddning/Fel-meddelanden ---
 .pageState {
-  padding: var(--spacing-xl);
+  margin: 0;
+  padding: var(--spacing-lg) 0;
+  font-family: $sans;
+  font-size: 14px;
   text-align: center;
-  color: var(--color-text-secondary);
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
   &.error {
-    color: var(--color-accent);
+    color: #e55353;
   }
 }
 
@@ -90,27 +127,23 @@
 .backButton {
   display: inline-flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  background-color: var(--color-dark-gray);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-primary);
-  
-  // FÖRBÄTTRING: Använder logiska egenskaper.
-  padding-block: var(--spacing-sm);
-  padding-inline: var(--spacing-md);
-
-  border-radius: var(--radius-md);
-  font-size: var(--fs-base);
-  font-weight: 600;
+  gap: 6px;
+  margin: 0;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: var(--color-text-luxury, #f4efe6);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
   cursor: pointer;
-  transition: all 0.2s ease;
-  
-  // FÖRBÄTTRING: Borttagen, då .page nu sköter avståndet med 'gap'.
-  // margin-bottom: var(--spacing-md);
+  transition: background 0.2s ease, border-color 0.2s ease;
 
   &:hover {
-    background-color: var(--color-background-hover);
-    border-color: var(--color-text-secondary);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.16);
   }
 }
 
@@ -154,7 +187,12 @@
 }
 
 .itemName {
+  font-family: inherit;
+  font-size: 15px;
   font-weight: 500;
+  letter-spacing: 0.5px;
+  line-height: 1.3;
+  color: var(--color-text-luxury, #f4efe6);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -183,29 +221,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: color 0.2s, background-color 0.2s;
+    color: rgba(244, 239, 230, 0.6);
+    transition: color 0.2s ease, background 0.2s ease;
 
-    // FÖRBÄTTRING: Garanterar en minsta klickyta för mobil (touch target).
     min-width: 44px;
     min-height: 44px;
-    
+
     &:hover {
-      background-color: var(--color-background-hover);
+      color: #f4efe6;
+      background: rgba(255, 255, 255, 0.08);
     }
   }
 
-  [aria-label^="Spela"] {
-    color: var(--color-icon-play);
-
-    &[aria-pressed='true'] {
-      color: var(--color-primary);
-    }
-  }
-  [aria-label^="Visa"] { color: var(--color-icon-view); }
-  [aria-label^="Ta bort"] { color: var(--color-text-secondary); 
-    &:hover {
-      color: var(--color-accent);
-    }
+  [aria-label^="Spela"][aria-pressed='true'] {
+    color: #f4efe6;
   }
 }
 

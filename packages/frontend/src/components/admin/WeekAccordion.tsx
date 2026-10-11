@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { FileInput } from '@/components/ui/input/FileInput';
 import { Input } from '@/components/ui/input/Input';
@@ -6,7 +6,7 @@ import { FormGroup } from '@/components/ui/form/FormGroup';
 import { Modal } from '@/components/ui/modal/Modal';
 import axios from 'axios';
 import styles from './WeekAccordion.module.scss';
-import { FiChevronDown, FiChevronUp } from 'react-icons/fi';
+import { FiChevronDown, FiChevronUp, FiFile, FiFileText, FiMusic, FiTrash2 } from 'react-icons/fi';
 import type { Material } from '@/types';
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
@@ -17,21 +17,32 @@ interface WeekAccordionProps {
   onUploadOrDeleteSuccess: () => void;
 }
 
+type FileKind = 'audio' | 'score' | 'other';
+
+const fileKind = (fileKey = ''): FileKind => {
+  const key = fileKey.toLowerCase();
+  if (/\.(mp3|wav|m4a|aac|ogg|mp4|mov)$/.test(key)) return 'audio';
+  if (/\.(pdf|txt|doc|docx)$/.test(key)) return 'score';
+  return 'other';
+};
+
+const FileKindIcon = ({ kind }: { kind: FileKind }) => {
+  if (kind === 'audio') return <FiMusic aria-hidden="true" />;
+  if (kind === 'score') return <FiFileText aria-hidden="true" />;
+  return <FiFile aria-hidden="true" />;
+};
+
 export const WeekAccordion = ({ weekId, materials, onUploadOrDeleteSuccess }: WeekAccordionProps) => {
   const [isOpen, setIsOpen] = useState(false);
-
-  // States för uppladdningsformuläret inuti dragspel
   const [title, setTitle] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-
-  // States för radering (logik från din gamla fil)
   const [selectedIds, setSelectedIds] = useState(new Set<string>());
+  const [deleteTargetIds, setDeleteTargetIds] = useState<string[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Hanterar uppladdning till DENNA specifika vecka
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!file || !title) {
@@ -57,7 +68,6 @@ export const WeekAccordion = ({ weekId, materials, onUploadOrDeleteSuccess }: We
     }
   };
 
-  // Raderingslogik, nästan identisk med din gamla fil
   const handleSelectionChange = (materialId: string) => {
     const newSelectedIds = new Set(selectedIds);
     if (newSelectedIds.has(materialId)) {
@@ -68,91 +78,122 @@ export const WeekAccordion = ({ weekId, materials, onUploadOrDeleteSuccess }: We
     setSelectedIds(newSelectedIds);
   };
 
+  const openDeleteModal = (ids: string[]) => {
+    if (ids.length === 0) return;
+    setDeleteTargetIds(ids);
+    setIsDeleteModalOpen(true);
+  };
+
   const handleConfirmDelete = async () => {
-    if (selectedIds.size === 0) return;
+    if (deleteTargetIds.length === 0) return;
     setIsDeleting(true);
     const token = localStorage.getItem('authToken');
     try {
-      await axios.post(`${API_BASE_URL}/practice/batch-delete`, { materialIds: Array.from(selectedIds) }, { headers: { Authorization: `Bearer ${token}` } });
-      setSelectedIds(new Set());
+      await axios.post(`${API_BASE_URL}/practice/batch-delete`, { materialIds: deleteTargetIds }, { headers: { Authorization: `Bearer ${token}` } });
+      setSelectedIds(prev => {
+        const next = new Set(prev);
+        deleteTargetIds.forEach(id => next.delete(id));
+        return next;
+      });
+      setDeleteTargetIds([]);
       setIsDeleteModalOpen(false);
-      onUploadOrDeleteSuccess(); // Ladda om allt
-    } catch (error) {
-      console.error("Failed to batch delete materials:", error);
+      onUploadOrDeleteSuccess();
+    } catch (deleteError) {
+      console.error("Failed to batch delete materials:", deleteError);
       setError('Raderingen misslyckades.');
     } finally {
       setIsDeleting(false);
     }
   };
 
-  const { mediaFiles, documentFiles, otherFiles } = useMemo(() => {
-    const isMediaFile = (key = '') => key.toLowerCase().match(/\.(mp3|wav|m4a|mp4|mov)$/i);
-    const isDocumentFile = (key = '') => key.toLowerCase().match(/\.(pdf|txt|doc|docx)$/i);
-    return {
-      mediaFiles: materials.filter(m => isMediaFile(m.fileKey)),
-      documentFiles: materials.filter(m => isDocumentFile(m.fileKey)),
-      otherFiles: materials.filter(m => !isMediaFile(m.fileKey) && !isDocumentFile(m.fileKey)),
-    };
-  }, [materials]);
-
-  const renderMaterialList = (files: Material[]) => (
-    <ul className={styles.materialList}>
-      {files.map(material => (
-        <li key={material.materialId} className={styles.materialItem}>
-          <input type="checkbox" id={material.materialId} checked={selectedIds.has(material.materialId)} onChange={() => handleSelectionChange(material.materialId)} className={styles.checkbox} />
-          <label htmlFor={material.materialId}>{material.title || material.fileKey}</label>
-        </li>
-      ))}
-    </ul>
-  );
-
   const weekNumber = weekId.split('-W')[1];
+  const fileCountLabel = materials.length === 1 ? '1 fil' : `${materials.length} filer`;
 
   return (
     <div className={styles.accordion}>
-      <button className={styles.header} onClick={() => setIsOpen(!isOpen)}>
-        <div className={styles.headerTitle}>
+      <button type="button" className={styles.header} onClick={() => setIsOpen(!isOpen)} aria-expanded={isOpen}>
+        <span className={styles.headerTitle}>
           <span>Vecka {weekNumber}</span>
-          <span className={styles.fileCount}>{materials.length} fil(er)</span>
-        </div>
-        {isOpen ? <FiChevronUp /> : <FiChevronDown />}
+          <span className={styles.fileCount}>{fileCountLabel}</span>
+        </span>
+        {isOpen ? <FiChevronUp aria-hidden="true" /> : <FiChevronDown aria-hidden="true" />}
       </button>
 
       {isOpen && (
         <div className={styles.content}>
-          <div className={styles.contentHeader}>
-            <h4>Befintligt material</h4>
-            {selectedIds.size > 0 && (
-              <Button variant={ButtonVariant.Destructive} onClick={() => setIsDeleteModalOpen(true)}>
-                Radera valda ({selectedIds.size})
-              </Button>
-            )}
-          </div>
-          {materials.length > 0 ? (
-            <>
-              {mediaFiles.length > 0 && <div className={styles.categorySection}><h3>Mediafiler</h3>{renderMaterialList(mediaFiles)}</div>}
-              {documentFiles.length > 0 && <div className={styles.categorySection}><h3>Dokument</h3>{renderMaterialList(documentFiles)}</div>}
-              {otherFiles.length > 0 && <div className={styles.categorySection}><h3>Övrigt</h3>{renderMaterialList(otherFiles)}</div>}
-            </>
-          ) : (
-            <p>Inga filer har laddats upp för denna vecka ännu.</p>
+          {selectedIds.size > 0 && (
+            <button
+              type="button"
+              className={styles.removeSelectedButton}
+              onClick={() => openDeleteModal(Array.from(selectedIds))}
+            >
+              Ta bort markerade ({selectedIds.size})
+            </button>
           )}
 
-          <hr className={styles.divider} />
-          
-          <h4>Lägg till mer material till vecka {weekNumber}</h4>
-          <form onSubmit={handleSubmit} className={styles.form}>
-            <FormGroup label="Titel på övning" htmlFor={`title-${weekId}`}><Input id={`title-${weekId}`} type="text" value={title} onChange={(e) => setTitle(e.target.value)} required /></FormGroup>
-            <FormGroup label="Välj fil"><FileInput onFileSelect={setFile} value={file} /></FormGroup>
+          {materials.length > 0 ? (
+            <ul className={styles.materialList}>
+              {materials.map(material => {
+                const label = material.title || material.fileKey;
+                return (
+                  <li key={material.materialId} className={styles.materialItem}>
+                    <label className={styles.fileLead} htmlFor={material.materialId}>
+                      <input
+                        type="checkbox"
+                        id={material.materialId}
+                        checked={selectedIds.has(material.materialId)}
+                        onChange={() => handleSelectionChange(material.materialId)}
+                        className={styles.checkbox}
+                      />
+                      <span className={styles.fileIcon}>
+                        <FileKindIcon kind={fileKind(material.fileKey)} />
+                      </span>
+                      <span className={styles.fileTitle}>{label}</span>
+                    </label>
+                    <button
+                      type="button"
+                      className={styles.deleteButton}
+                      aria-label={`Radera ${label}`}
+                      title="Radera"
+                      onClick={() => openDeleteModal([material.materialId])}
+                    >
+                      <FiTrash2 size={16} aria-hidden="true" />
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className={styles.empty}>Inga filer för den här veckan.</p>
+          )}
+
+          <form onSubmit={handleSubmit} className={styles.uploadForm}>
+            <p className={styles.uploadLabel}>Lägg till mer material</p>
+            <FormGroup label="Titel på övning" htmlFor={`title-${weekId}`}>
+              <Input id={`title-${weekId}`} type="text" value={title} onChange={(e) => setTitle(e.target.value)} required />
+            </FormGroup>
+            <FormGroup label="Fil">
+              <FileInput onFileSelect={setFile} value={file} className={styles.filePicker} />
+            </FormGroup>
             {error && <p className={styles.error}>{error}</p>}
-            <Button type="submit" isLoading={isUploading}>Ladda upp till V.{weekNumber}</Button>
+            <Button type="submit" className={styles.uploadButton} isLoading={isUploading}>Ladda upp</Button>
           </form>
         </div>
       )}
-      <Modal isOpen={isDeleteModalOpen} onClose={() => setIsDeleteModalOpen(false)} title="Bekräfta radering">
-        <div>
-          <p>Är du säker på att du vill radera de valda filerna? Åtgärden kan inte ångras.</p>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '2rem' }}>
+
+      <Modal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Bekräfta radering"
+        tone="library"
+      >
+        <div className={styles.modalBody}>
+          <p>
+            {deleteTargetIds.length === 1
+              ? 'Är du säker på att du vill radera filen? Åtgärden kan inte ångras.'
+              : `Är du säker på att du vill radera ${deleteTargetIds.length} filer? Åtgärden kan inte ångras.`}
+          </p>
+          <div className={styles.modalActions}>
             <Button variant={ButtonVariant.Ghost} onClick={() => setIsDeleteModalOpen(false)}>Avbryt</Button>
             <Button variant={ButtonVariant.Primary} isLoading={isDeleting} onClick={handleConfirmDelete}>Ja, radera</Button>
           </div>

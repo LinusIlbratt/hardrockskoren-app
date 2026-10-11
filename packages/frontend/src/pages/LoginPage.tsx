@@ -6,7 +6,7 @@ import { Button, ButtonRadius, ButtonSize } from '@/components/ui/button/Button'
 import { Input } from '@/components/ui/input/Input';
 import { FormGroup } from '@/components/ui/form/FormGroup';
 import { LoginPoster } from '@/components/layout/LoginPoster';
-import { ForgotPasswordModal } from '@/components/ui/modal/ForgotPasswordModal';
+import { ForgotPasswordModal } from '@/features/auth';
 import styles from './LoginPage.module.scss';
 import logoImage from '@/assets/images/hrk-logo.webp';
 
@@ -76,7 +76,7 @@ export const LoginPage = () => {
               </div>
 
               <div className={styles.buttonGroup}>
-                <Button type="submit" radius={ButtonRadius.Small} size={ButtonSize.Login} isLoading={isLoading} fullWidth>
+                <Button type="submit" radius={ButtonRadius.Medium} size={ButtonSize.Login} isLoading={isLoading} fullWidth>
                   Rock'n Roll
                 </Button>
               </div>

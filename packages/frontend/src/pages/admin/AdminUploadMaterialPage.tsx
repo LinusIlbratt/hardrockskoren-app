@@ -1,16 +1,25 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom'; // ADDED: För navigering
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { FileInput } from '@/components/ui/input/FileInput';
-import { FiFolder, FiTrash2, FiUploadCloud } from 'react-icons/fi';
+import { Cluster } from '@/components/ui/layout/Cluster';
+import { FiFolder, FiTrash2 } from 'react-icons/fi';
+import { materialActionError } from '@/features/materials/materialActionError';
+import { isAbortError } from '@/utils/apiError';
+import {
+  MAX_FILES_PER_BATCH_UPLOAD,
+  batchDeleteMaterials,
+  listGlobalMaterials,
+  prepareBatchUpload,
+  putToPresignedUrl,
+  type LibraryMaterial,
+} from '@/services/materialService';
 import styles from './AdminUploadMaterialPage.module.scss';
-import type { Material } from '@/types';
 
 // --- TYPER & HJÄLPFUNKTIONER ---
-interface FileNode { type: 'file'; name: string; material: Material; }
+interface FileNode { type: 'file'; name: string; material: LibraryMaterial; }
 interface FolderNode { type: 'folder'; name: string; children: (FolderNode | FileNode)[]; }
 
-const buildFileTree = (materials: Material[]): FolderNode => {
+const buildFileTree = (materials: LibraryMaterial[]): FolderNode => {
   const root: FolderNode = { type: 'folder', name: 'root', children: [] };
   materials.forEach(material => {
     const path = material.filePath || material.fileKey || 'unknown-file';
@@ -50,17 +59,24 @@ const getAllMaterialIdsInFolder = (folderNode: FolderNode): string[] => {
 /** Undvik API Gateway/Lambda-timeout vid många filer; backend processar redan i chunk om 25. */
 const BATCH_DELETE_MAX_IDS = 150;
 
-function apiErrorMessage(error: unknown): string | undefined {
-  if (typeof error !== 'object' || error === null) return undefined;
-  const err = error as { response?: { data?: unknown; status?: number }; code?: string };
-  const data = err.response?.data;
-  if (data && typeof data === 'object' && data !== null && 'message' in data && typeof (data as { message: string }).message === 'string') {
-    return (data as { message: string }).message;
+function relativePathOf(file: File): string {
+  const withPath = file as File & { webkitRelativePath?: string };
+  const path = withPath.webkitRelativePath?.trim();
+  return path ? path : file.name;
+}
+
+function chunkItems<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) {
+    chunks.push(items.slice(i, i + size));
   }
-  if (err.response?.status === 504 || err.code === 'ECONNABORTED') {
-    return 'Begäran tog för länge. Försök igen; vid många filer raderas de nu i flera omgångar.';
-  }
-  return undefined;
+  return chunks;
+}
+
+function isTimeoutError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const err = error as { response?: { status?: number }; code?: string };
+  return err.response?.status === 504 || err.code === 'ECONNABORTED';
 }
 
 // --- KOMPONENT FÖR MAPP-RADER (Flyttad utanför huvudkomponenten) ---
@@ -71,70 +87,79 @@ interface MaterialFolderItemProps {
 }
 
 const MaterialFolderItem: React.FC<MaterialFolderItemProps> = ({ node, onDelete, isDeleting }) => {
-  const navigate = useNavigate(); // ADDED: Hook för navigering
+  const navigate = useNavigate();
   const fileCount = useMemo(() => countFilesInFolder(node), [node]);
 
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDeleteClick = () => {
     const idsToDelete = getAllMaterialIdsInFolder(node);
     onDelete(node.name, idsToDelete);
   };
 
-  // CHANGED: Implementerad navigering
   const handleItemClick = () => {
-    // encodeURIComponent säkerställer att specialtecken som mellanslag eller '/' fungerar i URL:en
     navigate(`/admin/globalMaterial/${encodeURIComponent(node.name)}`);
   };
 
   return (
-    <div className={styles.materialItem} onClick={handleItemClick}>
-      <div className={styles.itemInfo}>
-        <FiFolder size={24} className={styles.itemIcon} />
-        <div className={styles.itemText}>
-          <span className={styles.itemTitle}>{node.name}</span>
-          <span className={styles.itemSubtitle}>{fileCount} {fileCount === 1 ? 'fil' : 'filer'}</span>
-        </div>
-      </div>
+    <div className={styles.materialItem}>
       <button
+        type="button"
+        className={styles.folderOpen}
+        onClick={handleItemClick}
+      >
+        <FiFolder size={22} className={styles.itemIcon} aria-hidden="true" />
+        <span className={styles.itemText}>
+          <span className={styles.itemTitle}>{node.name}</span>
+          <span className={styles.itemSubtitle}>
+            {fileCount} {fileCount === 1 ? 'fil' : 'filer'}
+          </span>
+        </span>
+      </button>
+      <button
+        type="button"
         className={styles.deleteButton}
         onClick={handleDeleteClick}
+        aria-label={`Radera mappen ${node.name}`}
         title={`Radera mappen ${node.name}`}
-        disabled={isDeleting} // ADDED: Inaktivera knappen under radering
+        disabled={isDeleting}
       >
-        <FiTrash2 size={20} />
+        <FiTrash2 size={18} aria-hidden="true" />
       </button>
     </div>
   );
 };
 
-// --- HUVUDKOMPONENT ---
-const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
-
 export const AdminUploadMaterialPage = () => {
-  const [materials, setMaterials] = useState<Material[]>([]);
+  const [materials, setMaterials] = useState<LibraryMaterial[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<FileList | null>(null);
-
-  // CHANGED: Bättre state för att hantera radering av specifik mapp
   const [deletingFolder, setDeletingFolder] = useState<string | null>(null);
+  const [tab, setTab] = useState<'library' | 'upload'>('library');
 
-  const fetchMaterials = useCallback(async () => {
+  const fetchMaterials = useCallback(async (signal?: AbortSignal) => {
     setIsLoading(true);
-    const token = localStorage.getItem('authToken');
     try {
-      const response = await axios.get(`${API_BASE_URL}/materials`, { headers: { Authorization: `Bearer ${token}` } });
-      setMaterials(response.data);
+      const data = await listGlobalMaterials({ signal });
+      if (signal?.aborted) return;
+      setMaterials(data);
     } catch (error) {
-      setStatusMessage({ type: 'error', message: 'Kunde inte hämta material.' });
+      if (isAbortError(error) || signal?.aborted) return;
+      setStatusMessage({
+        type: 'error',
+        message: materialActionError(error, 'Kunde inte hämta material.'),
+      });
     } finally {
-      setIsLoading(false);
+      if (!signal?.aborted) setIsLoading(false);
     }
   }, []);
 
-  useEffect(() => { fetchMaterials(); }, [fetchMaterials]);
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetchMaterials(controller.signal);
+    return () => controller.abort();
+  }, [fetchMaterials]);
 
   const handleFolderUpload = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
@@ -142,26 +167,50 @@ export const AdminUploadMaterialPage = () => {
     setUploadProgress(0);
     setStatusMessage(null);
     setSelectedFolder(files);
-    const token = localStorage.getItem('authToken');
-    const filesToUpload = Array.from(files).map(f => ({ fileName: f.name, relativePath: (f as any).webkitRelativePath || f.name }));
+
+    const items = Array.from(files).map((file) => ({
+      file,
+      fileName: file.name,
+      relativePath: relativePathOf(file),
+    }));
+    const total = items.length;
+    let completed = 0;
+
     try {
-      const { data } = await axios.post(`${API_BASE_URL}/materials/prepare-batch-upload`, { files: filesToUpload }, { headers: { Authorization: `Bearer ${token}` } });
-      const fileMap = new Map(Array.from(files).map(f => [(f as any).webkitRelativePath, f]));
-      let uploadedCount = 0;
-      const uploadPromises = data.uploadTasks.map((task: any) => {
-        const fileToUpload = fileMap.get(task.relativePath);
-        if (!fileToUpload) return Promise.resolve();
-        return axios.put(task.uploadUrl, fileToUpload, { headers: { 'Content-Type': fileToUpload.type } })
-          .then(() => {
-            uploadedCount++;
-            setUploadProgress(Math.round((uploadedCount / data.uploadTasks.length) * 100));
-          });
-      });
-      await Promise.all(uploadPromises);
+      for (const batch of chunkItems(items, MAX_FILES_PER_BATCH_UPLOAD)) {
+        const tasks = await prepareBatchUpload(
+          batch.map(({ fileName, relativePath }) => ({ fileName, relativePath }))
+        );
+        if (tasks.length !== batch.length || tasks.some((task) => !task.uploadUrl || !task.relativePath)) {
+          throw new Error('Ogiltigt svar från prepare-batch-upload endpoint.');
+        }
+
+        const fileByPath = new Map(batch.map((item) => [item.relativePath, item.file]));
+        await Promise.all(
+          tasks.map(async (task) => {
+            const fileToUpload = fileByPath.get(task.relativePath as string);
+            if (!fileToUpload || !task.uploadUrl) {
+              throw new Error('Ogiltigt svar från prepare-batch-upload endpoint.');
+            }
+            await putToPresignedUrl(task.uploadUrl, fileToUpload);
+            completed += 1;
+            setUploadProgress(Math.round((completed / total) * 100));
+          })
+        );
+      }
       setStatusMessage({ type: 'success', message: `${files.length} filer har laddats upp!` });
+      setSelectedFolder(null);
+      setTab('library');
       await fetchMaterials();
     } catch (error) {
-      setStatusMessage({ type: 'error', message: 'Något gick fel vid uppladdningen.' });
+      const detail = materialActionError(error, 'Något gick fel vid uppladdningen.');
+      setStatusMessage({
+        type: 'error',
+        message: completed > 0 ? `${completed} av ${total} filer laddades upp. ${detail}` : detail,
+      });
+      if (completed > 0) {
+        await fetchMaterials();
+      }
     } finally {
       setIsUploading(false);
     }
@@ -171,30 +220,27 @@ export const AdminUploadMaterialPage = () => {
     if (ids.length === 0 || deletingFolder) return;
     if (!window.confirm(`Är du säker på att du vill radera mappen "${folderName}" och allt dess innehåll (${ids.length} filer)? Detta kan inte ångras.`)) return;
 
-    setDeletingFolder(folderName); // CHANGED: Sätt vilken mapp som raderas
+    setDeletingFolder(folderName);
     setStatusMessage(null);
-    const token = localStorage.getItem('authToken');
     try {
       for (let i = 0; i < ids.length; i += BATCH_DELETE_MAX_IDS) {
         const chunk = ids.slice(i, i + BATCH_DELETE_MAX_IDS);
-        await axios.post(
-          `${API_BASE_URL}/materials/batch-delete`,
-          { materialIds: chunk },
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await batchDeleteMaterials(chunk);
       }
       setStatusMessage({ type: 'success', message: `Mappen "${folderName}" har raderats.` });
-      await fetchMaterials(); // Hämta den uppdaterade listan
+      await fetchMaterials();
     } catch (error) {
-      const detail = apiErrorMessage(error);
+      const detail = isTimeoutError(error)
+        ? 'Begäran tog för länge. Försök igen; vid många filer raderas de nu i flera omgångar.'
+        : materialActionError(error, 'Kunde inte radera mappen.');
       setStatusMessage({
         type: 'error',
-        message: detail ?? 'Kunde inte radera mappen.',
+        message: detail,
       });
     } finally {
-      setDeletingFolder(null); // CHANGED: Nollställ oavsett resultat
+      setDeletingFolder(null);
     }
-  }, [deletingFolder, fetchMaterials]); // ADDED: Dependencies
+  }, [deletingFolder, fetchMaterials]);
 
   const fileTree = useMemo(() => materials.length > 0 ? buildFileTree(materials) : null, [materials]);
   const topLevelFolders = useMemo(() =>
@@ -203,62 +249,89 @@ export const AdminUploadMaterialPage = () => {
 
   return (
     <div className={styles.page}>
-      <header className={styles.header}>
-        <h1>Mediabibliotek</h1>
-        <p>Här hanterar du globalt material</p>
-      </header>
+      <h1 className={styles.title}>Material</h1>
 
-      {/* ADDED: Visa statusmeddelanden för användaren */}
+      <div className={styles.segment} role="tablist" aria-label="Material">
+        <button
+          type="button"
+          role="tab"
+          id="material-tab-library"
+          aria-selected={tab === 'library'}
+          aria-controls="material-panel-library"
+          className={styles.segmentButton}
+          onClick={() => setTab('library')}
+        >
+          Befintligt material
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="material-tab-upload"
+          aria-selected={tab === 'upload'}
+          aria-controls="material-panel-upload"
+          className={styles.segmentButton}
+          onClick={() => setTab('upload')}
+        >
+          Ladda upp mapp
+        </button>
+      </div>
+
       {statusMessage && (
-        <div className={`${styles.statusMessage} ${styles[statusMessage.type]}`}>
+        <div className={`${styles.statusMessage} ${styles[statusMessage.type]}`} role="status">
           {statusMessage.message}
         </div>
       )}
 
-      <section className={styles.card}>
-        <div className={styles.cardHeader}>
-          <FiUploadCloud size={20} />
-          <h3>Ladda upp en hel mapp</h3>
-        </div>
-        <div className={styles.cardBody}>
-          <p>Välj en mapp från din dator. Alla filer och undermappar kommer att laddas upp och organiseras automatiskt.</p>
+      {tab === 'upload' && (
+        <section
+          id="material-panel-upload"
+          role="tabpanel"
+          aria-labelledby="material-tab-upload"
+          className={styles.uploadPanel}
+        >
+          <p className={styles.uploadIntro}>
+            Välj en mapp från din dator. Alla filer och undermappar kommer att laddas upp och organiseras automatiskt.
+          </p>
           <FileInput
             label="Välj mapp"
+            className={styles.pickFolderButton}
             onFileSelect={handleFolderUpload}
             isFolderPicker={true}
             disabled={isUploading || !!deletingFolder}
-            value={selectedFolder} // <-- LÄGG TILL DENNA RAD
+            value={selectedFolder}
           />
           {isUploading && (
-            <div className={styles.progressWrapper}>
+            <Cluster gap="md" align="center" wrap={false} className={styles.progressWrapper}>
               <div className={styles.progressBarContainer}><div className={styles.progressBar} style={{ width: `${uploadProgress}%` }} /></div>
               <span className={styles.progressText}>{uploadProgress}%</span>
-            </div>
+            </Cluster>
           )}
-        </div>
-      </section>
+        </section>
+      )}
 
-      <section className={styles.card}>
-        <div className={styles.cardHeader}>
-          <h3>Befintligt material</h3>
-        </div>
-        <div className={styles.cardBody}>
-          {isLoading ? <p>Laddar material...</p> :
+      {tab === 'library' && (
+        <section
+          id="material-panel-library"
+          role="tabpanel"
+          aria-labelledby="material-tab-library"
+          className={styles.library}
+        >
+          {isLoading ? <p className={styles.muted}>Laddar material...</p> :
             topLevelFolders.length > 0 ? (
-              <div className={styles.materialList}>
+              <div className={styles.folderList}>
                 {topLevelFolders.sort((a, b) => a.name.localeCompare(b.name)).map(node => (
                   <MaterialFolderItem
                     key={node.name}
                     node={node}
                     onDelete={handleDeleteFolder}
-                    isDeleting={deletingFolder === node.name} // CHANGED: Skicka med rätt status
+                    isDeleting={deletingFolder === node.name}
                   />
                 ))}
               </div>
-            ) : <p>Inget material har laddats upp ännu.</p>
+            ) : <p className={styles.muted}>Inget material har laddats upp ännu.</p>
           }
-        </div>
-      </section>
+        </section>
+      )}
     </div>
   );
 };

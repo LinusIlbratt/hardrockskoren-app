@@ -1,4 +1,5 @@
-import axios from "axios";
+import { createAuthedClient } from "@/services/apiClient";
+import { getAuthHeaders } from "@/utils/authHeaders";
 
 const API_BASE_URL = import.meta.env.VITE_MESSAGE_API_URL as string | undefined;
 
@@ -11,12 +12,11 @@ function requireBaseUrl(): string {
   return API_BASE_URL.replace(/\/$/, "");
 }
 
-function authHeaders(): { Authorization: string } {
-  const token = localStorage.getItem("authToken");
-  if (!token) {
+function client() {
+  if (!getAuthHeaders().Authorization) {
     throw new Error("Authentication token is missing.");
   }
-  return { Authorization: `Bearer ${token}` };
+  return createAuthedClient(requireBaseUrl());
 }
 
 export type FeedMessage = {
@@ -107,18 +107,11 @@ export async function createMessage(
     throw new Error("targets must be a non-empty array.");
   }
 
-  const base = requireBaseUrl();
-  const response = await axios.post<CreateMessageResponse>(
-    `${base}/messages`,
-    {
-      title: input.title.trim(),
-      body: input.body.trim(),
-      targets: input.targets,
-    },
-    {
-      headers: { ...authHeaders(), "Content-Type": "application/json" },
-    }
-  );
+  const response = await client().post<CreateMessageResponse>("/messages", {
+    title: input.title.trim(),
+    body: input.body.trim(),
+    targets: input.targets,
+  });
   return response.data;
 }
 
@@ -152,11 +145,9 @@ export async function createGroupMessage(
     throw new Error("groupSlug is required.");
   }
   const draft = parseMessageDraft(data);
-  const base = requireBaseUrl();
-  const response = await axios.post<WrittenMessage>(
-    `${base}/groups/${encodeURIComponent(slug)}/messages`,
-    draft,
-    { headers: { ...authHeaders(), "Content-Type": "application/json" } }
+  const response = await client().post<WrittenMessage>(
+    `/groups/${encodeURIComponent(slug)}/messages`,
+    draft
   );
   return response.data;
 }
@@ -170,11 +161,9 @@ export async function updateMessage(
     throw new Error("messageId is required.");
   }
   const draft = parseMessageDraft(data);
-  const base = requireBaseUrl();
-  const response = await axios.put<WrittenMessage>(
-    `${base}/messages/${encodeURIComponent(id)}`,
-    draft,
-    { headers: { ...authHeaders(), "Content-Type": "application/json" } }
+  const response = await client().put<WrittenMessage>(
+    `/messages/${encodeURIComponent(id)}`,
+    draft
   );
   return response.data;
 }
@@ -182,19 +171,17 @@ export async function updateMessage(
 export async function listSentMessages(options?: {
   limit?: number;
   before?: string;
+  signal?: AbortSignal;
 }): Promise<ListSentResult> {
-  const base = requireBaseUrl();
-  const params = new URLSearchParams();
-  if (options?.limit !== undefined) {
-    params.set("limit", String(options.limit));
-  }
-  if (options?.before) {
-    params.set("before", options.before);
-  }
-  const qs = params.toString();
-  const response = await axios.get<{ messages: SentMessage[]; hasMore?: boolean }>(
-    `${base}/messages/sent${qs ? `?${qs}` : ""}`,
-    { headers: authHeaders() }
+  const response = await client().get<{ messages: SentMessage[]; hasMore?: boolean }>(
+    "/messages/sent",
+    {
+      signal: options?.signal,
+      params: {
+        ...(options?.limit !== undefined ? { limit: options.limit } : {}),
+        ...(options?.before ? { before: options.before } : {}),
+      },
+    }
   );
   return {
     messages: Array.isArray(response.data?.messages)
@@ -206,24 +193,22 @@ export async function listSentMessages(options?: {
 
 export async function listMessages(
   groupSlug: string,
-  options?: { limit?: number; before?: string }
+  options?: { limit?: number; before?: string; signal?: AbortSignal }
 ): Promise<ListMessagesResult> {
-  const base = requireBaseUrl();
-  const params = new URLSearchParams();
-  if (options?.limit !== undefined) {
-    params.set("limit", String(options.limit));
+  const slug = groupSlug?.trim() ?? "";
+  if (!slug || slug.includes("/") || slug.includes("\\") || slug.includes("..")) {
+    throw new Error("Ogiltig kör.");
   }
-  if (options?.before) {
-    params.set("before", options.before);
-  }
-  const qs = params.toString();
-  const response = await axios.get<{
+  const response = await client().get<{
     messages: FeedMessage[];
     hasMore?: boolean;
-  }>(
-    `${base}/groups/${encodeURIComponent(groupSlug)}/messages${qs ? `?${qs}` : ""}`,
-    { headers: authHeaders() }
-  );
+  }>(`/groups/${encodeURIComponent(slug)}/messages`, {
+    signal: options?.signal,
+    params: {
+      ...(options?.limit !== undefined ? { limit: options.limit } : {}),
+      ...(options?.before ? { before: options.before } : {}),
+    },
+  });
   return {
     messages: response.data.messages ?? [],
     hasMore: Boolean(response.data?.hasMore),
@@ -231,32 +216,34 @@ export async function listMessages(
 }
 
 export async function getUnreadStatus(groupSlug: string): Promise<UnreadStatus> {
-  const base = requireBaseUrl();
-  const response = await axios.get<UnreadStatus>(
-    `${base}/groups/${encodeURIComponent(groupSlug)}/messages/unread-status`,
-    { headers: authHeaders() }
+  const response = await client().get<UnreadStatus>(
+    `/groups/${encodeURIComponent(groupSlug)}/messages/unread-status`
   );
   return response.data;
 }
 
-export async function markMessageRead(messageId: string): Promise<void> {
-  const base = requireBaseUrl();
-  await axios.post(
-    `${base}/messages/${encodeURIComponent(messageId)}/read`,
-    {},
-    { headers: { ...authHeaders(), "Content-Type": "application/json" } }
-  );
+export async function markMessageRead(
+  messageId: string,
+  options?: { signal?: AbortSignal }
+): Promise<void> {
+  const id = messageId?.trim() ?? "";
+  if (!id) {
+    throw new Error("messageId is required.");
+  }
+  await client().post(`/messages/${encodeURIComponent(id)}/read`, {}, {
+    signal: options?.signal,
+  });
 }
 
 export async function deleteMessage(
   messageId: string,
   groupSlug?: string
 ): Promise<void> {
-  const base = requireBaseUrl();
-  const qs = groupSlug
-    ? `?groupSlug=${encodeURIComponent(groupSlug)}`
-    : "";
-  await axios.delete(`${base}/messages/${encodeURIComponent(messageId)}${qs}`, {
-    headers: authHeaders(),
+  const id = messageId?.trim() ?? "";
+  if (!id) {
+    throw new Error("messageId is required.");
+  }
+  await client().delete(`/messages/${encodeURIComponent(id)}`, {
+    params: groupSlug ? { groupSlug } : undefined,
   });
 }

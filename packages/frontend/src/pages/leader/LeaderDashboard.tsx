@@ -1,77 +1,45 @@
-import { Outlet, useParams } from 'react-router-dom';
+import { Link, Outlet, useParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { GroupNotificationProviders } from '@/context/GroupNotificationProviders';
-import { RecentlyPlayedWidget } from '@/components/music/RecentlyPlayedWidget';
-import { LeaderNav } from '@/components/ui/nav/LeaderNav';
+import { ChoirNav } from '@/components/nav/ChoirNav';
+import { useChoirDisplayName } from '@/features/groups/useChoirDisplayName';
 import styles from './LeaderDashboard.module.scss';
-import { useState, useEffect } from 'react';
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
-
-interface Group {
-  name: string;
-  slug: string;
-}
 
 export const LeaderDashboard = () => {
   const { groupName } = useParams<{ groupName: string }>();
   const { user } = useAuth();
-  const [choirDisplayName, setChoirDisplayName] = useState('');
-  const [isLoadingName, setIsLoadingName] = useState(true);
-
-  useEffect(() => {
-    const fetchAndSetChoirName = async () => {
-      if (!groupName) return;
-
-      setIsLoadingName(true);
-      const token = localStorage.getItem('authToken');
-
-      try {
-        const response = await axios.get<Group[]>(`${API_BASE_URL}/groups`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        const currentGroup = response.data.find(group => group.slug === groupName);
-
-        if (currentGroup) {
-          setChoirDisplayName(currentGroup.name);
-        } else {
-          setChoirDisplayName(groupName);
-        }
-      } catch (error) {
-        console.error("Failed to fetch group name:", error);
-        setChoirDisplayName(groupName);
-      } finally {
-        setIsLoadingName(false);
-      }
-    };
-
-    fetchAndSetChoirName();
-  }, [groupName]);
+  const { name: choirName, isLoading: isLoadingName } = useChoirDisplayName(groupName);
 
   if (!user) {
     return <div>Kunde inte ladda användardata.</div>;
   }
 
+  const hasSeveralChoirs = (user.groups?.length ?? 0) > 1;
+
   return (
     <GroupNotificationProviders groupSlug={groupName}>
       <div className={styles.layout}>
-        <header className={styles.header}>
-          <h2>Välkommen {user.given_name} {user.family_name}</h2>
-          <p>
-            <span className={styles.subheadingLabel}>Körledare i
-            {isLoadingName ? ' Laddar...' : ` ${choirDisplayName}`}</span>
-          </p>
-        </header>
+        <div className={styles.topBar}>
+          {hasSeveralChoirs ? (
+            <Link to="/select-group" className={styles.backLink}>
+              ← Tillbaka till körer
+            </Link>
+          ) : (
+            <span className={styles.leaderName}>
+              {user.given_name} {user.family_name}
+            </span>
+          )}
 
-        {!isLoadingName && choirDisplayName && groupName && (
-          <div className={styles.groupNameRow}>
-            <h1 className={styles.groupName}>{choirDisplayName}</h1>
-            <RecentlyPlayedWidget groupName={groupName} viewer="leader" />
+          <div className={styles.choirBadge}>
+            {isLoadingName ? (
+              <span className={styles.nameSkeleton} aria-hidden="true" />
+            ) : (
+              choirName ?? ""
+            )}
           </div>
-        )}
-        <LeaderNav />
+        </div>
+
+        <ChoirNav groupName={groupName} audience="leader" showChoirName={false} embedded />
 
         <main className={styles.content}>
           <Outlet />

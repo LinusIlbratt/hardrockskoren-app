@@ -5,14 +5,15 @@ import { sv } from 'date-fns/locale';
 import * as eventService from '@/services/eventService';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal/Modal';
-import { CreateRecurringEventForm } from '@/components/ui/form/CreateRecurringEventForm';
-import { CreateEventForm } from '@/components/ui/form/CreateEventForm';
+import { Tab, Tabs } from '@/components/ui/tabs/Tabs';
+import { CreateEventForm, CreateRecurringEventForm } from '@/features/events';
+import { Info } from 'lucide-react';
 import { FiEdit, FiClock } from 'react-icons/fi';
-import { IoTrashOutline, IoEyeOutline, IoInformationCircleOutline } from 'react-icons/io5';
+import { IoTrashOutline, IoEyeOutline } from 'react-icons/io5';
 import type { Event } from '@/types';
 import styles from './AdminEventPage.module.scss';
 import { useAuth } from '@/context/AuthContext';
-import { SharedConcertSignupPanel } from '@/components/concert/SharedConcertSignupPanel';
+import { SharedConcertSignupPanel } from '@/features/concerts';
 
 export const AdminEventPage = () => {
   const { groupName } = useParams<{ groupName: string }>();
@@ -27,6 +28,7 @@ export const AdminEventPage = () => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isRecurringModalOpen, setIsRecurringModalOpen] = useState(false);
   const [eventToShowDescription, setEventToShowDescription] = useState<Event | null>(null);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const fetchEvents = useCallback(async () => {
     const token = localStorage.getItem('authToken');
@@ -99,18 +101,16 @@ export const AdminEventPage = () => {
         </div>
         <div className={styles.actions}>
           {event.description && (
-            <button className={styles.iconButton} onClick={() => setEventToShowDescription(event)} title="Visa beskrivning">
-              <IoEyeOutline size={22} />
+            <button type="button" className={styles.iconButton} onClick={() => setEventToShowDescription(event)} aria-label="Visa beskrivning" title="Visa beskrivning">
+              <IoEyeOutline size={18} aria-hidden />
             </button>
           )}
-          <div className={styles.editActions}>
-            <button className={styles.iconButton} onClick={() => handleOpenEditModal(event)} title="Redigera">
-              <FiEdit size={18} />
-            </button>
-            <button className={`${styles.iconButton} ${styles.deleteIcon}`} onClick={() => setEventToDelete(event)} title="Radera">
-              <IoTrashOutline size={20} />
-            </button>
-          </div>
+          <button type="button" className={styles.iconButton} onClick={() => handleOpenEditModal(event)} aria-label="Redigera" title="Redigera">
+            <FiEdit size={16} aria-hidden />
+          </button>
+          <button type="button" className={`${styles.iconButton} ${styles.deleteIcon}`} onClick={() => setEventToDelete(event)} aria-label="Ta bort" title="Ta bort">
+            <IoTrashOutline size={18} aria-hidden />
+          </button>
         </div>
       </li>
     );
@@ -119,34 +119,33 @@ export const AdminEventPage = () => {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h2>Hantera Events</h2>
+        <div className={styles.titleRow}>
+          <h2>Hantera Events</h2>
+          <button
+            type="button"
+            className={styles.infoButton}
+            onClick={() => setIsHelpOpen(true)}
+            aria-label="Så fungerar det"
+            aria-expanded={isHelpOpen}
+          >
+            <Info size={20} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+        </div>
         {activeTab !== 'SHARED' && (
         <div className={styles.buttonGroup}>
-          <Button onClick={handleOpenCreateModal}>Skapa enstaka event</Button>
-          <Button onClick={() => setIsRecurringModalOpen(true)}>Skapa återkommande</Button>
+          <Button className={styles.primaryButton} onClick={handleOpenCreateModal}>Skapa enstaka event</Button>
+          <Button className={styles.secondaryButton} onClick={() => setIsRecurringModalOpen(true)}>Skapa återkommande</Button>
         </div>
         )}
       </div>
 
-      {activeTab !== 'SHARED' && (
-      <div className={styles.legend}>
-        <IoInformationCircleOutline size={20} className={styles.legendIcon} />
-        <p className={styles.legendText}>
-          Tryck på<IoEyeOutline size={20} className={styles.inlineIcon} />
-           för att se information, 
-          <FiEdit size={20} className={styles.inlineIcon} />
-           för att redigera, 
-          <IoTrashOutline size={20} className={styles.inlineIcon} />
-           ta bort ett event.
-        </p>
-      </div>
-      )}
-
-      <div className={styles.tabs}>
-        <button className={`${styles.tabButton} ${activeTab === 'REHEARSAL' ? styles.activeTab : ''}`} onClick={() => setActiveTab('REHEARSAL')}>Rep</button>
-        {(user?.role === 'admin' || user?.role === 'leader') && (<button className={`${styles.tabButton} ${activeTab === 'CONCERT' ? styles.activeTab : ''}`} onClick={() => setActiveTab('CONCERT')}>Gig</button>)}
-        <button className={`${styles.tabButton} ${activeTab === 'SHARED' ? styles.activeTab : ''}`} onClick={() => setActiveTab('SHARED')}>Gemensamma Gig</button>
-      </div>
+      <Tabs label="Gig och repdatum" className={styles.tabs}>
+        <Tab active={activeTab === 'REHEARSAL'} onSelect={() => setActiveTab('REHEARSAL')}>Rep</Tab>
+        {(user?.role === 'admin' || user?.role === 'leader') && (
+          <Tab active={activeTab === 'CONCERT'} onSelect={() => setActiveTab('CONCERT')}>Gig</Tab>
+        )}
+        <Tab active={activeTab === 'SHARED'} onSelect={() => setActiveTab('SHARED')}>Gemensamma Gig</Tab>
+      </Tabs>
 
       {activeTab === 'SHARED' ? (
         <SharedConcertSignupPanel
@@ -165,6 +164,18 @@ export const AdminEventPage = () => {
         )}
       </section>
       )}
+
+      <Modal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        title="Så fungerar det"
+        tone="luxury"
+        size="compact"
+      >
+        <p className={styles.helpText}>
+          Tryck på ikonen <IoEyeOutline size={18} aria-hidden="true" /> för att visa, <FiEdit size={18} aria-hidden="true" /> för att redigera eller <IoTrashOutline size={18} aria-hidden="true" /> för att ta bort ett event.
+        </p>
+      </Modal>
 
       <Modal
         formMode

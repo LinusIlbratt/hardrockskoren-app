@@ -1,5 +1,3 @@
-// src/pages/admin/AdminUploadPracticePage.tsx
-
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { Button } from '@/components/ui/button/Button';
@@ -21,16 +19,15 @@ interface WeekGroup {
   materials: Material[];
 }
 
+type PracticeTab = 'weeks' | 'create';
+
 export const AdminUploadPracticePage = () => {
-  // State för att skapa nya veckor
+  const [activeTab, setActiveTab] = useState<PracticeTab>('weeks');
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
-  
-  // State för listan och feedback
   const [weeklyMaterials, setWeeklyMaterials] = useState<WeekGroup[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(true);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Hämtar alla befintliga veckor från backend
   const fetchWeeklyMaterials = useCallback(async () => {
     setIsLoadingList(true);
     const token = localStorage.getItem('authToken');
@@ -49,16 +46,14 @@ export const AdminUploadPracticePage = () => {
   useEffect(() => {
     fetchWeeklyMaterials();
   }, [fetchWeeklyMaterials]);
-  
-  // Döljer statusmeddelandet efter 4 sekunder
+
   useEffect(() => {
     if (statusMessage) {
       const timer = setTimeout(() => setStatusMessage(null), 4000);
       return () => clearTimeout(timer);
     }
-  }, [statusMessage]); 
+  }, [statusMessage]);
 
-  // Den nya funktionen som bara skapar en tom vecka i gränssnittet
   const handleCreateWeek = () => {
     if (!selectedDate) {
       setStatusMessage({ type: 'error', message: 'Du måste välja ett datum.' });
@@ -69,73 +64,109 @@ export const AdminUploadPracticePage = () => {
     const weekNumber = getISOWeek(selectedDate);
     const weekId = `${year}-W${String(weekNumber).padStart(2, '0')}`;
 
-    // Kontrollera om veckan redan finns i listan
     const weekExists = weeklyMaterials.some(week => week.weekId === weekId);
 
     if (weekExists) {
       setStatusMessage({ type: 'error', message: `Vecka ${weekNumber} finns redan i listan.` });
-    } else {
-      // Skapa ett nytt, tomt vecko-objekt
-      const newWeek: WeekGroup = {
-        weekId: weekId,
-        materials: [],
-      };
-      // Lägg till den nya veckan överst i listan och sortera om
-      setWeeklyMaterials(prev => [...prev, newWeek].sort((a, b) => b.weekId.localeCompare(a.weekId)));
-      setStatusMessage({ type: 'success', message: `Vecka ${weekNumber} har skapats. Klicka på den för att ladda upp filer.` });
+      return;
     }
+
+    const newWeek: WeekGroup = {
+      weekId: weekId,
+      materials: [],
+    };
+    setWeeklyMaterials(prev => [...prev, newWeek].sort((a, b) => b.weekId.localeCompare(a.weekId)));
+    setSelectedDate(null);
+    setActiveTab('weeks');
+    setStatusMessage({ type: 'success', message: `Vecka ${weekNumber} har skapats. Öppna den för att ladda upp filer.` });
   };
 
   return (
     <div className={styles.page}>
-      <section>
-        <h1 className={styles.title}>Hantera Sjungupp-material</h1>
-        <p className={styles.subtitle}>Börja med att skapa en ny vecka i listan nedan. Klicka sedan på veckan för att ladda upp övningsfiler.</p>
-        
-        {/* Det nya, förenklade formuläret */}
-        <div className={styles.createWeekForm}>
-          <FormGroup htmlFor="practice-date" label="Välj en vecka att skapa">
-            <DatePicker
-              id="practice-date"
-              selected={selectedDate}
-              onChange={(date: Date | null) => setSelectedDate(date)}
-              dateFormat="'Vecka' w, yyyy"
-              className={styles.datePicker}
-              locale={sv}
-              showWeekNumbers
-              showWeekPicker
-            />
-          </FormGroup>
-          <Button onClick={handleCreateWeek}>
-            Skapa vecka
-          </Button>
-        </div>
+      <h1 className={styles.title}>Sjungupp!</h1>
 
-        {statusMessage && <p className={statusMessage.type === 'success' ? styles.successMessage : styles.errorMessage}>{statusMessage.message}</p>}
-      </section>
+      <div className={styles.segment} role="tablist" aria-label="Sjungupp">
+        <button
+          type="button"
+          role="tab"
+          id="tab-weeks"
+          aria-selected={activeTab === 'weeks'}
+          aria-controls="panel-weeks"
+          className={styles.segmentButton}
+          onClick={() => setActiveTab('weeks')}
+        >
+          Alla veckor
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="tab-create"
+          aria-selected={activeTab === 'create'}
+          aria-controls="panel-create"
+          className={styles.segmentButton}
+          onClick={() => setActiveTab('create')}
+        >
+          Skapa vecka
+        </button>
+      </div>
 
-      <hr className={styles.divider} />
+      {statusMessage && (
+        <p className={statusMessage.type === 'success' ? styles.successMessage : styles.errorMessage}>
+          {statusMessage.message}
+        </p>
+      )}
 
-      <section className={styles.listSection}>
-        <h2 className={styles.title}>Befintligt Sjungupp-material</h2>
-        <p className={styles.subtitle}>Klicka på en vecka för att se dess material eller ladda upp fler filer.</p>
-        
-        {isLoadingList ? (<p>Laddar veckor...</p>)
-          : weeklyMaterials.length > 0 ? (
+      {activeTab === 'weeks' ? (
+        <section
+          id="panel-weeks"
+          role="tabpanel"
+          aria-labelledby="tab-weeks"
+          className={styles.tabPanel}
+        >
+          {isLoadingList ? (
+            <p className={styles.muted}>Laddar veckor...</p>
+          ) : weeklyMaterials.length > 0 ? (
             <div className={styles.accordionContainer}>
               {weeklyMaterials.map(week => (
-                <WeekAccordion 
+                <WeekAccordion
                   key={week.weekId}
                   weekId={week.weekId}
                   materials={week.materials}
-                  onUploadOrDeleteSuccess={fetchWeeklyMaterials} // Denna ser till att hela listan laddas om efter en uppladdning/radering
+                  onUploadOrDeleteSuccess={fetchWeeklyMaterials}
                 />
               ))}
             </div>
           ) : (
-            <p>Inga Sjungupp-veckor har skapats ännu. Använd formuläret ovan för att skapa den första.</p>
+            <p className={styles.muted}>Inga veckor ännu.</p>
           )}
-      </section>
+        </section>
+      ) : (
+        <section
+          id="panel-create"
+          role="tabpanel"
+          aria-labelledby="tab-create"
+          className={styles.tabPanel}
+        >
+          <div className={styles.createForm}>
+            <FormGroup htmlFor="practice-date" label="Välj en vecka att skapa">
+              <DatePicker
+                id="practice-date"
+                selected={selectedDate}
+                onChange={(date: Date | null) => setSelectedDate(date)}
+                dateFormat="'Vecka' w, yyyy"
+                className={styles.datePicker}
+                locale={sv}
+                showWeekNumbers
+                showWeekPicker
+                placeholderText="Välj vecka"
+              />
+            </FormGroup>
+            <Button type="button" className={styles.createButton} onClick={handleCreateWeek}>
+              Skapa vecka
+            </Button>
+          </div>
+        </section>
+      )}
     </div>
   );
 };

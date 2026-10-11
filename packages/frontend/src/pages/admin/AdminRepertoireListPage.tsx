@@ -1,12 +1,28 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useLocation, Link } from 'react-router-dom';
 import axios from 'axios';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
 import { Modal } from '@/components/ui/modal/Modal';
-import { IoTrashOutline, IoInformationCircleOutline } from 'react-icons/io5';
+import { Info } from 'lucide-react';
+import { IoTrashOutline } from 'react-icons/io5';
 import { LibraryFolderPickerModal } from '@/components/media/LibraryFolderPickerModal';  // Importera den nya komponenten
+import { RecentlyPlayedWidget } from '@/components/music/RecentlyPlayedWidget';
 import styles from './AdminRepertoireListPage.module.scss';
 import { sortBySwedishTitle } from '@/utils/sortBySwedishTitle';
+
+function splitSongHeading(title: string, artist?: string): { songTitle: string; artistName: string } {
+  const trimmedTitle = title.trim();
+  const trimmedArtist = artist?.trim() ?? '';
+  if (trimmedArtist) {
+    return { songTitle: trimmedTitle, artistName: trimmedArtist };
+  }
+  const parts = trimmedTitle.split(/\s+-\s+/);
+  const artistName = parts.slice(1).join(' - ').trim();
+  if (parts.length >= 2 && parts[0]?.trim() && artistName) {
+    return { songTitle: parts[0].trim(), artistName };
+  }
+  return { songTitle: trimmedTitle, artistName: '' };
+}
 
 // --- TYPER ---
 interface Repertoire {
@@ -25,6 +41,8 @@ const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
 
 export const AdminRepertoireListPage = () => {
   const { groupName } = useParams<{ groupName: string }>();
+  const { pathname } = useLocation();
+  const playerViewer = pathname.startsWith('/leader/') ? 'leader' : 'admin';
   const [repertoires, setRepertoires] = useState<Repertoire[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -33,6 +51,7 @@ export const AdminRepertoireListPage = () => {
   const [repertoireToDelete, setRepertoireToDelete] = useState<Repertoire | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isAdding, setIsAdding] = useState(false); // ADDED: State för när vi lägger till
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   // Funktion för att hämta repertoarer (oförändrad)
   const fetchRepertoires = useCallback(async () => {
@@ -105,41 +124,73 @@ export const AdminRepertoireListPage = () => {
   };
 
   if (isLoading) {
-    return <div>Laddar repertoar...</div>;
+    return (
+      <div className={styles.page}>
+        {groupName && (
+          <div className={styles.playerSlot}>
+            <RecentlyPlayedWidget groupName={groupName} viewer={playerViewer} />
+          </div>
+        )}
+        <div>Laddar repertoar...</div>
+      </div>
+    );
   }
 
   return (
     <div className={styles.page}>
+      {groupName && (
+        <div className={styles.playerSlot}>
+          <RecentlyPlayedWidget groupName={groupName} viewer={playerViewer} />
+        </div>
+      )}
       <div className={styles.header}>
-        <h2>Låtar i Repertoaren</h2>
+        <div className={styles.titleRow}>
+          <h2>Låtar i Repertoaren</h2>
+          <button
+            type="button"
+            className={styles.infoButton}
+            onClick={() => setIsHelpOpen(true)}
+            aria-label="Så fungerar det"
+            aria-expanded={isHelpOpen}
+          >
+            <Info size={20} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+        </div>
         {/* Knappen är inaktiv medan ett anrop för att lägga till pågår */}
-        <Button onClick={() => setIsPickerModalOpen(true)} disabled={isAdding}>
+        <Button className={styles.addButton} onClick={() => setIsPickerModalOpen(true)} disabled={isAdding}>
           {isAdding ? 'Lägger till...' : 'Lägg till från bibliotek'}
         </Button>
       </div>
-      <div className={styles.legend}>
-        <IoInformationCircleOutline size={20} className={styles.legendIcon} />
-        <p className={styles.legendText}>
-          Tryck på ikonen <IoTrashOutline size={20} className={styles.inlineIcon} /> för ta bort en låt.
-        </p>
-      </div>
 
-      <ul className={styles.repertoireList}>
+      <ul className={styles.songList}>
         {sortedRepertoires.length > 0 ? (
-          sortedRepertoires.map(item => (
-            <li key={item.repertoireId} className={styles.repertoireItem}>
-              <Link to={`${item.repertoireId}/materials`} state={{ repertoireTitle: item.title }} className={styles.songLink}>
-                <span className={styles.songTitle}>{item.title}</span>
-              </Link>
-              <button
-                onClick={() => setRepertoireToDelete(item)}
-                className={styles.deleteButton}
-                aria-label={`Radera ${item.title}`}
-              >
-                <IoTrashOutline size={20} />
-              </button>
-            </li>
-          ))
+          sortedRepertoires.map(item => {
+            const { songTitle, artistName } = splitSongHeading(item.title, item.artist);
+            return (
+              <li key={item.repertoireId} className={styles.songCard}>
+                <Link
+                  to={`${item.repertoireId}/materials`}
+                  state={{ repertoireTitle: item.title }}
+                  className={styles.songInfo}
+                >
+                  <span className={styles.songTitle}>{songTitle}</span>
+                  {artistName ? <span className={styles.artistName}>{artistName}</span> : null}
+                </Link>
+                <button
+                  type="button"
+                  className={styles.deleteButton}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setRepertoireToDelete(item);
+                  }}
+                  aria-label={`Ta bort ${songTitle}`}
+                >
+                  <IoTrashOutline size={18} aria-hidden />
+                </button>
+              </li>
+            );
+          })
         ) : (
           <p>Inga låtar har lagts till i repertoaren för denna kör ännu.</p>
         )}
@@ -151,6 +202,19 @@ export const AdminRepertoireListPage = () => {
           onAdd={handleAddFromLibrary}
         />
       )}
+
+      <Modal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        title="Så fungerar det"
+        tone="luxury"
+        size="compact"
+      >
+        <p className={styles.helpText}>
+          Tryck på låten för att öppna materialet.
+          Tryck på ikonen <IoTrashOutline size={18} aria-hidden="true" /> för att ta bort en låt från körens repertoar.
+        </p>
+      </Modal>
 
       <Modal
         isOpen={!!repertoireToDelete}

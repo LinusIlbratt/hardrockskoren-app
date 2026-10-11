@@ -1,65 +1,164 @@
 @use '@/styles/variables' as *;
 
+$sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
 .page {
-  @include column(var(--spacing-xl));
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  width: 100%;
+  max-width: 800px;
 }
 
 .title {
   margin: 0;
+  font-family: $sans;
   font-size: var(--fs-h2);
+  font-weight: 700;
+  color: #f5ebd7;
 }
 
-.subtitle {
-  margin: 0;
-  color: var(--color-text-secondary);
-  max-width: 60ch; // Förbättrar läsbarhet på breda skärmar
-}
-
-.form {
-  @include column(var(--spacing-lg));
-  width: 100%;
-  max-width: 800px; // Sätter en maxbredd på formuläret
-}
-
-// Behållare för datumväljare och fil-input
-.dateAndFileContainer {
-  display: grid;
+.segment {
+  display: flex;
+  align-items: flex-end;
   gap: var(--spacing-lg);
-  
-  // Mobile-first: En kolumn som standard
-  grid-template-columns: 1fr;
-
-  // Två kolumner på surfplattor och uppåt
-  @media (min-width: #{$tabletBreakpoint}) {
-    grid-template-columns: 1fr 1fr;
-    align-items: flex-end; // Linjerar "Välj fil"-knappen snyggt
-  }
-}
-
-// Styling för att DatePicker ska matcha dina befintliga Input-fält
-.datePicker {
   width: 100%;
-  padding: var(--spacing-md);
-  background-color: var(--color-background);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text-primary);
-  font-size: var(--fs-base);
-  font-family: inherit; // Ser till att den använder samma typsnitt som resten
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
 
-  &:focus {
-    outline: 2px solid var(--color-primary);
-    border-color: transparent;
+.segmentButton {
+  margin: 0 0 -1px;
+  padding: 0 0 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: rgba(245, 235, 215, 0.45);
+  font-family: $sans;
+  font-size: 0.95rem;
+  font-weight: 500;
+  line-height: 1.2;
+  cursor: pointer;
+
+  &[aria-selected='true'] {
+    color: #f5ebd7;
+    border-bottom-color: #b91c1c;
+    font-weight: 600;
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(185, 28, 28, 0.7);
+    outline-offset: 2px;
   }
 }
 
-// Återanvänder din befintliga struktur för meddelanden
-.successMessage, .errorMessage {
+.tabPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  width: 100%;
+}
+
+.muted {
+  margin: 0;
+  color: rgba(245, 235, 215, 0.55);
+  font-family: $sans;
+  line-height: 1.45;
+}
+
+.createForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  width: 100%;
+
+  :global(.react-datepicker-wrapper),
+  :global(.react-datepicker__input-container) {
+    display: block;
+    width: 100%;
+  }
+
+  label {
+    font-family: $sans;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(245, 235, 215, 0.85);
+  }
+}
+
+.datePicker {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  height: 48px;
+  padding: 0 14px;
+  background: rgba(18, 18, 20, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.45);
+  color: #f5ebd7;
+  font-family: $sans;
+  font-size: 1rem;
+  text-align: left;
+  cursor: pointer;
+
+  &::placeholder {
+    color: rgba(245, 235, 215, 0.4);
+  }
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    border-color: rgba(216, 27, 27, 0.7);
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.4),
+      0 0 0 3px rgba(216, 27, 27, 0.18);
+  }
+}
+
+:global(.react-datepicker) {
+  font-family: $sans;
+}
+
+.createForm .createButton {
+  width: 100%;
+  min-height: 48px;
+  height: 48px;
+  padding: 0 20px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 10px;
+  background: #b81424;
+  color: #f5ebd7;
+  font-family: $sans;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+
+  &:hover:not(:disabled) {
+    background: #c81b2c;
+    color: #f5ebd7;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.985);
+  }
+}
+
+.accordionContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.successMessage,
+.errorMessage {
+  margin: 0;
   padding: var(--spacing-md);
-  border-radius: var(--radius-md);
+  border-radius: 8px;
+  font-family: $sans;
   font-weight: 500;
+  line-height: 1.45;
   text-align: center;
-  // Använder en animation för att tona in och ut
   animation: fade-in-out 4s ease-in-out forwards;
 }
 
@@ -73,31 +172,6 @@
   color: var(--color-accent);
 }
 
-.divider {
-  border: none;
-  border-top: 1px solid var(--color-border);
-  width: 100%;
-}
-
-.listSection {
-  @include column(var(--spacing-md));
-  width: 100%;
-}
-
-.accordionContainer {
-  @include column(var(--spacing-md));
-  width: 100%;
-  max-width: 800px;
-}
-
-.createWeekForm {
-  display: flex;
-  flex-direction: column; // Lägger elementen i en kolumn (ovanpå varandra)
-  gap: var(--spacing-md);  // Skapar ett mellanrum mellan dem
-}
-
-
-// Animation för statusmeddelanden
 @keyframes fade-in-out {
   0% { opacity: 0; transform: translateY(-10px); }
   10% { opacity: 1; transform: translateY(0); }

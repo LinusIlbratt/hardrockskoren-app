@@ -8,9 +8,10 @@
   align-items: center;
   justify-content: center;
   background-color: var(--color-primary); // Primärfärg som standard
-  border-radius: 0;
+  border-radius: var(--radius-md);
   border: 1px solid transparent; // För en snygg övergång
   font-weight: 700;
+  line-height: 1;
   white-space: nowrap;
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s, opacity 0.2s;
@@ -63,7 +64,7 @@
 .sizeDefault {
   font-size: var(--fs-base);
   padding: 0 var(--spacing-md);
-  height: 44px; // En bra standardhöjd
+  height: var(--control-height);
 }
 
 .sizeSmall {
@@ -82,7 +83,7 @@
   // Använd en generös fast höjd som passar din design
   height: 55px; 
   padding: 0 var(--spacing-md); 
-  font-size: 2rem; // Prova dig fram!
+  font-size: var(--fs-h1);
   font-family: var(--font-button);
   letter-spacing: 1.5px;
 }
@@ -90,7 +91,7 @@
 .sizeLogout {
   font-size: var(--fs-base);  
   padding: 0 var(--spacing-md);
-  height: 44px; // En bra standardhöjd
+  height: var(--control-height);
   font-family: var(--font-button);
   text-transform: uppercase;
   letter-spacing: 1.5px;

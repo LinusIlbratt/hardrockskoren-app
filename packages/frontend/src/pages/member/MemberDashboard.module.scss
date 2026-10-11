@@ -1,41 +1,5 @@
-.layout,
-.dashboardLayout {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem; // Justerat gap
+.layout {
+  width: 100%;
+  margin: -2rem 0 0;
+  padding: 0;
 }
-
-.content {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-  .header {
-    border-bottom: 1px solid var(--color-border);
-    padding-bottom: 1.5rem;
-  }
-  
-  .title {
-    margin-bottom: 1.5rem;
-    color: var(--color-primary);
-  }
-
-  .subheadingLabel {
-    color: var(--color-text-secondary);
-  }
-
-  .groupNameRow {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--spacing-md, 1rem);
-    margin-bottom: 1rem;
-  }
-
-  .groupName {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--color-text);
-  }

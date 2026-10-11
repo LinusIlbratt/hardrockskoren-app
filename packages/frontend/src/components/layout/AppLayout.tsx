@@ -1,17 +1,31 @@
 import { memo, useCallback, useEffect, useRef, useState, type RefCallback } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useChoirDisplayName } from '@/features/groups/useChoirDisplayName';
 import { FavoritesProvider } from '@/context/FavoritesContext';
 import { MusicPlayerOverlayProvider, useMusicPlayerOverlay } from '@/context/MusicPlayerOverlayContext';
 import { MusicPlayerOverlayHost } from '@/components/music/MusicPlayerOverlay';
 import { MiniPlayerBar } from '@/components/media/MiniPlayerBar';
-import { MainNav } from '../ui/nav/MainNav';
+import { MainNav } from '../nav/MainNav';
+import { ChoirNav } from '../nav/ChoirNav';
+import { GroupNotificationProviders } from '@/context/GroupNotificationProviders';
 import { PageLoader } from '@/components/ui/loader/Loader';
 import styles from './AppLayout.module.scss';
+
+function memberGroupFromPath(pathname: string): string | undefined {
+  const match = pathname.match(/^\/user\/me\/([^/]+)/);
+  if (!match?.[1]) return undefined;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
 
 const AppLayoutContent = memo(function AppLayoutContent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [musicOverlayMount, setMusicOverlayMount] = useState<HTMLDivElement | null>(null);
+  const { user } = useAuth();
   const { activeTrack, isOpen, activeGroupName, activeViewer, closeOverlay, closeSession } = useMusicPlayerOverlay();
   const location = useLocation();
   const isOpenRef = useRef(isOpen);
@@ -19,6 +33,9 @@ const AppLayoutContent = memo(function AppLayoutContent() {
 
   const hasSession = Boolean(activeGroupName) && Boolean(activeViewer);
   const showMiniBar = Boolean(activeTrack) && !isOpen && hasSession;
+  const memberGroupName = memberGroupFromPath(location.pathname);
+  const { name: choirName, isLoading: isChoirNameLoading } = useChoirDisplayName(memberGroupName);
+  const hasSeveralChoirs = (user?.groups?.length ?? 0) > 1;
 
   useEffect(() => {
     isOpenRef.current = isOpen;
@@ -68,15 +85,69 @@ const AppLayoutContent = memo(function AppLayoutContent() {
     setMusicOverlayMount((prev) => (prev === el ? prev : el));
   }, []);
 
+  const topNav = memberGroupName ? (
+    <div className={styles.memberTopStack}>
+      <MainNav
+        isMenuOpen={isMenuOpen}
+        setIsMenuOpen={setIsMenuOpen}
+        withMemberTabs
+      />
+      <div className={styles.memberChoirChrome}>
+        <div className={styles.topBar}>
+          {hasSeveralChoirs ? (
+            <Link to="/select-group" className={styles.backLink}>
+              ← Tillbaka till körer
+            </Link>
+          ) : (
+            <span className={styles.memberName}>
+              {user?.given_name} {user?.family_name}
+            </span>
+          )}
+          <div className={styles.choirBadge} aria-busy={isChoirNameLoading}>
+            {isChoirNameLoading ? (
+              <span className={styles.nameSkeleton} aria-hidden="true" />
+            ) : (
+              choirName ?? ""
+            )}
+          </div>
+        </div>
+        <ChoirNav
+          groupName={memberGroupName}
+          audience="member"
+          showChoirName={false}
+          embedded
+        />
+      </div>
+    </div>
+  ) : (
+    <MainNav isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
+  );
+
+  const page = (
+    <main
+      className={`${styles.mainContent} ${showMiniBar ? styles.mainWithMiniPlayer : ''}`}
+    >
+      <Outlet />
+    </main>
+  );
+
   return (
-    <div className={styles.appLayout} data-mini-player-visible={showMiniBar ? 'true' : undefined}>
+    <div
+      className={`${styles.appLayout} ${memberGroupName ? styles.withMemberTabs : ''}`}
+      data-mini-player-visible={showMiniBar ? 'true' : undefined}
+    >
       <div className={styles.appBody}>
-        <MainNav isMenuOpen={isMenuOpen} setIsMenuOpen={setIsMenuOpen} />
-        <main
-          className={`${styles.mainContent} ${showMiniBar ? styles.mainWithMiniPlayer : ''}`}
-        >
-          <Outlet />
-        </main>
+        {memberGroupName ? (
+          <GroupNotificationProviders groupSlug={memberGroupName}>
+            {topNav}
+            {page}
+          </GroupNotificationProviders>
+        ) : (
+          <>
+            {topNav}
+            {page}
+          </>
+        )}
       </div>
       {/* Monteringspunkt för musik-overlay: pekare passerar när minispelare (inte fullskärm). */}
       <div

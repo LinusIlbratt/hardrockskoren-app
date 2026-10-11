@@ -1,17 +1,29 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useLocation, Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { IoEyeOutline, IoInformationCircleOutline } from 'react-icons/io5';
+import { Info } from 'lucide-react';
+import { IoEyeOutline } from 'react-icons/io5';
 import { FaPlayCircle } from "react-icons/fa";
 import { FiFolder, FiMusic, FiFileText, FiFile, FiChevronRight, FiArrowLeft } from 'react-icons/fi';
 import styles from './AdminRepertoireMaterialPage.module.scss';
 import type { Material } from '@/types';
-import { MediaModal } from '@/components/ui/modal/MediaModal';
+import { MediaModal } from '@/components/media/MediaModal';
+import { Modal } from '@/components/ui/modal/Modal';
 import {
   useMusicPlayerOverlay,
   type MusicPlayerViewer,
 } from '@/context/MusicPlayerOverlayContext';
 import { isPlayableAudioFile } from '@/utils/media';
+
+function splitSongHeading(raw: string | undefined): { songTitle: string; artistName: string } {
+  const value = raw?.trim() ?? '';
+  const parts = value.split(/\s+-\s+/);
+  const artistName = parts.slice(1).join(' - ').trim();
+  if (parts.length >= 2 && parts[0]?.trim() && artistName) {
+    return { songTitle: parts[0].trim(), artistName };
+  }
+  return { songTitle: value, artistName: '' };
+}
 
 // --- TYPER ---
 // FIX: Lade till 'displayName' för att visa ett städat mappnamn.
@@ -178,6 +190,7 @@ export const AdminRepertoireMaterialPage = () => {
   const [error, setError] = useState<string | null>(null);
 
   const [materialToView, setMaterialToView] = useState<Material | null>(null);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
 
   const sessionMatchesThisGroup =
     Boolean(groupName?.trim()) && activeGroupName === groupName?.trim();
@@ -230,13 +243,9 @@ export const AdminRepertoireMaterialPage = () => {
     [linkedMaterials, title, decodedSubPath]
   );
   
-  const hasFiles = useMemo(() => 
-    directoryItems.some(item => item.type === 'file'), 
-    [directoryItems]
-  );
-  
   const breadcrumbs = useMemo(() => decodedSubPath.split('/').filter(p => p), [decodedSubPath]);
   const currentTitle = breadcrumbs.length > 0 ? breadcrumbs[breadcrumbs.length - 1] : title;
+  const { songTitle, artistName } = splitSongHeading(currentTitle);
 
   const handlePlayMaterial = useCallback(
     (material: Material) => {
@@ -253,16 +262,22 @@ export const AdminRepertoireMaterialPage = () => {
     [groupName, repertoireId, viewer, openMusicOverlay]
   );
 
+  const choirBase = viewer === 'leader'
+    ? `/leader/choir/${groupName}`
+    : `/admin/groups/${groupName}`;
+  const repertoireListPath = `${choirBase}/repertoires`;
+  const materialsBase = `${repertoireListPath}/${repertoireId}/materials`;
+
   const handleSmartBack = () => {
     if (decodedSubPath) {
-      const pathParts = decodedSubPath.split('/').filter(p => p);
-      const parentPath = pathParts.slice(0, -1).join('/');
-      navigate(`/admin/groups/${groupName}/repertoires/${repertoireId}/materials/${parentPath}`, { 
-        state: { repertoireTitle: title } 
+      const pathParts = decodedSubPath.split('/').filter((part) => part);
+      const parentPath = pathParts.slice(0, -1).map(encodeURIComponent).join('/');
+      navigate(parentPath ? `${materialsBase}/${parentPath}` : materialsBase, {
+        state: { repertoireTitle: title },
       });
-    } else {
-      navigate(`/admin/groups/${groupName}/repertoires`);
+      return;
     }
+    navigate(repertoireListPath);
   };
 
   if (isLoading || !title) return <p className={styles.pageState}>Laddar material...</p>;
@@ -270,43 +285,54 @@ export const AdminRepertoireMaterialPage = () => {
 
   return (
     <div className={styles.page}>
-      <nav className={styles.breadcrumbs}>
-        <Link to={`/admin/groups/${groupName}/repertoires`}>Repertoar</Link> / 
-        <Link to={`/admin/groups/${groupName}/repertoires/${repertoireId}/materials`} state={{ repertoireTitle: title }}> {title}</Link>
-        {breadcrumbs.map((part, index) => {
-          const pathSlice = breadcrumbs.slice(0, index + 1);
-          const linkPath = pathSlice.map(encodeURIComponent).join('/');
-          const absoluteLinkPath = `/admin/groups/${groupName}/repertoires/${repertoireId}/materials/${linkPath}`;
-          return <span key={linkPath}> / <Link to={absoluteLinkPath} state={{ repertoireTitle: title }}>{part}</Link></span>;
-        })}
-      </nav>
-
-      <button onClick={handleSmartBack} className={styles.backButton}>
-        <FiArrowLeft />
-        Tillbaka
-      </button>
+      <div className={styles.navBlock}>
+        <button type="button" onClick={handleSmartBack} className={styles.backButton}>
+          <FiArrowLeft aria-hidden="true" />
+          Tillbaka
+        </button>
+        <nav className={styles.breadcrumbs} aria-label="Sökväg">
+          <Link to={repertoireListPath}>Repertoar</Link>
+          <span aria-hidden="true"> / </span>
+          <Link to={materialsBase} state={{ repertoireTitle: title }}>{title}</Link>
+          {breadcrumbs.map((part, index) => {
+            const pathSlice = breadcrumbs.slice(0, index + 1);
+            const linkPath = pathSlice.map(encodeURIComponent).join('/');
+            return (
+              <span key={linkPath}>
+                <span aria-hidden="true"> / </span>
+                <Link to={`${materialsBase}/${linkPath}`} state={{ repertoireTitle: title }}>{part}</Link>
+              </span>
+            );
+          })}
+        </nav>
+      </div>
       
       <div className={styles.header}>
-        <h1 className={styles.repertoireTitle}>{currentTitle}</h1>
-      </div>
-
-      {hasFiles && (
-        <div className={styles.legend}>
-          <div className={styles.legendIcon}>
-              <IoInformationCircleOutline size={24} />
-          </div>
-          <p className={styles.legendText}>
-            Klicka på <FaPlayCircle size={16} className={styles.inlineIcon} /> för att spela upp och
-            <IoEyeOutline size={16} className={styles.inlineIcon} /> för att förhandsvisa.
-          </p>
+        <div className={styles.headerTitleGroup}>
+          <h1 className={styles.songTitle}>{songTitle}</h1>
+          {artistName ? <p className={styles.artistName}>{artistName}</p> : null}
         </div>
-      )}
+        <button
+          type="button"
+          className={styles.infoButton}
+          onClick={() => setIsHelpOpen(true)}
+          aria-label="Så fungerar det"
+          aria-expanded={isHelpOpen}
+        >
+          <Info size={20} strokeWidth={1.75} aria-hidden="true" />
+        </button>
+      </div>
 
       <div className={styles.itemList}>
         {directoryItems.length > 0 ? (
           directoryItems.map(item =>
             item.type === 'folder' ? (
-              <Link to={encodeURIComponent(item.path)} state={{ repertoireTitle: title }} key={item.path} className={styles.itemRow}>
+              <Link
+                to={`${materialsBase}/${item.path.split('/').map(encodeURIComponent).join('/')}`}
+                state={{ repertoireTitle: title }}
+                key={item.path}
+                className={styles.itemRow}
+              >
                 <div className={styles.itemInfo}>
                   <FiFolder className={styles.itemIcon} />
                   {/* FIX: Använder 'displayName' för en renare lista. */}
@@ -355,6 +381,18 @@ export const AdminRepertoireMaterialPage = () => {
       </div>
 
       {materialToView && <MediaModal isOpen={!!materialToView} onClose={() => setMaterialToView(null)} material={materialToView} />}
+
+      <Modal
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        title="Så fungerar det"
+        tone="luxury"
+        size="compact"
+      >
+        <p className={styles.helpText}>
+          Klicka på play-ikonen för att spela upp ljudfiler och ögat för att förhandsvisa videor och dokument.
+        </p>
+      </Modal>
     </div>
   );
 };

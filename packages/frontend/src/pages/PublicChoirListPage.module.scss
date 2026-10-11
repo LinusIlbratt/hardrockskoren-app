@@ -1,56 +1,82 @@
-// src/pages/PublicChoirListPage.module.scss
 @use '@/styles/variables' as *;
 
+$sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
 .page {
-  padding: var(--spacing-md) var(--spacing-lg);
-  @include column(var(--spacing-lg));
+  box-sizing: border-box;
+  width: 100%;
+  max-width: var(--page-max-width, #{$maxWidth});
+  margin: 0 auto;
+  padding: 16px var(--page-padding-x, 16px) 24px;
+  font-family: $sans;
+  color: var(--color-text-luxury, #f4efe6);
 }
 
 .title {
-  margin: 0;
-  font-size: var(--fs-h2);
+  margin: 0 0 20px;
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-text-luxury, #f4efe6);
 }
 
 .error {
+  margin: 0 0 16px;
+  font-family: inherit;
+  font-size: 14px;
   color: var(--color-error);
 }
 
 .choirList {
   display: grid;
-  gap: var(--spacing-md);
-  
-  // Mobile-first: En kolumn på små skärmar
   grid-template-columns: 1fr;
+  gap: 12px;
 
-  // Två kolumner på surfplattor och uppåt
   @media (min-width: #{$tabletBreakpoint}) {
     grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
   }
 
-  // Tre kolumner på större skärmar
   @media (min-width: #{$desktopBreakpoint}) {
     grid-template-columns: repeat(3, 1fr);
   }
 }
 
 .choirCard {
-  background-color: var(--color-dark-gray);
-  padding: var(--spacing-lg);
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border);
-  @include column(var(--spacing-sm));
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  transition: border-color 0.2s ease, background 0.2s ease;
 }
 
 .choirName {
-  margin: 0;
-  font-size: var(--fs-h4);
+  margin: 0 0 8px;
+  font-family: inherit;
+  font-size: 16px;
   font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-text-luxury, #f4efe6);
 }
 
-.choirLocation, .choirLeader {
+.choirLocation,
+.choirLeader {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  color: var(--color-text-secondary);
-  font-size: var(--fs-sm);
+  gap: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.choirLeader {
+  margin-top: 6px;
 }

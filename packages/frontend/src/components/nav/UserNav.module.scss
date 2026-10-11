@@ -1,0 +1,190 @@
+@use '@/styles/variables' as *;
+
+$sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+.nav {
+  width: 100%;
+  margin: 0;
+  padding: 6px 8px 8px;
+  background: var(--color-luxury-surface);
+  border-top: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.groupLabel {
+  font-family: $sans;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
+  text-align: center;
+  margin: 0 0 6px;
+  line-height: 1.2;
+  min-height: 1.2em;
+}
+
+.frame {
+  width: 100%;
+}
+
+.groupLabelSkeleton {
+  display: block;
+  width: 8rem;
+  height: 0.75rem;
+  margin: 0.15em auto 0;
+  border-radius: 999px;
+  background: rgba(245, 235, 215, 0.14);
+}
+
+.list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  background: transparent;
+
+  &.gridFour {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 10px;
+  }
+}
+
+.navLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 7px 8px;
+  border-radius: 9999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
+  font-family: $sans;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.14);
+    color: var(--color-text-luxury, #f4efe6);
+    text-decoration: none;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.active {
+  background: rgba(140, 28, 28, 0.45);
+  border: 1px solid rgba(220, 50, 50, 0.55);
+  color: var(--color-text-luxury, #f4efe6);
+  font-weight: 600;
+
+  &:hover {
+    background: rgba(140, 28, 28, 0.45);
+    border-color: rgba(220, 50, 50, 0.55);
+    color: var(--color-text-luxury, #f4efe6);
+  }
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-full);
+  background: var(--color-luxury-accent-solid);
+  border: none;
+  color: var(--color-text-luxury);
+  font-family: $sans;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.unreadDot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  background: var(--color-luxury-accent-solid);
+  border-radius: var(--radius-full);
+}
+
+@media (min-width: #{$tabletBreakpoint}) {
+  .nav {
+    padding: 0;
+    background: var(--color-background);
+    border-top: none;
+    border-bottom: none;
+  }
+
+  .frame {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    max-width: $maxWidth;
+    margin: 0 auto;
+    padding: 24px var(--page-padding-x, 16px) 0;
+    background: transparent;
+  }
+
+  .groupLabel {
+    width: 100%;
+    max-width: none;
+    margin-bottom: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: 0.5px;
+    text-align: left;
+    text-transform: uppercase;
+    color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.6));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 1;
+  }
+
+  .groupLabelSkeleton {
+    margin-left: 0;
+    margin-right: auto;
+  }
+}
+
+.embedded {
+  background: transparent;
+  border: none;
+  padding: 0;
+
+  .frame {
+    max-width: none;
+    margin: 0;
+    padding: 8px 0 0;
+  }
+}

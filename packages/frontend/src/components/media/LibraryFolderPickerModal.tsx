@@ -42,6 +42,16 @@ interface LibraryFolderPickerModalProps {
 
 const API_BASE_URL = import.meta.env.VITE_MATERIAL_API_URL;
 
+function splitFolderHeading(name: string): { title: string; artist: string } {
+  const value = name.trim();
+  const parts = value.split(/\s+-\s+/);
+  const artist = parts.slice(1).join(' - ').trim();
+  if (parts.length >= 2 && parts[0]?.trim() && artist) {
+    return { title: parts[0].trim(), artist };
+  }
+  return { title: value, artist: '' };
+}
+
 function LibraryFolderPickerModalBody({ onClose, onAdd }: LibraryFolderPickerModalProps) {
   const [folders, setFolders] = useState<FolderNode[]>([]);
   const [selectedFolder, setSelectedFolder] = useState<FolderNode | null>(null);
@@ -99,17 +109,24 @@ function LibraryFolderPickerModalBody({ onClose, onAdd }: LibraryFolderPickerMod
     }
     return (
       <ul className={styles.folderList}>
-        {folders.map(folder => (
-          <li
-            key={folder.name}
-            className={`${styles.folderItem} ${selectedFolder?.name === folder.name ? styles.selected : ''}`}
-            onClick={() => setSelectedFolder(folder)}
-            onDoubleClick={handleAddClick}
-          >
-            <FiFolder />
-            <span>{folder.name}</span>
-          </li>
-        ))}
+        {folders.map(folder => {
+          const { title, artist } = splitFolderHeading(folder.name);
+          const isSelected = selectedFolder?.name === folder.name;
+          return (
+            <li
+              key={folder.name}
+              className={`${styles.folderItem} ${isSelected ? styles.selected : ''}`}
+              onClick={() => setSelectedFolder(folder)}
+              onDoubleClick={handleAddClick}
+            >
+              <FiFolder className={styles.folderIcon} aria-hidden />
+              <span className={styles.folderText}>
+                <span className={styles.folderTitle}>{title}</span>
+                {artist ? <span className={styles.folderArtist}>{artist}</span> : null}
+              </span>
+            </li>
+          );
+        })}
       </ul>
     );
   };
@@ -125,8 +142,8 @@ function LibraryFolderPickerModalBody({ onClose, onAdd }: LibraryFolderPickerMod
       )}
 
       <div className={styles.modalFooter}>
-        <Button variant={ButtonVariant.Ghost} onClick={requestClose}>Avbryt</Button>
-        <Button onClick={handleAddClick} disabled={!selectedFolder}>
+        <Button variant={ButtonVariant.Ghost} className={styles.cancelButton} onClick={requestClose}>Avbryt</Button>
+        <Button className={styles.addButton} onClick={handleAddClick} disabled={!selectedFolder}>
           Lägg till
         </Button>
       </div>

@@ -1,35 +1,112 @@
 @use '@/styles/variables' as *;
 
 .page {
-  @include column(var(--spacing-lg));
+  width: 100%;
+  margin: 0;
+  padding: var(--spacing-lg) 0 0;
 }
 
 .stickyHeader {
   position: sticky;
-  top: 70px; // under sticky MainNav
+  top: calc(var(--nav-height) + var(--member-subnav-height, 44px));
   z-index: 2;
-  margin: calc(var(--spacing-md) * -1) calc(var(--spacing-md) * -1) 0;
-  padding: var(--spacing-md);
+  margin: 0;
+  padding: 0 0 var(--spacing-sm);
   background: color-mix(in srgb, var(--color-background) 92%, transparent);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(var(--spacing-sm));
   border-bottom: 1px solid var(--color-border);
-  @include column(var(--spacing-xs));
+}
+
+.page .stickyHeader {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--spacing-sm);
+}
+
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  min-height: 44px;
 }
 
 .title {
   margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: var(--fs-h2);
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-text-luxury);
+}
+
+.infoButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
+  cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease;
+
+  &:hover,
+  &:active {
+    color: var(--color-text-luxury);
+    background: rgba(255, 255, 255, 0.04);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.helpText {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--color-text-luxury, #f4efe6);
 }
 
 .subtitle {
   margin: 0;
-  color: var(--color-text-secondary);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--color-text-luxury-muted);
   font-size: var(--fs-sm);
+  font-weight: 400;
+  line-height: 1.45;
 }
 
-.createButton {
+.stickyHeader .createButton {
   align-self: flex-start;
+  height: auto;
+  min-height: 0;
   margin-top: var(--spacing-xs);
+  padding: 8px 16px;
+  background: rgba(140, 28, 28, 0.4);
+  border: 1px solid rgba(220, 50, 50, 0.5);
+  border-radius: 8px;
+  color: var(--color-text-luxury, #f4efe6);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: normal;
+  text-transform: none;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: rgba(160, 32, 32, 0.55);
+    border-color: rgba(240, 60, 60, 0.7);
+    color: var(--color-text-luxury, #f4efe6);
+  }
 }
 
 .muted {
@@ -37,175 +114,142 @@
 }
 
 .error {
-  color: var(--color-error, #ff6b6b);
-}
-
-.section {
-  @include column(var(--spacing-sm));
+  color: var(--color-error);
 }
 
 .sectionTitle {
   margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: var(--fs-xs);
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--color-text-secondary);
+  color: var(--color-text-luxury-muted);
 }
 
 .list {
+  display: flex;
+  flex-direction: column;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-.item {
+.newsCard {
   display: flex;
   align-items: center;
-  gap: 2px;
-  border-bottom: 1px solid var(--color-border);
-}
-
-.row {
-  display: flex;
-  align-items: baseline;
   justify-content: space-between;
-  gap: var(--spacing-md);
-  flex: 1;
-  min-width: 0;
-  padding: 0.7rem 0;
-  border: none;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-  text-align: left;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 12px 16px;
+  background: #121212;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  transition: background 0.2s ease, border-color 0.2s ease;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 
   &:hover {
-    background-color: var(--color-background-hover-strong, transparent);
+    background: #161616;
+    border-color: rgba(255, 255, 255, 0.14);
   }
 }
 
-.unread {
-  .rowTitle {
-    font-weight: 700;
+.newsContent {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.newsTitle {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--color-text-luxury, #f4efe6);
+  overflow-wrap: anywhere;
+
+  span:last-child {
+    min-width: 0;
   }
 }
 
-.read {
-  opacity: 0.78;
-
-  .rowTitle {
-    font-weight: 500;
-  }
+.unread .newsTitle {
+  font-weight: 600;
 }
 
-.rowMain {
+.newsMeta {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 0;
-  flex: 1;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--color-text-luxury-muted, rgba(244, 239, 230, 0.65));
 }
 
-.rowTitle {
-  margin: 0;
-  font-size: var(--fs-md);
-  line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.metaDot {
+  opacity: 0.7;
 }
 
 .dot {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  background-color: var(--color-accent, #e53935);
+  margin-top: 0.35em;
+  border-radius: var(--radius-full);
+  background-color: var(--color-luxury-accent-solid);
   flex-shrink: 0;
-}
-
-.rowMeta {
-  display: flex;
-  flex-shrink: 0;
-  align-items: baseline;
-  gap: var(--spacing-sm);
-  font-size: var(--fs-xs);
-  color: var(--color-text-secondary);
-}
-
-.sender {
-  max-width: 6.5rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .actions {
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  gap: 2px;
+  gap: 8px;
 }
 
-.iconButton {
+.actionButton,
+.deleteButton {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
+  padding: 8px;
   border: none;
-  border-radius: var(--radius-md);
+  border-radius: 6px;
   background: transparent;
-  color: var(--color-text-secondary);
+  color: rgba(244, 239, 230, 0.6);
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease;
-
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-    color: var(--color-text);
-  }
+  transition: color 0.2s ease, background 0.2s ease;
 }
 
-.deleteIcon:hover {
-  background-color: rgba(169, 0, 0, 0.22);
-  color: var(--color-accent);
+.actionButton:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.deleteButton:hover {
+  color: #e55353;
+  background: rgba(229, 83, 83, 0.1);
 }
 
 .loadMore {
-  display: flex;
-  justify-content: center;
   padding-top: var(--spacing-sm);
 }
 
-.form {
-  @include column(var(--spacing-md));
-}
-
-.textarea {
-  width: 100%;
-  min-height: 160px;
-  padding: var(--spacing-md);
-  background-color: var(--color-dark-gray);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  color: var(--color-text);
-  font-family: inherit;
-  font-size: var(--fs-sm);
-  resize: vertical;
-  box-sizing: border-box;
-
-  &:focus {
-    outline: none;
-    border-color: var(--color-accent);
-  }
-}
-
-.formActions {
-  display: flex;
-  justify-content: flex-end;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
+.composerField {
+  min-height: calc(var(--spacing-2xl) * 3 + var(--spacing-md));
 }
 
 .confirmText {
@@ -213,21 +257,29 @@
   line-height: 1.5;
 }
 
-.modalBody {
-  @include column(var(--spacing-md));
-}
-
 .modalMeta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--spacing-sm);
   margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-size: var(--fs-xs);
-  color: var(--color-text-secondary);
+  color: var(--color-text-luxury-muted);
 }
 
 .modalContent {
   margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   white-space: pre-wrap;
-  line-height: 1.55;
+  line-height: 1.6;
+  color: var(--color-text-luxury);
+
+  a {
+    color: var(--color-luxury-accent-solid);
+    text-decoration: underline;
+    text-decoration-color: var(--color-luxury-accent-border);
+    text-underline-offset: 3px;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: var(--color-text-luxury);
+    }
+  }
 }
