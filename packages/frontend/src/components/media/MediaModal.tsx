@@ -39,12 +39,19 @@ export const MediaModal = ({ isOpen, onClose, material }: MediaModalProps) => {
   }, [material, mediaUrl]);
 
   useEffect(() => {
+    if (!isOpen) return undefined;
+
     const handleEsc = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      onClose();
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
-  }, [onClose]);
+
+    window.addEventListener('keydown', handleEsc, true);
+    return () => window.removeEventListener('keydown', handleEsc, true);
+  }, [isOpen, onClose]);
 
   if (!isOpen || !material) return null;
 

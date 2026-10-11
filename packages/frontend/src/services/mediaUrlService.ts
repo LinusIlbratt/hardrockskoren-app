@@ -18,9 +18,20 @@ function cacheGet(fileKey: string): string | undefined {
   return entry.url;
 }
 
+const CACHE_SAFETY_MS = 60_000;
+
 function cacheSet(fileKey: string, url: string, expiresInSeconds: number): void {
-  const ttlMs = Math.min(CACHE_TTL_MS, Math.max(60_000, expiresInSeconds * 1000 - 60_000));
+  const lifetimeMs = Math.max(0, expiresInSeconds) * 1000;
+  const ttlMs =
+    lifetimeMs <= CACHE_SAFETY_MS
+      ? lifetimeMs
+      : Math.min(CACHE_TTL_MS, Math.max(CACHE_SAFETY_MS, lifetimeMs - CACHE_SAFETY_MS));
+  if (ttlMs <= 0) return;
   urlCache.set(fileKey, { url, expiresAt: Date.now() + ttlMs });
+}
+
+export function clearMediaUrlCache(): void {
+  urlCache.clear();
 }
 
 /**
