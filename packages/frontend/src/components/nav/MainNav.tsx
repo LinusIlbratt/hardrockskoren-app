@@ -33,6 +33,7 @@ function choirPlayerTarget(pathname: string): { groupName: string; viewer: Music
 }
 import logoImage from '@/assets/images/hrk-logo.webp';
 import { useAttendance } from '@/hooks/useAttendance';
+import { useRolePreview } from '@/hooks/useRolePreview';
 import { translateRole } from '@/utils/translations';
 import { AppTourProvider } from '@/tours/AppTourProvider';
 import { createAdminMainNavMobileSteps } from '@/tours/admin/adminMainNavStepsMobile';
@@ -48,6 +49,7 @@ interface MainNavProps {
   
   export const MainNav = ({ isMenuOpen, setIsMenuOpen, withMemberTabs = false }: MainNavProps) => {
     const { user, logout } = useAuth();
+    const { realRole, viewAsRole, switchTo } = useRolePreview();
     const navigate = useNavigate();
     const location = useLocation();
     const isMobile = useIsMobile();
@@ -115,6 +117,11 @@ interface MainNavProps {
       }
     };
   
+    const applyView = (role: 'leader' | 'user') => {
+      setIsMenuOpen(false);
+      switchTo(role);
+    };
+
     const UserInfoAndLogout = () => (
       user && (
         <div className={styles.userInfo} data-tour="user-info-area">
@@ -122,6 +129,29 @@ interface MainNavProps {
             <p className={styles.email}>{user.given_name} {user.family_name}</p>
             <p className={styles.role}>{translateRole(user.role)}</p>
           </div>
+          {realRole === 'admin' && (
+            <div className={styles.viewAs} role="group" aria-label="Visa som">
+              <span className={styles.viewAsLabel}>Visa som</span>
+              <div className={styles.viewAsButtons}>
+                <button
+                  type="button"
+                  className={viewAsRole === 'user' ? `${styles.viewAsButton} ${styles.viewAsButtonActive}` : styles.viewAsButton}
+                  aria-pressed={viewAsRole === 'user'}
+                  onClick={() => applyView('user')}
+                >
+                  Medlem
+                </button>
+                <button
+                  type="button"
+                  className={viewAsRole === 'leader' ? `${styles.viewAsButton} ${styles.viewAsButtonActive}` : styles.viewAsButton}
+                  aria-pressed={viewAsRole === 'leader'}
+                  onClick={() => applyView('leader')}
+                >
+                  Körledare
+                </button>
+              </div>
+            </div>
+          )}
           <Button
             onClick={handleLogout}
             variant={ButtonVariant.Ghost}

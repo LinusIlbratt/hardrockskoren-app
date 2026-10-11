@@ -6,6 +6,7 @@
   flex-direction: column;
   min-height: 100vh; // Se till att layouten alltid fyller minst hela skärmens höjd
   position: relative;
+  padding-top: var(--role-preview-height, 0px);
 }
 
 .withMemberTabs {
@@ -20,7 +21,7 @@
 // Logga + medlemsflikar sitter ihop och stannar kvar när sidan scrollar.
 .memberTopStack {
   position: sticky;
-  top: 0;
+  top: var(--role-preview-height, 0px);
   z-index: 900;
   flex-shrink: 0;
   background-color: var(--color-background);

@@ -51,6 +51,10 @@
 
   // MOBIL (standard): 1 kolumn
   grid-template-columns: 1fr;
+
+  &.stack {
+    grid-template-columns: 1fr;
+  }
 }
 
 
@@ -63,6 +67,10 @@
   .grid {
     // ...visa 2 kolumner
     grid-template-columns: repeat(2, 1fr);
+
+    &.stack {
+      grid-template-columns: 1fr;
+    }
   }
 
   // (De andra stilarna för .page, .topBar etc. är kvar som de var)
@@ -85,5 +93,9 @@
   .grid {
     // ...visa 3 kolumner
     grid-template-columns: repeat(3, 1fr);
+
+    &.stack {
+      grid-template-columns: 1fr;
+    }
   }
 }
