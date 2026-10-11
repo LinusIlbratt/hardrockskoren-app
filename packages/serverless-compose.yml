@@ -16,23 +16,28 @@ services:
     path: event-api
     dependsOn:
       - infra-service
+      - admin-service
 
   material-api:
     path: material-api
     dependsOn:
       - infra-service
+      - admin-service
 
   music-api:
     path: music-api
     dependsOn:
       - infra-service
+      - admin-service
 
   message-api:
     path: message-api
     dependsOn:
       - infra-service
+      - admin-service
 
   concert-api:
     path: concert-api
     dependsOn:
       - infra-service
+      - admin-service
