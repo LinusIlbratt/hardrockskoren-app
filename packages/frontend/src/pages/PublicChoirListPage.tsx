@@ -63,14 +63,18 @@ export const PublicChoirListPage = () => {
           {choirs.map(choir => (
             <div key={choir.slug} className={styles.choirCard}>
               <h2 className={styles.choirName}>{choir.name}</h2>
-              <div className={styles.choirLocation}>
-                <FiMapPin />
-                <span>{choir.location}</span>
-              </div>
-              <div className={styles.choirLeader}>
-                <FiMail />
-                <span>{choir.choirLeader || 'Ingen körledare angiven'}</span>
-              </div>
+              {choir.location?.trim() ? (
+                <div className={styles.choirLocation}>
+                  <FiMapPin aria-hidden="true" />
+                  <span>{choir.location}</span>
+                </div>
+              ) : null}
+              {choir.choirLeader?.trim() ? (
+                <div className={styles.choirLeader}>
+                  <FiMail aria-hidden="true" />
+                  <span>{choir.choirLeader}</span>
+                </div>
+              ) : null}
             </div>
           ))}
         </div>

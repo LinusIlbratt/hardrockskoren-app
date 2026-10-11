@@ -191,7 +191,7 @@ interface MainNavProps {
   
     const DrawerNavLinks = (
       <>
-        {(user?.role === 'admin' || ((user?.role === 'leader' || user?.role === 'user') && (user.groups?.length ?? 0) > 0)) && (
+        {user && (
           <p className={styles.sectionLabel}>Körer</p>
         )}
         {user?.role === 'admin' && (
@@ -217,6 +217,10 @@ interface MainNavProps {
             </NavLink>
           )
         )}
+        <NavLink to="/choirs" end className={getDrawerLinkClassName} onClick={handleLinkClick}>
+          <FiGlobe size={18} aria-hidden="true" />
+          <span>Alla körer</span>
+        </NavLink>
         {playerTarget && (
           <button
             type="button"
