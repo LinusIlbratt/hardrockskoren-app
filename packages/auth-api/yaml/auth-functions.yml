@@ -2,7 +2,8 @@ authorizer:
   handler: ./functions/authorizer/authorizer.handler
   name: hrk-apigateway-auth-authorizer-${sls:stage}
   description: Authorizer for Hrk Auth API stage ${sls:stage}.
-  memorySize: 256
+  memorySize: 512
+  timeout: 15
   layers:
     - arn:aws:lambda:eu-north-1:094274105915:layer:AWSLambdaPowertoolsTypeScript:27
   iamRoleStatements:
@@ -49,7 +50,8 @@ getMe:
   description: Get my user details.
   layers:
     - arn:aws:lambda:eu-north-1:094274105915:layer:AWSLambdaPowertoolsTypeScript:27
-  memorySize: 256
+  memorySize: 512
+  timeout: 15
   events:
     - httpApi:
         path: /me
@@ -58,7 +60,6 @@ getMe:
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - cognito-idp:adminGetUser
         - cognito-idp:adminListGroupsForUser
       Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/*"
 

@@ -35,13 +35,16 @@ export const handler = middy()
 
         const { role, given_name, family_name } =
           getUserDetailsFromAttributes(UserAttributes);
+        const email = UserAttributes?.find((attr) => attr.Name === "email")?.Value;
 
-        // 5. Skapa det slutgiltiga context-objektet
+        // 5. Skapa det slutgiltiga context-objektet.
+        // API Gateway kräver strängar i context, så grupper hämtas i /me.
         const context: AuthContext = {
           uuid: payload.sub,
           role: (role as RoleTypes) || "user",
           clientId,
           userPoolId,
+          ...(email ? { email } : {}),
           ...(given_name ? { given_name } : {}),
           ...(family_name ? { family_name } : {}),
         };
