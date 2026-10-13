@@ -9,21 +9,19 @@ import {
 } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { nanoid } from "nanoid";
+import {
+  dedupeItemKeys,
+  libraryFolderPointerKey,
+  type ItemKey,
+} from "./libraryFolderKeys";
+
+export { FOLDER_PATH_MAX, normalizeFolderPath } from "./libraryFolderKeys";
 
 export const MAX_CHOIR_TARGETS = 50;
-export const FOLDER_PATH_MAX = 200;
 export const GROUP_SLUG_MAX = 64;
 export const GROUP_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/i;
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
-
-export function normalizeFolderPath(raw: unknown): string | null {
-  if (typeof raw !== "string") return null;
-  const trimmed = raw.trim().replace(/^\/+|\/+$/g, "");
-  if (!trimmed || trimmed.length > FOLDER_PATH_MAX) return null;
-  if (trimmed.includes("..") || trimmed.includes("\\")) return null;
-  return trimmed;
-}
 
 export function normalizeGroupSlugs(raw: unknown):
   | { ok: true; slugs: string[] }
@@ -188,6 +186,221 @@ export async function queryFolderMaterials(
   return out;
 }
 
+export type FolderMaterialFile = {
+  materialId: string;
+  fileKey?: string;
+  filePath: string;
+};
+
+/** All library files under a folder, including nested paths. Paginated GSI2 query. */
+export async function queryFolderMaterialFiles(
+  tableName: string,
+  folderPath: string
+): Promise<FolderMaterialFile[]> {
+  const searchPrefix = `${folderPath}/`;
+  const items = await queryAllItems({
+    TableName: tableName,
+    IndexName: "GSI2",
+    KeyConditionExpression: "GSI1PK = :gsi1pk AND begins_with(filePath, :prefix)",
+    ExpressionAttributeValues: {
+      ":gsi1pk": { S: "MATERIALS" },
+      ":prefix": { S: searchPrefix },
+    },
+    ProjectionExpression: "materialId, fileKey, filePath",
+  });
+
+  const out: FolderMaterialFile[] = [];
+  const seen = new Set<string>();
+  for (const raw of items) {
+    const row = unmarshall(raw) as {
+      materialId?: string;
+      fileKey?: string;
+      filePath?: string;
+    };
+    const materialId = row.materialId?.trim();
+    const filePath = row.filePath?.trim();
+    if (!materialId || !filePath || seen.has(materialId)) continue;
+    seen.add(materialId);
+    const fileKey = row.fileKey?.trim();
+    out.push({
+      materialId,
+      filePath,
+      ...(fileKey ? { fileKey } : {}),
+    });
+  }
+  return out;
+}
+
+export type LibraryFolderChoirLink = {
+  folderPath: string;
+  groupSlug: string;
+  repertoireId: string;
+};
+
+/** Choirs linked to one exact library folder path. */
+export async function listLibraryFolderChoirs(
+  tableName: string,
+  folderPath: string
+): Promise<LibraryFolderChoirLink[]> {
+  const items = await queryAllItems({
+    TableName: tableName,
+    KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+    ExpressionAttributeValues: {
+      ":pk": { S: `LIBRARYFOLDER#${folderPath}` },
+      ":sk": { S: "GROUP#" },
+    },
+    ProjectionExpression: "SK, repertoireId",
+  });
+
+  const out: LibraryFolderChoirLink[] = [];
+  for (const raw of items) {
+    const item = unmarshall(raw) as { SK?: string; repertoireId?: string };
+    const sortKey = (item.SK || "").trim();
+    if (!sortKey.startsWith("GROUP#")) continue;
+    const groupSlug = sortKey.slice("GROUP#".length).trim();
+    const repertoireId = (item.repertoireId || "").trim();
+    if (!groupSlug || !repertoireId || repertoireId.includes("#")) continue;
+    out.push({ folderPath, groupSlug, repertoireId });
+  }
+  return out;
+}
+
+export async function putLibraryFolderPointer(
+  tableName: string,
+  folderPath: string,
+  groupSlug: string,
+  repertoireId: string
+): Promise<void> {
+  const key = libraryFolderPointerKey(folderPath, groupSlug);
+  await dbClient.send(
+    new PutItemCommand({
+      TableName: tableName,
+      Item: marshall({
+        ...key,
+        repertoireId,
+        type: "LibraryFolderChoir",
+      }),
+    })
+  );
+}
+
+const BATCH_WRITE_SIZE = 25;
+const MAX_BATCH_RETRIES = 5;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function batchWriteWithRetry(
+  tableName: string,
+  writes: WriteRequest[]
+): Promise<void> {
+  for (let offset = 0; offset < writes.length; offset += BATCH_WRITE_SIZE) {
+    let pending = writes.slice(offset, offset + BATCH_WRITE_SIZE);
+    let attempt = 0;
+    while (pending.length > 0) {
+      if (attempt >= MAX_BATCH_RETRIES) {
+        throw new Error("Could not finish DynamoDB batch write.");
+      }
+      const res = await dbClient.send(
+        new BatchWriteItemCommand({
+          RequestItems: { [tableName]: pending },
+        })
+      );
+      const unprocessed = res.UnprocessedItems?.[tableName];
+      if (!unprocessed?.length) break;
+      pending = unprocessed;
+      attempt++;
+      await sleep(50 * Math.pow(2, attempt));
+    }
+  }
+}
+
+function deleteRequest(key: ItemKey): WriteRequest {
+  return {
+    DeleteRequest: {
+      Key: {
+        PK: { S: key.PK },
+        SK: { S: key.SK },
+      },
+    },
+  };
+}
+
+async function queryPartitionKeys(
+  tableName: string,
+  pk: string,
+  skPrefix: string
+): Promise<ItemKey[]> {
+  const items = await queryAllItems({
+    TableName: tableName,
+    KeyConditionExpression: "PK = :pk AND begins_with(SK, :sk)",
+    ExpressionAttributeValues: {
+      ":pk": { S: pk },
+      ":sk": { S: skPrefix },
+    },
+    ProjectionExpression: "PK, SK",
+  });
+  return items
+    .map((raw) => {
+      const item = unmarshall(raw) as { PK?: string; SK?: string };
+      return { PK: (item.PK || "").trim(), SK: (item.SK || "").trim() };
+    })
+    .filter((key) => key.PK.length > 0 && key.SK.length > 0);
+}
+
+export async function findRepertoireHeader(
+  tableName: string,
+  groupSlug: string,
+  repertoireId: string
+): Promise<{ title: string } | null> {
+  const items = await queryAllItems({
+    TableName: tableName,
+    KeyConditionExpression: "PK = :pk AND SK = :sk",
+    ExpressionAttributeValues: {
+      ":pk": { S: `GROUP#${groupSlug}` },
+      ":sk": { S: `REPERTOIRE#${repertoireId}` },
+    },
+    ProjectionExpression: "title",
+  });
+  if (items.length === 0) return null;
+  const title = (unmarshall(items[0]) as { title?: string }).title;
+  return { title: typeof title === "string" ? title.trim() : "" };
+}
+
+/**
+ * Deletes the repertoire header, its material links, legacy child rows, and
+ * the LIBRARYFOLDER pointer when folderPath is known.
+ */
+export async function removeRepertoireRecords(
+  tableName: string,
+  groupSlug: string,
+  repertoireId: string,
+  folderPath: string | null
+): Promise<number> {
+  const linkKeys = await queryPartitionKeys(
+    tableName,
+    `REPERTOIRE#${repertoireId}`,
+    "MATERIAL#"
+  );
+  const legacyKeys = await queryPartitionKeys(
+    tableName,
+    `GROUP#${groupSlug}`,
+    `REPERTOIRE#${repertoireId}#`
+  );
+  const keys: ItemKey[] = [
+    ...linkKeys,
+    ...legacyKeys,
+    { PK: `GROUP#${groupSlug}`, SK: `REPERTOIRE#${repertoireId}` },
+  ];
+  if (folderPath) {
+    keys.push(libraryFolderPointerKey(folderPath, groupSlug));
+  }
+  const unique = dedupeItemKeys(keys);
+  await batchWriteWithRetry(tableName, unique.map(deleteRequest));
+  return unique.length;
+}
+
 export type AddChoirResult =
   | { groupSlug: string; status: "added"; repertoireId: string; linkedCount: number }
   | { groupSlug: string; status: "skipped"; repertoireId: string; reason: "already_linked" }
@@ -202,6 +415,12 @@ export async function addFolderToChoir(
   try {
     const existing = await findLinkedRepertoire(tableName, groupSlug, folderPath);
     if (existing) {
+      await putLibraryFolderPointer(
+        tableName,
+        folderPath,
+        groupSlug,
+        existing.repertoireId
+      );
       return {
         groupSlug,
         status: "skipped",
@@ -228,6 +447,8 @@ export async function addFolderToChoir(
         ConditionExpression: "attribute_not_exists(PK) AND attribute_not_exists(SK)",
       })
     );
+
+    await putLibraryFolderPointer(tableName, folderPath, groupSlug, repertoireId);
 
     if (materials.length === 0) {
       return { groupSlug, status: "added", repertoireId, linkedCount: 0 };

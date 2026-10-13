@@ -349,7 +349,7 @@ updateRepertoireMaterial:
 deleteRepertoire:
   handler: functions/deleteRepertoire.handler
   name: hrk-delete-repertoire-${sls:stage}
-  description: Deletes a repertoire item and all its associated materials.
+  description: Deletes a repertoire, its material links, and the library-folder pointer.
   events:
     - httpApi:
         method: DELETE
@@ -361,10 +361,15 @@ deleteRepertoire:
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - "dynamodb:Query" # För att hitta alla objekt
-        - "dynamodb:BatchWriteItem" # För att radera dem
+        - "dynamodb:Query"
+        - "dynamodb:BatchWriteItem"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 
 linkMaterialToRepertoire:
   handler: functions/linkMaterialToRepertoire.handler
@@ -647,6 +652,39 @@ addRepertoireFromLibrary:
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI2"
+    - Effect: "Allow"
+      Action: ["cognito-idp:AdminListGroupsForUser"]
+      Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
+
+deleteLibraryFolder:
+  handler: functions/deleteLibraryFolder.handler
+  name: hrk-delete-library-folder-${sls:stage}
+  description: Deletes a library folder, its S3 files, and linked choir repertoires. Admin only.
+  timeout: 29
+  memorySize: 512
+  events:
+    - httpApi:
+        method: POST
+        path: /materials/delete-folder
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+    MEDIA_BUCKET_NAME: ${self:custom.mediaBucketName}
+    COGNITO_USER_POOL_ID: ${self:custom.userPoolId}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+        - "dynamodb:BatchWriteItem"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI2"
+    - Effect: "Allow"
+      Action:
+        - "s3:DeleteObject"
+      Resource:
+        - "arn:aws:s3:::${self:custom.mediaBucketName}/*"
     - Effect: "Allow"
       Action: ["cognito-idp:AdminGetUser"]
       Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]

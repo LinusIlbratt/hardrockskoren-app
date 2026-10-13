@@ -6,7 +6,8 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "echo \"Use workspace-specific build scripts\""
+    "build": "echo \"Use workspace-specific build scripts\"",
+    "backfill:library-pointers": "npx --yes tsx scripts/backfill-library-pointers.ts"
   },
   "license": "ISC",
   "devDependencies": {
