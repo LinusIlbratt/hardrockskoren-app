@@ -16,6 +16,7 @@ import { MarkdownText } from "@/components/ui/markdown/MarkdownText";
 import { MarkdownTextarea } from "@/components/ui/markdown/MarkdownTextarea";
 import { Modal } from "@/components/ui/modal/Modal";
 import {
+  SharedConcertSignupModal,
   useSharedConcertDetail,
   useSharedConcertForm,
   useSharedConcertList,
@@ -183,6 +184,7 @@ export const AdminSharedConcertPage = () => {
 
   resetEditorRef.current = resetConcertEditor;
 
+  const [previewConcert, setPreviewConcert] = useState<SharedConcert | null>(null);
   const [concertToDelete, setConcertToDelete] = useState<SharedConcert | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -222,16 +224,24 @@ export const AdminSharedConcertPage = () => {
         </span>
       </span>
       <span className={styles.historyRowMeta}>
-        <span className={styles.countBadge}>
+        <button
+          type="button"
+          className={styles.countBadge}
+          aria-label={`Visa anmälningar för ${c.title}`}
+          title="Visa anmälningar"
+          onClick={() => {
+            void openDetail(c);
+          }}
+        >
           {c.signupCount} {c.signupCount === 1 ? "anmäld" : "anmälda"}
-        </span>
+        </button>
         <span className={styles.rowActions}>
           <button
             type="button"
             className={styles.iconButton}
-            aria-label="Visa gig"
-            title="Visa gig"
-            onClick={() => openDetail(c)}
+            aria-label="Förhandsgranska gig"
+            title="Förhandsgranska gig"
+            onClick={() => setPreviewConcert(c)}
           >
             <IoEyeOutline size={18} aria-hidden />
           </button>
@@ -870,6 +880,13 @@ export const AdminSharedConcertPage = () => {
           </div>
         )}
       </Modal>
+
+      <SharedConcertSignupModal
+        concert={previewConcert}
+        onClose={() => setPreviewConcert(null)}
+        previewMode
+        userGroups={[]}
+      />
 
       <Modal
         isOpen={Boolean(concertToDelete)}

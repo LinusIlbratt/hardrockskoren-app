@@ -343,9 +343,6 @@ export const MaterialDetailPage = () => {
               onChange={(event) => setRenameDraft(event.target.value)}
             />
           </FormGroup>
-          <p className={styles.syncModalHint}>
-            Utelämnar du filändelsen behålls den nuvarande. Körerna visar det nya namnet, om de inte redan har en egen stämma eller ett eget låtnamn.
-          </p>
           <Cluster justify="end" gap="sm" className={styles.syncModalActions}>
             <Button
               type="button"
