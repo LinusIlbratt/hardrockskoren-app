@@ -7,7 +7,7 @@ import { materialActionError } from '@/features/materials/materialActionError';
 import { isAbortError } from '@/utils/apiError';
 import {
   MAX_FILES_PER_BATCH_UPLOAD,
-  batchDeleteMaterials,
+  deleteLibraryFolder,
   listGlobalMaterials,
   prepareBatchUpload,
   putToPresignedUrl,
@@ -17,10 +17,10 @@ import styles from './AdminUploadMaterialPage.module.scss';
 
 // --- TYPER & HJÄLPFUNKTIONER ---
 interface FileNode { type: 'file'; name: string; material: LibraryMaterial; }
-interface FolderNode { type: 'folder'; name: string; children: (FolderNode | FileNode)[]; }
+interface FolderNode { type: 'folder'; name: string; path: string; children: (FolderNode | FileNode)[]; }
 
 const buildFileTree = (materials: LibraryMaterial[]): FolderNode => {
-  const root: FolderNode = { type: 'folder', name: 'root', children: [] };
+  const root: FolderNode = { type: 'folder', name: 'root', path: '', children: [] };
   materials.forEach(material => {
     const path = material.filePath || material.fileKey || 'unknown-file';
     const pathParts = path.split('/');
@@ -31,7 +31,8 @@ const buildFileTree = (materials: LibraryMaterial[]): FolderNode => {
         (child): child is FolderNode => child.type === 'folder' && child.name === part
       );
       if (!nextNode) {
-        nextNode = { type: 'folder', name: part, children: [] };
+        const folderPath = currentNode.path ? `${currentNode.path}/${part}` : part;
+        nextNode = { type: 'folder', name: part, path: folderPath, children: [] };
         currentNode.children.push(nextNode);
       }
       currentNode = nextNode;
@@ -50,15 +51,6 @@ const countFilesInFolder = (folderNode: FolderNode): number => {
   }, 0);
 };
 
-const getAllMaterialIdsInFolder = (folderNode: FolderNode): string[] => {
-  return folderNode.children.flatMap(child =>
-    child.type === 'file' ? child.material.materialId : getAllMaterialIdsInFolder(child)
-  );
-};
-
-/** Undvik API Gateway/Lambda-timeout vid många filer; backend processar redan i chunk om 25. */
-const BATCH_DELETE_MAX_IDS = 150;
-
 function relativePathOf(file: File): string {
   const withPath = file as File & { webkitRelativePath?: string };
   const path = withPath.webkitRelativePath?.trim();
@@ -73,17 +65,11 @@ function chunkItems<T>(items: T[], size: number): T[][] {
   return chunks;
 }
 
-function isTimeoutError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const err = error as { response?: { status?: number }; code?: string };
-  return err.response?.status === 504 || err.code === 'ECONNABORTED';
-}
-
 // --- KOMPONENT FÖR MAPP-RADER (Flyttad utanför huvudkomponenten) ---
 interface MaterialFolderItemProps {
   node: FolderNode;
-  onDelete: (folderName: string, materialIds: string[]) => void;
-  isDeleting: boolean; // ADDED: För att visa laddningsstatus på rätt knapp
+  onDelete: (folderPath: string) => void;
+  isDeleting: boolean;
 }
 
 const MaterialFolderItem: React.FC<MaterialFolderItemProps> = ({ node, onDelete, isDeleting }) => {
@@ -91,12 +77,11 @@ const MaterialFolderItem: React.FC<MaterialFolderItemProps> = ({ node, onDelete,
   const fileCount = useMemo(() => countFilesInFolder(node), [node]);
 
   const handleDeleteClick = () => {
-    const idsToDelete = getAllMaterialIdsInFolder(node);
-    onDelete(node.name, idsToDelete);
+    onDelete(node.path);
   };
 
   const handleItemClick = () => {
-    navigate(`/admin/globalMaterial/${encodeURIComponent(node.name)}`);
+    navigate(`/admin/globalMaterial/${encodeURIComponent(node.path)}`);
   };
 
   return (
@@ -216,26 +201,30 @@ export const AdminUploadMaterialPage = () => {
     }
   };
 
-  const handleDeleteFolder = useCallback(async (folderName: string, ids: string[]) => {
-    if (ids.length === 0 || deletingFolder) return;
-    if (!window.confirm(`Är du säker på att du vill radera mappen "${folderName}" och allt dess innehåll (${ids.length} filer)? Detta kan inte ångras.`)) return;
+  const handleDeleteFolder = useCallback(async (folderPath: string) => {
+    if (!folderPath || deletingFolder) return;
+    const confirmed = window.confirm(
+      `Är du säker på att du vill radera mappen "${folderPath}"?\n\nDetta raderar mappen och tar automatiskt bort låten ur alla körers repertoarer.`
+    );
+    if (!confirmed) return;
 
-    setDeletingFolder(folderName);
+    setDeletingFolder(folderPath);
     setStatusMessage(null);
     try {
-      for (let i = 0; i < ids.length; i += BATCH_DELETE_MAX_IDS) {
-        const chunk = ids.slice(i, i + BATCH_DELETE_MAX_IDS);
-        await batchDeleteMaterials(chunk);
-      }
-      setStatusMessage({ type: 'success', message: `Mappen "${folderName}" har raderats.` });
+      const result = await deleteLibraryFolder(folderPath);
+      const removed = result.removedRepertoireCount;
+      setStatusMessage({
+        type: 'success',
+        message:
+          removed > 0
+            ? `Mappen "${folderPath}" har raderats och tagits bort ur ${removed} repertoar(er).`
+            : `Mappen "${folderPath}" har raderats.`,
+      });
       await fetchMaterials();
     } catch (error) {
-      const detail = isTimeoutError(error)
-        ? 'Begäran tog för länge. Försök igen; vid många filer raderas de nu i flera omgångar.'
-        : materialActionError(error, 'Kunde inte radera mappen.');
       setStatusMessage({
         type: 'error',
-        message: detail,
+        message: materialActionError(error, 'Kunde inte radera mappen.'),
       });
     } finally {
       setDeletingFolder(null);
@@ -321,10 +310,10 @@ export const AdminUploadMaterialPage = () => {
               <div className={styles.folderList}>
                 {topLevelFolders.sort((a, b) => a.name.localeCompare(b.name)).map(node => (
                   <MaterialFolderItem
-                    key={node.name}
+                    key={node.path}
                     node={node}
                     onDelete={handleDeleteFolder}
-                    isDeleting={deletingFolder === node.name}
+                    isDeleting={deletingFolder === node.path}
                   />
                 ))}
               </div>

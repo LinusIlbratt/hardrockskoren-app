@@ -56,6 +56,7 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   "DELETE /materials/{materialId}": RoleGroups.ADMIN_ONLY,
   "PATCH /materials/{materialId}": RoleGroups.ADMIN_ONLY,
   "POST /materials/batch-delete": RoleGroups.ADMIN_ONLY,
+  "POST /materials/delete-folder": RoleGroups.ADMIN_ONLY,
   "POST /materials/sync-all-repertoires": RoleGroups.ADMIN_ONLY,
   "POST /materials/library-folder-choir-status": RoleGroups.ADMIN_ONLY,
   "POST /materials/add-to-choirs": RoleGroups.ADMIN_ONLY,

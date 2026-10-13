@@ -26,6 +26,14 @@ describe("message-api routePermissions", () => {
   });
 });
 
+describe("material-api routePermissions", () => {
+  it("registers library folder delete as admin only", () => {
+    expect(routePermissions["POST /materials/delete-folder"]).toEqual(
+      RoleGroups.ADMIN_ONLY
+    );
+  });
+});
+
 describe("concert-api routePermissions", () => {
   it("registers shared concert routes with expected roles", () => {
     expect(routePermissions["POST /shared-concerts"]).toEqual(

@@ -196,6 +196,7 @@ GSI `AttendanceCodeIndex` (`attendanceCode`) och `GroupDateIndex`
 | Event | `GROUP#{slug}` | `EVENT#{eventId}` | `GROUP#{slug}` | ISO-startdatum |
 | Repertoar | `GROUP#{slug}` | `REPERTOIRE#{id}` | — | — |
 | Repertoar↔material | `REPERTOIRE#{repId}` | `MATERIAL#{matId}` | — | — |
+| Biblioteksmapp↔kör | `LIBRARYFOLDER#{sökväg}` | `GROUP#{slug}` | — | — |
 | Globalt material | `MATERIAL#{id}` | `MATERIAL#{id}` | `MATERIALS` | createdAt |
 | Sjung-upp-material | `SJUNGUPP#MATERIALS` | `MATERIAL#{id}` | — | — |
 | Spellista | `USER#{uuid}` | `PLAYLIST#{id}` | — | — |
@@ -210,6 +211,12 @@ GSI `AttendanceCodeIndex` (`attendanceCode`) och `GroupDateIndex`
 | Kör↔användare (legacy) | `GROUP#{slug}` | `USER#{email}` | — | — |
 
 Repertoarlänken kan ha `voiceLabel` och `songTitle`. De ändrar bara visningen i den repertoaren.
+
+Bibliotekspekaren skrivs när en mapp kopplas till en kör. Attributet `repertoireId`
+pekar på repertoarrubriken. Radering av repertoaren tar bort pekaren och
+filkopplingarna under `REPERTOIRE#{id}`. `POST /materials/delete-folder` frågar
+pekaren (och undermappar som syns i filernas `filePath`) och tar sedan bort
+repertoarerna, S3-objekten och biblioteksfilerna.
 
 Sista raden: skrivs av invite-flödet men läses inte av något API. Betrakta som
 död data.

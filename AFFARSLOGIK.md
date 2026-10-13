@@ -152,6 +152,10 @@ i den kören, inte filen i biblioteket.
 
 Det finns också en synkfunktion: admin kan koppla en hel bibliotekmapp till en
 eller flera körer, så att repertoaren uppdateras när mappens innehåll ändras.
+När en repertoar tas bort ur en kör försvinner även kopplingarna till
+bibliotekets filer. Filerna i biblioteket ligger kvar. När admin däremot
+raderar en hel låtmapp i Material tas låten också bort ur alla körer som
+har den i repertoaren, tillsammans med filerna.
 
 Medlemmar ser sin körs repertoarer, kan spela upp materialet i den inbyggda
 spelaren och ladda ner det. Nedladdningslänkar är tidsbegränsade.
