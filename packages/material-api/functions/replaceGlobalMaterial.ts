@@ -1,9 +1,16 @@
-import { DynamoDBClient, GetItemCommand, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+import {
+  AttributeValue,
+  DynamoDBClient,
+  GetItemCommand,
+  QueryCommand,
+  UpdateItemCommand,
+} from "@aws-sdk/client-dynamodb";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../core/utils/http";
 import { CognitoIdentityProviderClient, AdminGetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
+import { replacePathBasename, resolveRenameBasename } from "./lib/renameMaterialName";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const s3Client = new S3Client({ region: process.env.AWS_REGION });
@@ -36,10 +43,118 @@ function basenameFromMaterialsUploadKey(key: string): string | null {
   return name.length > 0 ? name : null;
 }
 
-function replacePathBasename(filePath: string, newBasename: string): string {
-  const i = filePath.lastIndexOf("/");
-  if (i === -1) return newBasename;
-  return filePath.slice(0, i + 1) + newBasename;
+type ExistingMaterial = {
+  fileKey?: string;
+  title?: string;
+  filePath?: string;
+  type?: string;
+};
+
+/**
+ * Namnbyte: GetItem MATERIAL#{id} → Query GSI2 på exakt ny filePath →
+ * UpdateItem title + sista ledet i filePath. fileKey och S3 rörs inte.
+ */
+async function filePathTakenByOther(
+  tableName: string,
+  filePath: string,
+  materialId: string
+): Promise<boolean> {
+  let startKey: Record<string, AttributeValue> | undefined;
+  do {
+    const page = await dbClient.send(
+      new QueryCommand({
+        TableName: tableName,
+        IndexName: "GSI2",
+        KeyConditionExpression: "GSI1PK = :gsi1pk AND filePath = :filePath",
+        ExpressionAttributeValues: {
+          ":gsi1pk": { S: "MATERIALS" },
+          ":filePath": { S: filePath },
+        },
+        ProjectionExpression: "materialId",
+        ExclusiveStartKey: startKey,
+      })
+    );
+    for (const item of page.Items ?? []) {
+      if (item.materialId?.S !== materialId) return true;
+    }
+    startKey = page.LastEvaluatedKey;
+  } while (startKey);
+  return false;
+}
+
+async function renameGlobalMaterial(
+  tableName: string,
+  materialId: string,
+  requestedTitle: string,
+  existing: ExistingMaterial
+): Promise<APIGatewayProxyResultV2> {
+  const resolved = resolveRenameBasename(requestedTitle, existing.title, existing.filePath);
+  if (resolved.ok === false) {
+    return sendError(400, resolved.message);
+  }
+
+  const basename = resolved.basename;
+  const existingPath = existing.filePath?.trim() || "";
+  const nextPath = existingPath ? replacePathBasename(existingPath, basename) : "";
+  const pathChanges = Boolean(nextPath) && nextPath !== existingPath;
+
+  if (pathChanges && (await filePathTakenByOther(tableName, nextPath, materialId))) {
+    return sendError(409, "En fil med det namnet finns redan i den här mappen.");
+  }
+
+  const titleUnchanged = (existing.title?.trim() || "") === basename;
+  if (titleUnchanged && !pathChanges) {
+    return sendResponse(
+      {
+        message: "Filnamnet är oförändrat.",
+        materialId,
+        title: basename,
+        filePath: existingPath || null,
+      },
+      200
+    );
+  }
+
+  const names: Record<string, string> = {
+    "#title": "title",
+    "#updatedAt": "updatedAt",
+    "#type": "type",
+  };
+  const values: Record<string, { S: string }> = {
+    ":title": { S: basename },
+    ":updatedAt": { S: new Date().toISOString() },
+    ":type": { S: "GlobalMaterial" },
+  };
+  const updates = ["#title = :title", "#updatedAt = :updatedAt"];
+  if (pathChanges) {
+    names["#filePath"] = "filePath";
+    values[":filePath"] = { S: nextPath };
+    updates.push("#filePath = :filePath");
+  }
+
+  await dbClient.send(
+    new UpdateItemCommand({
+      TableName: tableName,
+      Key: {
+        PK: { S: `MATERIAL#${materialId}` },
+        SK: { S: `MATERIAL#${materialId}` },
+      },
+      UpdateExpression: `SET ${updates.join(", ")}`,
+      ConditionExpression: "attribute_exists(PK) AND #type = :type",
+      ExpressionAttributeNames: names,
+      ExpressionAttributeValues: values,
+    })
+  );
+
+  return sendResponse(
+    {
+      message: "Filnamnet är uppdaterat.",
+      materialId,
+      title: basename,
+      filePath: nextPath || existingPath || null,
+    },
+    200
+  );
 }
 
 export const handler = async (
@@ -84,8 +199,30 @@ export const handler = async (
     const nextTitle = body.title?.trim();
     const deleteOldFile = body.deleteOldFile !== false;
 
+    const key = {
+      PK: { S: `MATERIAL#${materialId}` },
+      SK: { S: `MATERIAL#${materialId}` },
+    };
+
     if (!nextFileKey) {
-      return sendError(400, "fileKey is required.");
+      if (typeof body.title !== "string") {
+        return sendError(400, "fileKey is required.");
+      }
+
+      const beforeRename = await dbClient.send(
+        new GetItemCommand({
+          TableName: MAIN_TABLE,
+          Key: key,
+        })
+      );
+      if (!beforeRename.Item) {
+        return sendError(404, "Filen hittades inte.");
+      }
+      const existingForRename = unmarshall(beforeRename.Item) as ExistingMaterial;
+      if (existingForRename.type !== "GlobalMaterial") {
+        return sendError(400, "Bara bibliotekets filer kan döpas om.");
+      }
+      return await renameGlobalMaterial(MAIN_TABLE, materialId, body.title, existingForRename);
     }
     if (nextFileKey.length > 1024) {
       return sendError(400, "fileKey is too long.");
@@ -94,11 +231,6 @@ export const handler = async (
     if (!nextFileKey.startsWith("materials/")) {
       return sendError(400, "fileKey must start with 'materials/'.");
     }
-
-    const key = {
-      PK: { S: `MATERIAL#${materialId}` },
-      SK: { S: `MATERIAL#${materialId}` },
-    };
 
     const before = await dbClient.send(
       new GetItemCommand({
@@ -109,12 +241,7 @@ export const handler = async (
     if (!before.Item) {
       return sendError(404, "Material not found.");
     }
-    const existing = unmarshall(before.Item) as {
-      fileKey?: string;
-      title?: string;
-      filePath?: string;
-      type?: string;
-    };
+    const existing = unmarshall(before.Item) as ExistingMaterial;
     if (existing.type !== "GlobalMaterial") {
       return sendError(400, "Only global materials can be replaced.");
     }
@@ -194,8 +321,13 @@ export const handler = async (
       },
       200
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const name = error instanceof Error ? error.name : "";
+    if (name === "ConditionalCheckFailedException") {
+      return sendError(404, "Filen hittades inte.");
+    }
     console.error("Error replacing global material:", error);
-    return sendError(500, error.message || "Internal server error");
+    const message = error instanceof Error ? error.message : "Internal server error";
+    return sendError(500, message || "Internal server error");
   }
 };

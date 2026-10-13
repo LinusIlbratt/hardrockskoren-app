@@ -198,7 +198,7 @@ deleteGlobalMaterial:
 replaceGlobalMaterial:
     handler: functions/replaceGlobalMaterial.handler
     name: hrk-replace-global-material-${sls:stage}
-    description: Replaces fileKey (and optional title) for a global material without changing materialId. (Admin only)
+    description: Replaces a global material file, or renames it when the body only contains title. (Admin only)
     events:
       - httpApi:
           method: PATCH
@@ -214,8 +214,10 @@ replaceGlobalMaterial:
         Action:
           - "dynamodb:GetItem"
           - "dynamodb:UpdateItem"
+          - "dynamodb:Query"
         Resource:
           - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+          - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI2"
       - Effect: "Allow"
         Action:
           - "s3:DeleteObject"

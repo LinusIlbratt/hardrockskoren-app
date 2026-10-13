@@ -141,7 +141,10 @@ Materialet är organiserat i två lager.
 
 **Biblioteket** är gemensamt och adminstyrt. Admin laddar upp noter, ljudfiler
 och stämfiler i mappstruktur. Filerna ligger på ett ställe — de kopieras inte
-per kör.
+per kör. Admin kan byta visningsnamn på en fil. Då uppdateras namnet och sista
+ledet i filsökvägen på biblioteksposten, utan att filen i lagringen byts ut.
+Körerna läser den posten, så det nya namnet syns i repertoarerna. En sparad
+egen stämma eller ett eget låtnamn på kopplingen ligger kvar.
 
 **Repertoarer** hör till en specifik kör. En körledare eller admin skapar en
 repertoar (t.ex. "Vårkonsert 2026") och kopplar material från biblioteket till
