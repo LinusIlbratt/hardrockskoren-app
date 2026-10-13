@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Info } from "lucide-react";
 import { IoEyeOutline } from "react-icons/io5";
 import { format, isPast } from "date-fns";
@@ -15,10 +15,31 @@ import { useEventNotification } from "@/hooks/useEventNotification";
 import type { Event } from "@/types";
 import styles from "./MemberEventPage.module.scss";
 
+const FOCUS_HIGHLIGHT_MS = 2600;
+
+function isFocusUnreadState(state: unknown): boolean {
+  return (
+    typeof state === "object" &&
+    state !== null &&
+    "focusUnread" in state &&
+    (state as { focusUnread?: unknown }).focusUnread === true
+  );
+}
+
+function earliestUnreadEvent(events: Event[], unreadIds: Set<string>): Event | undefined {
+  return events
+    .filter((event) => unreadIds.has(event.eventId))
+    .sort((a, b) => new Date(a.eventDate).getTime() - new Date(b.eventDate).getTime())[0];
+}
+
 export const MemberEventPage = () => {
   const { groupName } = useParams<{ groupName: string }>();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [focusedEventId, setFocusedEventId] = useState<string | null>(null);
+  const shouldFocusUnread = isFocusUnreadState(location.state);
   const {
     rehearsals,
     concerts,
@@ -39,12 +60,61 @@ export const MemberEventPage = () => {
     markDescriptionUpdateAsSeen,
   } = useEventNotification();
 
-  const allNotificationIds = new Set([
-    ...notificationData.newEventIds,
-    ...Object.keys(notificationData.updatedEvents),
-  ]);
+  const allNotificationIds = useMemo(
+    () => new Set([
+      ...notificationData.newEventIds,
+      ...Object.keys(notificationData.updatedEvents),
+    ]),
+    [notificationData]
+  );
   const hasRehearsalNotification = rehearsals.some((event) => allNotificationIds.has(event.eventId));
   const hasConcertNotification = concerts.some((event) => allNotificationIds.has(event.eventId));
+
+  useEffect(() => {
+    if (!shouldFocusUnread || isLoading) return;
+
+    const target = earliestUnreadEvent(
+      [...rehearsals, ...concerts],
+      allNotificationIds
+    );
+    if (target) {
+      setActiveTab(target.eventType);
+      setFocusedEventId(target.eventId);
+    }
+
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [
+    shouldFocusUnread,
+    isLoading,
+    rehearsals,
+    concerts,
+    allNotificationIds,
+    setActiveTab,
+    navigate,
+    location.pathname,
+  ]);
+
+  useEffect(() => {
+    if (!focusedEventId) return;
+    const isVisible = eventsToDisplay.some((event) => event.eventId === focusedEventId);
+    if (!isVisible) return;
+
+    const eventId = focusedEventId;
+    const frame = window.requestAnimationFrame(() => {
+      const element = document.querySelector<HTMLElement>(
+        `[data-event-id="${CSS.escape(eventId)}"]`
+      );
+      element?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    const timer = window.setTimeout(() => {
+      setFocusedEventId((current) => (current === eventId ? null : current));
+    }, FOCUS_HIGHLIGHT_MS);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [focusedEventId, eventsToDisplay]);
 
   const renderEventItem = (event: Event) => {
     const startDate = new Date(event.eventDate);
@@ -89,10 +159,16 @@ export const MemberEventPage = () => {
       (isNew || hasUnreadUpdate) ? styles.hasNotification : "",
       isNew ? styles.newEvent : "",
       hasOtherUnreadUpdates ? styles.updatedEvent : "",
+      focusedEventId === event.eventId ? styles.focusHighlight : "",
     ].filter(Boolean).join(" ");
 
     return (
-      <li key={event.eventId} className={classNames} onClick={handleItemClick}>
+      <li
+        key={event.eventId}
+        data-event-id={event.eventId}
+        className={classNames}
+        onClick={handleItemClick}
+      >
         <div className={styles.calendarBlock}>
           <span className={pulseDate ? styles.pulsingText : ""}>{format(startDate, "MMM", { locale: sv })}</span>
           <span className={pulseDate ? styles.pulsingText : ""}>{format(startDate, "d")}</span>

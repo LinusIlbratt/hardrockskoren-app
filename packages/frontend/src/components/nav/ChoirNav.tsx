@@ -71,9 +71,11 @@ export function ChoirNav({
   });
 
   const base = BASE_PATH[audience](groupName);
-  const totalNotifications =
-    notificationData.newEventIds.length +
-    Object.keys(notificationData.updatedEvents).length;
+  const unreadIds = Array.from(new Set([
+    ...notificationData.newEventIds,
+    ...Object.keys(notificationData.updatedEvents),
+  ]));
+  const totalNotifications = unreadIds.length;
 
   const getLinkClassName = ({ isActive }: { isActive: boolean }) =>
     isActive ? `${styles.navLink} ${styles.active}` : styles.navLink;
@@ -97,10 +99,13 @@ export function ChoirNav({
         <div className={visibleTabs.length === 4 ? `${styles.list} ${styles.gridFour}` : styles.list}>
           {visibleTabs.map((tab) => {
             const TabIcon = tab.icon;
+            const focusUnread =
+              tab.segment === "concerts" && notificationData.hasNotification;
             return (
               <NavLink
                 key={tab.segment}
                 to={`${base}/${tab.segment}`}
+                state={focusUnread ? { focusUnread: true } : undefined}
                 end={tab.end}
                 className={getLinkClassName}
                 data-tour={audience === "admin" ? tab.tourId : undefined}

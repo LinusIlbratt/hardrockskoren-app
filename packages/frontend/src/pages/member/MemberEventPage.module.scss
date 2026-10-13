@@ -156,6 +156,12 @@
   opacity: 0.5;
 }
 
+.focusHighlight {
+  opacity: 1;
+  border-color: var(--color-luxury-accent-solid);
+  animation: focusUnreadPulse 1.3s ease-in-out 2;
+}
+
 .calendarBlock {
   flex-shrink: 0;
   display: flex;
@@ -237,4 +243,9 @@
   0% { transform: scale(1); }
   50% { transform: scale(1.1); }
   100% { transform: scale(1); }
+}
+
+@keyframes focusUnreadPulse {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  50% { box-shadow: 0 0 0 3px var(--color-luxury-accent-border); }
 }
