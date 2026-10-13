@@ -24,6 +24,14 @@ export const handler = middy()
       const { groupSlug, name, choirLeader, location } = JSON.parse(event.body);
 
       try {
+        const reservedSlug =
+          typeof groupSlug === "string" ? groupSlug.trim().toUpperCase() : "";
+        if (reservedSlug === "ALL" || reservedSlug === "LEADERS") {
+          return sendError(
+            400,
+            `Group slug "${reservedSlug}" is reserved and cannot be used for a choir.`
+          );
+        }
         const invokerRole = event.requestContext.authorizer.lambda.role;
         if (invokerRole !== "admin") {
           return sendError(403, "Forbidden: You do not have permission to create groups.");

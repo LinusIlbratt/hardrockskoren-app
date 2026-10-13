@@ -13,6 +13,7 @@ import {
   MESSAGE_FEED_PAGE_SIZE,
 } from "../../../core/utils/messageFeed";
 import { loadFeedForGroup, loadReadIds, toFeedResponse } from "../lib/feed";
+import { isReservedAudienceSlug } from "../lib/keys";
 import { enrichItemsWithSenderNames } from "../lib/senderNames";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
@@ -42,8 +43,11 @@ export const handler = async (
   }
 
   const slug = decodeURIComponent(groupSlug!).trim();
-  if (slug.toUpperCase() === "ALL") {
-    return sendError(400, 'Use a choir slug in the path; "ALL" is not a feed path.');
+  if (isReservedAudienceSlug(slug)) {
+    return sendError(
+      400,
+      'Use a choir slug in the path; "ALL" and "LEADERS" are not feed paths.'
+    );
   }
 
   const qs = event.queryStringParameters ?? {};
@@ -68,6 +72,7 @@ export const handler = async (
     const page = await loadFeedForGroup(docClient, tableName, slug, {
       limit,
       before,
+      role: event.requestContext.authorizer?.lambda?.role,
     });
     const itemsWithSender = await enrichItemsWithSenderNames(page.items, {
       userPoolId,

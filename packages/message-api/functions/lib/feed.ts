@@ -16,10 +16,12 @@ import {
 } from "../../../core/utils/messageFeed";
 import {
   ALL_TARGET,
+  LEADERS_TARGET,
   SENT_GSI1_PK,
   groupPk,
   messageCanonicalPk,
   messageReadSk,
+  readMessageScope,
   type MessageCanonicalRecord,
   type MessageMetaRecord,
   type MessageScope,
@@ -81,7 +83,7 @@ export async function getCanonicalMessage(
       createdByGivenName: c.createdByGivenName
         ? String(c.createdByGivenName)
         : undefined,
-      scope: c.scope === "all" ? "all" : "groups",
+      scope: readMessageScope(c.scope),
       targets,
       feedGroupSlug: targets[0] ?? ALL_TARGET,
     };
@@ -243,7 +245,7 @@ async function batchGetCanonicals(
           createdByGivenName: item.createdByGivenName
             ? String(item.createdByGivenName)
             : undefined,
-          scope: item.scope === "all" ? "all" : "groups",
+          scope: readMessageScope(item.scope),
           targets,
           feedGroupSlug: targets[0] ?? ALL_TARGET,
         });
@@ -271,11 +273,15 @@ async function batchGetCanonicals(
   return map;
 }
 
+function isLeaderRole(role: string | null | undefined): boolean {
+  return role?.trim().toLowerCase() === "leader";
+}
+
 export async function loadFeedForGroup(
   docClient: DynamoDBDocumentClient,
   tableName: string,
   groupSlug: string,
-  options?: { limit?: number; before?: string | null }
+  options?: { limit?: number; before?: string | null; role?: string | null }
 ): Promise<FeedPage> {
   const limit = clampMessageFeedLimit(
     options?.limit,
@@ -283,8 +289,9 @@ export async function loadFeedForGroup(
   );
   const before = options?.before?.trim() || null;
   const fetchLimit = Math.min(limit + 1, MESSAGE_FEED_LIMIT);
+  const includeLeaders = isLeaderRole(options?.role);
 
-  const [choirHits, allHits] = await Promise.all([
+  const partitionQueries = [
     queryPartitionHits(
       docClient,
       tableName,
@@ -299,9 +306,24 @@ export async function loadFeedForGroup(
       fetchLimit,
       before
     ),
-  ]);
+  ];
+  if (includeLeaders) {
+    partitionQueries.push(
+      queryPartitionHits(
+        docClient,
+        tableName,
+        groupPk(LEADERS_TARGET),
+        fetchLimit,
+        before
+      )
+    );
+  }
 
-  const refIds = [...choirHits, ...allHits]
+  const [choirHits, allHits, leaderHits = []] = await Promise.all(
+    partitionQueries
+  );
+
+  const refIds = [...choirHits, ...allHits, ...leaderHits]
     .filter((h) => h.kind === "ref")
     .map((h) => h.messageId);
 
@@ -338,11 +360,15 @@ export async function loadFeedForGroup(
   const allItems = allHits
     .map(toFeedItem)
     .filter((x): x is MessageFeedItem => x !== null);
+  const leaderItems = leaderHits
+    .map(toFeedItem)
+    .filter((x): x is MessageFeedItem => x !== null);
 
   const merged = mergeMessageFeeds(
     choirItems,
     allItems,
-    fetchLimit * 2
+    leaderItems,
+    fetchLimit * (includeLeaders ? 3 : 2)
   ).filter((m) => {
     if (!before) return true;
     return messageFeedCursor(m.createdAt, m.messageId) < before;
@@ -442,7 +468,7 @@ export async function listSentMessages(
       createdByGivenName: item.createdByGivenName
         ? String(item.createdByGivenName)
         : undefined,
-      scope: item.scope === "all" ? "all" : "groups",
+      scope: readMessageScope(item.scope),
       targets,
       feedGroupSlug: targets[0] ?? ALL_TARGET,
     });

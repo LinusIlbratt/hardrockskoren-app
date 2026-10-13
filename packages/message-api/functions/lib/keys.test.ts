@@ -7,16 +7,20 @@ import {
 import {
   normalizeTarget,
   ALL_TARGET,
+  LEADERS_TARGET,
   messageSk,
   messagePk,
   parseCreateTargets,
+  targetsFromResolved,
   MAX_MESSAGE_TARGETS,
 } from "./keys";
 
 describe("normalizeTarget", () => {
-  it("accepts ALL case-insensitively", () => {
+  it("accepts ALL and LEADERS case-insensitively", () => {
     expect(normalizeTarget("ALL")).toBe(ALL_TARGET);
     expect(normalizeTarget("all")).toBe(ALL_TARGET);
+    expect(normalizeTarget("LEADERS")).toBe(LEADERS_TARGET);
+    expect(normalizeTarget("leaders")).toBe(LEADERS_TARGET);
   });
 
   it("trims choir slugs", () => {
@@ -33,6 +37,7 @@ describe("message keys", () => {
   it("builds PK/SK consistently", () => {
     expect(messagePk("stockholm")).toBe("GROUP#stockholm");
     expect(messagePk(ALL_TARGET)).toBe("GROUP#ALL");
+    expect(messagePk(LEADERS_TARGET)).toBe("GROUP#LEADERS");
     expect(messageSk("2026-07-16T10:00:00.000Z", "abc")).toBe(
       "MSG#2026-07-16T10:00:00.000Z#abc"
     );
@@ -60,6 +65,25 @@ describe("parseCreateTargets", () => {
       mode: "groups",
       groupSlugs: ["stockholm", "goteborg"],
     });
+  });
+
+  it("resolves LEADERS alone", () => {
+    const result = parseCreateTargets({ targets: ["leaders"] });
+    expect(result).toEqual({ ok: true, value: { mode: "leaders" } });
+    if (!result.ok) return;
+    expect(targetsFromResolved(result.value)).toEqual({
+      scope: "leaders",
+      targets: ["LEADERS"],
+    });
+  });
+
+  it("rejects LEADERS mixed with ALL or choir slugs", () => {
+    expect(parseCreateTargets({ targets: ["LEADERS", "ALL"] }).ok).toBe(false);
+    expect(parseCreateTargets({ targets: ["LEADERS", "stockholm"] }).ok).toBe(false);
+    const mixed = parseCreateTargets({ targets: ["leaders", "goteborg"] });
+    expect(mixed.ok).toBe(false);
+    if (!("message" in mixed)) return;
+    expect(mixed.message).toMatch(/Cannot combine/i);
   });
 
   it("rejects ALL mixed with choir slugs", () => {

@@ -10,7 +10,7 @@ import {
   requireAnyChoirMembershipResponse,
   requireAccessToAnyGroupSlug,
 } from "../../../core/utils/requireGroupAccess";
-import { ALL_TARGET, messageReadSk } from "../lib/keys";
+import { ALL_TARGET, LEADERS_TARGET, messageReadSk } from "../lib/keys";
 import { getCanonicalMessage } from "../lib/feed";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
@@ -43,7 +43,16 @@ export const handler = async (
     }
 
     const lambdaCtx = event.requestContext.authorizer?.lambda;
-    if (message.targets.includes(ALL_TARGET) || message.scope === "all") {
+    const role =
+      typeof lambdaCtx?.role === "string" ? lambdaCtx.role.trim().toLowerCase() : "";
+    if (message.scope === "leaders" || message.targets.includes(LEADERS_TARGET)) {
+      if (role !== "leader") {
+        return sendError(
+          403,
+          "Forbidden: Only choir leaders can mark this message as read."
+        );
+      }
+    } else if (message.targets.includes(ALL_TARGET) || message.scope === "all") {
       const denied = await requireAnyChoirMembershipResponse(lambdaCtx);
       if (denied) return denied;
     } else {

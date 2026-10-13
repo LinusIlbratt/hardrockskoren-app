@@ -30,8 +30,19 @@ export type FeedMessage = {
   createdByName?: string;
   createdByGivenName?: string;
   isRead: boolean;
-  scope: "all" | "group";
+  scope: "all" | "group" | "leaders";
 };
+
+export function isLeadersAudience(message: {
+  scope?: string;
+  targets?: readonly string[];
+  groupSlug?: string;
+}): boolean {
+  if (message.scope === "leaders" || message.groupSlug === "LEADERS") {
+    return true;
+  }
+  return message.targets?.includes("LEADERS") ?? false;
+}
 
 export type MessageDraft = {
   title: string;
@@ -57,7 +68,7 @@ export type UnreadStatus = {
 export type CreateMessageInput = {
   title: string;
   body: string;
-  /** ["ALL"] or one/many choir slugs — never mix ALL with slugs. */
+  /** ["ALL"], ["LEADERS"], or one/many choir slugs — never mix those audiences. */
   targets: string[];
 };
 
@@ -65,7 +76,7 @@ export type CreateMessageResponse = {
   title: string;
   body: string;
   createdAt: string;
-  scope: "all" | "groups";
+  scope: "all" | "groups" | "leaders";
   targets: string[];
   count: number;
   messageId: string;
@@ -80,7 +91,7 @@ export type SentMessage = {
   createdByUuid: string;
   createdByName?: string;
   createdByGivenName?: string;
-  scope: "all" | "groups";
+  scope: "all" | "groups" | "leaders";
   targets: string[];
 };
 
