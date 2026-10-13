@@ -151,6 +151,7 @@ export const handler = async (
   const messageId = nanoid();
 
   try {
+    // LEADERS is a reserved audience (GROUP#LEADERS), not a choir row.
     if (resolved.mode === "groups") {
       const existence = await assertChoirsExist(tableName, resolved.groupSlugs);
       if ("missing" in existence) {

@@ -1,13 +1,16 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { FiFolder, FiTrash2, FiRefreshCw, FiInbox } from 'react-icons/fi';
+import { FiEdit2, FiFolder, FiTrash2, FiRefreshCw, FiInbox } from 'react-icons/fi';
 import { Cluster } from '@/components/ui/layout/Cluster';
 import { Stack } from '@/components/ui/layout/Stack';
 import { Modal } from '@/components/ui/modal/Modal';
 import { Button, ButtonVariant } from '@/components/ui/button/Button';
+import { FormGroup } from '@/components/ui/form/FormGroup';
+import { Input } from '@/components/ui/input/Input';
 import { AddLibraryFolderToChoirsModal } from '@/components/media/AddLibraryFolderToChoirsModal';
 import { MAX_FILES_PER_BATCH_UPLOAD, useMaterialFolder, useMaterialUploader } from '@/features/materials';
-import type { LibraryMaterial } from '@/services/materialService';
+import { renameGlobalMaterial, type LibraryMaterial } from '@/services/materialService';
+import { materialActionError } from '@/features/materials/materialActionError';
 import {
   compareMaterialLabels,
   memberMaterialSection,
@@ -89,7 +92,40 @@ export const MaterialDetailPage = () => {
   } = uploader;
 
   const replaceStatus = folderStatusAt >= uploaderStatusAt ? folderStatus : uploaderStatus;
-  const rowBusy = isUploaderBusy || !!deletingMaterialId || isBatchDeleting;
+  const [materialPendingRename, setMaterialPendingRename] = useState<LibraryMaterial | null>(null);
+  const [renameDraft, setRenameDraft] = useState('');
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [renameSaving, setRenameSaving] = useState(false);
+  const rowBusy = isUploaderBusy || !!deletingMaterialId || isBatchDeleting || renameSaving;
+
+  const openRename = (material: LibraryMaterial) => {
+    const current = material.title || material.filePath.split('/').pop() || '';
+    setRenameError(null);
+    setRenameDraft(current);
+    setMaterialPendingRename(material);
+  };
+
+  const saveRename = async () => {
+    if (!materialPendingRename || renameSaving) return;
+    const title = renameDraft.trim();
+    if (!title) {
+      setRenameError('Ange ett filnamn.');
+      return;
+    }
+    setRenameSaving(true);
+    setRenameError(null);
+    try {
+      const saved = await renameGlobalMaterial(materialPendingRename.materialId, title);
+      setMaterialPendingRename(null);
+      setReplaceStatus({ type: 'success', message: `Filnamn uppdaterat: "${saved.title}"` });
+      await folder.loadMaterials({ silent: true });
+    } catch (err) {
+      console.error('Failed to rename material:', err);
+      setRenameError(materialActionError(err, 'Kunde inte byta filnamn. Försök igen.'));
+    } finally {
+      setRenameSaving(false);
+    }
+  };
 
   const { folders, fileSections } = useMemo(() => {
     const folderItems: { name: string; path: string }[] = [];
@@ -277,6 +313,53 @@ export const MaterialDetailPage = () => {
             </Button>
           </Cluster>
         </div>
+      </Modal>
+
+      <Modal
+        formMode
+        isOpen={!!materialPendingRename}
+        onClose={() => {
+          if (!renameSaving) {
+            setMaterialPendingRename(null);
+            setRenameError(null);
+          }
+        }}
+        title="Byt filnamn"
+      >
+        <form
+          className={styles.syncModalBody}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void saveRename();
+          }}
+        >
+          <FormGroup label="Filnamn" htmlFor="rename-material-title" error={renameError}>
+            <Input
+              id="rename-material-title"
+              value={renameDraft}
+              maxLength={180}
+              autoFocus
+              disabled={renameSaving}
+              onChange={(event) => setRenameDraft(event.target.value)}
+            />
+          </FormGroup>
+          <Cluster justify="end" gap="sm" className={styles.syncModalActions}>
+            <Button
+              type="button"
+              variant={ButtonVariant.Ghost}
+              disabled={renameSaving}
+              onClick={() => {
+                setMaterialPendingRename(null);
+                setRenameError(null);
+              }}
+            >
+              Avbryt
+            </Button>
+            <Button type="submit" variant={ButtonVariant.Primary} isLoading={renameSaving}>
+              Spara
+            </Button>
+          </Cluster>
+        </form>
       </Modal>
 
       <Modal
@@ -473,6 +556,19 @@ export const MaterialDetailPage = () => {
                             e.currentTarget.value = '';
                           }}
                         />
+                        <button
+                          type="button"
+                          className={styles.renameButton}
+                          disabled={rowBusy}
+                          aria-label={`Byt namn på ${material.title || material.filePath.split('/').pop() || 'fil'}`}
+                          title="Byt filnamn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openRename(material);
+                          }}
+                        >
+                          <FiEdit2 aria-hidden size={16} />
+                        </button>
                         <button
                           type="button"
                           className={styles.replaceButton}

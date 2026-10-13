@@ -68,6 +68,7 @@ export const handler = async (
       }
     }
 
+    // Each target is a partition slug: choir, ALL, or LEADERS (GROUP#LEADERS).
     const refDeletes = message.targets.map((groupSlug) => ({
       Delete: {
         TableName: tableName,

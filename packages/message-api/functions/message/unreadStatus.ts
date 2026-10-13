@@ -13,6 +13,7 @@ import {
   loadReadIds,
   unreadFromFeed,
 } from "../lib/feed";
+import { isReservedAudienceSlug } from "../lib/keys";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
@@ -40,8 +41,11 @@ export const handler = async (
   }
 
   const slug = decodeURIComponent(groupSlug!).trim();
-  if (slug.toUpperCase() === "ALL") {
-    return sendError(400, 'Use a choir slug in the path; "ALL" is not a feed path.');
+  if (isReservedAudienceSlug(slug)) {
+    return sendError(
+      400,
+      'Use a choir slug in the path; "ALL" and "LEADERS" are not feed paths.'
+    );
   }
 
   try {
@@ -49,7 +53,10 @@ export const handler = async (
       docClient,
       tableName,
       slug,
-      { limit: MESSAGE_FEED_LIMIT }
+      {
+        limit: MESSAGE_FEED_LIMIT,
+        role: event.requestContext.authorizer?.lambda?.role,
+      }
     );
     const readIds = await loadReadIds(
       docClient,

@@ -157,9 +157,11 @@ export type SharedConcertSignupModalProps = {
   onClose: () => void;
   onConcertUpdated?: (concert: SharedConcert) => void;
   preferredChoirSlug?: string;
-  userGroups: string[];
+  userGroups?: string[];
   givenName?: string;
   familyName?: string;
+  /** Admin preview: info card only, no signup form and no choir-scoped refetch. */
+  previewMode?: boolean;
 };
 
 export const SharedConcertSignupModal = ({
@@ -167,9 +169,10 @@ export const SharedConcertSignupModal = ({
   onClose,
   onConcertUpdated,
   preferredChoirSlug,
-  userGroups,
+  userGroups = [],
   givenName = "",
   familyName = "",
+  previewMode = false,
 }: SharedConcertSignupModalProps) => {
   const [selected, setSelected] = useState<SharedConcert | null>(concert);
   const [detailError, setDetailError] = useState<string | null>(null);
@@ -225,9 +228,14 @@ export const SharedConcertSignupModal = ({
     setSignupMessage(null);
     setIsLoadingDetail(true);
 
-    getSharedConcert(concertId, {
-      groupSlug: preferredChoirSlug?.trim() || userGroups.find((slug) => slug.trim()),
-    })
+    const groupSlug = previewMode
+      ? ""
+      : preferredChoirSlug?.trim() || userGroups.find((slug) => slug.trim()) || "";
+
+    getSharedConcert(
+      concertId,
+      groupSlug ? { groupSlug } : undefined
+    )
       .then((fresh) => {
         if (cancelled) return;
         setSelected(fresh);
@@ -250,7 +258,7 @@ export const SharedConcertSignupModal = ({
     // Re-fetch only when another concert is opened — not when the parent
     // object identity changes after signup/list enrichment.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [concertId]);
+  }, [concertId, previewMode]);
 
   const markSignedUpInUi = (current: SharedConcert) => {
     const optimistic = applySignedUpLocalState(current);
@@ -369,7 +377,7 @@ export const SharedConcertSignupModal = ({
           {isLoadingDetail && <p className={styles.muted}>Laddar…</p>}
           {detailError && <p className={styles.error}>{detailError}</p>}
 
-          {!isLoadingDetail && selected.viewerIsSignedUp && (
+          {!previewMode && !isLoadingDetail && selected.viewerIsSignedUp && (
             <p className={styles.signedUpBanner} role="status">
               {signupMessage?.type === "success"
                 ? "Tack för din anmälan"
@@ -377,7 +385,8 @@ export const SharedConcertSignupModal = ({
             </p>
           )}
 
-          {!isLoadingDetail &&
+          {!previewMode &&
+            !isLoadingDetail &&
             !selected.signupOpen &&
             !selected.viewerIsSignedUp && (
               <p className={styles.closedBanner}>
@@ -385,7 +394,7 @@ export const SharedConcertSignupModal = ({
               </p>
             )}
 
-          {!isLoadingDetail && canSignUp && (
+          {!previewMode && !isLoadingDetail && canSignUp && (
             <form
               className={styles.signupForm}
               onSubmit={handleSignup}

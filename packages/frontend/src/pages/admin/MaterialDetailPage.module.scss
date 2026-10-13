@@ -521,6 +521,7 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   display: none;
 }
 
+.renameButton,
 .replaceButton,
 .deleteFileButton {
   display: inline-flex;
@@ -553,6 +554,7 @@ $ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 
+.renameButton,
 .replaceButton {
   &:hover:not(:disabled) {
     background: rgba(255, 255, 255, 0.06);

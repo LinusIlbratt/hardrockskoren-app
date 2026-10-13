@@ -10,7 +10,7 @@ import { useMessageTargetGroups } from "@/features/messages/useMessageTargetGrou
 export const TITLE_MAX = 120;
 export const BODY_MAX = 4000;
 
-type AudienceMode = "all" | "selected";
+type AudienceMode = "all" | "leaders" | "selected";
 
 export function validateDraft(title: string, body: string): string | null {
   const trimmedTitle = title.trim();
@@ -28,6 +28,9 @@ export function validateDraft(title: string, body: string): string | null {
 }
 
 function formatCreateSuccess(result: CreateMessageResponse): string {
+  if (result.scope === "leaders" || result.targets?.includes("LEADERS")) {
+    return "Meddelandet har skickats till alla körledare.";
+  }
   if (result.scope === "all") {
     return "Meddelandet har skickats till alla körer.";
   }
@@ -72,6 +75,9 @@ export function useMessageComposer({ fetchSent, onCreated }: UseMessageComposerO
   const resolveTargets = (): string[] | null => {
     if (audienceMode === "all") {
       return ["ALL"];
+    }
+    if (audienceMode === "leaders") {
+      return ["LEADERS"];
     }
     if (selectedGroups.length === 0) {
       return null;

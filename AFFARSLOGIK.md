@@ -29,7 +29,7 @@ Plattformsansvarig. Ser och gör allt, i alla körer.
 - Skapar och tar bort körer
 - Bjuder in medlemmar till vilken kör som helst
 - Laddar upp allt material: noter, stämfiler, sjung-upp-material
-- Skickar meddelanden (Aktuellt) till en, flera eller alla körer
+- Skickar meddelanden (Aktuellt) till en, flera eller alla körer, eller till alla körledare
 - Skapar och administrerar gemensamma konserter och ser anmälningslistorna
 - Ändrar andras roller och raderar medlemmars Cognito-konto
 - Skapar både konserter och repetitioner i kalendern
@@ -75,7 +75,7 @@ Vanlig körsångare.
 | Ta bort repetition | ✅ | — | — |
 | Skapa repetition i kalendern | ✅ | ✅ | — |
 | Se kalendern | ✅ | ✅ | ✅ |
-| Skicka meddelande (Aktuellt) | ✅ (en, flera eller alla körer) | ✅ (enbart egen kör) | — |
+| Skicka meddelande (Aktuellt) | ✅ (en, flera eller alla körer, eller alla körledare) | ✅ (enbart egen kör) | — |
 | Redigera eller radera meddelande | ✅ (alla) | ✅ (enbart egna) | — |
 | Läsa Aktuellt | ✅ | ✅ | ✅ |
 | Skapa gemensam konsert | ✅ | — | — |
@@ -141,7 +141,10 @@ Materialet är organiserat i två lager.
 
 **Biblioteket** är gemensamt och adminstyrt. Admin laddar upp noter, ljudfiler
 och stämfiler i mappstruktur. Filerna ligger på ett ställe — de kopieras inte
-per kör.
+per kör. Admin kan byta visningsnamn på en fil. Då uppdateras namnet och sista
+ledet i filsökvägen på biblioteksposten, utan att filen i lagringen byts ut.
+Körerna läser den posten, så det nya namnet syns i repertoarerna. En sparad
+egen stämma eller ett eget låtnamn på kopplingen ligger kvar.
 
 **Repertoarer** hör till en specifik kör. En körledare eller admin skapar en
 repertoar (t.ex. "Vårkonsert 2026") och kopplar material från biblioteket till
@@ -152,6 +155,10 @@ i den kören, inte filen i biblioteket.
 
 Det finns också en synkfunktion: admin kan koppla en hel bibliotekmapp till en
 eller flera körer, så att repertoaren uppdateras när mappens innehåll ändras.
+När en repertoar tas bort ur en kör försvinner även kopplingarna till
+bibliotekets filer. Filerna i biblioteket ligger kvar. När admin däremot
+raderar en hel låtmapp i Material tas låten också bort ur alla körer som
+har den i repertoaren, tillsammans med filerna.
 
 Medlemmar ser sin körs repertoarer, kan spela upp materialet i den inbyggda
 spelaren och ladda ner det. Nedladdningslänkar är tidsbegränsade.
@@ -192,8 +199,10 @@ Events kan också skapas i batch — flera gig eller repetitioner på en gång.
 ### Aktuellt (meddelanden)
 
 Admin skriver ett meddelande med rubrik (max 120 tecken) och brödtext (max 4000
-tecken) och väljer mottagare: antingen **alla körer** eller **en lista med
-specifika körer** (max 50 åt gången). De två kan inte kombineras.
+tecken) och väljer mottagare: **alla körer**, **alla körledare**, eller **en
+lista med specifika körer** (max 50 åt gången). De tre kan inte kombineras.
+Körledarutskicket syns bara för användare med rollen körledare, i den kör de
+har öppen. Medlemmar ser det inte.
 
 Körledare kan skriva ett meddelande under fliken Aktuellt, med samma
 längdgränser, men bara till den kör de själva tillhör. Det går inte att nå
@@ -209,7 +218,8 @@ förnamn sparas vid utskickstillfället så att det står kvar även om personen
 senare byter namn eller slutar.
 
 Medlemmar ser ett flöde med nyaste först, med sin körs meddelanden och
-alla-körer-meddelanden sammanslagna. Olästa markeras. Flödet laddar 20 åt gången
+alla-körer-meddelanden sammanslagna. Körledare ser samma flöde plus meddelanden
+som skickats till alla körledare. Olästa markeras. Flödet laddar 20 åt gången
 med en "ladda äldre"-funktion, max 50 per anrop.
 
 Admin har en egen vy över allt som skickats och kan redigera och ta bort alla meddelanden.

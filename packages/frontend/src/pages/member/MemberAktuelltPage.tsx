@@ -12,7 +12,7 @@ import { Cluster } from "@/components/ui/layout/Cluster";
 import { Stack } from "@/components/ui/layout/Stack";
 import { Modal } from "@/components/ui/modal/Modal";
 import { useMemberFeed } from "@/features/messages/hooks/useMemberFeed";
-import type { FeedMessage } from "@/services/messageService";
+import { isLeadersAudience, type FeedMessage } from "@/services/messageService";
 import {
   formatMessageListTime,
   formatMessageSenderFirstName,
@@ -156,6 +156,9 @@ export const MemberAktuelltPage = () => {
               <time dateTime={feed.selected.createdAt}>
                 {new Date(feed.selected.createdAt).toLocaleString("sv-SE")}
               </time>
+              {isLeadersAudience(feed.selected) && (
+                <span className={styles.leaderTag}>Endast körledare</span>
+              )}
             </Cluster>
             <MarkdownText className={styles.modalContent} text={feed.selected.body} />
           </Stack>
@@ -293,6 +296,7 @@ function MessageRow({
     message.createdByName
   );
   const timeLabel = formatMessageListTime(message.createdAt);
+  const leadersOnly = isLeadersAudience(message);
 
   return (
     <li className={`${styles.newsCard} ${message.isRead ? styles.read : styles.unread}`}>
@@ -321,6 +325,7 @@ function MessageRow({
           <span>{sender}</span>
           <span className={styles.metaDot} aria-hidden="true">•</span>
           <time dateTime={message.createdAt}>{timeLabel}</time>
+          {leadersOnly && <span className={styles.leaderTag}>Endast körledare</span>}
         </div>
       </div>
       {canManage && (

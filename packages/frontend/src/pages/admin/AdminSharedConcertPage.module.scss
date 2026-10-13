@@ -385,9 +385,21 @@
   border-radius: 999px;
   background: rgba(220, 38, 38, 0.15);
   color: #f5ebd7;
+  font-family: inherit;
   font-size: 0.75rem;
   font-weight: 600;
   line-height: 1.2;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(220, 38, 38, 0.28);
+    border-color: rgba(220, 38, 38, 0.55);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(185, 28, 28, 0.7);
+    outline-offset: 2px;
+  }
 }
 
 .chevron {

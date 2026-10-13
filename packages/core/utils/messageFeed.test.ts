@@ -40,6 +40,15 @@ describe("mergeMessageFeeds", () => {
     expect(mergeMessageFeeds(choir, all)).toHaveLength(1);
   });
 
+  it("merges choir, ALL, and LEADERS, newest first", () => {
+    const choir = [msg("a", "2026-07-01T10:00:00.000Z")];
+    const all = [msg("b", "2026-07-03T10:00:00.000Z", "ALL")];
+    const leaders = [msg("c", "2026-07-02T10:00:00.000Z", "LEADERS")];
+    const merged = mergeMessageFeeds(choir, all, leaders);
+    expect(merged.map((m) => m.messageId)).toEqual(["b", "c", "a"]);
+    expect(scopeFromGroupSlug("LEADERS")).toBe("leaders");
+  });
+
   it("respects limit", () => {
     const choir = Array.from({ length: 60 }, (_, i) =>
       msg(`id${i}`, `2026-07-${String((i % 28) + 1).padStart(2, "0")}T10:00:00.000Z`)
@@ -93,6 +102,7 @@ describe("computeUnread", () => {
 describe("scopeFromGroupSlug", () => {
   it("maps ALL to all scope", () => {
     expect(scopeFromGroupSlug("ALL")).toBe("all");
+    expect(scopeFromGroupSlug("LEADERS")).toBe("leaders");
     expect(scopeFromGroupSlug("stockholm")).toBe("group");
   });
 });

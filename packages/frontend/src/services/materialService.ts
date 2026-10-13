@@ -168,6 +168,26 @@ export async function putToPresignedUrl(
   });
 }
 
+export async function renameGlobalMaterial(
+  materialId: string,
+  title: string
+): Promise<{ title: string }> {
+  const id = requireNonEmpty(materialId, 'materialId').trim();
+  const name = typeof title === 'string' ? title.trim() : '';
+  if (!name) {
+    throw new Error('Ange ett filnamn.');
+  }
+  if (name.includes('/') || name.includes('\\')) {
+    throw new Error('Filnamnet får inte innehålla snedstreck.');
+  }
+  const response = await client().patch(`/materials/${encodeURIComponent(id)}`, { title: name });
+  const savedTitle = response.data?.title;
+  if (typeof savedTitle !== 'string' || savedTitle.trim().length === 0) {
+    throw new Error('Ogiltigt svar vid namnbyte.');
+  }
+  return { title: savedTitle };
+}
+
 export async function replaceMaterialFile(
   materialId: string,
   body: ReplaceMaterialFileBody
@@ -209,6 +229,33 @@ export async function prepareBatchUpload(files: BatchUploadFile[]): Promise<Prep
 export async function deleteMaterial(materialId: string): Promise<void> {
   const id = requireNonEmpty(materialId, 'materialId').trim();
   await client().delete(`/materials/${encodeURIComponent(id)}`);
+}
+
+export type DeleteLibraryFolderResult = {
+  folderPath: string;
+  deletedFileCount: number;
+  removedRepertoireCount: number;
+  message: string;
+};
+
+/** Deletes a whole library folder and linked choir repertoires. Not for single files. */
+export async function deleteLibraryFolder(folderPath: string): Promise<DeleteLibraryFolderResult> {
+  const path = requireNonEmpty(folderPath, 'folderPath').trim().replace(/^\/+|\/+$/g, '');
+  if (!path || path.includes('..') || path.includes('\\')) {
+    throw new Error('Ogiltig mappsökväg.');
+  }
+  const response = await client().post('/materials/delete-folder', { folderPath: path });
+  const data = response.data;
+  if (!data || typeof data !== 'object') {
+    throw new Error('Raderingen hade ett oväntat format.');
+  }
+  return {
+    folderPath: typeof data.folderPath === 'string' ? data.folderPath : path,
+    deletedFileCount: typeof data.deletedFileCount === 'number' ? data.deletedFileCount : 0,
+    removedRepertoireCount:
+      typeof data.removedRepertoireCount === 'number' ? data.removedRepertoireCount : 0,
+    message: typeof data.message === 'string' ? data.message : 'Mappen har raderats.',
+  };
 }
 
 export async function batchDeleteMaterials(materialIds: string[]): Promise<void> {
