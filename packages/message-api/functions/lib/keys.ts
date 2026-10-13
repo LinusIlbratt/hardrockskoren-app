@@ -9,6 +9,9 @@ export type { MessageFeedItem };
 
 export const ALL_TARGET = "ALL";
 
+/** Reserved audience partition for messages to every choir leader. Not a choir slug. */
+export const LEADERS_TARGET = "LEADERS";
+
 /** GSI1 partition for admin sent-history (Query, newest first). */
 export const SENT_GSI1_PK = "MSG#SENT";
 
@@ -18,7 +21,7 @@ export const SENT_GSI1_PK = "MSG#SENT";
  */
 export const MAX_MESSAGE_TARGETS = 50;
 
-export type MessageScope = "all" | "groups";
+export type MessageScope = "all" | "groups" | "leaders";
 
 /** Canonical message body — one per send. */
 export type MessageCanonicalRecord = {
@@ -37,13 +40,13 @@ export type MessageCanonicalRecord = {
   /** Given name only — preferred for member UI. */
   createdByGivenName?: string;
   scope: MessageScope;
-  /** ["ALL"] or choir slugs. */
+  /** ["ALL"], ["LEADERS"], or choir slugs. */
   targets: string[];
   GSI1PK: typeof SENT_GSI1_PK;
   GSI1SK: string;
 };
 
-/** Thin visibility pointer under a choir (or GROUP#ALL). */
+/** Thin visibility pointer under a choir, GROUP#ALL, or GROUP#LEADERS. */
 export type MessageRefRecord = {
   PK: string;
   SK: string;
@@ -109,12 +112,25 @@ export function normalizeTarget(raw: unknown): string | null {
   if (typeof raw !== "string") return null;
   const t = raw.trim();
   if (!t) return null;
-  if (t.toUpperCase() === ALL_TARGET) return ALL_TARGET;
+  const upper = t.toUpperCase();
+  if (upper === ALL_TARGET) return ALL_TARGET;
+  if (upper === LEADERS_TARGET) return LEADERS_TARGET;
   return t;
+}
+
+export function isReservedAudienceSlug(slug: string): boolean {
+  const upper = slug.trim().toUpperCase();
+  return upper === ALL_TARGET || upper === LEADERS_TARGET;
+}
+
+export function readMessageScope(raw: unknown): MessageScope {
+  if (raw === "all" || raw === "leaders") return raw;
+  return "groups";
 }
 
 export type ResolvedCreateTargets =
   | { mode: "all" }
+  | { mode: "leaders" }
   | { mode: "groups"; groupSlugs: string[] };
 
 export type ParseCreateTargetsResult =
@@ -141,7 +157,8 @@ export function parseCreateTargets(
   if (!hasTarget && !hasTargets) {
     return {
       ok: false,
-      message: 'targets is required (string array of choir slugs, or ["ALL"]).',
+      message:
+        'targets is required (choir slugs, ["ALL"], or ["LEADERS"]).',
     };
   }
 
@@ -173,14 +190,14 @@ export function parseCreateTargets(
     if (typeof item !== "string") {
       return {
         ok: false,
-        message: `targets[${i}] must be a string (choir slug or "ALL").`,
+        message: `targets[${i}] must be a string (choir slug, "ALL", or "LEADERS").`,
       };
     }
     const n = normalizeTarget(item);
     if (!n) {
       return {
         ok: false,
-        message: `targets[${i}] must be a non-empty string (choir slug or "ALL").`,
+        message: `targets[${i}] must be a non-empty string (choir slug, "ALL", or "LEADERS").`,
       };
     }
     normalized.push(n);
@@ -188,7 +205,18 @@ export function parseCreateTargets(
 
   const unique = Array.from(new Set(normalized));
   const hasAll = unique.includes(ALL_TARGET);
-  const choirSlugs = unique.filter((s) => s !== ALL_TARGET);
+  const hasLeaders = unique.includes(LEADERS_TARGET);
+  const choirSlugs = unique.filter(
+    (s) => s !== ALL_TARGET && s !== LEADERS_TARGET
+  );
+
+  if (hasLeaders && (hasAll || choirSlugs.length > 0)) {
+    return {
+      ok: false,
+      message:
+        'Cannot combine "LEADERS" with "ALL" or specific choir slugs. Use ["LEADERS"] alone.',
+    };
+  }
 
   if (hasAll && choirSlugs.length > 0) {
     return {
@@ -196,6 +224,10 @@ export function parseCreateTargets(
       message:
         'Cannot combine "ALL" with specific choir slugs. Use either ALL or a list of choirs.',
     };
+  }
+
+  if (hasLeaders) {
+    return { ok: true, value: { mode: "leaders" } };
   }
 
   if (hasAll) {
@@ -214,6 +246,9 @@ export function targetsFromResolved(
 ): { scope: MessageScope; targets: string[] } {
   if (resolved.mode === "all") {
     return { scope: "all", targets: [ALL_TARGET] };
+  }
+  if (resolved.mode === "leaders") {
+    return { scope: "leaders", targets: [LEADERS_TARGET] };
   }
   return { scope: "groups", targets: resolved.groupSlugs };
 }

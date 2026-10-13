@@ -14,6 +14,7 @@ import { requireGroupAccessResponse } from "../../../core/utils/requireGroupAcce
 import type { AuthContext } from "../../../core/types";
 import {
   ALL_TARGET,
+  LEADERS_TARGET,
   SENT_GSI1_PK,
   groupPk,
   messageCanonicalPk,
@@ -86,8 +87,11 @@ export const handler = async (
   if (!slug) {
     return sendError(400, "Group name is required in the path.");
   }
-  if (slug.toUpperCase() === ALL_TARGET) {
-    return sendError(400, 'Use a choir slug in the path; "ALL" is not allowed.');
+  if (slug.toUpperCase() === ALL_TARGET || slug.toUpperCase() === LEADERS_TARGET) {
+    return sendError(
+      400,
+      'Use a choir slug in the path; "ALL" and "LEADERS" are not allowed.'
+    );
   }
 
   const { createdByGivenName, createdByName } = await resolveCreatorNames(

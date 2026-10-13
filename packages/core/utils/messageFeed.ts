@@ -46,15 +46,19 @@ export function parseMessageFeedCursor(
 }
 
 /**
- * Merge choir-specific and ALL-scope messages, newest first, capped at limit.
+ * Merge choir, ALL, and LEADERS messages, newest first, capped at limit.
+ * The third argument is the leaders list, or a numeric cap for the two-source call.
  */
 export function mergeMessageFeeds(
   choirMessages: MessageFeedItem[],
   allMessages: MessageFeedItem[],
+  leadersOrLimit: MessageFeedItem[] | number = [],
   limit: number = MESSAGE_FEED_LIMIT
 ): MessageFeedItem[] {
+  const leadersMessages = Array.isArray(leadersOrLimit) ? leadersOrLimit : [];
+  const cap = typeof leadersOrLimit === "number" ? leadersOrLimit : limit;
   const byId = new Map<string, MessageFeedItem>();
-  for (const msg of [...choirMessages, ...allMessages]) {
+  for (const msg of [...choirMessages, ...allMessages, ...leadersMessages]) {
     if (!msg?.messageId) continue;
     byId.set(msg.messageId, msg);
   }
@@ -64,7 +68,7 @@ export function mergeMessageFeeds(
       if (cmp !== 0) return cmp;
       return (b.messageId || "").localeCompare(a.messageId || "");
     })
-    .slice(0, Math.max(0, limit));
+    .slice(0, Math.max(0, cap));
 }
 
 /**
@@ -85,6 +89,10 @@ export function computeUnread(
   };
 }
 
-export function scopeFromGroupSlug(groupSlug: string): "all" | "group" {
-  return groupSlug === "ALL" ? "all" : "group";
+export function scopeFromGroupSlug(
+  groupSlug: string
+): "all" | "group" | "leaders" {
+  if (groupSlug === "ALL") return "all";
+  if (groupSlug === "LEADERS") return "leaders";
+  return "group";
 }

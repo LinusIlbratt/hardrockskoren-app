@@ -201,7 +201,7 @@ GSI `AttendanceCodeIndex` (`attendanceCode`) och `GroupDateIndex`
 | Spellista | `USER#{uuid}` | `PLAYLIST#{id}` | — | — |
 | Favorit | `USER#{uuid}` | `FAVORITE#{materialId}` | — | — |
 | Meddelande (kanoniskt) | `MSG#{messageId}` | `META` | `MSG#SENT` | `{createdAt}#{id}` |
-| Meddelande-pekare | `GROUP#{slug}` eller `GROUP#ALL` | `MSG#{createdAt}#{id}` | — | — |
+| Meddelande-pekare | `GROUP#{slug}`, `GROUP#ALL` eller `GROUP#LEADERS` | `MSG#{createdAt}#{id}` | — | — |
 | Läskvitto | `USER#{uuid}` | `MSGREAD#{messageId}` | — | — |
 | Gemensam konsert | `SHARED_CONCERT#{id}` | `META` | `SHARED_CONCERT#LIST#{år}` | `{datum}#{id}` |
 | Konsert-pekare | `GROUP#{slug}` eller `GROUP#ALL` | `SHAREDCONCERT#{datum}#{id}` | — | — |
@@ -228,9 +228,11 @@ Tre `ScanCommand` finns kvar och är **legacy, inte mall**:
 
 **Fan-out undviks i `message-api`.** Ett kanoniskt meddelande (`MSG#{id}/META`)
 plus en tunn pekare per kör. Inte N fulla kopior. Max 50 mottagarkörer per
-utskick eftersom TransactWrite klarar 100 items. Redigering (`PUT`) uppdaterar
-bara `title`, `body` och `updatedAt` på META-posten. Radering tar bort META och
-pekarna som listas i `targets`.
+utskick eftersom TransactWrite klarar 100 items. `scope: "leaders"` med
+`targets: ["LEADERS"]` är en enda pekare på `GROUP#LEADERS`, inte en rad per
+körledare. Flödet frågar den partitionen bara när anroparens roll är `leader`.
+Redigering (`PUT`) uppdaterar bara `title`, `body` och `updatedAt` på META-posten.
+Radering tar bort META och pekarna som listas i `targets`.
 
 **Årsshardning i `concert-api`.** `GSI1PK = SHARED_CONCERT#LIST#{år}` sprider
 last i stället för en enda het partition. Listningen frågar 5 år bakåt plus den

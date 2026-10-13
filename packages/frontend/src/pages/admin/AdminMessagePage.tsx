@@ -13,7 +13,7 @@ import { MarkdownTextarea } from "@/components/ui/markdown/MarkdownTextarea";
 import { Cluster } from "@/components/ui/layout/Cluster";
 import { Modal } from "@/components/ui/modal/Modal";
 import { StyledSelect } from "@/components/ui/select/StyledSelect";
-import type { SentMessage } from "@/services/messageService";
+import { isLeadersAudience, type SentMessage } from "@/services/messageService";
 import {
   formatMessageListTime,
   formatMessageSender,
@@ -30,6 +30,9 @@ function formatTargetsLabel(
   message: SentMessage,
   groupsBySlug: Map<string, string>
 ): string {
+  if (isLeadersAudience(message)) {
+    return "Alla körledare";
+  }
   if (message.scope === "all" || message.targets.includes("ALL")) {
     return "Alla körer";
   }
@@ -43,6 +46,9 @@ function formatTargetsShort(
   message: SentMessage,
   groupsBySlug: Map<string, string>
 ): string {
+  if (isLeadersAudience(message)) {
+    return "Alla körledare";
+  }
   if (message.scope === "all" || message.targets.includes("ALL")) {
     return "Alla körer";
   }
@@ -113,6 +119,14 @@ export const AdminMessagePage = () => {
   const editingIsAll = Boolean(
     editing && (editing.scope === "all" || editing.targets.includes("ALL"))
   );
+  const editingIsLeaders = Boolean(editing && isLeadersAudience(editing));
+  const checkedAudience = editing
+    ? editingIsLeaders
+      ? "leaders"
+      : editingIsAll
+        ? "all"
+        : "selected"
+    : audienceMode;
 
   const handleSaveEdit = async () => {
     const saved = await submitEdit();
@@ -197,7 +211,7 @@ export const AdminMessagePage = () => {
                 type="radio"
                 name="recipientType"
                 value="all"
-                checked={editing ? editingIsAll : audienceMode === "all"}
+                checked={checkedAudience === "all"}
                 onChange={() => setAudienceMode("all")}
                 disabled={isSubmitting || isSavingEdit || Boolean(editing)}
                 className={styles.radioInput}
@@ -209,8 +223,21 @@ export const AdminMessagePage = () => {
               <input
                 type="radio"
                 name="recipientType"
+                value="leaders"
+                checked={checkedAudience === "leaders"}
+                onChange={() => setAudienceMode("leaders")}
+                disabled={isSubmitting || isSavingEdit || Boolean(editing)}
+                className={styles.radioInput}
+              />
+              <span className={styles.radioCircle} />
+              <span className={styles.radioLabel}>Alla körledare</span>
+            </label>
+            <label className={styles.radioOption}>
+              <input
+                type="radio"
+                name="recipientType"
                 value="selected"
-                checked={editing ? !editingIsAll : audienceMode === "selected"}
+                checked={checkedAudience === "selected"}
                 onChange={() => setAudienceMode("selected")}
                 disabled={isSubmitting || isSavingEdit || Boolean(editing)}
                 className={styles.radioInput}
@@ -221,9 +248,15 @@ export const AdminMessagePage = () => {
           </div>
         </fieldset>
 
-        {editing && !editingIsAll && (
+        {editing && !editingIsAll && !editingIsLeaders && (
           <p className={styles.hint}>
             Till: {formatTargetsLabel(editing, groupsBySlug)}
+          </p>
+        )}
+
+        {!editing && audienceMode === "leaders" && (
+          <p className={styles.hint}>
+            Syns bara för körledare, i den kör de har öppen.
           </p>
         )}
 
@@ -352,7 +385,13 @@ export const AdminMessagePage = () => {
               >
                 <div className={styles.historyRowMain}>
                   <h3 className={styles.historyItemTitle}>{msg.title}</h3>
-                  <span className={styles.historyTargets}>
+                  <span
+                    className={
+                      isLeadersAudience(msg)
+                        ? `${styles.historyTargets} ${styles.leaderBadge}`
+                        : styles.historyTargets
+                    }
+                  >
                     {formatTargetsShort(msg, groupsBySlug)}
                   </span>
                 </div>
