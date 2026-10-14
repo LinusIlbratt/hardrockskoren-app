@@ -1,8 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Button, ButtonVariant } from '@/components/ui/button/Button';
+import { FormGroup } from '@/components/ui/form/FormGroup';
 import { FileInput } from '@/components/ui/input/FileInput';
+import { Input } from '@/components/ui/input/Input';
 import { Cluster } from '@/components/ui/layout/Cluster';
-import { FiFolder, FiTrash2 } from 'react-icons/fi';
+import { Modal } from '@/components/ui/modal/Modal';
+import { FiEdit2, FiFolder, FiTrash2 } from 'react-icons/fi';
+import { useToast } from '@/context/ToastContext';
 import { materialActionError } from '@/features/materials/materialActionError';
 import { isAbortError } from '@/utils/apiError';
 import {
@@ -11,6 +16,7 @@ import {
   listGlobalMaterials,
   prepareBatchUpload,
   putToPresignedUrl,
+  renameGlobalMaterialFolder,
   type LibraryMaterial,
 } from '@/services/materialService';
 import styles from './AdminUploadMaterialPage.module.scss';
@@ -69,10 +75,18 @@ function chunkItems<T>(items: T[], size: number): T[][] {
 interface MaterialFolderItemProps {
   node: FolderNode;
   onDelete: (folderPath: string) => void;
+  onRename: (node: FolderNode) => void;
   isDeleting: boolean;
+  isRenameDisabled: boolean;
 }
 
-const MaterialFolderItem: React.FC<MaterialFolderItemProps> = ({ node, onDelete, isDeleting }) => {
+const MaterialFolderItem: React.FC<MaterialFolderItemProps> = ({
+  node,
+  onDelete,
+  onRename,
+  isDeleting,
+  isRenameDisabled,
+}) => {
   const navigate = useNavigate();
   const fileCount = useMemo(() => countFilesInFolder(node), [node]);
 
@@ -99,16 +113,31 @@ const MaterialFolderItem: React.FC<MaterialFolderItemProps> = ({ node, onDelete,
           </span>
         </span>
       </button>
-      <button
-        type="button"
-        className={styles.deleteButton}
-        onClick={handleDeleteClick}
-        aria-label={`Radera mappen ${node.name}`}
-        title={`Radera mappen ${node.name}`}
-        disabled={isDeleting}
-      >
-        <FiTrash2 size={18} aria-hidden="true" />
-      </button>
+      <div className={styles.itemActions}>
+        <button
+          type="button"
+          className={styles.renameButton}
+          onClick={(event) => {
+            event.stopPropagation();
+            onRename(node);
+          }}
+          aria-label={`Byt namn på mappen ${node.name}`}
+          title={`Byt namn på mappen ${node.name}`}
+          disabled={isRenameDisabled}
+        >
+          <FiEdit2 size={18} aria-hidden="true" />
+        </button>
+        <button
+          type="button"
+          className={styles.deleteButton}
+          onClick={handleDeleteClick}
+          aria-label={`Radera mappen ${node.name}`}
+          title={`Radera mappen ${node.name}`}
+          disabled={isDeleting}
+        >
+          <FiTrash2 size={18} aria-hidden="true" />
+        </button>
+      </div>
     </div>
   );
 };
@@ -118,10 +147,14 @@ export const AdminUploadMaterialPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [selectedFolder, setSelectedFolder] = useState<FileList | null>(null);
   const [deletingFolder, setDeletingFolder] = useState<string | null>(null);
+  const [folderPendingRename, setFolderPendingRename] = useState<FolderNode | null>(null);
+  const [renameDraft, setRenameDraft] = useState('');
+  const [renameError, setRenameError] = useState<string | null>(null);
+  const [renameSaving, setRenameSaving] = useState(false);
   const [tab, setTab] = useState<'library' | 'upload'>('library');
+  const toast = useToast();
 
   const fetchMaterials = useCallback(async (signal?: AbortSignal) => {
     setIsLoading(true);
@@ -131,14 +164,11 @@ export const AdminUploadMaterialPage = () => {
       setMaterials(data);
     } catch (error) {
       if (isAbortError(error) || signal?.aborted) return;
-      setStatusMessage({
-        type: 'error',
-        message: materialActionError(error, 'Kunde inte hämta material.'),
-      });
+      toast.error(materialActionError(error, 'Kunde inte hämta material.'));
     } finally {
       if (!signal?.aborted) setIsLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -150,7 +180,6 @@ export const AdminUploadMaterialPage = () => {
     if (!files || files.length === 0) return;
     setIsUploading(true);
     setUploadProgress(0);
-    setStatusMessage(null);
     setSelectedFolder(files);
 
     const items = Array.from(files).map((file) => ({
@@ -183,16 +212,13 @@ export const AdminUploadMaterialPage = () => {
           })
         );
       }
-      setStatusMessage({ type: 'success', message: `${files.length} filer har laddats upp!` });
+      toast.success(`${files.length} filer har laddats upp!`);
       setSelectedFolder(null);
       setTab('library');
       await fetchMaterials();
     } catch (error) {
       const detail = materialActionError(error, 'Något gick fel vid uppladdningen.');
-      setStatusMessage({
-        type: 'error',
-        message: completed > 0 ? `${completed} av ${total} filer laddades upp. ${detail}` : detail,
-      });
+      toast.error(completed > 0 ? `${completed} av ${total} filer laddades upp. ${detail}` : detail);
       if (completed > 0) {
         await fetchMaterials();
       }
@@ -209,27 +235,65 @@ export const AdminUploadMaterialPage = () => {
     if (!confirmed) return;
 
     setDeletingFolder(folderPath);
-    setStatusMessage(null);
     try {
       const result = await deleteLibraryFolder(folderPath);
       const removed = result.removedRepertoireCount;
-      setStatusMessage({
-        type: 'success',
-        message:
-          removed > 0
-            ? `Mappen "${folderPath}" har raderats och tagits bort ur ${removed} repertoar(er).`
-            : `Mappen "${folderPath}" har raderats.`,
-      });
+      toast.success(
+        removed > 0
+          ? `Mappen "${folderPath}" har raderats och tagits bort ur ${removed} repertoar(er).`
+          : `Mappen "${folderPath}" har raderats.`,
+      );
       await fetchMaterials();
     } catch (error) {
-      setStatusMessage({
-        type: 'error',
-        message: materialActionError(error, 'Kunde inte radera mappen.'),
-      });
+      toast.error(materialActionError(error, 'Kunde inte radera mappen.'));
     } finally {
       setDeletingFolder(null);
     }
-  }, [deletingFolder, fetchMaterials]);
+  }, [deletingFolder, fetchMaterials, toast]);
+
+  const openRenameFolder = (node: FolderNode) => {
+    if (deletingFolder || renameSaving) return;
+    setRenameError(null);
+    setRenameDraft(node.name);
+    setFolderPendingRename(node);
+  };
+
+  const closeRenameFolder = () => {
+    if (renameSaving) return;
+    setFolderPendingRename(null);
+    setRenameError(null);
+  };
+
+  const saveRenameFolder = async () => {
+    if (!folderPendingRename || renameSaving) return;
+    const newName = renameDraft.trim();
+    if (!newName) {
+      setRenameError('Ange ett mappnamn.');
+      return;
+    }
+    if (newName.includes('/') || newName.includes('\\') || newName.includes('..') || newName.includes('#')) {
+      setRenameError('Mappnamnet får inte innehålla snedstreck.');
+      return;
+    }
+    if (newName === folderPendingRename.name) {
+      setFolderPendingRename(null);
+      setRenameError(null);
+      return;
+    }
+
+    setRenameSaving(true);
+    setRenameError(null);
+    try {
+      await renameGlobalMaterialFolder(folderPendingRename.path, newName);
+      setFolderPendingRename(null);
+      toast.success(`Mappen har bytt namn till "${newName}".`);
+      await fetchMaterials();
+    } catch (error) {
+      setRenameError(materialActionError(error, 'Kunde inte byta namn på mappen.'));
+    } finally {
+      setRenameSaving(false);
+    }
+  };
 
   const fileTree = useMemo(() => materials.length > 0 ? buildFileTree(materials) : null, [materials]);
   const topLevelFolders = useMemo(() =>
@@ -264,12 +328,6 @@ export const AdminUploadMaterialPage = () => {
           Ladda upp mapp
         </button>
       </div>
-
-      {statusMessage && (
-        <div className={`${styles.statusMessage} ${styles[statusMessage.type]}`} role="status">
-          {statusMessage.message}
-        </div>
-      )}
 
       {tab === 'upload' && (
         <section
@@ -313,7 +371,9 @@ export const AdminUploadMaterialPage = () => {
                     key={node.path}
                     node={node}
                     onDelete={handleDeleteFolder}
-                    isDeleting={deletingFolder === node.path}
+                    onRename={openRenameFolder}
+                    isDeleting={deletingFolder === node.path || renameSaving}
+                    isRenameDisabled={!!deletingFolder || renameSaving}
                   />
                 ))}
               </div>
@@ -321,6 +381,46 @@ export const AdminUploadMaterialPage = () => {
           }
         </section>
       )}
+
+      <Modal
+        formMode
+        isOpen={!!folderPendingRename}
+        onClose={closeRenameFolder}
+        closeOnEscape={!renameSaving}
+        title="Byt namn på mapp"
+      >
+        <form
+          className={styles.renameForm}
+          onSubmit={(event) => {
+            event.preventDefault();
+            void saveRenameFolder();
+          }}
+        >
+          <FormGroup label="Mappnamn" htmlFor="rename-folder-name" error={renameError}>
+            <Input
+              id="rename-folder-name"
+              value={renameDraft}
+              maxLength={200}
+              autoFocus
+              disabled={renameSaving}
+              onChange={(event) => setRenameDraft(event.target.value)}
+            />
+          </FormGroup>
+          <Cluster justify="end" gap="sm">
+            <Button
+              type="button"
+              variant={ButtonVariant.Ghost}
+              disabled={renameSaving}
+              onClick={closeRenameFolder}
+            >
+              Avbryt
+            </Button>
+            <Button type="submit" variant={ButtonVariant.Primary} isLoading={renameSaving}>
+              Spara
+            </Button>
+          </Cluster>
+        </form>
+      </Modal>
     </div>
   );
 };

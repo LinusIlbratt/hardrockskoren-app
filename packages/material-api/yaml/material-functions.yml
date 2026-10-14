@@ -691,6 +691,33 @@ deleteLibraryFolder:
       Action: ["cognito-idp:AdminGetUser"]
       Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
 
+renameMaterialFolder:
+  handler: functions/renameMaterialFolder.handler
+  name: hrk-rename-material-folder-${sls:stage}
+  description: Renames a library folder by rewriting filePath prefixes and choir pointers. Admin only.
+  timeout: 29
+  memorySize: 512
+  events:
+    - httpApi:
+        method: POST
+        path: /materials/rename-folder
+        authorizer:
+          name: centralJwtAuthorizer
+  environment:
+    MAIN_TABLE: ${self:custom.mainTableName}
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:Query"
+        - "dynamodb:GetItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:PutItem"
+        - "dynamodb:DeleteItem"
+        - "dynamodb:TransactWriteItems"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI2"
+
 listPracticeByWeek:
   handler: functions/listByWeek.handler
   name: hrk-list-practice-by-week-${sls:stage}

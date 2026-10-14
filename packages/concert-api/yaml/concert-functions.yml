@@ -129,6 +129,26 @@ createConcertSignup:
       Resource:
         - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 
+cancelConcertSignup:
+  handler: functions/concert/cancelSignup.handler
+  name: hrk-cancel-concert-signup-${sls:stage}
+  description: Member cancels their own signup (atomic TransactWrite Delete REF+SIGNUP + Update META).
+  events:
+    - httpApi:
+        method: DELETE
+        path: /shared-concerts/{id}/signups
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:DeleteItem"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:TransactWriteItems"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+
 listConcertSignups:
   handler: functions/concert/listSignups.handler
   name: hrk-list-concert-signups-${sls:stage}

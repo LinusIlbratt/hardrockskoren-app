@@ -210,7 +210,7 @@ export const SharedConcertSignupPanel = ({
         size="compact"
       >
         <p className={styles.helpText}>
-          Här visas gig för din kör och gig som gäller alla körer. Klicka på ett gig för att läsa mer och anmäla dig.
+          Här visas gig för din kör och gig som gäller alla körer. Klicka på ett gig för att läsa mer, anmäla dig eller avanmäla dig.
         </p>
       </Modal>
 

@@ -1,0 +1,89 @@
+.live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.stack {
+  position: fixed;
+  top: 80px;
+  left: 50%;
+  z-index: 8000;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: min(92vw, 26rem);
+  margin: 0;
+  padding: 0;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(245, 235, 215, 0.16);
+  border-radius: 12px;
+  background: rgba(18, 18, 20, 0.88);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  color: #f5ebd7;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: left;
+  cursor: pointer;
+  pointer-events: auto;
+  animation: toast-in 0.28s ease;
+
+  &:focus-visible {
+    outline: 2px solid rgba(245, 235, 215, 0.7);
+    outline-offset: 2px;
+  }
+}
+
+.icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.success .icon {
+  color: #6ee7b7;
+}
+
+.error .icon {
+  color: #fca5a5;
+}
+
+.info .icon {
+  color: rgba(245, 235, 215, 0.72);
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}

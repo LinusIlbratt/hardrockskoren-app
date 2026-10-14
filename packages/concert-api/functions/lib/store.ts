@@ -149,6 +149,75 @@ export async function getViewerSignup(
 }
 
 /**
+ * Row to delete when the caller cancels their own signup.
+ * Prefers SIGNUPREF → chronological SIGNUP. Falls back to legacy SIGNUP#{uuid}.
+ * Returns null when this user has no signup row.
+ */
+export type ViewerSignupDeleteTarget = {
+  signupSk: string;
+  /** True when SIGNUPREF#{uuid} exists and must be deleted in the same transaction. */
+  deleteRef: boolean;
+};
+
+export async function resolveViewerSignupDeleteTarget(
+  docClient: DynamoDBDocumentClient,
+  tableName: string,
+  concertId: string,
+  userUuid: string
+): Promise<ViewerSignupDeleteTarget | null> {
+  const pk = sharedConcertPk(concertId);
+  const refSk = concertSignupRefSk(userUuid);
+
+  const refResult = await docClient.send(
+    new GetCommand({
+      TableName: tableName,
+      Key: { PK: pk, SK: refSk },
+    })
+  );
+  const ref = refResult.Item;
+  const hasRef = Boolean(ref && ref.type === "ConcertSignupRef");
+  if (hasRef) {
+    const signupSk =
+      typeof ref?.signupSk === "string" && ref.signupSk.trim()
+        ? ref.signupSk.trim()
+        : null;
+    if (signupSk) {
+      const signupResult = await docClient.send(
+        new GetCommand({
+          TableName: tableName,
+          Key: { PK: pk, SK: signupSk },
+        })
+      );
+      const signup = signupResult.Item;
+      if (
+        signup &&
+        signup.type === "ConcertSignup" &&
+        signup.userUuid === userUuid
+      ) {
+        return { signupSk, deleteRef: true };
+      }
+    }
+  }
+
+  const legacySk = legacyConcertSignupSk(userUuid);
+  const legacyResult = await docClient.send(
+    new GetCommand({
+      TableName: tableName,
+      Key: { PK: pk, SK: legacySk },
+    })
+  );
+  const legacy = legacyResult.Item;
+  if (
+    !legacy ||
+    legacy.type !== "ConcertSignup" ||
+    legacy.userUuid !== userUuid
+  ) {
+    return null;
+  }
+  return { signupSk: legacySk, deleteRef: hasRef };
+}
+
+/**
  * Batch-resolve which concerts the viewer has signed up for (SIGNUPREF + legacy SIGNUP).
  * One BatchGet sweep instead of N GetItem round-trips from the client.
  */

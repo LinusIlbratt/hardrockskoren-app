@@ -3,6 +3,7 @@ import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { useChoirDisplayName } from '@/features/groups/useChoirDisplayName';
 import { FavoritesProvider } from '@/context/FavoritesContext';
+import { ToastProvider } from '@/context/ToastContext';
 import { MusicPlayerOverlayProvider, useMusicPlayerOverlay } from '@/context/MusicPlayerOverlayContext';
 import { MusicPlayerOverlayHost } from '@/components/music/MusicPlayerOverlay';
 import { MiniPlayerBar } from '@/components/media/MiniPlayerBar';
@@ -177,10 +178,12 @@ export const AppLayout = () => {
   }
 
   return (
-    <FavoritesProvider>
-      <MusicPlayerOverlayProvider>
-        <AppLayoutContent />
-      </MusicPlayerOverlayProvider>
-    </FavoritesProvider>
+    <ToastProvider>
+      <FavoritesProvider>
+        <MusicPlayerOverlayProvider>
+          <AppLayoutContent />
+        </MusicPlayerOverlayProvider>
+      </FavoritesProvider>
+    </ToastProvider>
   );
 };
