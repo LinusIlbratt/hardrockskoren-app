@@ -450,7 +450,6 @@ syncAllRepertoiresFromLibraryFolder:
   iamRoleStatements:
     - Effect: "Allow"
       Action:
-        - "dynamodb:Scan"
         - "dynamodb:Query"
         - "dynamodb:BatchWriteItem"
       Resource:

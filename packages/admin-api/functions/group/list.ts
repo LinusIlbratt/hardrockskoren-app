@@ -19,6 +19,9 @@ export const handler = middy().handler(
       let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
 
       do {
+        // Legacy-undantag, inte en mall. GROUP#{slug} / METADATA har inget GSI
+        // (varken GSI1 eller GSI2), så körlistan kan inte Query:as utan ett nytt
+        // index. Se ARKITEKTUR.md och .cursor/rules/dynamodb-cost.mdc.
         const scanCommand = new ScanCommand({
           TableName: process.env.MAIN_TABLE as string,
           FilterExpression: "begins_with(PK, :prefix) AND SK = :metadata",
