@@ -4,6 +4,7 @@ import { DynamoDBClient, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../core/utils/http";
+import { requireGroupAccessResponse } from "./lib/requireGroupAccess";
 import { CognitoIdentityProviderClient, AdminGetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
@@ -35,6 +36,13 @@ export const handler = async (
 
     // Hämta alla tre nödvändiga parametrar från URL:en
     const { groupName, repertoireId, materialId } = event.pathParameters || {};
+    const authDenied = await requireGroupAccessResponse(
+      event.requestContext.authorizer?.lambda,
+      groupName
+    );
+    if (authDenied) {
+      return authDenied;
+    }
     if (!groupName || !repertoireId || !materialId) {
       return sendError(400, "Group name, Repertoire ID, and Material ID are required.");
     }

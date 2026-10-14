@@ -10,7 +10,9 @@ listUsersInGroup:
     USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
   iamRoleStatements:
     - Effect: "Allow"
-      Action: ["cognito-idp:ListUsersInGroup"]
+      Action:
+        - "cognito-idp:ListUsersInGroup"
+        - "cognito-idp:AdminListGroupsForUser"
       Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
 deleteUserFromGroup:

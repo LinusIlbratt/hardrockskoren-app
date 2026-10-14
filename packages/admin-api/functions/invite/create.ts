@@ -4,6 +4,7 @@ import { CognitoIdentityProviderClient, ListUsersCommand, AdminAddUserToGroupCom
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
+import { requireGroupAccessResponse } from "../../../core/utils/requireGroupAccess";
 import { nanoid } from "nanoid";
 import { Resend } from 'resend';
 // FÖRBÄTTRING: React-importen behövs inte längre här.
@@ -93,6 +94,13 @@ const FRONTEND_URL = process.env.FRONTEND_URL!;
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = 'Hårdrockskörens app <inbjudan@hardrockskoren.se>';
 
+/** Roller som får sparas på en inbjudan och senare skrivas till custom:role. */
+const INVITABLE_ROLES = ["user", "leader", "admin"] as const;
+type InvitableRole = (typeof INVITABLE_ROLES)[number];
+
+function isInvitableRole(value: unknown): value is InvitableRole {
+  return typeof value === "string" && (INVITABLE_ROLES as readonly string[]).includes(value);
+}
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -105,6 +113,32 @@ export const handler = async (
     const { emails, groupSlug, role } = JSON.parse(event.body);
     if (!emails || !Array.isArray(emails) || emails.length === 0 || !groupSlug || !role) {
       return sendError(400, "An array of emails, a groupSlug, and a role are required.");
+    }
+    if (typeof groupSlug !== "string") {
+      return sendError(400, "groupSlug måste vara en textsträng.");
+    }
+
+    const lambdaContext = (
+      event.requestContext.authorizer as { lambda?: { uuid?: string; role?: string; userPoolId?: string } } | undefined
+    )?.lambda;
+    const callerRole =
+      typeof lambdaContext?.role === "string" ? lambdaContext.role.trim().toLowerCase() : "";
+
+    if (callerRole !== "admin" && callerRole !== "leader") {
+      return sendError(403, "Forbidden: Du har inte behörighet att bjuda in användare.");
+    }
+    if (!isInvitableRole(role)) {
+      return sendError(400, "Ogiltig roll. Tillåtna värden är: user, leader, admin.");
+    }
+    // Körledare får bara skapa vanliga medlemmar. Admin-rollen skrivs till
+    // custom:role när inbjudan bekräftas, så leader/admin måste stoppas här.
+    if (callerRole === "leader" && role !== "user") {
+      return sendError(403, "Forbidden: Körledare kan bara bjuda in med rollen user.");
+    }
+
+    const accessError = await requireGroupAccessResponse(lambdaContext, groupSlug);
+    if (accessError) {
+      return accessError;
     }
 
     const getGroupCommand = new GetItemCommand({

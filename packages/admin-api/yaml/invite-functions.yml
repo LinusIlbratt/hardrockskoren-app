@@ -30,6 +30,7 @@ createInvite:
       - "cognito-idp:ListUsers"
       - "cognito-idp:AdminAddUserToGroup"
       - "cognito-idp:AdminGetUser"
+      - "cognito-idp:AdminListGroupsForUser"
       Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
 getInvite:

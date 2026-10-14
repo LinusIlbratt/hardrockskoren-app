@@ -2,6 +2,7 @@ import { DynamoDBClient, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../core/utils/http";
+import { requireGroupAccessResponse } from "./lib/requireGroupAccess";
 import { nanoid } from "nanoid";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
@@ -31,10 +32,13 @@ export const handler = async (
     // --- SLUT PÅ NY LOGIK ---
     
 
-    // Resten av din funktion är oförändrad
     const { groupName } = event.pathParameters || {};
-    if (!groupName) {
-      return sendError(400, "Group name is required in the path.");
+    const authDenied = await requireGroupAccessResponse(
+      event.requestContext.authorizer?.lambda,
+      groupName
+    );
+    if (authDenied) {
+      return authDenied;
     }
     
     if (!event.body) {

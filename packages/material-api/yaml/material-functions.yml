@@ -272,6 +272,11 @@ createRepertoire:
         - "dynamodb:PutItem"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 
 
 listRepertoires:
@@ -393,7 +398,9 @@ linkMaterialToRepertoire:
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
     - Effect: "Allow"
-      Action: ["cognito-idp:AdminGetUser"]
+      Action:
+        - "cognito-idp:AdminGetUser"
+        - "cognito-idp:AdminListGroupsForUser"
       Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
 
 unlinkMaterialFromRepertoire:
@@ -419,7 +426,9 @@ unlinkMaterialFromRepertoire:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
     - Effect: "Allow"
       # Samma Cognito-behörighet behövs för att verifiera användarens roll
-      Action: ["cognito-idp:AdminGetUser"]
+      Action:
+        - "cognito-idp:AdminGetUser"
+        - "cognito-idp:AdminListGroupsForUser"
       Resource: ["arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"]
 
 syncAllRepertoiresFromLibraryFolder:
@@ -528,6 +537,11 @@ syncRepertoireFromLibraryFolder:
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/GSI2"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.userPoolId}"
 
 getSjunguppUploadUrl:
   handler: functions/getPracticeUploadUrl.handler

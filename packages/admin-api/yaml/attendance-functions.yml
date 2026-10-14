@@ -19,6 +19,11 @@ attendanceStart:
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.attendanceTableName}"
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.attendanceTableName}/index/GroupDateIndex"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
 # Funktion för medlemmar att anmäla sin närvaro med en kod
 # Denna path är korrekt som den är, eftersom medlemmen inte känner till gruppen.
@@ -50,6 +55,7 @@ registerAttendance:
     - Effect: "Allow"
       Action:
         - "cognito-idp:AdminGetUser"
+        - "cognito-idp:AdminListGroupsForUser"
       Resource:
         - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
@@ -73,6 +79,11 @@ getAttendance:
       Resource:
         # Rättigheter för att fråga det nya, optimerade indexet
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.attendanceTableName}/index/GroupDateIndex"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
 getAttendanceStatus:
   handler: functions/attendance/getAttendanceStatus.handler
@@ -92,6 +103,11 @@ getAttendanceStatus:
         - "dynamodb:Query"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.attendanceTableName}/index/GroupDateIndex"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
 listAttendanceDays:
   handler: functions/attendance/listAttendanceDays.handler
@@ -111,3 +127,8 @@ listAttendanceDays:
         - "dynamodb:Query"
       Resource:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.attendanceTableName}/index/GroupDateIndex"
+    - Effect: "Allow"
+      Action:
+        - "cognito-idp:AdminListGroupsForUser"
+      Resource:
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"

@@ -7,6 +7,7 @@ import {
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../core/utils/http";
+import { requireGroupAccessResponse } from "./lib/requireGroupAccess";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
@@ -33,6 +34,13 @@ export const handler = async (
     }
 
     const { groupName, repertoireId } = event.pathParameters || {};
+    const authDenied = await requireGroupAccessResponse(
+      event.requestContext.authorizer?.lambda,
+      groupName
+    );
+    if (authDenied) {
+      return authDenied;
+    }
     if (!groupName || !repertoireId) {
       return sendError(400, "Group name and repertoireId are required.");
     }

@@ -2,6 +2,7 @@ import { CognitoIdentityProviderClient, ListUsersInGroupCommand, UserType } from
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { AuthContext } from "../../../core/types";
 import { sendResponse, sendError } from "../../../core/utils/http";
+import { requireGroupAccessResponse } from "../../../core/utils/requireGroupAccess";
 
 const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
 const USER_POOL_ID = process.env.USER_POOL_ID;
@@ -101,8 +102,12 @@ export const handler = async (
 
   try {
     const { groupName } = event.pathParameters || {};
-    if (!groupName) {
-      return sendError(400, "Group name is required in the path.");
+    const accessError = await requireGroupAccessResponse(
+      event.requestContext.authorizer?.lambda,
+      groupName
+    );
+    if (accessError) {
+      return accessError;
     }
 
     const invokerRole = event.requestContext.authorizer.lambda.role;

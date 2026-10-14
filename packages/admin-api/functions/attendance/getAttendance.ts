@@ -4,6 +4,7 @@ import middy from "@middy/core";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { sendResponse, sendError } from "../../../core/utils/http";
+import { requireGroupAccessResponse } from "../../../core/utils/requireGroupAccess";
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { AuthContext } from "../../../core/types/auth";
 
@@ -41,6 +42,14 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>()
 
         if (!groupSlug || !attendanceDate) {
           return sendError(400, "Grupp och/eller datum saknas i URL:en. Förväntat format: /groups/{groupSlug}/attendance/{date}");
+        }
+
+        const accessError = await requireGroupAccessResponse(
+          event.requestContext.authorizer.lambda,
+          groupSlug
+        );
+        if (accessError) {
+          return accessError;
         }
 
         console.log(`Hämtar närvarolista för grupp: ${groupSlug} och datum: ${attendanceDate}`);
