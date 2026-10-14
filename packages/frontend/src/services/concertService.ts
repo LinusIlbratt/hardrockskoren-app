@@ -19,6 +19,15 @@ function client() {
   return createAuthedClient(requireBaseUrl());
 }
 
+export const VOICE_PARTS = ["Sopran", "Alt", "Tenor", "Bas"] as const;
+export type VoicePart = (typeof VOICE_PARTS)[number];
+
+export type ViewerConcertSignup = {
+  voicePart?: VoicePart;
+  choirSlug: string;
+  createdAt: string;
+};
+
 export type SharedConcert = {
   concertId: string;
   title: string;
@@ -29,15 +38,14 @@ export type SharedConcert = {
   signupCount: number;
   signupOpen: boolean;
   viewerIsSignedUp?: boolean;
+  /** The caller's own signup. Null when they are not signed up. */
+  viewerSignup?: ViewerConcertSignup | null;
   /** Optimistic-lock version for PATCH (from API). */
   version?: number;
   /** Absent on older gigs, which stay visible to every choir. */
   scope?: "all" | "groups";
   targets?: string[];
 };
-
-export const VOICE_PARTS = ["Sopran", "Alt", "Tenor", "Bas"] as const;
-export type VoicePart = (typeof VOICE_PARTS)[number];
 
 export type ConcertSignup = {
   userUuid: string;
@@ -209,6 +217,14 @@ export async function createConcertSignup(
     }
   );
   return response.data;
+}
+
+export async function cancelSharedConcertSignup(concertId: string): Promise<void> {
+  const id = concertId.trim();
+  if (!id) {
+    throw new Error("concertId is required.");
+  }
+  await client().delete(`/shared-concerts/${encodeURIComponent(id)}/signups`);
 }
 
 export async function listConcertSignups(

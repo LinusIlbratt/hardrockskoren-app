@@ -218,6 +218,12 @@ filkopplingarna under `REPERTOIRE#{id}`. `POST /materials/delete-folder` frågar
 pekaren (och undermappar som syns i filernas `filePath`) och tar sedan bort
 repertoarerna, S3-objekten och biblioteksfilerna.
 
+`POST /materials/rename-folder` byter sista ledet i sökvägen. `filePath` uppdateras
+på biblioteksfilerna, GSI2 följer med, och `LIBRARYFOLDER#`-pekare skrivs om till
+den nya sökvägen. `fileKey` och S3-objektet ändras inte. Repertoartiteln uppdateras
+när den fortfarande är den gamla sökvägen. Ett pågående byte hålls av en låsrad
+`FOLDERRENAME#{sökväg}` / `LOCK` så att samma anrop kan köras om.
+
 Sista raden: skrivs av invite-flödet men läses inte av något API. Betrakta som
 död data.
 
@@ -246,6 +252,13 @@ last i stället för en enda het partition. Listningen frågar 5 år bakåt plus
 gamla oshardade partitionen `SHARED_CONCERT#LIST`. Admin läser den listan.
 Medlemmar med `groupSlug` läser i stället tunna pekare på `GROUP#{slug}` och
 `GROUP#ALL`. Gig utan `scope` är äldre och räknas som tillgängliga för alla.
+
+Avanmälan är `DELETE /shared-concerts/{id}/signups` för den inloggade
+användaren (`uuid` från authorizern). En `TransactWrite` raderar `SIGNUPREF`
+och anmälningsraden och gör `ADD signupCount -1` på `META`, med villkor att
+räknaren är minst 1, att konsertdatumet inte passerat och att konserten inte
+håller på att raderas. `GET /shared-concerts/{id}` returnerar `viewerSignup`
+(stämma, kör, tid) tillsammans med `viewerIsSignedUp`.
 
 ---
 

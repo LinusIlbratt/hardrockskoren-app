@@ -238,6 +238,46 @@ export type DeleteLibraryFolderResult = {
   message: string;
 };
 
+export type RenameLibraryFolderResult = {
+  folderPath: string;
+  previousFolderPath: string;
+  updatedFileCount: number;
+  message: string;
+};
+
+/** Renames a library folder. Rewrites file paths and choir pointers. S3 objects stay. */
+export async function renameGlobalMaterialFolder(
+  folderPath: string,
+  newName: string
+): Promise<RenameLibraryFolderResult> {
+  const path = requireNonEmpty(folderPath, 'folderPath').trim().replace(/^\/+|\/+$/g, '');
+  const name = newName.trim();
+  if (!path || path.includes('..') || path.includes('\\') || path.includes('#')) {
+    throw new Error('Ogiltig mappsökväg.');
+  }
+  if (!name) {
+    throw new Error('Ange ett mappnamn.');
+  }
+  if (name.includes('/') || name.includes('\\') || name.includes('..') || name.includes('#')) {
+    throw new Error('Mappnamnet får inte innehålla snedstreck.');
+  }
+  const response = await client().post('/materials/rename-folder', { folderPath: path, newName: name });
+  const data = response.data;
+  if (!data || typeof data !== 'object') {
+    throw new Error('Namnbytet hade ett oväntat format.');
+  }
+  const savedPath = typeof data.folderPath === 'string' ? data.folderPath : '';
+  if (!savedPath) {
+    throw new Error('Namnbytet hade ett oväntat format.');
+  }
+  return {
+    folderPath: savedPath,
+    previousFolderPath: typeof data.previousFolderPath === 'string' ? data.previousFolderPath : path,
+    updatedFileCount: typeof data.updatedFileCount === 'number' ? data.updatedFileCount : 0,
+    message: typeof data.message === 'string' ? data.message : 'Mappen har bytt namn.',
+  };
+}
+
 /** Deletes a whole library folder and linked choir repertoires. Not for single files. */
 export async function deleteLibraryFolder(folderPath: string): Promise<DeleteLibraryFolderResult> {
   const path = requireNonEmpty(folderPath, 'folderPath').trim().replace(/^\/+|\/+$/g, '');

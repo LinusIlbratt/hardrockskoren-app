@@ -3,7 +3,7 @@ import { type StepType } from '@reactour/tour';
 export const userTourSteps: StepType[] = [
   {
     selector: '[data-tour="user-repertoires-link"]', // Matchar NavLink till "repertoires"
-    content: 'Här hittar du alla noter, texter och inspelningar för kören. Klicka för att utforska!',
+    content: 'Här hittar du alla texter och inspelningar för kören. Klicka för att utforska!',
   },
   {
     selector: '[data-tour="user-practice-link"]', // Matchar NavLink till "practice"

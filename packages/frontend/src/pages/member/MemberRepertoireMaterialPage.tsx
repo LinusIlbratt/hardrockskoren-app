@@ -360,7 +360,7 @@ export const MemberRepertoireMaterialPage = () => {
             onOpenAddToPlaylist={(id) => setPlaylistModalMaterialId(id)}
           />
           <MaterialSection title="🎬 Notfilmer & Video" files={groupedMaterials.video} onView={setSelectedMaterial} />
-          <MaterialSection title="📄 Noter & Textblad (PDF)" files={groupedMaterials.scores} onView={setSelectedMaterial} />
+          <MaterialSection title="📄 Texter" files={groupedMaterials.scores} onView={setSelectedMaterial} />
           <MaterialSection
             title="🥁 Rytmik & Övrigt"
             files={groupedMaterials.other}

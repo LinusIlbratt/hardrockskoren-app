@@ -8,7 +8,7 @@ import { sendResponse, sendError } from "../../../core/utils/http";
 import type { AuthContext } from "../../../core/types";
 import { requireGroupAccessResponse, normalizeGroupSlug } from "../../../core/utils/requireGroupAccess";
 import { concertVisibleToChoir, isConcertOpenForSignup } from "../lib/keys";
-import { parsePathId, toPublicConcert } from "../lib/parse";
+import { parsePathId, toPublicConcert, toViewerSignup } from "../lib/parse";
 import { getSharedConcert, getViewerSignup } from "../lib/store";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
@@ -65,6 +65,7 @@ export const handler = async (
         isConcertOpenForSignup(String(concert.concertDate))
       ),
       viewerIsSignedUp: Boolean(signup),
+      viewerSignup: signup ? toViewerSignup(signup) : null,
     });
   } catch (err) {
     console.error("getSharedConcert failed", { concertId, err });

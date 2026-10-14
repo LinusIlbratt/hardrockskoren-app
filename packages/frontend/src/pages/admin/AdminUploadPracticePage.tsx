@@ -9,6 +9,7 @@ import "react-datepicker/dist/react-datepicker.css";
 import { getISOWeek, getYear } from 'date-fns';
 import { sv } from 'date-fns/locale';
 
+import { useToast } from '@/context/ToastContext';
 import { WeekAccordion } from '@/components/admin/WeekAccordion';
 import type { Material } from '@/types';
 
@@ -26,7 +27,7 @@ export const AdminUploadPracticePage = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
   const [weeklyMaterials, setWeeklyMaterials] = useState<WeekGroup[]>([]);
   const [isLoadingList, setIsLoadingList] = useState(true);
-  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const toast = useToast();
 
   const fetchWeeklyMaterials = useCallback(async () => {
     setIsLoadingList(true);
@@ -47,16 +48,9 @@ export const AdminUploadPracticePage = () => {
     fetchWeeklyMaterials();
   }, [fetchWeeklyMaterials]);
 
-  useEffect(() => {
-    if (statusMessage) {
-      const timer = setTimeout(() => setStatusMessage(null), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [statusMessage]);
-
   const handleCreateWeek = () => {
     if (!selectedDate) {
-      setStatusMessage({ type: 'error', message: 'Du måste välja ett datum.' });
+      toast.error('Du måste välja ett datum.');
       return;
     }
 
@@ -67,7 +61,7 @@ export const AdminUploadPracticePage = () => {
     const weekExists = weeklyMaterials.some(week => week.weekId === weekId);
 
     if (weekExists) {
-      setStatusMessage({ type: 'error', message: `Vecka ${weekNumber} finns redan i listan.` });
+      toast.error(`Vecka ${weekNumber} finns redan i listan.`);
       return;
     }
 
@@ -78,7 +72,7 @@ export const AdminUploadPracticePage = () => {
     setWeeklyMaterials(prev => [...prev, newWeek].sort((a, b) => b.weekId.localeCompare(a.weekId)));
     setSelectedDate(null);
     setActiveTab('weeks');
-    setStatusMessage({ type: 'success', message: `Vecka ${weekNumber} har skapats. Öppna den för att ladda upp filer.` });
+    toast.success(`Vecka ${weekNumber} har skapats. Öppna den för att ladda upp filer.`);
   };
 
   return (
@@ -109,12 +103,6 @@ export const AdminUploadPracticePage = () => {
           Skapa vecka
         </button>
       </div>
-
-      {statusMessage && (
-        <p className={statusMessage.type === 'success' ? styles.successMessage : styles.errorMessage}>
-          {statusMessage.message}
-        </p>
-      )}
 
       {activeTab === 'weeks' ? (
         <section

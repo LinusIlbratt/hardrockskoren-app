@@ -146,6 +146,11 @@ ledet i filsökvägen på biblioteksposten, utan att filen i lagringen byts ut.
 Körerna läser den posten, så det nya namnet syns i repertoarerna. En sparad
 egen stämma eller ett eget låtnamn på kopplingen ligger kvar.
 
+Admin kan också döpa om en mapp under Befintligt material. Då byts sökvägsprefixet
+på filerna i mappen och i undermappar. Filen i lagringen byts inte ut. En kör som
+har mappen kopplad behåller samma repertoar: pekaren flyttas till det nya namnet,
+och repertoartiteln följer med när den fortfarande är den gamla sökvägen.
+
 **Repertoarer** hör till en specifik kör. En körledare eller admin skapar en
 repertoar (t.ex. "Vårkonsert 2026") och kopplar material från biblioteket till
 den. En låt kan ligga i många körers repertoarer samtidigt utan att filen
@@ -234,10 +239,13 @@ konserter för sin egen kör och de som gäller alla. Admin ser hela listan.
 
 Medlemmar anmäler sig med förnamn, efternamn, stämma (Sopran, Alt, Tenor eller Bas) och vilken kör de representerar. Stämman sparas på anmälan. Äldre anmälningar kan sakna den.
 Systemet garanterar att **en person bara kan anmäla sig en gång** per konsert.
+Samma person kan avanmäla sig igen så länge konsertdatumet inte har passerat.
+Avanmälan tar bort anmälan och räknar ner antalet anmälda. Därefter går det att
+anmäla sig på nytt. I giget ser medlemmen sin sparade stämma.
 
 **Anmälan stänger automatiskt** när konsertdatumet har passerat (räknat i svensk
 tid). Passerade konserter syns kvar som historik men går inte att anmäla sig
-till.
+till, och inte att avanmäla sig från.
 
 Admin ser anmälningslistan i anmälningsordning, sidvis (20 åt gången, max 50).
 Endast admin ser listan — anmälningar är inte offentliga.
@@ -282,7 +290,7 @@ Saker som inte finns idag och som ofta efterfrågas:
 | Förnyad inloggning / "kom ihåg mig" | Finns inte. Man loggas ut när sessionen går ut. |
 | Tvåfaktorsautentisering | Avstängt. |
 | Närvarostatistik över tid | Finns inte, bara dag för dag. |
-| Avanmälan från gemensam konsert | Finns inte. |
+| Avanmälan från gemensam konsert | Finns, fram till konsertdatumet (svensk tid). |
 | Kommentarer eller svar på meddelanden | Finns inte. Enkelriktat. |
 | Stämma på medlemsprofilen | Finns inte. Stämma anges vid varje anmälan till gemensam konsert och sparas bara där. |
 | Rollen gäller per kör | Nej. En körledare är körledare överallt. |

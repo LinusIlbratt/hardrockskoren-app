@@ -7,6 +7,7 @@ import {
   parsePathId,
   toPublicConcert,
   toPublicSignup,
+  toViewerSignup,
 } from "./parse";
 import {
   FIELD_LIMITS,
@@ -206,6 +207,40 @@ describe("toPublicSignup", () => {
   it("omits voicePart on legacy rows that lack it", () => {
     const { voicePart: _voicePart, ...legacy } = baseSignup;
     const result = toPublicSignup(legacy as ConcertSignupRecord);
+    expect(result).not.toHaveProperty("voicePart");
+  });
+});
+
+describe("toViewerSignup", () => {
+  const baseSignup: ConcertSignupRecord = {
+    PK: "SHARED_CONCERT#id1",
+    SK: "SIGNUP#2026-10-05T00:00:00.000Z#user-1",
+    type: "ConcertSignup",
+    concertId: "id1",
+    userUuid: "user-1",
+    firstName: "Anna",
+    lastName: "Andersson",
+    choirSlug: "stockholm",
+    voicePart: "Tenor",
+    createdAt: "2026-10-05T00:00:00.000Z",
+    status: "active",
+  };
+
+  it("returns voice, choir and timestamp for the member", () => {
+    expect(toViewerSignup(baseSignup)).toEqual({
+      voicePart: "Tenor",
+      choirSlug: "stockholm",
+      createdAt: "2026-10-05T00:00:00.000Z",
+    });
+  });
+
+  it("omits voicePart when the legacy row has none", () => {
+    const { voicePart: _voicePart, ...legacy } = baseSignup;
+    const result = toViewerSignup(legacy as ConcertSignupRecord);
+    expect(result).toEqual({
+      choirSlug: "stockholm",
+      createdAt: "2026-10-05T00:00:00.000Z",
+    });
     expect(result).not.toHaveProperty("voicePart");
   });
 });

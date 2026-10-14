@@ -241,6 +241,21 @@ export function metaOpenForSignupValues(now: Date = new Date()): {
   };
 }
 
+/**
+ * Atomic ConditionExpression when a member cancels their signup.
+ * `signupCount >= :one` keeps the counter from going negative.
+ * Legacy META rows omit `status`; a bare `status <> :deleting` would reject them.
+ * `concertDate >= :today` closes the race where the gig passes between the
+ * pre-read and this write.
+ */
+export const META_CANCEL_SIGNUP_CONDITION =
+  "attribute_exists(PK) AND #type = :concertType AND signupCount >= :one AND concertDate >= :today AND (attribute_not_exists(#status) OR #status <> :deleting)";
+
+export const META_CANCEL_SIGNUP_NAMES = {
+  "#type": "type",
+  "#status": "status",
+} as const;
+
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function isValidConcertDate(value: unknown): value is string {

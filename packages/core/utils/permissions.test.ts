@@ -31,6 +31,9 @@ describe("material-api routePermissions", () => {
     expect(routePermissions["POST /materials/delete-folder"]).toEqual(
       RoleGroups.ADMIN_ONLY
     );
+    expect(routePermissions["POST /materials/rename-folder"]).toEqual(
+      RoleGroups.ADMIN_ONLY
+    );
   });
 });
 
@@ -49,6 +52,9 @@ describe("concert-api routePermissions", () => {
       RoleGroups.ALL_LOGGED_IN
     );
     expect(routePermissions["POST /shared-concerts/{id}/signups"]).toEqual(
+      RoleGroups.ALL_LOGGED_IN
+    );
+    expect(routePermissions["DELETE /shared-concerts/{id}/signups"]).toEqual(
       RoleGroups.ALL_LOGGED_IN
     );
     expect(routePermissions["GET /shared-concerts/{id}/signups"]).toEqual(

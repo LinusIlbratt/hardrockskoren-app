@@ -28,6 +28,7 @@ import {
   clampListLimit,
   normalizeBoundedString,
   META_OPEN_FOR_SIGNUP_CONDITION,
+  META_CANCEL_SIGNUP_CONDITION,
   metaOpenForSignupValues,
 } from "./keys";
 
@@ -159,5 +160,15 @@ describe("normalizeBoundedString", () => {
     expect(normalizeBoundedString("", 10)).toBeNull();
     expect(normalizeBoundedString("a".repeat(MAX_TITLE_LENGTH + 1), MAX_TITLE_LENGTH)).toBeNull();
     expect(normalizeBoundedString(42, 10)).toBeNull();
+  });
+});
+
+describe("META_CANCEL_SIGNUP_CONDITION", () => {
+  it("guards the counter, the open date, and legacy rows without status", () => {
+    expect(META_CANCEL_SIGNUP_CONDITION).toContain("signupCount >= :one");
+    expect(META_CANCEL_SIGNUP_CONDITION).toContain("concertDate >= :today");
+    expect(META_CANCEL_SIGNUP_CONDITION).toContain(
+      "attribute_not_exists(#status) OR #status <> :deleting"
+    );
   });
 });

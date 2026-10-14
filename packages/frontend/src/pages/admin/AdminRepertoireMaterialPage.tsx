@@ -49,7 +49,7 @@ type DirectoryItem = FolderItem | FileItem;
 const MATERIAL_SECTIONS: { id: MemberMaterialSection; title: string }[] = [
   { id: 'stems', title: '🎧 Stämmor' },
   { id: 'video', title: '🎬 Notfilmer & Video' },
-  { id: 'scores', title: '📄 Noter & Textblad (PDF)' },
+  { id: 'scores', title: '📄 Texter' },
   { id: 'other', title: '🥁 Rytmik & Övrigt' },
 ];
 

@@ -456,6 +456,21 @@ export function toPublicSignup(item: ConcertSignupRecord): PublicConcertSignup {
   };
 }
 
+/** Member-facing slice of their own signup. Returned by GET concert detail. */
+export type ViewerSignup = {
+  voicePart?: VoicePart;
+  choirSlug: string;
+  createdAt: string;
+};
+
+export function toViewerSignup(item: ConcertSignupRecord): ViewerSignup {
+  return {
+    ...(isVoicePart(item.voicePart) ? { voicePart: item.voicePart } : {}),
+    choirSlug: item.choirSlug,
+    createdAt: item.createdAt,
+  };
+}
+
 export function parseJsonBody(
   raw: string | undefined
 ):

@@ -149,32 +149,3 @@ $sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   gap: 10px;
   width: 100%;
 }
-
-.successMessage,
-.errorMessage {
-  margin: 0;
-  padding: var(--spacing-md);
-  border-radius: 8px;
-  font-family: $sans;
-  font-weight: 500;
-  line-height: 1.45;
-  text-align: center;
-  animation: fade-in-out 4s ease-in-out forwards;
-}
-
-.successMessage {
-  background-color: rgba(var(--color-success-rgb), 0.1);
-  color: var(--color-success);
-}
-
-.errorMessage {
-  background-color: rgba(var(--color-accent-rgb), 0.1);
-  color: var(--color-accent);
-}
-
-@keyframes fade-in-out {
-  0% { opacity: 0; transform: translateY(-10px); }
-  10% { opacity: 1; transform: translateY(0); }
-  90% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-10px); }
-}

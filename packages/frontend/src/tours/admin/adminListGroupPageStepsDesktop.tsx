@@ -97,7 +97,7 @@ export const adminListGroupPageStepsDesktop: StepType[] = [
             <>
                 <b>Materialarkivet</b><br />
                 <br />
-                Här laddar du upp och hanterar allt gemensamt material, som noter och ljudfiler m.m
+                Här laddar du upp och hanterar allt gemensamt material, som texter och ljudfiler m.m
                 <br />
                 <br />
                 {/* Första p-taggen med info om flödet */}
