@@ -57,6 +57,7 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   "PATCH /materials/{materialId}": RoleGroups.ADMIN_ONLY,
   "POST /materials/batch-delete": RoleGroups.ADMIN_ONLY,
   "POST /materials/delete-folder": RoleGroups.ADMIN_ONLY,
+  "POST /materials/rename-folder": RoleGroups.ADMIN_ONLY,
   "POST /materials/sync-all-repertoires": RoleGroups.ADMIN_ONLY,
   "POST /materials/library-folder-choir-status": RoleGroups.ADMIN_ONLY,
   "POST /materials/add-to-choirs": RoleGroups.ADMIN_ONLY,
@@ -112,5 +113,6 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   "PATCH /shared-concerts/{id}": RoleGroups.ADMIN_ONLY,
   "DELETE /shared-concerts/{id}": RoleGroups.ADMIN_ONLY,
   "POST /shared-concerts/{id}/signups": RoleGroups.ALL_LOGGED_IN,
+  "DELETE /shared-concerts/{id}/signups": RoleGroups.ALL_LOGGED_IN,
   "GET /shared-concerts/{id}/signups": RoleGroups.ADMIN_ONLY,
 };

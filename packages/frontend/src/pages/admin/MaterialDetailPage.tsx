@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { FiEdit2, FiFolder, FiTrash2, FiRefreshCw, FiInbox } from 'react-icons/fi';
 import { Cluster } from '@/components/ui/layout/Cluster';
@@ -9,6 +9,7 @@ import { FormGroup } from '@/components/ui/form/FormGroup';
 import { Input } from '@/components/ui/input/Input';
 import { AddLibraryFolderToChoirsModal } from '@/components/media/AddLibraryFolderToChoirsModal';
 import { MAX_FILES_PER_BATCH_UPLOAD, useMaterialFolder, useMaterialUploader } from '@/features/materials';
+import { useToast } from '@/context/ToastContext';
 import { renameGlobalMaterial, type LibraryMaterial } from '@/services/materialService';
 import { materialActionError } from '@/features/materials/materialActionError';
 import {
@@ -23,7 +24,7 @@ import styles from './MaterialDetailPage.module.scss';
 const MATERIAL_SECTIONS: { id: MemberMaterialSection; title: string }[] = [
   { id: 'stems', title: '🎧 Stämmor' },
   { id: 'video', title: '🎬 Notfilmer & Video' },
-  { id: 'scores', title: '📄 Noter & Textblad (PDF)' },
+  { id: 'scores', title: '📄 Texter' },
   { id: 'other', title: '🥁 Rytmik & Övrigt' },
 ];
 
@@ -92,6 +93,21 @@ export const MaterialDetailPage = () => {
   } = uploader;
 
   const replaceStatus = folderStatusAt >= uploaderStatusAt ? folderStatus : uploaderStatus;
+  const toast = useToast();
+  const toastedAt = useRef(0);
+
+  useEffect(() => {
+    if (!replaceStatus) return;
+    const at = Math.max(folderStatusAt, uploaderStatusAt);
+    if (at <= toastedAt.current) return;
+    toastedAt.current = at;
+    if (replaceStatus.type === 'error') {
+      toast.error(replaceStatus.message);
+      return;
+    }
+    toast.success(replaceStatus.message);
+  }, [folderStatusAt, replaceStatus, toast, uploaderStatusAt]);
+
   const [materialPendingRename, setMaterialPendingRename] = useState<LibraryMaterial | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
   const [renameError, setRenameError] = useState<string | null>(null);
@@ -258,12 +274,6 @@ export const MaterialDetailPage = () => {
               />
             )}
           </div>
-        </div>
-      ) : null}
-
-      {replaceStatus ? (
-        <div className={`${styles.statusMessage} ${styles[replaceStatus.type]}`} role="status">
-          {replaceStatus.message}
         </div>
       ) : null}
 

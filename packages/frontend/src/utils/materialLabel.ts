@@ -66,7 +66,7 @@ const ALIASES: Alias[] = [
   { phrase: 'karaoke', label: 'Backtrack', rank: 8, segmentOnly: false },
   { phrase: 'textblad', label: 'Text', rank: 9, segmentOnly: false },
   { phrase: 'sangtext', label: 'Text', rank: 9, segmentOnly: false },
-  { phrase: 'partitur', label: 'Noter', rank: 9, segmentOnly: false },
+  { phrase: 'partitur', label: 'Text', rank: 9, segmentOnly: false },
   { phrase: 'notfilm', label: 'Video', rank: 9, segmentOnly: false },
   { phrase: 'lyrics', label: 'Text', rank: 9, segmentOnly: false },
   { phrase: 'rytmik', label: 'Rytmik', rank: 8, segmentOnly: false },
@@ -75,7 +75,7 @@ const ALIASES: Alias[] = [
   { phrase: 'mezzo', label: 'Mezzosopran', rank: 2, segmentOnly: false },
   { phrase: 'tenor', label: 'Tenor', rank: 4, segmentOnly: false },
   { phrase: 'tutti', label: 'Tutti', rank: 7, segmentOnly: false },
-  { phrase: 'noter', label: 'Noter', rank: 9, segmentOnly: false },
+  { phrase: 'noter', label: 'Text', rank: 9, segmentOnly: false },
   { phrase: 'alto', label: 'Alt', rank: 3, segmentOnly: false },
   { phrase: 'bass', label: 'Bas', rank: 6, segmentOnly: false },
   { phrase: 'komp', label: 'Komp', rank: 8, segmentOnly: false },
@@ -294,7 +294,7 @@ function fallbackLabel(
     return categoryFallback('Text', meaningful, washedSong);
   }
   if (ext === 'pdf' || ext === 'doc' || ext === 'docx') {
-    return categoryFallback('Noter', meaningful, washedSong);
+    return categoryFallback('Text', meaningful, washedSong);
   }
 
   return {

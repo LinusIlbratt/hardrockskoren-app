@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, type FormEvent } from "react";
 import axios from "axios";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { FiMapPin, FiUsers } from "react-icons/fi";
+import { useToast } from "@/context/ToastContext";
 import {
   Button,
   ButtonSize,
@@ -17,10 +18,12 @@ import {
   type SelectOption,
 } from "@/components/ui/select/StyledSelect";
 import {
+  cancelSharedConcertSignup,
   createConcertSignup,
   getSharedConcert,
   VOICE_PARTS,
   type SharedConcert,
+  type ViewerConcertSignup,
   type VoicePart,
 } from "@/services/concertService";
 import styles from "./SharedConcertSignupPanel.module.scss";
@@ -68,13 +71,26 @@ function isDuplicateSignupConflict(error: unknown): boolean {
   return msg.includes("redan anmäld") || msg.includes("already");
 }
 
-function applySignedUpLocalState(concert: SharedConcert): SharedConcert {
+function applySignedUpLocalState(
+  concert: SharedConcert,
+  viewerSignup: ViewerConcertSignup
+): SharedConcert {
   return {
     ...concert,
     viewerIsSignedUp: true,
+    viewerSignup,
     signupCount: concert.viewerIsSignedUp
       ? concert.signupCount ?? 0
       : (concert.signupCount ?? 0) + 1,
+  };
+}
+
+function applyCancelledLocalState(concert: SharedConcert): SharedConcert {
+  return {
+    ...concert,
+    viewerIsSignedUp: false,
+    viewerSignup: null,
+    signupCount: Math.max(0, (concert.signupCount ?? 0) - 1),
   };
 }
 
@@ -174,6 +190,7 @@ export const SharedConcertSignupModal = ({
   familyName = "",
   previewMode = false,
 }: SharedConcertSignupModalProps) => {
+  const toast = useToast();
   const [selected, setSelected] = useState<SharedConcert | null>(concert);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
@@ -184,6 +201,8 @@ export const SharedConcertSignupModal = ({
   );
   const [voicePart, setVoicePart] = useState<VoicePart | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const [signupMessage, setSignupMessage] = useState<{
     type: "success" | "error";
     message: string;
@@ -226,6 +245,8 @@ export const SharedConcertSignupModal = ({
     setSelected(concert);
     setDetailError(null);
     setSignupMessage(null);
+    setConfirmCancel(false);
+    setIsCancelling(false);
     setIsLoadingDetail(true);
 
     const groupSlug = previewMode
@@ -260,14 +281,14 @@ export const SharedConcertSignupModal = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [concertId, previewMode]);
 
-  const markSignedUpInUi = (current: SharedConcert) => {
-    const optimistic = applySignedUpLocalState(current);
+  const markSignedUpInUi = (
+    current: SharedConcert,
+    viewerSignup: ViewerConcertSignup
+  ) => {
+    const optimistic = applySignedUpLocalState(current, viewerSignup);
     setSelected(optimistic);
     onConcertUpdated?.(optimistic);
-    setSignupMessage({
-      type: "success",
-      message: "Tack för din anmälan",
-    });
+    setSignupMessage(null);
   };
 
   const handleSignup = async (e: FormEvent) => {
@@ -296,16 +317,24 @@ export const SharedConcertSignupModal = ({
     setIsSubmitting(true);
     setSignupMessage(null);
     try {
-      await createConcertSignup(selected.concertId, {
+      const created = await createConcertSignup(selected.concertId, {
         firstName: trimmedFirst,
         lastName: trimmedLast,
         choirSlug: choirSlug.trim(),
         voicePart,
       });
-      markSignedUpInUi(selected);
+      markSignedUpInUi(selected, {
+        voicePart: created.voicePart ?? voicePart,
+        choirSlug: created.choirSlug,
+        createdAt: created.createdAt,
+      });
     } catch (error) {
       if (isDuplicateSignupConflict(error)) {
-        markSignedUpInUi(selected);
+        markSignedUpInUi(selected, {
+          voicePart,
+          choirSlug: choirSlug.trim(),
+          createdAt: new Date().toISOString(),
+        });
       } else {
         console.error("Failed to sign up for concert", error);
         setSignupMessage({
@@ -318,10 +347,44 @@ export const SharedConcertSignupModal = ({
     }
   };
 
+  const handleCancelSignup = async () => {
+    if (!selected || isCancelling || previewMode) return;
+    setIsCancelling(true);
+    try {
+      await cancelSharedConcertSignup(selected.concertId);
+      const next = applyCancelledLocalState(selected);
+      setSelected(next);
+      onConcertUpdated?.(next);
+      setConfirmCancel(false);
+      setSignupMessage(null);
+      toast.success("Du är nu avanmäld");
+    } catch (error) {
+      console.error("Failed to cancel concert signup", error);
+      const message = extractApiErrorMessage(error, "Kunde inte avanmäla.");
+      const alreadyGone =
+        axios.isAxiosError(error) &&
+        error.response?.status === 404 &&
+        message.toLowerCase().includes("ingen aktiv anmälan");
+      if (alreadyGone) {
+        const next = applyCancelledLocalState(selected);
+        setSelected(next);
+        onConcertUpdated?.(next);
+        setConfirmCancel(false);
+        toast.success("Du är nu avanmäld");
+      } else {
+        toast.error(message);
+      }
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const canSignUp =
     Boolean(selected?.signupOpen) &&
     !selected?.viewerIsSignedUp &&
     userGroups.length > 0;
+
+  const signedUpVoice = selected?.viewerSignup?.voicePart;
 
   return (
     <Modal
@@ -336,29 +399,36 @@ export const SharedConcertSignupModal = ({
             <div className={styles.eventCardTop}>
               <ConcertEventCalendar isoDate={selected.concertDate} />
               <div className={styles.eventCardMeta}>
-                <Cluster gap="xs" align="start">
-                  <FiMapPin
-                    className={styles.metaIcon}
-                    aria-hidden
-                    size={18}
-                  />
-                  <span className={styles.metaText}>
-                    {selected.location || "Plats saknas"}
-                  </span>
-                </Cluster>
-                <Cluster gap="xs" align="start">
-                  <FiUsers
-                    className={styles.metaIcon}
-                    aria-hidden
-                    size={18}
-                  />
-                  <span className={styles.metaText}>
-                    {selected.signupCount}{" "}
-                    {selected.signupCount === 1 ? "anmäld" : "anmälda"}
-                  </span>
-                </Cluster>
-                {!selected.signupOpen && (
-                  <p className={styles.metaClosedHint}>Anmälan stängd</p>
+                <div className={styles.eventCardMetaFacts}>
+                  <Cluster gap="xs" align="start">
+                    <FiMapPin
+                      className={styles.metaIcon}
+                      aria-hidden
+                      size={18}
+                    />
+                    <span className={styles.metaText}>
+                      {selected.location || "Plats saknas"}
+                    </span>
+                  </Cluster>
+                  <Cluster gap="xs" align="start">
+                    <FiUsers
+                      className={styles.metaIcon}
+                      aria-hidden
+                      size={18}
+                    />
+                    <span className={styles.metaText}>
+                      {selected.signupCount}{" "}
+                      {selected.signupCount === 1 ? "anmäld" : "anmälda"}
+                    </span>
+                  </Cluster>
+                  {!selected.signupOpen && (
+                    <p className={styles.metaClosedHint}>Anmälan stängd</p>
+                  )}
+                </div>
+                {!previewMode && selected.viewerIsSignedUp && (
+                  <p className={styles.signedUpChip} role="status">
+                    {signedUpVoice ? `✓ Anmäld • ${signedUpVoice}` : "✓ Anmäld"}
+                  </p>
                 )}
               </div>
             </div>
@@ -376,14 +446,6 @@ export const SharedConcertSignupModal = ({
 
           {isLoadingDetail && <p className={styles.muted}>Laddar…</p>}
           {detailError && <p className={styles.error}>{detailError}</p>}
-
-          {!previewMode && !isLoadingDetail && selected.viewerIsSignedUp && (
-            <p className={styles.signedUpBanner} role="status">
-              {signupMessage?.type === "success"
-                ? "Tack för din anmälan"
-                : "Du är redan anmäld"}
-            </p>
-          )}
 
           {!previewMode &&
             !isLoadingDetail &&
@@ -481,6 +543,42 @@ export const SharedConcertSignupModal = ({
               )}
             </form>
           )}
+
+          {!previewMode &&
+            !isLoadingDetail &&
+            selected.viewerIsSignedUp &&
+            selected.signupOpen &&
+            (confirmCancel ? (
+              <div className={styles.cancelConfirm}>
+                <p className={styles.cancelConfirmPrompt}>Är du säker?</p>
+                <div className={styles.cancelConfirmActions}>
+                  <button
+                    type="button"
+                    className={styles.cancelSignupButton}
+                    onClick={handleCancelSignup}
+                    disabled={isCancelling}
+                  >
+                    {isCancelling ? "Avanmäler…" : "Ja, avanmäl"}
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.cancelAbortButton}
+                    onClick={() => setConfirmCancel(false)}
+                    disabled={isCancelling}
+                  >
+                    Avbryt
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className={styles.cancelSignupButton}
+                onClick={() => setConfirmCancel(true)}
+              >
+                Avanmäl mig
+              </button>
+            ))}
         </div>
       )}
     </Modal>
