@@ -25,12 +25,18 @@ deleteUserFromGroup:
         authorizer: authorizer
   environment:
     USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
+    MAIN_TABLE: ${self:custom.mainTableName}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
         - "cognito-idp:AdminDeleteUser"
         - "cognito-idp:AdminListGroupsForUser"
+        - "cognito-idp:AdminRemoveUserFromGroup"
       Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:DeleteItem"
+      Resource: "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
 
 
 updateUserRole:

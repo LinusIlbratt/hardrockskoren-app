@@ -1,4 +1,4 @@
-import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
+import { AttributeValue, DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import {
   APIGatewayProxyEventV2WithLambdaAuthorizer,
@@ -10,6 +10,7 @@ import { requireGroupAccessResponse } from "../../../core/utils/requireGroupAcce
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
+const MAX_QUERY_PAGES = 200;
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
@@ -28,19 +29,32 @@ export const handler = async (
     );
     if (authDenied) return authDenied;
 
-    const command = new QueryCommand({
-      TableName: MAIN_TABLE,
-      IndexName: 'GSI1',
-      KeyConditionExpression: "GSI1PK = :gsi1pk",
-      
-      ExpressionAttributeValues: {
-        ":gsi1pk": { S: `GROUP#${groupSlug}` },
-      },
-    });
+    const events: Record<string, unknown>[] = [];
+    let startKey: Record<string, AttributeValue> | undefined;
+    let pages = 0;
 
-    const result = await dbClient.send(command);
-
-    const events = result.Items ? result.Items.map(item => unmarshall(item)) : [];
+    do {
+      if (pages >= MAX_QUERY_PAGES) {
+        console.error("listEvents: query page limit reached", { groupSlug, pages });
+        return sendError(500, "Kunde inte hämta hela eventlistan.");
+      }
+      const result = await dbClient.send(
+        new QueryCommand({
+          TableName: MAIN_TABLE,
+          IndexName: "GSI1",
+          KeyConditionExpression: "GSI1PK = :gsi1pk",
+          ExpressionAttributeValues: {
+            ":gsi1pk": { S: `GROUP#${groupSlug}` },
+          },
+          ExclusiveStartKey: startKey,
+        })
+      );
+      for (const item of result.Items ?? []) {
+        events.push(unmarshall(item));
+      }
+      startKey = result.LastEvaluatedKey;
+      pages += 1;
+    } while (startKey);
 
     return sendResponse(events, 200);
 
