@@ -485,9 +485,7 @@ export async function addFolderToChoir(
       linkedCount: materials.length,
     };
   } catch (error: unknown) {
-    const message =
-      error instanceof Error ? error.message : "Kunde inte lägga till mappen.";
     console.error("addFolderToChoir failed", { groupSlug, folderPath, error });
-    return { groupSlug, status: "failed", message };
+    return { groupSlug, status: "failed", message: "Kunde inte lägga till mappen." };
   }
 }

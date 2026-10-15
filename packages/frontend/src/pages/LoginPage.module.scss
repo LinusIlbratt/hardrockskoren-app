@@ -1,119 +1,10 @@
 @use '@/styles/variables' as *;
 
-.page {
-  margin: 0;
-  display: flex;
-  flex-direction: row;
-  height: 100vh;
-  overflow: hidden;
-  background-color: var(--color-background);
-}
-
-.container {
-  flex: 1;
-  padding: var(--padding-sml);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  gap: var(--gap-large);
-  background-color: var(--color-background);
-  background-image: radial-gradient(
-    circle at 50% 25%,
-    rgba(180, 20, 20, 0.08),
-    transparent 70%
-  );
-}
-
-.logo {
-  // Nu kan du ändra storleken på loggan här utan att det påverkar något annat
-  width: 100%;
-  max-width: 300px; // Justera detta värde så det ser bra ut på en mobil!
-  margin: 0;
-  transition: max-width 0.2s ease-out;
-
-  img {
-    width: 100%;
-    height: auto;
-    display: block;
-  }
-  @media (min-width: #{$tabletBreakpoint}) {
-    // ...öka loggans max-bredd.
-    max-width: 400px;
-  }
-
-}
-
-.formWrapper {
-  width: 100%;
-  max-width: 400px;
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
-
-  > form {
-    display: flex;
-    flex-direction: column;
-  }
-
-  label {
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 0.875rem;
-    font-weight: 500;
-    letter-spacing: 0.04em;
-    color: rgba(245, 235, 215, 0.85);
-    margin-bottom: 6px;
-  }
-
-  input {
-    min-height: 48px;
-    height: 48px;
-    padding: 0 14px;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    color: #f5ebd7;
-    background: rgba(18, 18, 18, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-
-    &::placeholder {
-      color: rgba(245, 235, 215, 0.35);
-    }
-
-    &:focus,
-    &:focus-visible {
-      outline: none;
-      border-color: rgba(216, 27, 27, 0.7);
-      box-shadow:
-        inset 0 1px 2px rgba(0, 0, 0, 0.4),
-        0 0 0 3px rgba(216, 27, 27, 0.18);
-    }
-
-    &:-webkit-autofill,
-    &:-webkit-autofill:hover,
-    &:-webkit-autofill:focus,
-    &:-webkit-autofill:active {
-      -webkit-box-shadow: 0 0 0 1000px #121212 inset !important;
-      -webkit-text-fill-color: #f5ebd7 !important;
-      caret-color: #f5ebd7 !important;
-      border-color: rgba(255, 255, 255, 0.12) !important;
-      transition: background-color 5000s ease-in-out 0s;
-    }
-  }
-}
-
-.lastFormField {
-  border-bottom: none;
-}
-
-.buttonGroup {
-  margin-top: 0;
-}
+$ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
 .forgotPasswordLink {
   text-align: right;
-  margin-top: 8px;
-  margin-bottom: var(--spacing-md);
+  margin: 0;
   line-height: 1;
 
   button {
@@ -122,9 +13,9 @@
     border: none;
     padding: 0;
     line-height: 1;
-    color: rgba(255, 255, 255, 0.5);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 0.85rem;
+    color: var(--color-text-luxury-muted);
+    font-family: $ui;
+    font-size: var(--fs-sm);
     font-weight: 500;
     letter-spacing: 0.02em;
     cursor: pointer;
@@ -132,75 +23,14 @@
     transition: color 0.2s ease;
 
     &:hover {
-      color: #f5ebd7;
+      color: var(--color-text-luxury);
       text-decoration: none;
     }
-  }
-}
 
-.formWrapper .buttonGroup button {
-  width: 100%;
-  min-height: 50px;
-  height: 50px;
-  padding: 0 var(--spacing-md);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 10px;
-  background: linear-gradient(180deg, #d81b1b 0%, #a30e0e 100%);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.35),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
-    0 4px 14px rgba(0, 0, 0, 0.6),
-    0 12px 30px -4px rgba(216, 27, 27, 0.5);
-  color: #f5ebd7;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: var(--fs-sm);
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
-  transition: background 0.2s ease, box-shadow 0.15s ease, transform 0.15s ease;
-
-  &:hover:not(:disabled) {
-    background: linear-gradient(180deg, #e62222 0%, #b51212 100%);
-  }
-
-  &:active:not(:disabled) {
-    transform: scale(0.985);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.2),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.5),
-      0 1px 4px rgba(0, 0, 0, 0.55),
-      0 4px 10px -4px rgba(216, 27, 27, 0.28);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.35),
-      inset 0 -1px 0 rgba(0, 0, 0, 0.4),
-      0 4px 14px rgba(0, 0, 0, 0.6),
-      0 12px 30px -4px rgba(216, 27, 27, 0.5),
-      0 0 0 3px rgba(245, 235, 215, 0.35);
-  }
-}
-
-@media (max-width: 480px) {
-  .page {
-    height: 100dvh;
-    overflow-y: auto;
-  }
-
-  .container {
-    gap: var(--spacing-md);
-    padding-block: var(--spacing-sm);
-    min-height: 100%;
-  }
-
-  .logo {
-    max-width: min(230px, 80%);
-  }
-
-  .formWrapper {
-    padding-block: var(--spacing-sm);
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring);
+      border-radius: var(--radius-xs);
+    }
   }
 }

@@ -30,9 +30,10 @@ provider:
         functionName: authorizer
         payloadVersion: "2.0"
         enableSimpleResponses: true
-        resultTtlInSeconds: 300
+        resultTtlInSeconds: 0
         identitySource:
           - $request.header.Authorization
+          - $context.routeKey
           
 custom:
   mainTableName: HrkMainTable-${self:provider.stage}

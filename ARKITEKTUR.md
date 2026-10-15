@@ -143,21 +143,22 @@ Returnerar `null` vid OK, annars ett färdigt felsvar.
 
 **Används idag av:** `message-api` (list, markRead, unreadStatus, createGroupMessage),
 `concert-api` (createSignup), `material-api` (listRepertoires,
-listMaterialsInRepertoire), `event-api` (list, create, update, batch,
-delete, getNotificationStatus), `admin-api` (user delete/update).
-
-**Används INTE av:** skriv-endpointsen i `material-api`
-(`linkMaterialToRepertoire`, `createRepertoire`, `deleteRepertoire`).
+listMaterialsInRepertoire, createRepertoire, linkMaterialToRepertoire,
+unlinkMaterialFromRepertoire, syncRepertoireFromLibraryFolder,
+updateRepertoireMaterial, deleteRepertoire, addRepertoireFromLibrary),
+`event-api` (list, create, update, batch, delete, getNotificationStatus),
+`admin-api` (user list/delete/update, invite create, attendance
+start/status/get/days/register).
 
 ### Kända säkerhetsbrister (verifierade, ej åtgärdade)
 
 | # | Var | Problem |
 |---|---|---|
-| 1 | `admin-api/functions/user/delete.ts` | ✅ **Ändrat 2026-10-07.** `AdminDeleteUser` tar bort hela Cognito-kontot. Anropet kräver att målet är medlem i `groupSlug`. Cognito-gruppen `admin` kan inte raderas. `UserNotFoundException` ger 200. |
+| 1 | `admin-api/functions/user/delete.ts` | ✅ **Ändrat 2026-10-14.** Fler körer: bara `AdminRemoveUserFromGroup` plus radering av `GROUP#{slug} / USER#{email}`. En enda kör: `AdminDeleteUser`. Cognito-gruppen `admin` kan inte raderas. `UserNotFoundException` ger 200. |
 | 2 | `admin-api/functions/user/update.ts` | ✅ **Åtgärdat 2026-09-26.** Allowlist på `leader`/`user`; `admin` kan inte sättas via API:et. |
 | 3 | `event-api/functions/event/*` | ✅ **Åtgärdat 2026-09-26.** `requireGroupAccessResponse` på alla kör-skopade event-endpoints (list, create, update, batch, delete, getNotificationStatus). Admin passerar; leader/user begränsas till sina Cognito-grupper. |
-| 4 | `material-api/functions/getUploadUrl.ts` | Ingen validering av filnamn, filtyp eller storlek. Presigned PUT binder inte `ContentType`. |
-| 5 | Alla `serverless.yml` | `httpApi.cors: true` = alla origins. S3-bucketens CORS är däremot låst till frontend-URL:en. |
+| 4 | `material-api/functions/getUploadUrl.ts` | ✅ **Ändrat 2026-10-14.** Filändelse allowlistas och filnamnet tvättas innan presigned URL skapas (även övning och batch). Storlek och `ContentType` binds fortfarande inte. |
+| 5 | Alla `serverless.yml` | `httpApi.cors: true` = alla origins. S3-bucketens CORS är däremot låst till frontend-origins per stage. |
 | 6 | `infra-service/iam/cognito.yml` | `custom:role` finns inte i Schema-blocket. Hela auktoriseringen hänger på manuell konsolkonfiguration. |
 
 ---
@@ -233,9 +234,10 @@ PAY_PER_REQUEST. Query och GetItem, aldrig Scan i ny kod. Tunna poster.
 `ProjectionExpression` när hela posten inte behövs. Unikhet och räknare via
 `ConditionExpression` eller `TransactWrite`.
 
-Tre `ScanCommand` finns kvar och är **legacy, inte mall**:
-`admin-api/functions/group/list.ts`, `admin-api/functions/group/listPublic.ts`,
-`material-api/functions/syncAllRepertoiresFromLibraryFolder.ts`.
+Två `ScanCommand` finns kvar och är **legacy, inte mall**:
+`admin-api/functions/group/list.ts` och `admin-api/functions/group/listPublic.ts`.
+Kör-metadata har inget GSI. `syncAllRepertoiresFromLibraryFolder` frågar
+`LIBRARYFOLDER#{sökväg}` / `GROUP#{slug}` i stället för att skanna tabellen.
 
 ### Två mönster värda att kopiera
 
@@ -265,9 +267,12 @@ håller på att raderas. `GET /shared-concerts/{id}` returnerar `viewerSignup`
 ## 4. Lagring (S3)
 
 **`hrk-media-${stage}-${accountId}`** — noter, ljud, video.
-Public access helt blockerat. CORS tillåter GET och PUT från enbart frontend-URL:en
-(`http://localhost:5173` i dev, `https://app.hardrockskoren.se` i prod).
-All åtkomst sker via presigned URLs (upload 300 s).
+Public access helt blockerat. CORS tillåter GET och PUT och exponerar `ETag`.
+Dev-origins: `http://localhost:5173`, `http://localhost:5174`, `http://localhost:3000`.
+Prod-origin: `https://app.hardrockskoren.se`.
+All åtkomst sker via presigned URLs (enkel upload 300 s, batch 3600 s).
+Presign-klienterna sätter `requestChecksumCalculation` och `responseChecksumValidation`
+till `WHEN_REQUIRED` så att SDK:n inte signerar en CRC32 som webbläsaren inte skickar.
 Nyckelmönster: `materials/{uuid}-{filnamn}`.
 
 **`hrk-app-frontend-${stage}-${accountId}`** — statisk SPA-hosting.

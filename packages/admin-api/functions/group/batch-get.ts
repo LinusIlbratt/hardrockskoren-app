@@ -47,6 +47,6 @@ export const handler = async (event: any) => {
 
   } catch (error: any) {
     console.error("Error in batch-get:", error);
-    return sendError(500, error.message || "Internal server error");
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

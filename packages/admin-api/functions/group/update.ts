@@ -1,23 +1,36 @@
 import middy from "@middy/core";
 import { sendResponse, sendError } from "../../../core/utils/http";
 import {
+  normalizeGroupSlug,
+  requireGroupAccessResponse,
+} from "../../../core/utils/requireGroupAccess";
+import {
   APIGatewayProxyEventV2WithLambdaAuthorizer,
   APIGatewayProxyResultV2,
 } from "aws-lambda";
 import { DynamoDBClient, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
-import { marshall } from "@aws-sdk/util-dynamodb";
+import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
+const NAME_MAX = 100;
+const DESCRIPTION_MAX = 2000;
 
 export const handler = middy().handler(
   async (
     event: APIGatewayProxyEventV2WithLambdaAuthorizer<any>
   ): Promise<APIGatewayProxyResultV2> => {
     try {
-      // Kontrollera att name är inkluderat
-      const groupName = event.queryStringParameters?.name;
+      const groupName = normalizeGroupSlug(event.pathParameters?.name);
       if (!groupName) {
         return sendError(400, "Group name is required.");
+      }
+
+      const accessError = await requireGroupAccessResponse(
+        event.requestContext.authorizer?.lambda,
+        groupName
+      );
+      if (accessError) {
+        return accessError;
       }
 
       if (!event.body) {
@@ -25,7 +38,34 @@ export const handler = middy().handler(
       }
 
       const updates = JSON.parse(event.body);
-      const { name, description } = updates;
+      const rawName = updates?.name;
+      const rawDescription = updates?.description;
+
+      let name: string | undefined;
+      let description: string | undefined;
+
+      if (rawName !== undefined && rawName !== null && rawName !== "") {
+        if (typeof rawName !== "string") {
+          return sendError(400, "Körnamnet måste vara en text.");
+        }
+        name = rawName.trim();
+        if (!name) {
+          return sendError(400, "Körnamnet måste vara en text.");
+        }
+        if (name.length > NAME_MAX) {
+          return sendError(400, "Körnamnet får vara högst 100 tecken.");
+        }
+      }
+
+      if (rawDescription !== undefined && rawDescription !== null && rawDescription !== "") {
+        if (typeof rawDescription !== "string") {
+          return sendError(400, "Beskrivningen måste vara en text.");
+        }
+        description = rawDescription.trim();
+        if (description.length > DESCRIPTION_MAX) {
+          return sendError(400, "Beskrivningen får vara högst 2000 tecken.");
+        }
+      }
 
       // Validera att minst ett fält är med
       if (!name && !description) {
@@ -63,16 +103,20 @@ export const handler = middy().handler(
         UpdateExpression: `SET ${updateExpressions.join(", ")}`,
         ExpressionAttributeNames: expressionAttributeNames,
         ExpressionAttributeValues: marshall(expressionAttributeValues),
+        ConditionExpression: "attribute_exists(PK)",
         ReturnValues: "ALL_NEW",
       });
 
       const response = await dbClient.send(updateCommand);
-      const updatedGroup = response.Attributes ? marshall(response.Attributes) : {};
+      const updatedGroup = response.Attributes ? unmarshall(response.Attributes) : {};
 
       return sendResponse(updatedGroup, 200);
     } catch (error: any) {
+      if (error?.name === "ConditionalCheckFailedException") {
+        return sendError(404, "Kören hittades inte.");
+      }
       console.error("Error updating group:", error);
-      return sendError(500, error.message || "Internal server error");
+      return sendError(500, "Ett internt serverfel uppstod");
     }
   }
 );

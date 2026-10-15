@@ -15,8 +15,9 @@ Resources:
               AllowedMethods:
                 - GET
                 - PUT
-              AllowedOrigins:
-                - ${self:custom.frontendUrls.${self:custom.stage}}
+              AllowedOrigins: ${self:custom.frontendUrls.${self:custom.stage}}
+              ExposedHeaders:
+                - ETag
               MaxAge: 3000
 
     HrkAppFrontendBucket:

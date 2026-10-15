@@ -15,6 +15,12 @@ const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AW
 const MAIN_TABLE = process.env.MAIN_TABLE!;
 const USER_POOL_ID = process.env.USER_POOL_ID!;
 
+const ASSIGNABLE_ROLES = ["user", "leader", "admin"] as const;
+type AssignableRole = (typeof ASSIGNABLE_ROLES)[number];
+
+function isAssignableRole(value: unknown): value is AssignableRole {
+  return typeof value === "string" && (ASSIGNABLE_ROLES as readonly string[]).includes(value);
+}
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -22,7 +28,15 @@ export const handler = async (
   if (!MAIN_TABLE || !USER_POOL_ID || !event.body) {
     return sendError(500, "Server configuration or request body is missing.");
   }
-  
+
+  const lambdaContext = (
+    event.requestContext.authorizer as { lambda?: { role?: string } } | undefined
+  )?.lambda;
+  const callerRole =
+    typeof lambdaContext?.role === "string" ? lambdaContext.role.trim() : "";
+  if (callerRole !== "admin") {
+    return sendError(403, "Forbidden: Endast plattformsadmin kan skapa användare.");
+  }
 
   let groupSlug: string | undefined;
 
@@ -34,13 +48,20 @@ export const handler = async (
       family_name, 
       password, 
       groupSlug: parsedGroupSlug, 
-      role = 'user'
+      role = "user",
     } = JSON.parse(event.body);
 
     groupSlug = parsedGroupSlug; 
 
     if (!email || !given_name || !family_name || !password || !groupSlug) {
       return sendError(400, "Email, given_name, family_name, password, and groupSlug are required.");
+    }
+
+    if (!isAssignableRole(role)) {
+      return sendError(400, "Ogiltig roll. Tillåtna värden är: user, leader, admin.");
+    }
+    if ((role === "admin" || role === "leader") && callerRole !== "admin") {
+      return sendError(403, "Forbidden: Endast plattformsadmin kan tilldela rollen admin eller leader.");
     }
     
     if (password.length < 8 || !/(?=.*[A-Za-z])(?=.*\d)/.test(password)) {
@@ -109,6 +130,6 @@ export const handler = async (
       return sendError(400, "Invalid JSON format in request body.");
     }
     console.error("Error in admin create user:", error);
-    return sendError(500, error.message);
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

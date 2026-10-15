@@ -29,8 +29,10 @@ provider:
         type: request
         functionArn: "arn:aws:lambda:eu-north-1:${aws:accountId}:function:hrk-apigateway-admin-authorizer-${sls:stage}"
         enableSimpleResponses: true
+        resultTtlInSeconds: 0
         identitySource:
           - $request.header.Authorization
+          - $context.routeKey
 
 package:
   individually: true

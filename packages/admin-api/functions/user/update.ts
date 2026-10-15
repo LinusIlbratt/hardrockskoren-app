@@ -22,8 +22,8 @@ const USER_POOL_ID = process.env.USER_POOL_ID;
 
 /**
  * Roller som får tilldelas via detta API. `admin` är medvetet utesluten —
- * plattformsbehörighet sätts manuellt i AWS-konsolen så att en körledare inte
- * kan eskalera sig själv eller någon annan.
+ * plattformsbehörighet sätts manuellt i AWS-konsolen.
+ * Bara plattformsadmin når skrivningen. custom:role är global för kontot.
  */
 const ASSIGNABLE_ROLES = ["leader", "user"] as const;
 
@@ -55,6 +55,13 @@ export const handler = async (
   const accessError = await requireGroupAccessResponse(lambdaContext, groupSlug);
   if (accessError) {
     return accessError;
+  }
+
+  // custom:role gäller hela kontot, inte en enskild kör. Bara plattformsadmin får skriva den.
+  const callerRole =
+    typeof lambdaContext?.role === "string" ? lambdaContext.role.trim().toLowerCase() : "";
+  if (callerRole !== "admin") {
+    return sendError(403, "Endast administratörer kan ändra användarroller");
   }
 
   let email: unknown;
@@ -92,8 +99,7 @@ export const handler = async (
       return sendError(403, "Administratörers roll kan inte ändras via detta API.");
     }
 
-    // Målanvändaren måste faktiskt vara medlem i kören som anges i sökvägen,
-    // annars kan en körledare ändra roll på medlemmar i andra körer.
+    // Målet måste tillhöra kören i sökvägen. Rollen är global, så skrivningen är admin-only.
     const { Groups } = await cognito.adminListGroupsForUser({
       UserPoolId: USER_POOL_ID,
       Username: username,

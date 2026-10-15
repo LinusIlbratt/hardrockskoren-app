@@ -327,7 +327,6 @@ export const handler = async (
       return sendError(404, "Filen hittades inte.");
     }
     console.error("Error replacing global material:", error);
-    const message = error instanceof Error ? error.message : "Internal server error";
-    return sendError(500, message || "Internal server error");
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

@@ -136,6 +136,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
   } catch (error: any) {
     console.error("Error fetching materials for repertoire:", error);
-    return sendError(500, error.message);
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

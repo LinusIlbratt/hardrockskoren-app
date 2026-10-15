@@ -1,6 +1,6 @@
 // functions/event/batch.ts
 
-import { DynamoDBClient, BatchWriteItemCommand, WriteRequest, BatchWriteItemCommandOutput } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, BatchWriteItemCommand, WriteRequest } from "@aws-sdk/client-dynamodb";
 import { marshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
@@ -11,6 +11,51 @@ import { nanoid } from "nanoid";
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
 const BATCH_SIZE = 25;
+const MAX_RANGE_DAYS = 90;
+const MAX_EVENTS_PER_REQUEST = 60;
+const MAX_WRITE_ATTEMPTS = 3;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** YYYY-MM-DD as UTC midnight. Rejects impossible calendar dates. */
+function utcDay(value: unknown): number | null {
+  if (typeof value !== "string") return null;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
+  if (!match) return null;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const utc = Date.UTC(year, month - 1, day);
+  const check = new Date(utc);
+  if (
+    check.getUTCFullYear() !== year ||
+    check.getUTCMonth() !== month - 1 ||
+    check.getUTCDate() !== day
+  ) {
+    return null;
+  }
+  return utc;
+}
+
+async function putEventChunk(tableName: string, requests: WriteRequest[]): Promise<void> {
+  let pending = requests;
+  for (let attempt = 0; attempt < MAX_WRITE_ATTEMPTS && pending.length > 0; attempt += 1) {
+    if (attempt > 0) {
+      await sleep(50 * 2 ** attempt);
+    }
+    const result = await dbClient.send(
+      new BatchWriteItemCommand({
+        RequestItems: { [tableName]: pending },
+      })
+    );
+    pending = result.UnprocessedItems?.[tableName] ?? [];
+  }
+  if (pending.length > 0) {
+    throw new Error("Kunde inte skriva alla händelser.");
+  }
+}
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
@@ -71,6 +116,19 @@ export const handler = async (
     );
     if (authDenied) return authDenied;
 
+    const rangeStart = utcDay(body.startDate);
+    const rangeEnd = utcDay(body.endDate);
+    if (rangeStart === null || rangeEnd === null || rangeEnd < rangeStart) {
+      return sendError(400, "Ogiltigt datumintervall.");
+    }
+    const rangeDays = Math.round((rangeEnd - rangeStart) / (24 * 60 * 60 * 1000));
+    if (rangeDays > MAX_RANGE_DAYS) {
+      return sendError(400, "Datumintervallet får vara högst 90 dagar.");
+    }
+    if (!Array.isArray(body.selectedWeekdays) || typeof body.startTime !== "string" || typeof body.endTime !== "string") {
+      return sendError(400, "startTime, endTime och selectedWeekdays krävs.");
+    }
+
     const itemsToCreate: EventItem[] = [];
     let currentDate = new Date(body.startDate);
     const finalDate = new Date(body.endDate);
@@ -116,14 +174,14 @@ export const handler = async (
     if (itemsToCreate.length === 0) {
         return sendResponse({ message: "No events were created based on the provided pattern." }, 200);
     }
-    const writePromises: Promise<BatchWriteItemCommandOutput>[] = [];
+    if (itemsToCreate.length > MAX_EVENTS_PER_REQUEST) {
+      return sendError(400, "Högst 60 händelser kan skapas åt gången.");
+    }
     for (let i = 0; i < itemsToCreate.length; i += BATCH_SIZE) {
         const chunk = itemsToCreate.slice(i, i + BATCH_SIZE);
         const putRequests: WriteRequest[] = chunk.map(item => ({ PutRequest: { Item: marshall(item) } }));
-        const command = new BatchWriteItemCommand({ RequestItems: { [MAIN_TABLE]: putRequests } });
-        writePromises.push(dbClient.send(command));
+        await putEventChunk(MAIN_TABLE, putRequests);
     }
-    await Promise.all(writePromises);
     return sendResponse({ message: `Successfully created ${itemsToCreate.length} events.`, count: itemsToCreate.length }, 201);
 
   } catch (error: any) {
@@ -131,6 +189,6 @@ export const handler = async (
     if (error.name === 'SyntaxError') {
       return sendError(400, "Invalid JSON format in request body.");
     }
-    return sendError(500, error.message || "Internal server error");
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

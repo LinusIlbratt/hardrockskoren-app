@@ -123,6 +123,10 @@ export const handler = async (
   if (!uuid) {
     return sendError(401, "User identity is missing from the request context.");
   }
+  const callerRole = event.requestContext.authorizer?.lambda?.role?.trim() ?? "";
+  if (callerRole !== "admin") {
+    return sendError(403, "Forbidden: Endast plattformsadmin kan ändra ett gemensamt gig.");
+  }
 
   const concertId = parsePathId(event.pathParameters?.id);
   if (!concertId) {

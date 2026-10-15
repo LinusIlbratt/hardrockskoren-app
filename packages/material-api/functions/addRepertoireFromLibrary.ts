@@ -114,7 +114,6 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (name === "ConditionalCheckFailedException") {
       return sendError(409, "A repertoire item with this ID already exists.");
     }
-    const message = error instanceof Error ? error.message : "Internal server error";
-    return sendError(500, message);
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };
