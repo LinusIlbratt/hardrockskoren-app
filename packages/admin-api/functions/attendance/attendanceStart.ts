@@ -93,7 +93,7 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>()
 
       } catch (error: any) {
         console.error("Misslyckades att starta närvarosession:", error);
-        return sendError(500, error.message || "Internal server error. Could not start the session.");
+        return sendError(500, "Ett internt serverfel uppstod");
       }
     }
   );

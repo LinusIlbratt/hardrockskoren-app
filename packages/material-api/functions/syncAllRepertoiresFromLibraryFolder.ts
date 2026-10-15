@@ -60,33 +60,6 @@ export const handler = async (
     return sendError(500, "Server configuration error.");
   }
 
-  const toErrMsg = (e: unknown): string => {
-    if (typeof e === "string") return e;
-    if (e instanceof Error) {
-      const name = e.name ? `${e.name}: ` : "";
-      return `${name}${e.message || "Unknown error"}`;
-    }
-    if (e && typeof e === "object") {
-      const anyE = e as any;
-      const msg = anyE.message || anyE.errorMessage || anyE.reason;
-      const name = anyE.name || anyE.code || anyE.Code;
-      // Avoid throwing while stringifying the error; keep it safe/shortish.
-      let raw = "";
-      try {
-        raw = JSON.stringify(anyE);
-      } catch {
-        raw = "";
-      }
-      const parts = [
-        name ? `name=${String(name)}` : "",
-        msg ? `message=${String(msg)}` : "",
-        raw && raw !== "{}" ? `raw=${raw}` : "",
-      ].filter(Boolean);
-      return parts.length > 0 ? parts.join(" | ") : "Internal server error";
-    }
-    return "Internal server error";
-  };
-
   try {
     const roleFromAuthorizer = event.requestContext.authorizer?.lambda?.role;
     const userId = event.requestContext.authorizer?.lambda?.uuid;
@@ -116,7 +89,7 @@ export const handler = async (
         }
       } catch (e) {
         console.error("syncAll: failed to resolve user role from Cognito", e);
-        return sendError(500, `Failed to verify admin role: ${toErrMsg(e)}`);
+        return sendError(500, "Ett internt serverfel uppstod");
       }
     }
 
@@ -159,7 +132,7 @@ export const handler = async (
       });
     } catch (e) {
       console.error("syncAll: query folder materials failed", e);
-      return sendError(500, `Failed to query library materials: ${toErrMsg(e)}`);
+      return sendError(500, "Ett internt serverfel uppstod");
     }
     const folderMaterialIds = new Set(
       (folderMaterialItems || [])
@@ -175,7 +148,7 @@ export const handler = async (
       matchingRepertoires = await listLibraryFolderChoirs(MAIN_TABLE, normalizedFolderPath);
     } catch (e) {
       console.error("syncAll: query linked repertoires failed", e);
-      return sendError(500, `Failed to query linked repertoires: ${toErrMsg(e)}`);
+      return sendError(500, "Ett internt serverfel uppstod");
     }
 
     if (matchingRepertoires.length === 0) {
@@ -215,7 +188,7 @@ export const handler = async (
         });
       } catch (e) {
         console.error("syncAll: query repertoire links failed", e);
-        return sendError(500, `Failed to query repertoire links for ${repertoireId}: ${toErrMsg(e)}`);
+        return sendError(500, "Ett internt serverfel uppstod");
       }
       const linkedMaterialIds = new Set(
         (repertoireLinkItems || [])
@@ -280,7 +253,7 @@ export const handler = async (
           );
         } catch (e) {
           console.error("syncAll: batchWrite failed", e);
-          return sendError(500, `Batch write failed for ${repertoireId}: ${toErrMsg(e)}`);
+          return sendError(500, "Ett internt serverfel uppstod");
         }
       }
 
@@ -303,6 +276,6 @@ export const handler = async (
     );
   } catch (error: any) {
     console.error("Error syncing all repertoires from library folder:", error);
-    return sendError(500, toErrMsg(error));
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

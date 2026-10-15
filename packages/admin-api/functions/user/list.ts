@@ -176,6 +176,6 @@ export const handler = async (
       return sendError(404, `Group with name '${event.pathParameters?.groupName}' not found.`);
     }
     console.error("Error listing users in group:", error);
-    return sendError(500, error.message || "Internal server error");
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

@@ -92,7 +92,7 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>()
 
       } catch (error: any) {
         console.error("Misslyckades att hämta närvarolista:", error);
-        return sendError(500, error.message || "Internal server error.");
+        return sendError(500, "Ett internt serverfel uppstod");
       }
     }
   );

@@ -51,7 +51,7 @@ export const handler = middy().handler(
       return sendResponse(groups, 200);
     } catch (error: any) {
       console.error("Error listing public groups:", error);
-      return sendError(500, error.message || "Internal server error");
+      return sendError(500, "Ett internt serverfel uppstod");
     }
   }
 );

@@ -150,6 +150,6 @@ export const handler = async (
     );
   } catch (error: any) {
     console.error("Error syncing repertoire from library folder:", error);
-    return sendError(500, error.message || "Internal server error");
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

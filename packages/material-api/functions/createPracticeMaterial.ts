@@ -70,6 +70,6 @@ export const handler = async (
 
   } catch (error: any) {
     console.error("Error creating global material:", error);
-    return sendError(500, error.message);
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

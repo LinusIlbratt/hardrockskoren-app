@@ -94,8 +94,6 @@ export const handler = async (
     );
   } catch (error: unknown) {
     console.error("addLibraryFolderToChoirs failed:", error);
-    const message =
-      error instanceof Error ? error.message : "Internal server error";
-    return sendError(500, message);
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

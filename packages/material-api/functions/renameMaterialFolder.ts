@@ -548,7 +548,6 @@ export const handler = async (
     if (lockHeld) {
       console.error("renameMaterialFolder: lock kept for retry", { folderPath, newFolderPath });
     }
-    const message = error instanceof Error ? error.message : "Internal server error";
-    return sendError(500, message);
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

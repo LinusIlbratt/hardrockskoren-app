@@ -78,7 +78,7 @@ export const handler = middy()
             return sendError(400, "Group name contains invalid characters.");
         }
         console.error("Error creating group:", error);
-        return sendError(500, error.message || "Internal server error");
+        return sendError(500, "Ett internt serverfel uppstod");
       }
     }
   );

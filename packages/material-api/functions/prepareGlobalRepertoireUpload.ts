@@ -114,6 +114,6 @@ export const handler = async (
 
   } catch (error: any) {
     console.error("Error preparing batch material upload:", error);
-    return sendError(500, error.message || "Internal server error");
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

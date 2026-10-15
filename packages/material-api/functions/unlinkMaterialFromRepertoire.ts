@@ -68,6 +68,6 @@ export const handler = async (
 
   } catch (error: any) {
     console.error("Error unlinking material from repertoire:", error);
-    return sendError(500, error.message);
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

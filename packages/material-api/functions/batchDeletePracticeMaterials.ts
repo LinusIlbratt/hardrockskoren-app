@@ -81,6 +81,6 @@ export const handler = async (
 
     } catch (error: any) {
         console.error("Error batch deleting materials:", error);
-        return sendError(500, error.message);
+        return sendError(500, "Ett internt serverfel uppstod");
     }
 };

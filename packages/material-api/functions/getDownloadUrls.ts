@@ -66,7 +66,6 @@ export const handler = async (
     return sendResponse({ urls, expiresIn: EXPIRES_IN_SECONDS }, 200);
   } catch (error: unknown) {
     console.error("Error generating download URLs:", error);
-    const message = error instanceof Error ? error.message : "Internal server error";
-    return sendError(500, message);
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

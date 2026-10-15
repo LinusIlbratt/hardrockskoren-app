@@ -101,6 +101,6 @@ export const handler = async (
       return sendError(400, "Invalid JSON format in request body.");
     }
     console.error("Error confirming invite:", error);
-    return sendError(500, error.message);
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

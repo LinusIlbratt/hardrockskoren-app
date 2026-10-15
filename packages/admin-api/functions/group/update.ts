@@ -1,6 +1,10 @@
 import middy from "@middy/core";
 import { sendResponse, sendError } from "../../../core/utils/http";
 import {
+  normalizeGroupSlug,
+  requireGroupAccessResponse,
+} from "../../../core/utils/requireGroupAccess";
+import {
   APIGatewayProxyEventV2WithLambdaAuthorizer,
   APIGatewayProxyResultV2,
 } from "aws-lambda";
@@ -14,10 +18,17 @@ export const handler = middy().handler(
     event: APIGatewayProxyEventV2WithLambdaAuthorizer<any>
   ): Promise<APIGatewayProxyResultV2> => {
     try {
-      // Kontrollera att name är inkluderat
-      const groupName = event.queryStringParameters?.name;
+      const groupName = normalizeGroupSlug(event.pathParameters?.name);
       if (!groupName) {
         return sendError(400, "Group name is required.");
+      }
+
+      const accessError = await requireGroupAccessResponse(
+        event.requestContext.authorizer?.lambda,
+        groupName
+      );
+      if (accessError) {
+        return accessError;
       }
 
       if (!event.body) {
@@ -63,6 +74,7 @@ export const handler = middy().handler(
         UpdateExpression: `SET ${updateExpressions.join(", ")}`,
         ExpressionAttributeNames: expressionAttributeNames,
         ExpressionAttributeValues: marshall(expressionAttributeValues),
+        ConditionExpression: "attribute_exists(PK)",
         ReturnValues: "ALL_NEW",
       });
 
@@ -71,8 +83,11 @@ export const handler = middy().handler(
 
       return sendResponse(updatedGroup, 200);
     } catch (error: any) {
+      if (error?.name === "ConditionalCheckFailedException") {
+        return sendError(404, "Kören hittades inte.");
+      }
       console.error("Error updating group:", error);
-      return sendError(500, error.message || "Internal server error");
+      return sendError(500, "Ett internt serverfel uppstod");
     }
   }
 );

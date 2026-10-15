@@ -31,7 +31,11 @@ export const handler = middy().handler(
     event: APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>
   ): Promise<APIGatewayProxyResultV2> => {
     try {
-      
+      const callerRole = event.requestContext.authorizer?.lambda?.role?.trim() ?? "";
+      if (callerRole !== "admin") {
+        return sendError(403, "Forbidden: Endast plattformsadmin kan ta bort en kör.");
+      }
+
       const userPoolId = process.env.COGNITO_USER_POOL_ID as string;
 
       // 'name' här är egentligen groupSlug från URL:en
@@ -65,7 +69,7 @@ export const handler = middy().handler(
 
     } catch (error: any) {
       console.error("Error deleting group:", error);
-      return sendError(500, error.message || "Internal server error");
+      return sendError(500, "Ett internt serverfel uppstod");
     }
   }
 );

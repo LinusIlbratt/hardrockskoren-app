@@ -62,14 +62,14 @@ Vanlig körsångare.
 | Funktion | Admin | Körledare | Medlem |
 |---|:---:|:---:|:---:|
 | Skapa/ta bort kör | ✅ | — | — |
-| Bjuda in medlemmar | ✅ | ✅ | — |
-| Se medlemslista | ✅ | ✅ | — |
+| Bjuda in medlemmar | ✅ (user, leader eller admin) | ✅ (enbart user, egen kör) | — |
+| Se medlemslista | ✅ | ✅ (enbart egen kör) | — |
 | Radera medlemskonto | ✅ | ✅ | — |
 | Ändra roll (till körledare eller medlem) | ✅ | ✅ | — |
-| Göra någon till admin | — | — | — |
+| Göra någon till admin | ✅ (via inbjudan) | — | — |
 | Ladda upp material till biblioteket | ✅ | — | — |
-| Skapa repertoar i kören | ✅ | ✅ | — |
-| Koppla material till repertoar | ✅ | ✅ | — |
+| Skapa repertoar i kören | ✅ | ✅ (enbart egen kör) | — |
+| Koppla material till repertoar | ✅ | ✅ (enbart egen kör) | — |
 | Se repertoar och material | ✅ | ✅ | ✅ |
 | Skapa, redigera och ta bort gig | ✅ | ✅ (enbart egen kör) | — |
 | Ta bort repetition | ✅ | — | — |
@@ -81,19 +81,22 @@ Vanlig körsångare.
 | Skapa gemensam konsert | ✅ | — | — |
 | Anmäla sig till gemensam konsert | ✅ | ✅ | ✅ |
 | Se anmälningslista | ✅ | — | — |
-| Starta närvaroregistrering | ✅ | ✅ | — |
+| Starta närvaroregistrering | ✅ | ✅ (enbart egen kör) | — |
 | Registrera egen närvaro | ✅ | ✅ | ✅ |
 | Spellistor och favoriter | ✅ | ✅ | ✅ |
 
-**Om att ta bort medlemmar:** borttagning raderar Cognito-kontot helt
-(`AdminDeleteUser`). E-postadressen frigörs och personen försvinner ur alla
-körer, inte bara den aktuella. Målet måste vara medlem i kören i sökvägen.
-Ett konto i Cognito-gruppen `admin` kan inte raderas här. Spellistor, favoriter
-och andra DynamoDB-poster som skapats senare ligger kvar.
+**Om att ta bort medlemmar:** målet måste vara medlem i kören i sökvägen.
+Sitter personen i en annan kör tas hen bara bort ur den aktuella kören
+(`AdminRemoveUserFromGroup`) och länkraden `GROUP#{slug} / USER#{email}`
+raderas. Cognito-kontot ligger kvar. Är det den enda kören raderas kontot
+helt (`AdminDeleteUser`). Ett konto i Cognito-gruppen `admin` kan inte
+raderas här. Spellistor, favoriter och andra poster under `USER#{uuid}`
+ligger kvar.
 
-**Om att sätta admin-rollen:** admin-rollen kan inte delas ut via appen. Den
-sätts manuellt i AWS-konsolen. Det är avsiktligt, så att en körledare inte kan
-skaffa sig full plattformsbehörighet.
+**Om att sätta admin-rollen:** rollbytet i medlemslistan kan bara sätta
+`leader` eller `user`. En admin kan däremot bjuda in ett nytt konto med rollen
+`admin`. En körledare kan bara bjuda in med rollen `user`, och bara till en kör
+hen själv tillhör.
 
 ---
 
@@ -102,7 +105,10 @@ skaffa sig full plattformsbehörighet.
 ### Inbjudan och registrering
 
 Så kommer nya medlemmar in. Admin eller körledare anger en eller flera
-e-postadresser, väljer kör och roll.
+e-postadresser och väljer kör. Tillåtna roller på inbjudan är `user`, `leader`
+och `admin`. Bara admin får sätta `leader` eller `admin`. En körledare får
+bara sätta `user`, och bara för en kör hen själv tillhör. Rollen sparas på
+inbjudan och skrivs till `custom:role` när ett nytt konto skapas.
 
 Systemet hanterar två fall per adress:
 
@@ -263,8 +269,9 @@ Körledaren startar en närvarosession för dagen. Systemet genererar en
 **fyrsiffrig kod** som gäller i **20 minuter**. Startar man en session igen
 medan en redan är aktiv får man tillbaka samma kod — inga dubbletter.
 
-Medlemmarna skriver in koden i appen och registrerar sin närvaro. Namnet hämtas
-automatiskt från kontot.
+Medlemmarna skriver in koden i appen och registrerar sin närvaro. Koden måste
+tillhöra kören i sökvägen, och den inloggade användaren måste vara medlem i
+den kören. Namnet hämtas automatiskt från kontot.
 
 Körledaren ser vilka som är närvarande och kan bläddra i historiken per dag.
 

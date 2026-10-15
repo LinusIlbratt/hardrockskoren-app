@@ -45,7 +45,6 @@ export const handler = async (
     return sendResponse({ message: "Repertoaren har tagits bort." }, 200);
   } catch (error: unknown) {
     console.error("Error deleting repertoire:", error);
-    const message = error instanceof Error ? error.message : "Internal server error";
-    return sendError(500, message);
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

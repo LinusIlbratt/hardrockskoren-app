@@ -11,6 +11,7 @@ import { nanoid } from "nanoid";
 import { randomUUID } from "crypto";
 import { CognitoIdentityProviderClient, AdminGetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { sendResponse, sendError } from "../../core/utils/http";
+import { rejectedUploadFileName, sanitizeUploadFileName } from "./lib/uploadFileName";
 
 // Initialisera klienter
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
@@ -75,10 +76,15 @@ export const handler = async (
       if (!file.fileName || !file.relativePath) {
           return sendError(400, "Each file in the 'files' array must have 'fileName' and 'relativePath'.");
       }
+      const parsedName = sanitizeUploadFileName(file.fileName);
+      if (rejectedUploadFileName(parsedName)) {
+          return sendError(400, parsedName.message);
+      }
+      const cleanFileName = parsedName.fileName;
 
       const materialId = nanoid();
       const createdAt = new Date().toISOString();
-      const s3Key = `materials/${randomUUID()}-${file.fileName}`;
+      const s3Key = `materials/${randomUUID()}-${cleanFileName}`;
 
       // Förbered databasposten
       const item = {
@@ -87,7 +93,7 @@ export const handler = async (
         GSI1PK: "MATERIALS",
         GSI1SK: createdAt,
         materialId,
-        title: file.fileName,
+        title: cleanFileName,
         fileKey: s3Key,
         filePath: file.relativePath, // <-- ÄNDRING: Här sparar vi den fullständiga sökvägen!
         createdAt,
@@ -98,7 +104,7 @@ export const handler = async (
       // Förbered ett löfte (promise) för att skapa en signerad URL
       const command = new PutObjectCommand({ Bucket: BUCKET_NAME, Key: s3Key });
       const promise = getSignedUrl(s3Client, command, { expiresIn: 3600 }).then(uploadUrl => ({
-        fileName: file.fileName,
+        fileName: cleanFileName,
         uploadUrl: uploadUrl,
         relativePath: file.relativePath, // <-- ÄNDRING: Inkludera i svaret
       }));
@@ -118,6 +124,6 @@ export const handler = async (
 
   } catch (error: any) {
     console.error("Error preparing batch material upload:", error);
-    return sendError(500, error.message || "Internal server error");
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

@@ -30,9 +30,10 @@ provider:
         functionName: authorizer
         payloadVersion: "2.0"
         enableSimpleResponses: true
-        resultTtlInSeconds: 300
+        resultTtlInSeconds: 0
         identitySource:
           - $request.header.Authorization
+          - $context.routeKey
 
 custom:
   RESEND_API_KEY: ${file(./env.${self:provider.stage}.yaml):RESEND_API_KEY}

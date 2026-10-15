@@ -37,6 +37,6 @@ export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGateway
 
   } catch (error: any) {
     console.error(`Error fetching materials for path ${folderPath}:`, error);
-    return sendError(500, error.message || "Internal server error");
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

@@ -70,6 +70,6 @@ export const handler = async (
 
   } catch (error: any) {
     console.error("Error creating repertoire item:", error);
-    return sendError(500, error.message || "Internal server error");
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };
