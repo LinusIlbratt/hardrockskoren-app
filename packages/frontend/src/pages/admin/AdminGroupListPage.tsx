@@ -9,6 +9,7 @@ import { AppTourProvider } from '@/tours/AppTourProvider';
 import { useIsMobile } from '@/hooks/useIsMobile';
 
 import axios from 'axios';
+import { sortChoirsByName } from '@/utils/sortBySwedishTitle';
 import styles from './AdminGroupListPage.module.scss'
 
 // Denna typ matchar nu din DynamoDB-struktur
@@ -48,8 +49,9 @@ export const AdminGroupListPage = () => {
       const response = await axios.get(`${API_BASE_URL}/groups`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setAllGroups(response.data);
-      setFilteredGroups(response.data);
+      const groups = sortChoirsByName(Array.isArray(response.data) ? response.data : []);
+      setAllGroups(groups);
+      setFilteredGroups(groups);
     } catch (error) {
       console.error("Failed to fetch groups", error);
     } finally {

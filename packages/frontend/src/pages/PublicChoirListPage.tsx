@@ -5,6 +5,7 @@ import axios from 'axios';
 import styles from './PublicChoirListPage.module.scss';
 import { FiMapPin, FiMail } from 'react-icons/fi';
 import { PageLoader } from '@/components/ui/loader/Loader';
+import { sortChoirsByName } from '@/utils/sortBySwedishTitle';
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
@@ -33,9 +34,7 @@ export const PublicChoirListPage = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         
-        // Sortera listan i bokstavsordning efter namn
-        const sortedChoirs = response.data.sort((a, b) => a.name.localeCompare(b.name, 'sv'));
-        setChoirs(sortedChoirs);
+        setChoirs(sortChoirsByName(Array.isArray(response.data) ? response.data : []));
 
       } catch (err) {
         console.error("Failed to fetch public choir list:", err);
