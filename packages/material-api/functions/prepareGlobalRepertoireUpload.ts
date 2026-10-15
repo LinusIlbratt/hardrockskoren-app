@@ -12,6 +12,7 @@ import { nanoid } from "nanoid";
 import { randomUUID } from "crypto";
 import { CognitoIdentityProviderClient, AdminGetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { sendResponse, sendError } from "../../core/utils/http";
+import { rejectedUploadFileName, sanitizeUploadFileName } from "./lib/uploadFileName";
 
 // Initialisera klienter
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
@@ -69,14 +70,20 @@ export const handler = async (
 
     // Loopa igenom varje fil som ska laddas upp
     for (const file of files) {
-      if (existingTitles.has(file.fileName)) {
-          console.log(`Skipping already existing file: ${file.fileName}`);
+      const parsedName = sanitizeUploadFileName(file?.fileName);
+      if (rejectedUploadFileName(parsedName)) {
+          return sendError(400, parsedName.message);
+      }
+      const cleanFileName = parsedName.fileName;
+
+      if (existingTitles.has(cleanFileName)) {
+          console.log(`Skipping already existing file: ${cleanFileName}`);
           continue;
       }
 
       const materialId = nanoid();
       const createdAt = new Date().toISOString();
-      const s3Key = `materials/${randomUUID()}-${file.fileName}`;
+      const s3Key = `materials/${randomUUID()}-${cleanFileName}`;
 
       const item = {
         PK: `MATERIAL#${materialId}`,
@@ -84,7 +91,7 @@ export const handler = async (
         GSI1PK: "MATERIALS",
         GSI1SK: createdAt,
         materialId,
-        title: file.fileName,
+        title: cleanFileName,
         fileKey: s3Key,
         createdAt,
         type: "GlobalMaterial",
@@ -93,7 +100,7 @@ export const handler = async (
 
       const command = new PutObjectCommand({ Bucket: BUCKET_NAME, Key: s3Key });
       const promise = getSignedUrl(s3Client, command, { expiresIn: 3600 }).then(uploadUrl => ({
-        fileName: file.fileName,
+        fileName: cleanFileName,
         uploadUrl: uploadUrl,
       }));
       signedUrlPromises.push(promise);

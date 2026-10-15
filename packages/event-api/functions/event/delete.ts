@@ -77,6 +77,6 @@ export const handler = async (
         return sendError(404, "Not Found: The event you are trying to delete does not exist.");
     }
     
-    return sendError(500, error.message || "Internal server error");
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

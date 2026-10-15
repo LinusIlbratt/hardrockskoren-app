@@ -105,7 +105,7 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler
 
     } catch (error: any) {
       console.error("Error checking notification status:", error);
-      return sendError(500, error.message || "Internal server error");
+      return sendError(500, "Ett internt serverfel uppstod");
     }
   }
 );

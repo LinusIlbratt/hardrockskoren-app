@@ -133,6 +133,7 @@ export const handler = async (
             acc[`:${key}`] = updates[key];
             return acc;
         }, {} as Record<string, any>)),
+        ConditionExpression: "attribute_exists(PK)",
         ReturnValues: "ALL_NEW",
     });
 
@@ -146,6 +147,9 @@ export const handler = async (
     if (error.name === 'SyntaxError') {
         return sendError(400, "Invalid JSON in request body.");
     }
-    return sendError(500, error.message || "Internal server error");
+    if (error.name === "ConditionalCheckFailedException") {
+        return sendError(404, "Event not found.");
+    }
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

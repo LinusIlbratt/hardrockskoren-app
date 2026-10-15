@@ -80,6 +80,6 @@ export const handler = async (
     if (error.name === 'SyntaxError') {
       return sendError(400, "Invalid JSON format in request body.");
     }
-    return sendError(500, error.message || "Internal server error");
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

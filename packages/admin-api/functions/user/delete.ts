@@ -89,7 +89,6 @@ export const handler = async (
       return sendError(403, "Administratörens konto kan inte raderas via detta API.");
     }
 
-    await deleteChoirUserLink(groupSlug, username);
     try {
       await cognitoClient.send(
         new AdminDeleteUserCommand({
@@ -98,11 +97,11 @@ export const handler = async (
         })
       );
     } catch (error: unknown) {
-      if (isUserNotFound(error)) {
-        return deletedResponse();
+      if (!isUserNotFound(error)) {
+        throw error;
       }
-      throw error;
     }
+    await deleteChoirUserLink(groupSlug, username);
 
     return deletedResponse();
   } catch (error: unknown) {
@@ -113,7 +112,6 @@ export const handler = async (
 
 /** Tar bort kör-medlemskapet och länkraden. Cognito-kontot lämnas kvar. */
 async function removeFromChoirOnly(username: string, groupSlug: string): Promise<void> {
-  await deleteChoirUserLink(groupSlug, username);
   try {
     await cognitoClient.send(
       new AdminRemoveUserFromGroupCommand({
@@ -123,11 +121,11 @@ async function removeFromChoirOnly(username: string, groupSlug: string): Promise
       })
     );
   } catch (error: unknown) {
-    if (isUserNotFound(error)) {
-      return;
+    if (!isUserNotFound(error)) {
+      throw error;
     }
-    throw error;
   }
+  await deleteChoirUserLink(groupSlug, username);
 }
 
 /** Legacy-raden GROUP#{slug} / USER#{email} som inbjudan och kontoskapande skriver. */
