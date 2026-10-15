@@ -14,6 +14,7 @@ import { requireGroupAccessResponse } from "../../../core/utils/requireGroupAcce
 import {
   concertSignupSk,
   concertSignupRefSk,
+  concertVisibleToChoir,
   isConcertOpenForSignup,
   isSharedConcertVisible,
   sharedConcertPk,
@@ -127,7 +128,6 @@ export const handler = async (
     return sendError(400, content.message);
   }
 
-  // Cognito membership check only (no DynamoDB pre-read of concert META).
   const denied = await requireGroupAccessResponse(
     event.requestContext.authorizer?.lambda,
     content.choirSlug
@@ -141,6 +141,40 @@ export const handler = async (
     PK: sharedConcertPk(concertId),
     SK: sharedConcertMetaSk(),
   };
+
+  let concertMeta: Record<string, unknown> | undefined;
+  try {
+    const metaResult = await docClient.send(
+      new GetCommand({
+        TableName: tableName,
+        Key: metaKey,
+      })
+    );
+    concertMeta = metaResult.Item;
+  } catch (err) {
+    console.error("createConcertSignup: META read failed", { concertId, err });
+    return sendError(500, "Failed to create concert signup.");
+  }
+
+  if (!concertMeta || concertMeta.type !== "SharedConcert") {
+    return sendError(404, "Konserten hittades inte.");
+  }
+
+  const targets = Array.isArray(concertMeta.targets)
+    ? concertMeta.targets.filter((entry): entry is string => typeof entry === "string")
+    : undefined;
+  if (
+    !concertVisibleToChoir(
+      {
+        scope: typeof concertMeta.scope === "string" ? concertMeta.scope : undefined,
+        targets,
+      },
+      content.choirSlug
+    )
+  ) {
+    return sendError(403, "Konserten är inte öppen för anmälan från denna kör");
+  }
+
   const openValues = metaOpenForSignupValues(now);
 
   // choirName omitted on write path — UI falls back to choirSlug (avoids GetItem RCU).
@@ -169,7 +203,7 @@ export const handler = async (
   };
 
   try {
-    // Happy path: no concert META GetItem — open/status validated in Update ConditionExpression.
+    // Open date and tombstone stay in the META condition. Audience was checked above.
     await docClient.send(
       new TransactWriteCommand({
         TransactItems: [

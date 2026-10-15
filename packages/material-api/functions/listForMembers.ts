@@ -83,7 +83,7 @@ export const handler = middy().handler(
 
     } catch (error: any) {
       console.error("Error listing practice materials for members:", error);
-      return sendError(500, error.message);
+      return sendError(500, "Ett internt serverfel uppstod");
     }
   }
 );

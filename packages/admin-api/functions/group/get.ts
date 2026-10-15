@@ -42,7 +42,7 @@ export const handler = middy().handler(
       return sendResponse(group, 200);
     } catch (error: any) {
       console.error("Error fetching group:", error);
-      return sendError(500, error.message || "Internal server error");
+      return sendError(500, "Ett internt serverfel uppstod");
     }
   }
 );

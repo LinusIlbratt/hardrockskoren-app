@@ -2,6 +2,7 @@ import { DynamoDBClient, BatchWriteItemCommand, WriteRequest } from "@aws-sdk/cl
 import { marshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../core/utils/http";
+import { requireGroupAccessResponse } from "./lib/requireGroupAccess";
 import { CognitoIdentityProviderClient, AdminGetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
@@ -33,6 +34,13 @@ export const handler = async (
 
     // Hämta parametrar från anropet
     const { groupName, repertoireId } = event.pathParameters || {};
+    const authDenied = await requireGroupAccessResponse(
+      event.requestContext.authorizer?.lambda,
+      groupName
+    );
+    if (authDenied) {
+      return authDenied;
+    }
     if (!groupName || !repertoireId) {
       return sendError(400, "Group name and Repertoire ID are required.");
     }
@@ -74,6 +82,6 @@ export const handler = async (
 
   } catch (error: any) {
     console.error("Error linking materials to repertoire:", error);
-    return sendError(500, error.message);
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

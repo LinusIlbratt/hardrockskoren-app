@@ -11,6 +11,8 @@ type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
+const TITLE_MAX = 150;
+const DESCRIPTION_MAX = 5000;
 
 export const handler = async (
   event: AuthorizedEvent
@@ -60,6 +62,25 @@ export const handler = async (
       updatesFromClient.eventType !== "REHEARSAL"
     ) {
       return sendError(400, "eventType must be either 'CONCERT' or 'REHEARSAL'.");
+    }
+    if (Object.prototype.hasOwnProperty.call(updatesFromClient, "title")) {
+      const title = updatesFromClient.title;
+      if (typeof title !== "string" || title.trim() === "") {
+        return sendError(400, "title måste vara en text.");
+      }
+      if (title.trim().length > TITLE_MAX) {
+        return sendError(400, "title får vara högst 150 tecken.");
+      }
+      updatesFromClient.title = title.trim();
+    }
+    if (Object.prototype.hasOwnProperty.call(updatesFromClient, "description")) {
+      const description = updatesFromClient.description;
+      if (description !== null && typeof description !== "string") {
+        return sendError(400, "description måste vara en text.");
+      }
+      if (typeof description === "string" && description.length > DESCRIPTION_MAX) {
+        return sendError(400, "description får vara högst 5000 tecken.");
+      }
     }
 
     // --- NY SMART LOGIK START ---
@@ -133,6 +154,7 @@ export const handler = async (
             acc[`:${key}`] = updates[key];
             return acc;
         }, {} as Record<string, any>)),
+        ConditionExpression: "attribute_exists(PK)",
         ReturnValues: "ALL_NEW",
     });
 
@@ -146,6 +168,9 @@ export const handler = async (
     if (error.name === 'SyntaxError') {
         return sendError(400, "Invalid JSON in request body.");
     }
-    return sendError(500, error.message || "Internal server error");
+    if (error.name === "ConditionalCheckFailedException") {
+        return sendError(404, "Event not found.");
+    }
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

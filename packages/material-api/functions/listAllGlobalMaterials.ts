@@ -43,6 +43,6 @@ export const handler = async (): Promise<APIGatewayProxyResultV2> => {
     return sendResponse(materials, 200);
   } catch (error: any) {
     console.error("Error fetching all global materials:", error);
-    return sendError(500, error.message || "Internal server error");
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

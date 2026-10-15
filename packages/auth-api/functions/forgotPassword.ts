@@ -71,7 +71,7 @@ export const handler = middy<APIGatewayProxyEventV2, APIGatewayProxyResultV2>()
 
         const putCommand = new PutItemCommand({
           TableName: RESET_TABLE_NAME,
-          Item: marshall({ email, code, expiresAt }),
+          Item: marshall({ email, code, expiresAt, attempts: 0 }),
         });
         await dbClient.send(putCommand);
 

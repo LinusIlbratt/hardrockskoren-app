@@ -126,6 +126,11 @@ updateGroup:
           - dynamodb:UpdateItem
         Resource:
           - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+      - Effect: "Allow"
+        Action:
+          - "cognito-idp:AdminListGroupsForUser"
+        Resource:
+          - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
 batchGetGroups:
   handler: functions/group/batch-get.handler

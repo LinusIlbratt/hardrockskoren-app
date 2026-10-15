@@ -6,8 +6,13 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { randomUUID } from "crypto";
 // --- NYA IMPORTER ---
 import { CognitoIdentityProviderClient, AdminGetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
+import { rejectedUploadFileName, sanitizeUploadFileName } from "./lib/uploadFileName";
 
-const s3Client = new S3Client({ region: "eu-north-1" });
+const s3Client = new S3Client({
+  region: "eu-north-1",
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
+});
 // --- NY COGNITO-KLIENT ---
 const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
 
@@ -42,13 +47,12 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
 
 
     const body = event.body ? JSON.parse(event.body) : {};
-    const fileName = body.fileName;
-
-    if (!fileName) {
-      return { statusCode: 400, headers: { "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ message: "fileName is required." }) };
+    const parsedName = sanitizeUploadFileName(body.fileName);
+    if (rejectedUploadFileName(parsedName)) {
+      return { statusCode: 400, headers: { "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ message: parsedName.message }) };
     }
-    
-    const key = `materials/${randomUUID()}-${fileName}`;
+
+    const key = `materials/${randomUUID()}-${parsedName.fileName}`;
 
     const command = new PutObjectCommand({ Bucket: BUCKET_NAME, Key: key });
     const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });

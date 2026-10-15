@@ -9,8 +9,12 @@ provider:
 custom:
   stage: ${sls:stage}
   frontendUrls:
-    dev: 'http://localhost:5173'
-    prod: 'https://app.hardrockskoren.se'
+    dev:
+      - "http://localhost:5173"
+      - "http://localhost:5174"
+      - "http://localhost:3000"
+    prod:
+      - "https://app.hardrockskoren.se"
 
 resources:
   - ${file(./database/dynamoDb.yml)}

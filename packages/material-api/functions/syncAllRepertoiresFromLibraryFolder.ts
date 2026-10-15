@@ -1,6 +1,5 @@
 import {
   DynamoDBClient,
-  ScanCommand,
   QueryCommand,
   BatchWriteItemCommand,
   type AttributeValue,
@@ -13,6 +12,7 @@ import {
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../core/utils/http";
+import { listLibraryFolderChoirs } from "./lib/libraryFolderChoirs";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const cognitoClient = new CognitoIdentityProviderClient({
@@ -30,32 +30,12 @@ function toChunks<T>(arr: T[], size: number): T[][] {
 }
 
 async function queryAllItems(input: ConstructorParameters<typeof QueryCommand>[0]) {
-  const items: NonNullable<Awaited<ReturnType<typeof dbClient.send>>["Items"]> = [];
+  const items: Record<string, AttributeValue>[] = [];
   let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
 
   do {
     const resp = await dbClient.send(
       new QueryCommand({
-        ...input,
-        ExclusiveStartKey: lastEvaluatedKey,
-      })
-    );
-    if (resp.Items?.length) {
-      items.push(...resp.Items);
-    }
-    lastEvaluatedKey = resp.LastEvaluatedKey;
-  } while (lastEvaluatedKey);
-
-  return items;
-}
-
-async function scanAllItems(input: ConstructorParameters<typeof ScanCommand>[0]) {
-  const items: NonNullable<Awaited<ReturnType<typeof dbClient.send>>["Items"]> = [];
-  let lastEvaluatedKey: Record<string, AttributeValue> | undefined;
-
-  do {
-    const resp = await dbClient.send(
-      new ScanCommand({
         ...input,
         ExclusiveStartKey: lastEvaluatedKey,
       })
@@ -80,33 +60,6 @@ export const handler = async (
     return sendError(500, "Server configuration error.");
   }
 
-  const toErrMsg = (e: unknown): string => {
-    if (typeof e === "string") return e;
-    if (e instanceof Error) {
-      const name = e.name ? `${e.name}: ` : "";
-      return `${name}${e.message || "Unknown error"}`;
-    }
-    if (e && typeof e === "object") {
-      const anyE = e as any;
-      const msg = anyE.message || anyE.errorMessage || anyE.reason;
-      const name = anyE.name || anyE.code || anyE.Code;
-      // Avoid throwing while stringifying the error; keep it safe/shortish.
-      let raw = "";
-      try {
-        raw = JSON.stringify(anyE);
-      } catch {
-        raw = "";
-      }
-      const parts = [
-        name ? `name=${String(name)}` : "",
-        msg ? `message=${String(msg)}` : "",
-        raw && raw !== "{}" ? `raw=${raw}` : "",
-      ].filter(Boolean);
-      return parts.length > 0 ? parts.join(" | ") : "Internal server error";
-    }
-    return "Internal server error";
-  };
-
   try {
     const roleFromAuthorizer = event.requestContext.authorizer?.lambda?.role;
     const userId = event.requestContext.authorizer?.lambda?.uuid;
@@ -114,7 +67,7 @@ export const handler = async (
       roleFromAuthorizer,
       hasUserId: Boolean(userId),
       routeKey: (event as any).routeKey,
-      path: event.rawPath,
+      path: (event as { rawPath?: string }).rawPath ?? event.path,
     });
 
     let resolvedRole = roleFromAuthorizer;
@@ -136,7 +89,7 @@ export const handler = async (
         }
       } catch (e) {
         console.error("syncAll: failed to resolve user role from Cognito", e);
-        return sendError(500, `Failed to verify admin role: ${toErrMsg(e)}`);
+        return sendError(500, "Ett internt serverfel uppstod");
       }
     }
 
@@ -179,7 +132,7 @@ export const handler = async (
       });
     } catch (e) {
       console.error("syncAll: query folder materials failed", e);
-      return sendError(500, `Failed to query library materials: ${toErrMsg(e)}`);
+      return sendError(500, "Ett internt serverfel uppstod");
     }
     const folderMaterialIds = new Set(
       (folderMaterialItems || [])
@@ -188,29 +141,15 @@ export const handler = async (
         .filter((id) => id.length > 0)
     );
 
-    // 2) Scan for all Repertoire items whose title matches the folder path
-    let scannedRepertoireItems;
+    // 2) Choirs linked to this folder. Pointer partition LIBRARYFOLDER#{path} / GROUP#{slug}.
+    // listLibraryFolderChoirs follows LastEvaluatedKey. Repertoire headers have no GSI.
+    let matchingRepertoires;
     try {
-      scannedRepertoireItems = await scanAllItems({
-        TableName: MAIN_TABLE,
-        FilterExpression: "#type = :type AND title = :title",
-        ExpressionAttributeNames: { "#type": "type" },
-        ExpressionAttributeValues: {
-          ":type": { S: "Repertoire" },
-          ":title": { S: normalizedFolderPath },
-        },
-        // groupName is derived from PK (stored as "GROUP#{groupName}") on Repertoire items.
-        ProjectionExpression: "repertoireId, PK",
-      });
+      matchingRepertoires = await listLibraryFolderChoirs(MAIN_TABLE, normalizedFolderPath);
     } catch (e) {
-      console.error("syncAll: scan repertoires failed", e);
-      return sendError(500, `Failed to scan repertoires: ${toErrMsg(e)}`);
+      console.error("syncAll: query linked repertoires failed", e);
+      return sendError(500, "Ett internt serverfel uppstod");
     }
-
-    const matchingRepertoires = (scannedRepertoireItems || []).map(
-      (item) =>
-        unmarshall(item) as { repertoireId?: string; PK?: string }
-    );
 
     if (matchingRepertoires.length === 0) {
       return sendResponse(
@@ -234,11 +173,8 @@ export const handler = async (
     }[] = [];
 
     for (const reper of matchingRepertoires) {
-      const repertoireId = (reper.repertoireId || "").trim();
-      const pk = reper.PK || "";
-      const groupName = pk.startsWith("GROUP#") ? pk.slice("GROUP#".length) : "";
-
-      if (!repertoireId || !groupName) continue; // defensive: skip malformed items
+      const repertoireId = reper.repertoireId;
+      const groupName = reper.groupSlug;
       let repertoireLinkItems;
       try {
         repertoireLinkItems = await queryAllItems({
@@ -252,7 +188,7 @@ export const handler = async (
         });
       } catch (e) {
         console.error("syncAll: query repertoire links failed", e);
-        return sendError(500, `Failed to query repertoire links for ${repertoireId}: ${toErrMsg(e)}`);
+        return sendError(500, "Ett internt serverfel uppstod");
       }
       const linkedMaterialIds = new Set(
         (repertoireLinkItems || [])
@@ -317,7 +253,7 @@ export const handler = async (
           );
         } catch (e) {
           console.error("syncAll: batchWrite failed", e);
-          return sendError(500, `Batch write failed for ${repertoireId}: ${toErrMsg(e)}`);
+          return sendError(500, "Ett internt serverfel uppstod");
         }
       }
 
@@ -340,6 +276,6 @@ export const handler = async (
     );
   } catch (error: any) {
     console.error("Error syncing all repertoires from library folder:", error);
-    return sendError(500, toErrMsg(error));
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };

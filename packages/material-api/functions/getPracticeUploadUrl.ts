@@ -2,10 +2,13 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { randomUUID } from "crypto";
+import { rejectedUploadFileName, sanitizeUploadFileName } from "./lib/uploadFileName";
 
-// Denna funktion behöver ingen Cognito- eller DynamoDB-koppling,
-// eftersom behörigheten hanteras av din centrala authorizer.
-const s3Client = new S3Client({ region: "eu-north-1" });
+const s3Client = new S3Client({
+  region: "eu-north-1",
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
+});
 
 const BUCKET_NAME = process.env.MEDIA_BUCKET_NAME;
 
@@ -15,18 +18,22 @@ export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayPr
   }
 
   try {
-    // Behörighetskontroll sker i authorizer.ts. Vi litar på att bara admin kan anropa.
+    const callerRole = event.requestContext.authorizer?.lambda?.role;
+    if (typeof callerRole !== "string" || callerRole.trim() !== "admin") {
+      return {
+        statusCode: 403,
+        headers: { "Access-Control-Allow-Origin": "*" },
+        body: JSON.stringify({ message: "Forbidden: You do not have permission to perform this action." }),
+      };
+    }
 
     const body = event.body ? JSON.parse(event.body) : {};
-    const fileName = body.fileName;
-
-    if (!fileName) {
-      return { statusCode: 400, headers: { "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ message: "fileName is required." }) };
+    const parsedName = sanitizeUploadFileName(body.fileName);
+    if (rejectedUploadFileName(parsedName)) {
+      return { statusCode: 400, headers: { "Access-Control-Allow-Origin": "*" }, body: JSON.stringify({ message: parsedName.message }) };
     }
-    
-    // --- HÄR ÄR DEN ENDA VIKTIGA ÄNDRINGEN ---
-    // Filen sparas nu i "sjungupp/"-mappen istället för "materials/".
-    const key = `practice/${randomUUID()}-${fileName}`;
+
+    const key = `practice/${randomUUID()}-${parsedName.fileName}`;
 
     const command = new PutObjectCommand({ Bucket: BUCKET_NAME, Key: key });
     const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });

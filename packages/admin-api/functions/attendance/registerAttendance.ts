@@ -4,6 +4,10 @@ import middy from "@middy/core";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { sendResponse, sendError } from "../../../core/utils/http";
+import {
+  normalizeGroupSlug,
+  requireGroupAccessResponse,
+} from "../../../core/utils/requireGroupAccess";
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { AuthContext } from "../../../core/types";
 import { cognito } from "../../../core/services/cognito";
@@ -82,6 +86,18 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>()
         if (session.expiresAt < now) {
             return sendError(410, "Koden har gått ut och är inte längre giltig.");
         }
+
+        const sessionGroupSlug =
+          typeof session.groupSlug === "string" ? session.groupSlug.trim() : "";
+        const requestedGroupSlug = normalizeGroupSlug(groupSlug);
+        if (!sessionGroupSlug || sessionGroupSlug !== requestedGroupSlug) {
+            return sendError(403, "Koden tillhör inte den här kören.");
+        }
+
+        const accessError = await requireGroupAccessResponse(userContext, sessionGroupSlug);
+        if (accessError) {
+            return accessError;
+        }
         
         // STEG 4: LÄGG TILL ANVÄNDAROBJEKTET I NÄRVAROLISTAN
         const updateCommand = new UpdateCommand({
@@ -106,7 +122,7 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>()
 
       } catch (error: any) {
         console.error("Misslyckades att registrera närvaro:", error);
-        return sendError(500, error.message || "Internal server error.");
+        return sendError(500, "Ett internt serverfel uppstod");
       }
     }
   );

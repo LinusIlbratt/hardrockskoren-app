@@ -145,6 +145,7 @@ resetPassword:
     - Effect: "Allow"
       Action:
         - "dynamodb:GetItem"
+        - "dynamodb:UpdateItem"
         - "dynamodb:DeleteItem"
       Resource: 
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/HrkPasswordResetTokensTable-${opt:stage}"

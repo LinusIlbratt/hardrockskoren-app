@@ -4,6 +4,7 @@ import { CognitoIdentityProviderClient, ListUsersCommand, AdminAddUserToGroupCom
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEvent, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
+import { requireGroupAccessResponse } from "../../../core/utils/requireGroupAccess";
 import { nanoid } from "nanoid";
 import { Resend } from 'resend';
 // FÖRBÄTTRING: React-importen behövs inte längre här.
@@ -93,6 +94,24 @@ const FRONTEND_URL = process.env.FRONTEND_URL!;
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_EMAIL = 'Hårdrockskörens app <inbjudan@hardrockskoren.se>';
 
+/** Roller som får sparas på en inbjudan och senare skrivas till custom:role. */
+const INVITABLE_ROLES = ["user", "leader", "admin"] as const;
+type InvitableRole = (typeof INVITABLE_ROLES)[number];
+
+function isInvitableRole(value: unknown): value is InvitableRole {
+  return typeof value === "string" && (INVITABLE_ROLES as readonly string[]).includes(value);
+}
+
+const EMAIL_MAX = 254;
+
+/** Trimmar och stoppar tecken som kan bryta Cognito-filtret `email = "..."`. */
+function cleanInviteEmail(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const email = raw.trim();
+  if (!email || email.length > EMAIL_MAX) return null;
+  if (/[\u0000-\u001F\u007F"\\]/.test(email)) return null;
+  return email;
+}
 
 export const handler = async (
   event: APIGatewayProxyEvent
@@ -106,6 +125,32 @@ export const handler = async (
     if (!emails || !Array.isArray(emails) || emails.length === 0 || !groupSlug || !role) {
       return sendError(400, "An array of emails, a groupSlug, and a role are required.");
     }
+    if (typeof groupSlug !== "string") {
+      return sendError(400, "groupSlug måste vara en textsträng.");
+    }
+
+    const lambdaContext = (
+      event.requestContext.authorizer as { lambda?: { uuid?: string; role?: string; userPoolId?: string } } | undefined
+    )?.lambda;
+    const callerRole =
+      typeof lambdaContext?.role === "string" ? lambdaContext.role.trim().toLowerCase() : "";
+
+    if (callerRole !== "admin" && callerRole !== "leader") {
+      return sendError(403, "Forbidden: Du har inte behörighet att bjuda in användare.");
+    }
+    if (!isInvitableRole(role)) {
+      return sendError(400, "Ogiltig roll. Tillåtna värden är: user, leader, admin.");
+    }
+    // Körledare får bara skapa vanliga medlemmar. Admin-rollen skrivs till
+    // custom:role när inbjudan bekräftas, så leader/admin måste stoppas här.
+    if (callerRole === "leader" && role !== "user") {
+      return sendError(403, "Forbidden: Körledare kan bara bjuda in med rollen user.");
+    }
+
+    const accessError = await requireGroupAccessResponse(lambdaContext, groupSlug);
+    if (accessError) {
+      return accessError;
+    }
 
     const getGroupCommand = new GetItemCommand({
       TableName: MAIN_TABLE,
@@ -117,7 +162,12 @@ export const handler = async (
     }
     const groupDetails = unmarshall(groupItem);
 
-    const results = await Promise.allSettled(emails.map(async (email: string) => {
+    const results = await Promise.allSettled(emails.map(async (rawEmail: unknown) => {
+      const email = cleanInviteEmail(rawEmail);
+      if (!email) {
+        const shown = typeof rawEmail === "string" ? rawEmail.trim().slice(0, EMAIL_MAX) : "";
+        return { email: shown, status: "INVALID_EMAIL" };
+      }
       const listUsersCmd = new ListUsersCommand({
         UserPoolId: USER_POOL_ID,
         Filter: `email = "${email}"`,
@@ -125,8 +175,9 @@ export const handler = async (
       });
       const { Users } = await cognitoClient.send(listUsersCmd);
 
-      // --- FALL 1: Användaren FINNS REDAN ---
-      if (Users && Users.length > 0) {
+      // Plattformsadmin får lägga in ett befintligt konto direkt.
+      // Körledare skickar en inbjudan som personen själv måste acceptera.
+      if (Users && Users.length > 0 && callerRole === "admin") {
         const existingUser = Users[0];
         const username = existingUser.Username!;
         const userAttributes = existingUser.Attributes!;
@@ -166,43 +217,37 @@ export const handler = async (
 
         return { email, status: 'ADDED_DIRECTLY' };
       }
-      // --- FALL 2: Användaren FINNS INTE ---
-      else {
-        const inviteId = nanoid(16);
-        const registrationLink = `${FRONTEND_URL}/register?invite=${inviteId}`;
-        const ttl = Math.floor(Date.now() / 1000) + 604800; // 7 dagar
 
-        const itemToSave = { inviteId, email, groupSlug, groupDisplayName: groupDetails.name, role, status: 'PENDING', createdAt: new Date().toISOString(), timeToLive: ttl };
-        await dbClient.send(new PutItemCommand({ TableName: INVITE_TABLE, Item: marshall(itemToSave) }));
+      const inviteId = nanoid(16);
+      const registrationLink = `${FRONTEND_URL}/register?invite=${inviteId}`;
+      const ttl = Math.floor(Date.now() / 1000) + 604800; // 7 dagar
 
-        // ÄNDRING: Använder 'html' istället för 'react'
-        // I "FALL 2: Användaren FINNS INTE"
-        await resend.emails.send({
-          from: FROM_EMAIL,
-          to: [email], // Byt till en ny test-adress
-          subject: `Inbjudan till Hårdrockskörens app av Petra Kvännå`,
+      const itemToSave = { inviteId, email, groupSlug, groupDisplayName: groupDetails.name, role, status: 'PENDING', createdAt: new Date().toISOString(), timeToLive: ttl };
+      await dbClient.send(new PutItemCommand({ TableName: INVITE_TABLE, Item: marshall(itemToSave) }));
 
-          // Både HTML och ren text inkluderas
-          html: InviteEmailTemplate({
-            choirName: groupDetails.name,
-            invitedBy: "En administratör",
-            inviteLink: registrationLink,
-          }),
-          text: PlainTextInviteTemplate({
-            choirName: groupDetails.name,
-            invitedBy: "En administratör",
-            inviteLink: registrationLink,
-          })
-        });
+      await resend.emails.send({
+        from: FROM_EMAIL,
+        to: [email],
+        subject: `Inbjudan till Hårdrockskörens app av Petra Kvännå`,
+        html: InviteEmailTemplate({
+          choirName: groupDetails.name,
+          invitedBy: "En administratör",
+          inviteLink: registrationLink,
+        }),
+        text: PlainTextInviteTemplate({
+          choirName: groupDetails.name,
+          invitedBy: "En administratör",
+          inviteLink: registrationLink,
+        })
+      });
 
-        return { email, status: 'INVITE_SENT' };
-      }
+      return { email, status: 'INVITE_SENT' };
     }));
 
     return sendResponse({ message: "Invite process completed.", results }, 200);
 
   } catch (error: any) {
     console.error("Error creating invites:", error);
-    return sendError(500, error.message);
+    return sendError(500, "Ett internt serverfel uppstod");
   }
 };
