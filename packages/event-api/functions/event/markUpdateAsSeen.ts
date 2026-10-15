@@ -50,7 +50,7 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler
         return sendResponse({ message: "Successfully marked update as seen." }, 200);
     } catch (error: any) {
         console.error("Error marking update as seen:", error);
-        return sendError(500, error.message || "Internal server error");
+        return sendError(500, "Ett internt serverfel uppstod");
     }
   }
 );

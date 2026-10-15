@@ -8,6 +8,8 @@ import { nanoid } from "nanoid";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
+const TITLE_MAX = 150;
+const DESCRIPTION_MAX = 5000;
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
@@ -34,8 +36,18 @@ export const handler = async (
     );
     if (authDenied) return authDenied;
 
-    if (!title || !eventDate || !endDate || !eventType) {
+    if (typeof title !== "string" || title.trim() === "" || !eventDate || !endDate || !eventType) {
       return sendError(400, "title, eventDate, endDate, and eventType are required.");
+    }
+    const trimmedTitle = title.trim();
+    if (trimmedTitle.length > TITLE_MAX) {
+      return sendError(400, "title får vara högst 150 tecken.");
+    }
+    if (description != null && typeof description !== "string") {
+      return sendError(400, "description måste vara en text.");
+    }
+    if (typeof description === "string" && description.length > DESCRIPTION_MAX) {
+      return sendError(400, "description får vara högst 5000 tecken.");
     }
     if (eventType !== 'CONCERT' && eventType !== 'REHEARSAL') {
       return sendError(400, "eventType must be either 'CONCERT' or 'REHEARSAL'.");
@@ -51,7 +63,7 @@ export const handler = async (
       SK: `EVENT#${eventId}`,
       eventId,
       groupSlug,
-      title,
+      title: trimmedTitle,
       eventDate: isoStartDate,
       endDate: isoEndDate,
       eventType,

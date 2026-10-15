@@ -102,6 +102,17 @@ function isInvitableRole(value: unknown): value is InvitableRole {
   return typeof value === "string" && (INVITABLE_ROLES as readonly string[]).includes(value);
 }
 
+const EMAIL_MAX = 254;
+
+/** Trimmar och stoppar tecken som kan bryta Cognito-filtret `email = "..."`. */
+function cleanInviteEmail(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const email = raw.trim();
+  if (!email || email.length > EMAIL_MAX) return null;
+  if (/[\u0000-\u001F\u007F"\\]/.test(email)) return null;
+  return email;
+}
+
 export const handler = async (
   event: APIGatewayProxyEvent
 ): Promise<APIGatewayProxyResultV2> => {
@@ -151,7 +162,12 @@ export const handler = async (
     }
     const groupDetails = unmarshall(groupItem);
 
-    const results = await Promise.allSettled(emails.map(async (email: string) => {
+    const results = await Promise.allSettled(emails.map(async (rawEmail: unknown) => {
+      const email = cleanInviteEmail(rawEmail);
+      if (!email) {
+        const shown = typeof rawEmail === "string" ? rawEmail.trim().slice(0, EMAIL_MAX) : "";
+        return { email: shown, status: "INVALID_EMAIL" };
+      }
       const listUsersCmd = new ListUsersCommand({
         UserPoolId: USER_POOL_ID,
         Filter: `email = "${email}"`,

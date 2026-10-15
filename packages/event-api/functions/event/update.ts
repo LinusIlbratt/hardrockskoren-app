@@ -11,6 +11,8 @@ type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
+const TITLE_MAX = 150;
+const DESCRIPTION_MAX = 5000;
 
 export const handler = async (
   event: AuthorizedEvent
@@ -60,6 +62,25 @@ export const handler = async (
       updatesFromClient.eventType !== "REHEARSAL"
     ) {
       return sendError(400, "eventType must be either 'CONCERT' or 'REHEARSAL'.");
+    }
+    if (Object.prototype.hasOwnProperty.call(updatesFromClient, "title")) {
+      const title = updatesFromClient.title;
+      if (typeof title !== "string" || title.trim() === "") {
+        return sendError(400, "title måste vara en text.");
+      }
+      if (title.trim().length > TITLE_MAX) {
+        return sendError(400, "title får vara högst 150 tecken.");
+      }
+      updatesFromClient.title = title.trim();
+    }
+    if (Object.prototype.hasOwnProperty.call(updatesFromClient, "description")) {
+      const description = updatesFromClient.description;
+      if (description !== null && typeof description !== "string") {
+        return sendError(400, "description måste vara en text.");
+      }
+      if (typeof description === "string" && description.length > DESCRIPTION_MAX) {
+        return sendError(400, "description får vara högst 5000 tecken.");
+      }
     }
 
     // --- NY SMART LOGIK START ---

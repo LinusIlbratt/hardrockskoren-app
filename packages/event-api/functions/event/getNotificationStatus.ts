@@ -1,6 +1,6 @@
 // functions/events/getNotificationStatus.ts
 
-import { DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
+import { AttributeValue, DynamoDBClient, QueryCommand } from "@aws-sdk/client-dynamodb";
 import { unmarshall } from "@aws-sdk/util-dynamodb";
 import { APIGatewayProxyEventV2WithLambdaAuthorizer, APIGatewayProxyResultV2 } from "aws-lambda";
 import { sendResponse, sendError } from "../../../core/utils/http";
@@ -12,6 +12,7 @@ import { isNotificationWindowClosed } from "./notificationWindow";
 
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const MAIN_TABLE = process.env.MAIN_TABLE;
+const MAX_QUERY_PAGES = 200;
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
@@ -42,23 +43,38 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler
       const seenGeneralUpdates: Record<string, string> = seenGeneralAttr?.Value ? JSON.parse(seenGeneralAttr.Value) : {};
       const seenDescriptionUpdates: Record<string, string> = seenDescriptionAttr?.Value ? JSON.parse(seenDescriptionAttr.Value) : {};
 
-      const queryCommand = new QueryCommand({
-        TableName: MAIN_TABLE,
-        IndexName: "GSI1",
-        KeyConditionExpression: "GSI1PK = :pk",
-        ExpressionAttributeValues: { ":pk": { S: `GROUP#${groupSlug}` } },
-        ProjectionExpression:
-          "eventId, updatedAt, descriptionUpdatedAt, lastUpdatedFields, eventDate, endDate, eventType",
-      });
+      const events: Record<string, any>[] = [];
+      let startKey: Record<string, AttributeValue> | undefined;
+      let pages = 0;
 
-      const { Items } = await dbClient.send(queryCommand);
+      do {
+        if (pages >= MAX_QUERY_PAGES) {
+          console.error("getNotificationStatus: query page limit reached", { groupSlug, pages });
+          return sendError(500, "Kunde inte hämta hela notisunderlaget.");
+        }
+        const result = await dbClient.send(
+          new QueryCommand({
+            TableName: MAIN_TABLE,
+            IndexName: "GSI1",
+            KeyConditionExpression: "GSI1PK = :pk",
+            ExpressionAttributeValues: { ":pk": { S: `GROUP#${groupSlug}` } },
+            ProjectionExpression:
+              "eventId, updatedAt, descriptionUpdatedAt, lastUpdatedFields, eventDate, endDate, eventType",
+            ExclusiveStartKey: startKey,
+          })
+        );
+        for (const item of result.Items ?? []) {
+          events.push(unmarshall(item));
+        }
+        startKey = result.LastEvaluatedKey;
+        pages += 1;
+      } while (startKey);
       
       const newEventIds: string[] = [];
       const updatedEvents: Record<string, string[]> = {};
       const now = new Date();
 
-      if (Items && Items.length > 0) {
-        const events = Items.map(item => unmarshall(item));
+      if (events.length > 0) {
         for (const calendarEvent of events) {
           if (!calendarEvent.eventId || !calendarEvent.updatedAt) continue;
           if (isNotificationWindowClosed(calendarEvent, now)) continue;

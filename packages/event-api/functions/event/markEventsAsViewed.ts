@@ -58,7 +58,7 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler
       return sendResponse({ message: "Successfully marked event as viewed." }, 200);
     } catch (error: any) {
         console.error("Error in markEventsAsViewed:", error);
-        return sendError(500, error.message || "Internal server error");
+        return sendError(500, "Ett internt serverfel uppstod");
     }
   }
 );
