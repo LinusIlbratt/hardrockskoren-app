@@ -112,6 +112,13 @@ $maxWidth: 1100px; // Kan användas för att begränsa bredden på containers.
   --color-luxury-accent-active: rgba(220, 38, 38, 0.20);
   --color-luxury-accent-border: rgba(220, 38, 38, 0.50);
   --color-luxury-accent-solid: #b91c1c;
+  --color-luxury-accent-gradient-start: #d81b1b;
+  --color-luxury-accent-gradient-end: #a30e0e;
+  --color-luxury-accent-gradient-hover-start: #e62222;
+  --color-luxury-accent-gradient-hover-end: #b51212;
+  /* Kort på auth-ytan: zinc-900/40 och zinc-800/80 */
+  --color-luxury-card: rgba(24, 24, 27, 0.4);
+  --color-luxury-card-border: rgba(39, 39, 42, 0.8);
 
   /* --- NYA, REKOMMENDERADE VARIABLER --- */
 
@@ -144,6 +151,8 @@ $maxWidth: 1100px; // Kan användas för att begränsa bredden på containers.
   --fs-base: 1rem;      // 16px
   --fs-md: 1rem;        // 16px (alias för formulär-labels m.m.)
   --fs-lg: 1.125rem;    // 18px
+  --fs-xl: 1.5rem;      // 24px
+  --fs-2xl: 1.75rem;    // 28px
 
   --fs-h4: 1.125rem;    // 18px (mobil)
   --fs-h3: 1.25rem;     // 20px (mobil)

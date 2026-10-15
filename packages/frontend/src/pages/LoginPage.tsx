@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
-import { Button, ButtonRadius, ButtonSize } from '@/components/ui/button/Button';
+import { Button, ButtonSize, ButtonVariant } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
 import { PasswordInput } from '@/components/ui/input/PasswordInput';
 import { FormGroup } from '@/components/ui/form/FormGroup';
-import { LoginPoster } from '@/components/layout/LoginPoster';
+import { AuthSplitLayout } from '@/components/layout/AuthSplitLayout/AuthSplitLayout';
 import { ForgotPasswordModal } from '@/features/auth';
 import styles from './LoginPage.module.scss';
-import logoImage from '@/assets/images/hrk-logo.webp';
 
 const API_BASE_URL = import.meta.env.VITE_AUTH_API_URL;
 
@@ -53,39 +52,27 @@ export const LoginPage = () => {
 
   return (
     <>
-      <main className={styles.page}>
-        <div className={styles.container}>
-          <figure className={styles.logo}>
-            <img src={logoImage} alt="Logo för Hårdrockskören" />
-          </figure>
+      <AuthSplitLayout>
+        <form onSubmit={handleSubmit}>
+          <FormGroup label="E-post" htmlFor="email" error={error} tone="luxury">
+            <Input id="email" type="email" tone="luxury" placeholder="din@epost.se" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </FormGroup>
 
-          <div className={styles.formWrapper}>
-            <form onSubmit={handleSubmit}>
-              <FormGroup label="E-post" htmlFor="email" error={error} className={styles.formField}>
-                <Input id="email" type="email" placeholder="din@epost.se" value={email} onChange={(e) => setEmail(e.target.value)} required />
-              </FormGroup>
+          <FormGroup label="Lösenord" htmlFor="password" tone="luxury">
+            <PasswordInput id="password" tone="luxury" placeholder="••••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
+          </FormGroup>
 
-              <FormGroup label="Lösenord" htmlFor="password" className={`${styles.formField} ${styles.lastFormField}`}>
-                <PasswordInput id="password" placeholder="••••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
-              </FormGroup>
-
-              {/* NYTT: Länk för att öppna modalen */}
-              <div className={styles.forgotPasswordLink}>
-                <button type="button" onClick={() => setIsForgotPasswordOpen(true)}>
-                  Glömt lösenord?
-                </button>
-              </div>
-
-              <div className={styles.buttonGroup}>
-                <Button type="submit" radius={ButtonRadius.Medium} size={ButtonSize.Login} isLoading={isLoading} fullWidth>
-                  Rock'n Roll
-                </Button>
-              </div>
-            </form>
+          <div className={styles.forgotPasswordLink}>
+            <button type="button" onClick={() => setIsForgotPasswordOpen(true)}>
+              Glömt lösenord?
+            </button>
           </div>
-        </div>
-        <LoginPoster />
-      </main>
+
+          <Button type="submit" variant={ButtonVariant.Luxury} size={ButtonSize.Login} isLoading={isLoading} fullWidth>
+            Rock'n Roll
+          </Button>
+        </form>
+      </AuthSplitLayout>
 
       {/* NYTT: Rendera modalen */}
       <ForgotPasswordModal 

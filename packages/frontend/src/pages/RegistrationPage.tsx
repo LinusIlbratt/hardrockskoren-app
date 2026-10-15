@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import axios from 'axios';
-import { Button, ButtonRadius, ButtonSize } from '@/components/ui/button/Button';
+import { Button, ButtonSize, ButtonVariant } from '@/components/ui/button/Button';
 import { Input } from '@/components/ui/input/Input';
 import { PasswordInput } from '@/components/ui/input/PasswordInput';
 import { FormGroup } from '@/components/ui/form/FormGroup';
-import { LoginPoster } from '@/components/layout/LoginPoster';
+import { AuthSplitLayout } from '@/components/layout/AuthSplitLayout/AuthSplitLayout';
 import styles from './RegistrationPage.module.scss';
-import logoImage from '@/assets/images/hrk-logo.webp';
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
 
 interface ValidInvite {
-  email: string;
-  groupName: string;
+  email?: string;
+  groupDisplayName?: string;
+  groupName?: string;
 }
 
 // Typer för formulärets data och fel
@@ -34,6 +34,7 @@ export const RegistrationPage = () => {
   const inviteId = searchParams.get('invite');
 
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState<string | null>(null);
   const [inviteDetails, setInviteDetails] = useState<ValidInvite | null>(null);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -102,7 +103,7 @@ export const RegistrationPage = () => {
       return; // Återgår här om valideringen misslyckas.
     }
 
-    setIsLoading(true);
+    setIsSubmitting(true);
     setApiError(null);
     try {
       await axios.post(`${API_BASE_URL}/invites/${inviteId}/confirm`, {
@@ -118,7 +119,7 @@ export const RegistrationPage = () => {
         setApiError("Kunde inte skapa kontot. Försök igen.");
       }
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -126,49 +127,50 @@ export const RegistrationPage = () => {
     if (isLoading) {
       return <div className={styles.statusMessage}>Laddar och validerar inbjudan...</div>;
     }
-    if (apiError || !inviteDetails) {
-      return <div className={styles.statusMessage}>{apiError || 'Kunde inte ladda inbjudan.'}</div>;
+    if (!inviteDetails) {
+      return <div className={styles.errorMessage}>{apiError || 'Kunde inte ladda inbjudan.'}</div>;
     }
     if (isSuccess) {
       return (
         <div className={styles.successMessage}>
           <h2>Kontot är skapat!</h2>
           <p>Du kan nu logga in med dina nya uppgifter.</p>
-          <div className={styles.buttonGroup}>
-            <Link to="/login">
-              <Button fullWidth radius={ButtonRadius.Small} size={ButtonSize.Login}>
-                Gå till inloggning
-              </Button>
-            </Link>
-          </div>
+          <Link to="/login" className={styles.loginLink}>
+            <Button fullWidth variant={ButtonVariant.Luxury} size={ButtonSize.Login}>
+              Gå till inloggning
+            </Button>
+          </Link>
         </div>
       );
     }
+
+    const choirName = (inviteDetails.groupDisplayName ?? inviteDetails.groupName)?.trim() ?? '';
+
     return (
       <>
         <h1 className={styles.title}>Skapa ditt konto</h1>
         <p className={styles.subtitle}>
-          Välkommen till kören <strong>{inviteDetails.groupName}</strong>! Fyll i dina uppgifter nedan.
+          Välkommen till kören{choirName ? <> <strong>{choirName}</strong></> : null}! Fyll i dina uppgifter nedan.
         </p>
-        <form onSubmit={handleSubmit} noValidate> {/* noValidate förhindrar webbläsarens inbyggda validering */}
+        <form className={styles.form} onSubmit={handleSubmit} noValidate>
           <div className={styles.inputRow}>
-            <FormGroup label="Förnamn" htmlFor="firstName" error={formErrors.firstName}>
-              <Input id="firstName" value={formData.firstName} onChange={handleChange} />
+            <FormGroup label="Förnamn" htmlFor="firstName" error={formErrors.firstName} tone="luxury">
+              <Input id="firstName" tone="luxury" value={formData.firstName} onChange={handleChange} />
             </FormGroup>
-            <FormGroup label="Efternamn" htmlFor="lastName" error={formErrors.lastName}>
-              <Input id="lastName" value={formData.lastName} onChange={handleChange} />
+            <FormGroup label="Efternamn" htmlFor="lastName" error={formErrors.lastName} tone="luxury">
+              <Input id="lastName" tone="luxury" value={formData.lastName} onChange={handleChange} />
             </FormGroup>
           </div>
-          <FormGroup label="E-post (från inbjudan)" htmlFor="email">
-            <Input id="email" type="email" value={inviteDetails.email || ''} disabled />
+          <FormGroup label="E-post (från inbjudan)" htmlFor="email" tone="luxury">
+            <Input id="email" type="email" tone="luxury" value={inviteDetails.email ?? ''} disabled />
           </FormGroup>
-          <FormGroup label="Välj ett lösenord" htmlFor="password" error={formErrors.password}>
-            <PasswordInput id="password" value={formData.password} onChange={handleChange} autoComplete="new-password" />
+          <FormGroup label="Välj ett lösenord" htmlFor="password" error={formErrors.password} tone="luxury">
+            <PasswordInput id="password" tone="luxury" value={formData.password} onChange={handleChange} autoComplete="new-password" />
             <p className={styles.passwordHint}>Minst 8 tecken, med stor bokstav, liten bokstav och siffror.</p>
           </FormGroup>
           {apiError && <p className={styles.formError}>{apiError}</p>}
           <div className={styles.buttonGroup}>
-            <Button type="submit" isLoading={isLoading} fullWidth radius={ButtonRadius.Small} size={ButtonSize.Login}>
+            <Button type="submit" variant={ButtonVariant.Luxury} isLoading={isSubmitting} fullWidth size={ButtonSize.Login}>
               Slutför registrering
             </Button>
           </div>
@@ -178,16 +180,8 @@ export const RegistrationPage = () => {
   };
 
   return (
-    <main className={styles.page}>
-      <div className={styles.container}>
-        <figure className={styles.logo}>
-          <img src={logoImage} alt="Logo för Hårdrockskören" />
-        </figure>
-        <div className={styles.formWrapper}>
-          {renderContent()}
-        </div>
-      </div>
-      <LoginPoster />
-    </main>
+    <AuthSplitLayout compact>
+      {renderContent()}
+    </AuthSplitLayout>
   );
 };
