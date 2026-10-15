@@ -7,6 +7,7 @@ import {
 } from "@/services/materialService";
 import { getApiErrorMessage } from "@/utils/apiError";
 import { getAuthHeaders } from "@/utils/authHeaders";
+import { compareSwedishStrings, sortChoirsByName } from "@/utils/sortBySwedishTitle";
 import {
   Button,
   ButtonVariant,
@@ -80,7 +81,7 @@ export function AddLibraryFolderToChoirsModal({
           value: slug,
           label: groupsBySlug.get(slug) ?? slug,
         }))
-        .sort((a, b) => a.label.localeCompare(b.label, "sv")),
+        .sort((a, b) => compareSwedishStrings(a.label, b.label)),
     [notLinkedSlugs, groupsBySlug]
   );
 
@@ -88,7 +89,7 @@ export function AddLibraryFolderToChoirsModal({
     () =>
       Array.from(linkedSlugs)
         .map((slug) => groupsBySlug.get(slug) ?? slug)
-        .sort((a, b) => a.localeCompare(b, "sv")),
+        .sort((a, b) => compareSwedishStrings(a, b)),
     [linkedSlugs, groupsBySlug]
   );
 
@@ -118,10 +119,10 @@ export function AddLibraryFolderToChoirsModal({
           name: (g.name || g.slug || "").trim(),
           slug: (g.slug || "").trim(),
         }))
-        .filter((g) => g.slug.length > 0)
-        .sort((a, b) => a.name.localeCompare(b.name, "sv"));
+        .filter((g) => g.slug.length > 0);
+      const sortedGroups = sortChoirsByName(nextGroups);
 
-      setGroups(nextGroups);
+      setGroups(sortedGroups);
 
       if (nextGroups.length === 0) {
         setLinkedSlugs(new Set());

@@ -359,7 +359,7 @@ export const MemberRepertoireMaterialPage = () => {
             onToggleFavorite={toggleFavoriteOptimistic}
             onOpenAddToPlaylist={(id) => setPlaylistModalMaterialId(id)}
           />
-          <MaterialSection title="🎬 Notfilmer & Video" files={groupedMaterials.video} onView={setSelectedMaterial} />
+          <MaterialSection title="🎬 Not & Textfilmer" files={groupedMaterials.video} onView={setSelectedMaterial} />
           <MaterialSection title="📄 Texter" files={groupedMaterials.scores} onView={setSelectedMaterial} />
           <MaterialSection
             title="🥁 Rytmik & Övrigt"

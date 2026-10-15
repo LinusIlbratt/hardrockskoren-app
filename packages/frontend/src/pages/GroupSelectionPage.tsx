@@ -6,6 +6,7 @@ import axios from 'axios';
 import styles from './GroupSelectionPage.module.scss';
 import type { Group } from '@/types';
 import { getApiErrorMessage } from '@/utils/apiError';
+import { sortChoirsByName } from '@/utils/sortBySwedishTitle';
 import { translateRole } from '@/utils/translations';
 
 const API_BASE_URL = import.meta.env.VITE_ADMIN_API_URL;
@@ -36,7 +37,7 @@ export const GroupSelectionPage = () => {
 
       try {
         const response = await axios.get<Group[]>(`${API_BASE_URL}/groups`, { headers });
-        setGroups(Array.isArray(response.data) ? response.data : []);
+        setGroups(sortChoirsByName(Array.isArray(response.data) ? response.data : []));
         setError(null);
       } catch (err) {
         console.error('Failed to fetch all groups for role preview', err);
@@ -70,7 +71,7 @@ export const GroupSelectionPage = () => {
           { groupSlugs: user.groups },
           { headers }
         );
-        setGroups(Array.isArray(response.data) ? response.data : []);
+        setGroups(sortChoirsByName(Array.isArray(response.data) ? response.data : []));
         setError(null);
       }
     } catch (err) {

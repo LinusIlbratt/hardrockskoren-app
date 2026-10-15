@@ -4,6 +4,7 @@ import { createAuthedClient } from "@/services/apiClient";
 import { getAuthHeaders } from "@/utils/authHeaders";
 import type { Group } from "@/types";
 import type { SelectOption } from "@/components/ui/select/StyledSelect";
+import { sortChoirsByName } from "@/utils/sortBySwedishTitle";
 
 const ADMIN_API_URL = import.meta.env.VITE_ADMIN_API_URL;
 
@@ -36,7 +37,7 @@ export function useMessageTargetGroups() {
       const valid = list.filter(
         (g) => typeof g?.slug === "string" && g.slug.trim().length > 0
       );
-      setGroups(valid);
+      setGroups(sortChoirsByName(valid));
       if (valid.length === 0) {
         setGroupsError(
           "Inga körer hittades. Skapa en kör innan du skickar till valda."

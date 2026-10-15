@@ -23,7 +23,7 @@ import styles from './MaterialDetailPage.module.scss';
 
 const MATERIAL_SECTIONS: { id: MemberMaterialSection; title: string }[] = [
   { id: 'stems', title: '🎧 Stämmor' },
-  { id: 'video', title: '🎬 Notfilmer & Video' },
+  { id: 'video', title: '🎬 Not & Textfilmer' },
   { id: 'scores', title: '📄 Texter' },
   { id: 'other', title: '🥁 Rytmik & Övrigt' },
 ];
