@@ -14,3 +14,23 @@ export function sortBySwedishTitle<T extends { title?: string | null }>(
     compareSwedishTitles(left?.title, right?.title),
   );
 }
+
+/** Svensk bokstavsordning med siffror i talordning. Å, Ä och Ö efter Z. */
+export function compareSwedishStrings(
+  a: string | null | undefined = "",
+  b: string | null | undefined = "",
+): number {
+  return (a ?? "").localeCompare(b ?? "", "sv", {
+    sensitivity: "base",
+    numeric: true,
+  });
+}
+
+/** Returnerar en ny array sorterad på name. Ursprungslistan lämnas orörd. */
+export function sortChoirsByName<T extends { name?: string | null }>(
+  items: readonly T[],
+): T[] {
+  return [...items].sort((left, right) =>
+    compareSwedishStrings(left?.name, right?.name),
+  );
+}
