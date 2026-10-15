@@ -15,7 +15,11 @@ import { rejectedUploadFileName, sanitizeUploadFileName } from "./lib/uploadFile
 
 // Initialisera klienter
 const dbClient = new DynamoDBClient({ region: process.env.AWS_REGION });
-const s3Client = new S3Client({ region: process.env.AWS_REGION });
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION,
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
+});
 const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
 
 // Konfiguration

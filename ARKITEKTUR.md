@@ -158,7 +158,7 @@ start/status/get/days/register).
 | 2 | `admin-api/functions/user/update.ts` | ✅ **Åtgärdat 2026-09-26.** Allowlist på `leader`/`user`; `admin` kan inte sättas via API:et. |
 | 3 | `event-api/functions/event/*` | ✅ **Åtgärdat 2026-09-26.** `requireGroupAccessResponse` på alla kör-skopade event-endpoints (list, create, update, batch, delete, getNotificationStatus). Admin passerar; leader/user begränsas till sina Cognito-grupper. |
 | 4 | `material-api/functions/getUploadUrl.ts` | ✅ **Ändrat 2026-10-14.** Filändelse allowlistas och filnamnet tvättas innan presigned URL skapas (även övning och batch). Storlek och `ContentType` binds fortfarande inte. |
-| 5 | Alla `serverless.yml` | `httpApi.cors: true` = alla origins. S3-bucketens CORS är däremot låst till frontend-URL:en. |
+| 5 | Alla `serverless.yml` | `httpApi.cors: true` = alla origins. S3-bucketens CORS är däremot låst till frontend-origins per stage. |
 | 6 | `infra-service/iam/cognito.yml` | `custom:role` finns inte i Schema-blocket. Hela auktoriseringen hänger på manuell konsolkonfiguration. |
 
 ---
@@ -267,9 +267,12 @@ håller på att raderas. `GET /shared-concerts/{id}` returnerar `viewerSignup`
 ## 4. Lagring (S3)
 
 **`hrk-media-${stage}-${accountId}`** — noter, ljud, video.
-Public access helt blockerat. CORS tillåter GET och PUT från enbart frontend-URL:en
-(`http://localhost:5173` i dev, `https://app.hardrockskoren.se` i prod).
-All åtkomst sker via presigned URLs (upload 300 s).
+Public access helt blockerat. CORS tillåter GET och PUT och exponerar `ETag`.
+Dev-origins: `http://localhost:5173`, `http://localhost:5174`, `http://localhost:3000`.
+Prod-origin: `https://app.hardrockskoren.se`.
+All åtkomst sker via presigned URLs (enkel upload 300 s, batch 3600 s).
+Presign-klienterna sätter `requestChecksumCalculation` och `responseChecksumValidation`
+till `WHEN_REQUIRED` så att SDK:n inte signerar en CRC32 som webbläsaren inte skickar.
 Nyckelmönster: `materials/{uuid}-{filnamn}`.
 
 **`hrk-app-frontend-${stage}-${accountId}`** — statisk SPA-hosting.

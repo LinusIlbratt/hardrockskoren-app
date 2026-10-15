@@ -8,7 +8,11 @@ import { randomUUID } from "crypto";
 import { CognitoIdentityProviderClient, AdminGetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { rejectedUploadFileName, sanitizeUploadFileName } from "./lib/uploadFileName";
 
-const s3Client = new S3Client({ region: "eu-north-1" });
+const s3Client = new S3Client({
+  region: "eu-north-1",
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
+});
 // --- NY COGNITO-KLIENT ---
 const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION });
 

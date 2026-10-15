@@ -4,7 +4,11 @@ import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
 import { randomUUID } from "crypto";
 import { rejectedUploadFileName, sanitizeUploadFileName } from "./lib/uploadFileName";
 
-const s3Client = new S3Client({ region: "eu-north-1" });
+const s3Client = new S3Client({
+  region: "eu-north-1",
+  requestChecksumCalculation: "WHEN_REQUIRED",
+  responseChecksumValidation: "WHEN_REQUIRED",
+});
 
 const BUCKET_NAME = process.env.MEDIA_BUCKET_NAME;
 
