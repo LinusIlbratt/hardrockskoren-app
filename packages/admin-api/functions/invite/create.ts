@@ -159,8 +159,9 @@ export const handler = async (
       });
       const { Users } = await cognitoClient.send(listUsersCmd);
 
-      // --- FALL 1: Användaren FINNS REDAN ---
-      if (Users && Users.length > 0) {
+      // Plattformsadmin får lägga in ett befintligt konto direkt.
+      // Körledare skickar en inbjudan som personen själv måste acceptera.
+      if (Users && Users.length > 0 && callerRole === "admin") {
         const existingUser = Users[0];
         const username = existingUser.Username!;
         const userAttributes = existingUser.Attributes!;
@@ -200,37 +201,31 @@ export const handler = async (
 
         return { email, status: 'ADDED_DIRECTLY' };
       }
-      // --- FALL 2: Användaren FINNS INTE ---
-      else {
-        const inviteId = nanoid(16);
-        const registrationLink = `${FRONTEND_URL}/register?invite=${inviteId}`;
-        const ttl = Math.floor(Date.now() / 1000) + 604800; // 7 dagar
 
-        const itemToSave = { inviteId, email, groupSlug, groupDisplayName: groupDetails.name, role, status: 'PENDING', createdAt: new Date().toISOString(), timeToLive: ttl };
-        await dbClient.send(new PutItemCommand({ TableName: INVITE_TABLE, Item: marshall(itemToSave) }));
+      const inviteId = nanoid(16);
+      const registrationLink = `${FRONTEND_URL}/register?invite=${inviteId}`;
+      const ttl = Math.floor(Date.now() / 1000) + 604800; // 7 dagar
 
-        // ÄNDRING: Använder 'html' istället för 'react'
-        // I "FALL 2: Användaren FINNS INTE"
-        await resend.emails.send({
-          from: FROM_EMAIL,
-          to: [email], // Byt till en ny test-adress
-          subject: `Inbjudan till Hårdrockskörens app av Petra Kvännå`,
+      const itemToSave = { inviteId, email, groupSlug, groupDisplayName: groupDetails.name, role, status: 'PENDING', createdAt: new Date().toISOString(), timeToLive: ttl };
+      await dbClient.send(new PutItemCommand({ TableName: INVITE_TABLE, Item: marshall(itemToSave) }));
 
-          // Både HTML och ren text inkluderas
-          html: InviteEmailTemplate({
-            choirName: groupDetails.name,
-            invitedBy: "En administratör",
-            inviteLink: registrationLink,
-          }),
-          text: PlainTextInviteTemplate({
-            choirName: groupDetails.name,
-            invitedBy: "En administratör",
-            inviteLink: registrationLink,
-          })
-        });
+      await resend.emails.send({
+        from: FROM_EMAIL,
+        to: [email],
+        subject: `Inbjudan till Hårdrockskörens app av Petra Kvännå`,
+        html: InviteEmailTemplate({
+          choirName: groupDetails.name,
+          invitedBy: "En administratör",
+          inviteLink: registrationLink,
+        }),
+        text: PlainTextInviteTemplate({
+          choirName: groupDetails.name,
+          invitedBy: "En administratör",
+          inviteLink: registrationLink,
+        })
+      });
 
-        return { email, status: 'INVITE_SENT' };
-      }
+      return { email, status: 'INVITE_SENT' };
     }));
 
     return sendResponse({ message: "Invite process completed.", results }, 200);

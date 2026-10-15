@@ -62,24 +62,33 @@ export const handler = async (
       MessageAction: "SUPPRESS",
     });
 
-    const { User } = await cognitoClient.send(createUserCommand);
-    if (!User || !User.Username) {
-        throw new Error("Failed to create user in Cognito.");
+    let username = invite.email as string;
+    try {
+      const { User } = await cognitoClient.send(createUserCommand);
+      if (!User || !User.Username) {
+          throw new Error("Failed to create user in Cognito.");
+      }
+      username = User.Username;
+
+      // Nytt konto: lösenord och roll kommer från inbjudan.
+      const setPasswordCommand = new AdminSetUserPasswordCommand({
+          UserPoolId: USER_POOL_ID,
+          Username: username,
+          Password: password,
+          Permanent: true,
+      });
+      await cognitoClient.send(setPasswordCommand);
+    } catch (error: unknown) {
+      if (!(error instanceof Error) || error.name !== "UsernameExistsException") {
+        throw error;
+      }
+      // Befintligt konto: lägg bara till i kören. Rör inte lösenord eller custom:role.
+      username = invite.email;
     }
 
-    // --- STEG 4: Sätt användarens lösenord ---
-    const setPasswordCommand = new AdminSetUserPasswordCommand({
-        UserPoolId: USER_POOL_ID,
-        Username: User.Username,
-        Password: password,
-        Permanent: true,
-    });
-    await cognitoClient.send(setPasswordCommand);
-
-    // --- STEG 5: Lägg till användaren i rätt Cognito-grupp ---
     const addUserToGroupCmd = new AdminAddUserToGroupCommand({
         UserPoolId: USER_POOL_ID,
-        Username: User.Username,
+        Username: username,
         GroupName: invite.groupSlug,
     });
     await cognitoClient.send(addUserToGroupCmd);
