@@ -1,0 +1,136 @@
+@use '@/styles/variables' as *;
+
+.page {
+  margin: 0;
+  display: flex;
+  flex-direction: row;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background-color: var(--color-background);
+}
+
+.container {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  overflow-y: auto;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: safe center;
+  align-items: center;
+  gap: var(--gap-large);
+  background-color: var(--color-background);
+  background-image: radial-gradient(
+    circle at 50% 25%,
+    var(--color-luxury-accent-subtle),
+    transparent 70%
+  );
+}
+
+.containerCompact {
+  justify-content: flex-start;
+  gap: var(--spacing-md);
+}
+
+.logo {
+  width: 100%;
+  max-width: 300px;
+  margin: 0;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  @media (min-width: #{$desktopBreakpoint}) {
+    max-width: 400px;
+  }
+}
+
+.logoCompact {
+  width: 100%;
+  max-width: 180px;
+  margin: 0;
+  flex-shrink: 0;
+
+  img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  @media (min-width: #{$desktopBreakpoint}) {
+    max-width: 260px;
+  }
+}
+
+.formWrapper {
+  width: 100%;
+  max-width: 400px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+
+  > form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+}
+
+.formCard {
+  max-width: 440px;
+  gap: 0.75rem;
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-xl);
+  background: var(--color-luxury-card);
+  border: 1px solid var(--color-luxury-card-border);
+  backdrop-filter: blur(12px);
+
+  > form {
+    gap: var(--spacing-md);
+  }
+}
+
+.poster {
+  display: none;
+  min-width: 0;
+
+  @media (min-width: #{$tabletBreakpoint}) {
+    display: flex;
+    flex: 1;
+    animation: posterIn 0.55s ease;
+  }
+}
+
+@keyframes posterIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: #{$phoneBreakpoint}) {
+  .container {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+
+  .logo {
+    max-width: min(300px, 80%);
+  }
+
+  .logoCompact {
+    max-width: 180px;
+  }
+}

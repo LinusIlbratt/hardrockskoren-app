@@ -7,6 +7,7 @@ export interface FormGroupProps extends React.HTMLAttributes<HTMLDivElement> {
   label?: React.ReactNode;  
   htmlFor?: string;  
   error?: string | null;
+  tone?: 'default' | 'luxury';
 }
 
 export const FormGroup = ({
@@ -15,14 +16,18 @@ export const FormGroup = ({
   label,
   htmlFor,
   error,
+  tone = 'default',
   ...props
 }: FormGroupProps) => {  
   const groupClasses = `${styles.formGroup} ${className || ''}`;
+  const labelClasses = [styles.label, tone === 'luxury' && styles.labelLuxury]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div className={groupClasses} {...props}>      
       {label && (
-        <label htmlFor={htmlFor} className={styles.label}>
+        <label htmlFor={htmlFor} className={labelClasses}>
           {label}
         </label>
       )}
