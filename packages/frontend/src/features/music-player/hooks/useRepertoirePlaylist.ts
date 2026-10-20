@@ -10,7 +10,12 @@ import {
 } from '@/context/MusicPlayerOverlayContext';
 import { useFavorites } from '@/hooks/useFavorites';
 import { usePlaylists } from '@/hooks/usePlaylists';
-import { getPlaylistItems, removePlaylistItem } from '@/services/musicService';
+import {
+  getPlaylistItems,
+  movePlaylistItem,
+  removePlaylistItem,
+  type MovePlaylistItemDirection,
+} from '@/services/musicService';
 import type { MediaPlayerTrack } from '@/features/music-player/types';
 import { buildMediaPlayerTracks } from '@/features/music-player/utils/buildMediaPlayerTracks';
 import { hashTrackQueueKey } from '@/features/music-player/utils/hashTrackQueueKey';
@@ -109,6 +114,10 @@ export function useRepertoirePlaylist({
   const repertoireBootstrapKeyRef = useRef<string | null>(null);
   const onPlaybackStartRef = useRef(onPlaybackStart);
   onPlaybackStartRef.current = onPlaybackStart;
+  /** Spärrar parallella reorder-anrop (optimistic move). */
+  const reorderInFlightRef = useRef(false);
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
 
   const sortedRepertoires = useMemo(
     () => sortBySwedishTitle(repertoires),
@@ -428,19 +437,86 @@ export function useRepertoirePlaylist({
     [selectedId],
   );
 
+  /**
+   * Flyttar spår i den öppna spellistan. Uppdaterar bara materials-listan
+   * (inte den aktiva spelkön) så uppspelningen inte remonteras.
+   * En flytt i taget — nya anrop ignoreras medan ett pågår.
+   */
+  const handleMoveInPlaylist = useCallback(
+    async (materialId: string, direction: MovePlaylistItemDirection) => {
+      if (reorderInFlightRef.current) return;
+
+      const sid = selectedId?.trim();
+      const mid = materialId?.trim();
+      if (!sid || !mid) return;
+      if (!playlists.some((p) => p.playlistId === sid)) return;
+
+      const previous = materials;
+      const playable = previous.filter(
+        (m) => m.fileKey && isPlayableAudioFile(m.fileKey),
+      );
+      const index = playable.findIndex((m) => m.materialId === mid);
+      if (index < 0) return;
+      const neighborIndex = direction === 'up' ? index - 1 : index + 1;
+      if (neighborIndex < 0 || neighborIndex >= playable.length) return;
+
+      const a = playable[index];
+      const b = playable[neighborIndex];
+      const next = previous.map((m) => {
+        if (m.materialId === a.materialId) return b;
+        if (m.materialId === b.materialId) return a;
+        return m;
+      });
+      const optimisticOrderKey = next.map((m) => m.materialId).join('\0');
+
+      reorderInFlightRef.current = true;
+      setMaterials(next);
+      setError(null);
+
+      try {
+        await movePlaylistItem(sid, mid, direction);
+      } catch (e) {
+        console.error('handleMoveInPlaylist failed', e);
+        // Rollback bara om samma spellista fortfarande är öppen och
+        // materials fortfarande är vår optimistiska snapshot (inte ersatt av fetch).
+        if (selectedIdRef.current === sid) {
+          setMaterials((current) => {
+            const currentKey = current.map((m) => m.materialId).join('\0');
+            if (currentKey === optimisticOrderKey) return previous;
+            return current;
+          });
+          setError(
+            playlistRequestError(e, 'Kunde inte ändra ordningen i spellistan.'),
+          );
+        }
+      } finally {
+        reorderInFlightRef.current = false;
+      }
+    },
+    [selectedId, playlists, materials],
+  );
+
   useEffect(() => {
     if (!groupName?.trim() || isStandaloneLibrarySession) return;
     if (!selectedId || selectedId === LIBRARY_SELECTED_ID) return;
     if (playerQueue.length === 0) return;
+    // Använd materialId från spelkön (inte listindex) så omordning inte
+    // byter vilken låt som sparas som senast spelad.
+    const activeFromQueue = playerQueue[highlightedTrackIndex];
+    const activeMaterialId = activeFromQueue?.materialId?.trim();
+    if (!activeMaterialId) return;
+    const m =
+      audioMaterials.find((row) => row.materialId === activeMaterialId) ?? null;
     const isPlaylist = playlists.some((p) => p.playlistId === selectedId);
-    const m = audioMaterials[highlightedTrackIndex];
-    if (!m?.materialId) return;
     const fallback =
       formatDisplayTitle(
-        (m.title && String(m.title).trim()) || (m.fileKey && m.fileKey.split('/').pop()) || '',
+        (m?.title && String(m.title).trim()) ||
+          (m?.fileKey && m.fileKey.split('/').pop()) ||
+          activeFromQueue.title ||
+          '',
       ) || 'Okänt spår';
     const title =
-      (m.voiceLabel?.trim() || m.songTitle?.trim()
+      (m && (m.voiceLabel?.trim() || m.songTitle?.trim())
         ? materialLabelText(displayMaterialLabel(m))
         : '') || fallback;
     if (isPlaylist) {
@@ -448,7 +524,7 @@ export function useRepertoirePlaylist({
         groupSlug: groupName.trim(),
         kind: 'playlist',
         playlistId: selectedId,
-        materialId: m.materialId,
+        materialId: activeMaterialId,
         title,
       });
     } else {
@@ -456,7 +532,7 @@ export function useRepertoirePlaylist({
         groupSlug: groupName.trim(),
         kind: 'repertoire',
         repertoireId: selectedId,
-        materialId: m.materialId,
+        materialId: activeMaterialId,
         title,
       });
     }
@@ -465,7 +541,7 @@ export function useRepertoirePlaylist({
     isStandaloneLibrarySession,
     selectedId,
     playlists,
-    playerQueue.length,
+    playerQueue,
     audioMaterials,
     highlightedTrackIndex,
   ]);
@@ -664,5 +740,6 @@ export function useRepertoirePlaylist({
     renamePlaylist,
     clearSelection,
     handleRemoveFromPlaylist,
+    handleMoveInPlaylist,
   };
 }

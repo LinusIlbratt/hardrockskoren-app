@@ -13,12 +13,14 @@ import {
   hasRequiredMaterialFields,
   sanitizeMaterialForClient,
 } from "../lib/batchGetGlobalMaterials";
+import { sortPlaylistRowsByOrderKey } from "./playlistOrder";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
 type PlaylistItemRow = {
   materialId: string;
   addedAt: string;
+  orderKey?: string;
 };
 
 const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION });
@@ -33,7 +35,11 @@ function itemToRow(raw: Record<string, unknown>): PlaylistItemRow | null {
   if (typeof materialId !== "string" || typeof addedAt !== "string") {
     return null;
   }
-  return { materialId, addedAt };
+  const row: PlaylistItemRow = { materialId, addedAt };
+  if (typeof raw.orderKey === "string" && raw.orderKey.trim() !== "") {
+    row.orderKey = raw.orderKey.trim();
+  }
+  return row;
 }
 
 export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler(
@@ -100,7 +106,8 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler
         return sendResponse([], 200);
       }
 
-      const materialIds = rows.map((r) => r.materialId);
+      const orderedRows = sortPlaylistRowsByOrderKey(rows);
+      const materialIds = orderedRows.map((r) => r.materialId);
       const byId = await batchGetGlobalMaterialsByIds(
         docClient,
         tableName,
@@ -113,7 +120,7 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler
         material: Record<string, unknown>;
       }[] = [];
 
-      for (const row of rows) {
+      for (const row of orderedRows) {
         const raw = byId.get(row.materialId);
         if (!raw) {
           continue;

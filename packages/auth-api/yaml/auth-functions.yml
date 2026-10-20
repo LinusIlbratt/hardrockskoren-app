@@ -6,11 +6,13 @@ authorizer:
   timeout: 15
   layers:
     - arn:aws:lambda:eu-north-1:094274105915:layer:AWSLambdaPowertoolsTypeScript:27
+  environment:
+    EXPECTED_USER_POOL_ID: ${file(./env.${self:provider.stage}.yaml):USER_POOL_ID}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
         - cognito-idp:adminGetUser
-      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/*"
+      Resource: "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${file(./env.${self:provider.stage}.yaml):USER_POOL_ID}"
     - Effect: "Allow"
       Action:
         - execute-api:Invoke

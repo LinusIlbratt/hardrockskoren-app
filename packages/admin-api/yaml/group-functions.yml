@@ -5,12 +5,14 @@ authorizer:
   memorySize: 256
   layers:
     - arn:aws:lambda:eu-north-1:094274105915:layer:AWSLambdaPowertoolsTypeScript:27
+  environment:
+    EXPECTED_USER_POOL_ID: ${self:custom.COGNITO_USER_POOL_ID}
   iamRoleStatements:
     - Effect: "Allow"
       Action:
         - cognito-idp:AdminGetUser
       Resource:
-        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/*"
+        - "arn:aws:cognito-idp:${self:provider.region}:${aws:accountId}:userpool/${self:custom.COGNITO_USER_POOL_ID}"
 
 createGroup:
   handler: functions/group/create.handler
