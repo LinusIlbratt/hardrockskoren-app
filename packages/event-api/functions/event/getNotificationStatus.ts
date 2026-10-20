@@ -16,6 +16,36 @@ const MAX_QUERY_PAGES = 200;
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
+/** Cognito custom:seen* — ogiltig JSON ska inte fälla hela notisstatusen. */
+function parseSeenTimestampMap(
+  raw: string | undefined,
+  attributeName: string
+): Record<string, string> {
+  if (!raw?.trim()) return {};
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      console.warn(
+        `getNotificationStatus: ${attributeName} is not a JSON object; treating as empty.`
+      );
+      return {};
+    }
+    const out: Record<string, string> = {};
+    for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof key === "string" && typeof value === "string") {
+        out[key] = value;
+      }
+    }
+    return out;
+  } catch (err) {
+    console.warn(
+      `getNotificationStatus: failed to parse ${attributeName}; treating as empty.`,
+      err
+    );
+    return {};
+  }
+}
+
 export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler(
   async (event): Promise<APIGatewayProxyResultV2> => {
     if (!MAIN_TABLE) return sendError(500, "Server configuration error.");
@@ -40,8 +70,14 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler
       const seenDescriptionAttr = UserAttributes?.find(attr => attr.Name === 'custom:seenDescUpd');
 
       const readEventIds = new Set(readEventsAttr?.Value ? readEventsAttr.Value.split(',') : []);
-      const seenGeneralUpdates: Record<string, string> = seenGeneralAttr?.Value ? JSON.parse(seenGeneralAttr.Value) : {};
-      const seenDescriptionUpdates: Record<string, string> = seenDescriptionAttr?.Value ? JSON.parse(seenDescriptionAttr.Value) : {};
+      const seenGeneralUpdates = parseSeenTimestampMap(
+        seenGeneralAttr?.Value,
+        "custom:seenGenUpd"
+      );
+      const seenDescriptionUpdates = parseSeenTimestampMap(
+        seenDescriptionAttr?.Value,
+        "custom:seenDescUpd"
+      );
 
       const events: Record<string, any>[] = [];
       let startKey: Record<string, AttributeValue> | undefined;
@@ -99,7 +135,13 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler
 
           // Har andra fält en oläst uppdatering? (Körs ej för helt nya event)
           if (!isNew && (!lastSeenGeneral || new Date(calendarEvent.updatedAt) > new Date(lastSeenGeneral))) {
-            const otherFields = (calendarEvent.lastUpdatedFields || []).filter((field: string) => field !== 'description');
+            const lastUpdatedFields = calendarEvent.lastUpdatedFields;
+            const otherFields = Array.isArray(lastUpdatedFields)
+              ? lastUpdatedFields.filter(
+                  (field: unknown) =>
+                    typeof field === "string" && field !== "description"
+                )
+              : [];
             if (otherFields.length > 0) {
               actualUpdates.push(...otherFields);
             }

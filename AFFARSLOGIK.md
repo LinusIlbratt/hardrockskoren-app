@@ -182,7 +182,7 @@ spelaren och ladda ner det. Nedladdningslänkar är tidsbegränsade.
 Varje användare kan skapa egna spellistor av material hen har tillgång till, och
 markera enskilda spår som favoriter. Detta är privat per användare — ingen annan
 ser någon annans spellistor. Spellistor kan döpas om, få en beskrivning, och
-spår kan läggas till och tas bort.
+spår kan läggas till, tas bort och byta plats i listan.
 
 ### Kalender (events)
 

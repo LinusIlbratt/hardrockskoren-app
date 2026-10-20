@@ -343,3 +343,69 @@ export async function removePlaylistItem(
 
   return data;
 }
+
+export type MovePlaylistItemDirection = 'up' | 'down';
+
+export type MovePlaylistItemResult = {
+  success: boolean;
+  materialId: string;
+  direction: MovePlaylistItemDirection;
+  swappedWith: string;
+};
+
+/**
+ * Flyttar ett spår upp eller ner i spellistan
+ * (PATCH /playlists/{playlistId}/items/{materialId}/position).
+ */
+export async function movePlaylistItem(
+  playlistId: string,
+  materialId: string,
+  direction: MovePlaylistItemDirection
+): Promise<MovePlaylistItemResult> {
+  const pid = playlistId?.trim();
+  const mid = materialId?.trim();
+  if (!pid || !mid) {
+    throw new Error('playlistId and materialId are required.');
+  }
+  if (direction !== 'up' && direction !== 'down') {
+    throw new Error('direction must be "up" or "down".');
+  }
+
+  const client = getApiClient();
+  try {
+    const { data } = await client.patch<unknown>(
+      `/playlists/${encodeURIComponent(pid)}/items/${encodeURIComponent(mid)}/position`,
+      { direction }
+    );
+
+    if (
+      !data ||
+      typeof data !== 'object' ||
+      typeof (data as MovePlaylistItemResult).success !== 'boolean' ||
+      typeof (data as MovePlaylistItemResult).materialId !== 'string' ||
+      ((data as MovePlaylistItemResult).direction !== 'up' &&
+        (data as MovePlaylistItemResult).direction !== 'down') ||
+      typeof (data as MovePlaylistItemResult).swappedWith !== 'string'
+    ) {
+      throw new Error(
+        'Unexpected response shape from PATCH /playlists/.../items/.../position.'
+      );
+    }
+
+    return data as MovePlaylistItemResult;
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      const message =
+        err.response?.data &&
+        typeof err.response.data === 'object' &&
+        'message' in err.response.data &&
+        typeof (err.response.data as { message?: unknown }).message === 'string'
+          ? (err.response.data as { message: string }).message.trim()
+          : '';
+      if (message) {
+        throw new Error(message);
+      }
+    }
+    throw err;
+  }
+}

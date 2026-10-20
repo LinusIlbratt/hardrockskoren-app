@@ -8,6 +8,7 @@ import {
 import { sendResponse, sendError } from "@hrk/core/utils/http";
 import type { AuthContext } from "@hrk/core/types";
 import { verifyPlaylistOwnership } from "./verifyPlaylistOwnership";
+import { buildAppendOrderKey } from "./playlistOrder";
 
 type AuthorizedEvent = APIGatewayProxyEventV2WithLambdaAuthorizer<AuthContext>;
 
@@ -61,6 +62,7 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler
       }
 
       const addedAt = new Date().toISOString();
+      const orderKey = buildAppendOrderKey(addedAt, materialId);
       const PK = `PLAYLIST#${playlistId}`;
       const SK = `MATERIAL#${materialId}`;
 
@@ -74,6 +76,7 @@ export const handler = middy<AuthorizedEvent, APIGatewayProxyResultV2>().handler
             playlistId,
             materialId,
             addedAt,
+            orderKey,
           },
         })
       );

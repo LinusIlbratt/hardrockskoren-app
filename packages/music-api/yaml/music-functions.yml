@@ -156,6 +156,27 @@ removePlaylistItem:
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
         - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
 
+movePlaylistItem:
+  handler: functions/playlists/movePlaylistItem.handler
+  name: hrk-move-playlist-item-${sls:stage}
+  description: Moves a playlist item up or down (swaps orderKey with neighbor).
+  events:
+    - httpApi:
+        method: PATCH
+        path: /playlists/{playlistId}/items/{materialId}/position
+        authorizer:
+          name: centralJwtAuthorizer
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "dynamodb:GetItem"
+        - "dynamodb:Query"
+        - "dynamodb:UpdateItem"
+        - "dynamodb:TransactWriteItems"
+      Resource:
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}"
+        - "arn:aws:dynamodb:${self:provider.region}:${aws:accountId}:table/${self:custom.mainTableName}/index/*"
+
 getFavorites:
   handler: functions/favorites/getFavorites.handler
   name: hrk-get-favorites-${sls:stage}

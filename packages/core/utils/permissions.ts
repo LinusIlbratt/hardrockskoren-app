@@ -93,6 +93,7 @@ export const routePermissions: Record<string, RoleTypes[]> = {
   "GET /playlists/{playlistId}/items": RoleGroups.ALL_LOGGED_IN,
   "POST /playlists/{playlistId}/items": RoleGroups.ALL_LOGGED_IN,
   "DELETE /playlists/{playlistId}/items/{materialId}": RoleGroups.ALL_LOGGED_IN,
+  "PATCH /playlists/{playlistId}/items/{materialId}/position": RoleGroups.ALL_LOGGED_IN,
   "PATCH /playlists/{playlistId}": RoleGroups.ALL_LOGGED_IN,
   "DELETE /playlists/{playlistId}": RoleGroups.ALL_LOGGED_IN,
 

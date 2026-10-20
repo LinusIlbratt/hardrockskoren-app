@@ -102,12 +102,15 @@ den deployar en egen authorizer.
 Authorizern gör per anrop:
 
 1. Släpper igenom `OPTIONS` för CORS-preflight.
-2. Verifierar JWT (`tokenUse: "access"`).
-3. `AdminGetUser` mot Cognito för att läsa `custom:role`, `given_name`,
+2. Läser `userPoolId` ur tokenens `iss` och jämför mot stagens
+   `EXPECTED_USER_POOL_ID` (dev/prod). **Fel pool → nekas** (hindrar t.ex.
+   prod-token mot dev-API).
+3. Verifierar JWT (`tokenUse: "access"`).
+4. `AdminGetUser` mot Cognito för att läsa `custom:role`, `given_name`,
    `family_name`.
-4. Slår upp `event.routeKey` i `routePermissions`. **Saknas routen → nekas.**
+5. Slår upp `event.routeKey` i `routePermissions`. **Saknas routen → nekas.**
    Detta är deny-by-default och är avsiktligt.
-5. Returnerar `AuthContext` som authorizer-context.
+6. Returnerar `AuthContext` som authorizer-context.
 
 ```typescript
 // packages/core/types/auth.ts
@@ -201,7 +204,13 @@ GSI `AttendanceCodeIndex` (`attendanceCode`) och `GroupDateIndex`
 | Globalt material | `MATERIAL#{id}` | `MATERIAL#{id}` | `MATERIALS` | createdAt |
 | Sjung-upp-material | `SJUNGUPP#MATERIALS` | `MATERIAL#{id}` | — | — |
 | Spellista | `USER#{uuid}` | `PLAYLIST#{id}` | — | — |
+| Spellistespår | `PLAYLIST#{id}` | `MATERIAL#{materialId}` | — | — |
 | Favorit | `USER#{uuid}` | `FAVORITE#{materialId}` | — | — |
+
+Spellistespår har `orderKey` (sträng) för användarstyrd ordning. Saknas fältet
+(äldre data) används `${addedAt}#${materialId}`. Flytt upp/ner byter `orderKey`
+mellan två angränsande spår via `TransactWrite`
+(`PATCH /playlists/{playlistId}/items/{materialId}/position`).
 | Meddelande (kanoniskt) | `MSG#{messageId}` | `META` | `MSG#SENT` | `{createdAt}#{id}` |
 | Meddelande-pekare | `GROUP#{slug}`, `GROUP#ALL` eller `GROUP#LEADERS` | `MSG#{createdAt}#{id}` | — | — |
 | Läskvitto | `USER#{uuid}` | `MSGREAD#{messageId}` | — | — |
